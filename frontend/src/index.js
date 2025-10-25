@@ -7,6 +7,10 @@ import './styles/globals.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Ensure root element has the correct background
+const rootElement = document.getElementById('root');
+rootElement.className = 'min-h-screen bg-[#E7E7E7]';
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

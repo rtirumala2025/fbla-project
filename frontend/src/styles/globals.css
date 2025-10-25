@@ -2,14 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --background-color: #ffffff;
+}
+
+/* Apply background to root elements */
+html, body, #root {
+  background-color: #ffffff;
+  margin: 0;
+  padding: 0;
+}
+
 @layer base {
-  html {
-    @apply scroll-smooth;
-  }
-  
   body {
-    @apply bg-slate-900 text-slate-50 antialiased;
+    @apply bg-white text-gray-900;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -29,13 +40,32 @@
   }
   
   p {
-    @apply text-slate-400 leading-relaxed;
+    color: #374151;
+    line-height: 1.625;
   }
 }
 
 @layer components {
   .container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
   }
   
   .section {

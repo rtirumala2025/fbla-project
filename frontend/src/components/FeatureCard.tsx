@@ -24,7 +24,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
 
   return (
     <motion.div
-      className={`group relative bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all duration-500 ${
+      className={`group relative bg-white border-2 border-gray-300 rounded-2xl overflow-hidden hover:border-indigo-500 transition-all duration-500 shadow-lg hover:shadow-xl ${
         size === 'large' ? 'md:col-span-2' : ''
       }`}
       initial={{ opacity: 0, y: 30 }}
@@ -97,14 +97,14 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       {/* Content */}
       <div className="p-6 md:p-8">
         <h3
-          className={`font-black text-slate-50 mb-3 ${
+          className={`font-black text-gray-900 mb-3 ${
             size === 'large' ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'
           }`}
         >
           {title}
         </h3>
 
-        <p className="text-slate-400 leading-relaxed mb-4 text-base md:text-lg">
+        <p className="text-gray-600 leading-relaxed mb-4 text-base md:text-lg">
           {description}
         </p>
 

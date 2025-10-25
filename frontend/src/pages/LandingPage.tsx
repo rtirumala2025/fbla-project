@@ -1,4 +1,3 @@
-import { Navigation } from '../components/layout/Navigation';
 import { Hero } from '../components/Hero';
 import { StatsBar } from '../components/StatsBar';
 import { FeaturesGrid } from '../components/FeaturesGrid';
@@ -10,8 +9,7 @@ import { Footer } from '../components/Footer';
 
 export const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-slate-900">
-      <Navigation />
+    <div className="bg-white">
       <main>
         <Hero />
         <StatsBar />

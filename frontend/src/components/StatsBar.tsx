@@ -24,7 +24,7 @@ export const StatsBar = () => {
 
   return (
     <motion.div
-      className="max-w-6xl mx-auto px-6 -mt-20 relative z-10"
+      className="max-w-7xl mx-auto px-6 -mt-16 relative z-10"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 40 }}
       transition={{ duration: 0.7, delay: 0.2 }}

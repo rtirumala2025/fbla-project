@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   uid: string;
   email: string | null;
   displayName: string | null;
-  // Add other user properties as needed
 }
 
 type AuthContextType = {
@@ -25,43 +26,88 @@ export const useAuth = () => {
   return context;
 };
 
+// Helper function to convert Supabase user to our User type
+const mapSupabaseUser = (supabaseUser: SupabaseUser | null): User | null => {
+  if (!supabaseUser) return null;
+  
+  return {
+    uid: supabaseUser.id,
+    email: supabaseUser.email || null,
+    displayName: supabaseUser.user_metadata?.display_name || supabaseUser.email?.split('@')[0] || null,
+  };
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on initial load
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUser(mapSupabaseUser(session?.user || null));
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setCurrentUser(mapSupabaseUser(session?.user || null));
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    // TODO: Implement actual authentication
-    const mockUser = {
-      uid: 'mock-uid-' + Math.random().toString(36).substr(2, 9),
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      displayName: email.split('@')[0]
-    };
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    setCurrentUser(mockUser);
+      password,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    setCurrentUser(mapSupabaseUser(data.user));
   };
 
   const signUp = async (email: string, password: string, displayName: string) => {
-    // TODO: Implement actual signup
-    const mockUser = {
-      uid: 'mock-uid-' + Math.random().toString(36).substr(2, 9),
+    const { data, error } = await supabase.auth.signUp({
       email,
-      displayName
-    };
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    setCurrentUser(mockUser);
+      password,
+      options: {
+        data: {
+          display_name: displayName,
+        },
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Create user profile
+    if (data.user) {
+      const { error: profileError } = await supabase.from('profiles').insert({
+        user_id: data.user.id,
+        username: displayName,
+        coins: 100, // Starting coins
+      });
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
+      }
+    }
+
+    setCurrentUser(mapSupabaseUser(data.user));
   };
 
   const signOut = async () => {
-    localStorage.removeItem('user');
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw new Error(error.message);
+    }
     setCurrentUser(null);
   };
 

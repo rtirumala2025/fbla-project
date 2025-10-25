@@ -39,11 +39,11 @@ export const FeaturesGrid = () => {
   ];
 
   return (
-    <section className="py-24 md:py-32 px-6 bg-slate-900/50" id="features">
+    <section className="py-16 md:py-20 px-6 bg-white" id="features">
       <div className="max-w-7xl mx-auto">
         {/* Header with human voice */}
         <motion.div
-          className="max-w-3xl mb-16 md:mb-20"
+          className="max-w-3xl mb-12 md:mb-14"
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -55,19 +55,19 @@ export const FeaturesGrid = () => {
             </span>
           </div>
           
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-50 mb-6 leading-tight">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
             Everything you need.
             <br />
-            <span className="text-slate-400">Nothing you don't.</span>
+            <span className="text-gray-600">Nothing you don't.</span>
           </h2>
           
-          <p className="text-lg md:text-xl text-slate-400 leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
             No fluff. Just the tools to raise a digital pet that actually feels alive.
           </p>
         </motion.div>
 
         {/* Asymmetric grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {features.map((feature, index) => (
             <FeatureCard
               key={index}
@@ -79,12 +79,12 @@ export const FeaturesGrid = () => {
 
         {/* Bottom accent (not centered) */}
         <motion.div
-          className="mt-16 flex justify-end"
+          className="mt-10 flex justify-end"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <div className="text-sm text-slate-500 italic">
+          <div className="text-sm text-gray-500 italic">
             And we're adding more. Constantly.
           </div>
         </motion.div>

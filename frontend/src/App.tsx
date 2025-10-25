@@ -1,6 +1,9 @@
 import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+import Header from './components/Header';
 import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -9,8 +12,23 @@ import { BreedSelection } from './pages/BreedSelection';
 import { PetNaming } from './pages/PetNaming';
 import { Dashboard } from './pages/Dashboard';
 import { Shop } from './pages/Shop';
+import { ProfilePage } from './pages/ProfilePage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import './styles/globals.css';
+
+// Page transition wrapper component
+const PageTransition = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -46,42 +64,59 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-function AppRoutes() {
+// App content component (needs to be inside AuthProvider to use useAuth)
+function AppContent() {
+  const location = useLocation();
+  
+  // Apply background color to the root element
+  React.useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('background-color', '#ffffff', 'important');
+    document.body.style.backgroundColor = '#ffffff';
+    
+    return () => {
+      root.style.removeProperty('background-color');
+      document.body.style.removeProperty('background-color');
+    };
+  }, []);
+
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
-      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-      
-      {/* Protected routes */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
-      
-      {/* Protected onboarding flow */}
-      <Route path="/onboarding/species" element={<ProtectedRoute><SpeciesSelection /></ProtectedRoute>} />
-      <Route path="/onboarding/breed" element={<ProtectedRoute><BreedSelection /></ProtectedRoute>} />
-      <Route path="/onboarding/naming" element={<ProtectedRoute><PetNaming /></ProtectedRoute>} />
-      
-      {/* TODO: Add these routes after creating the pages
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
-      <Route path="/daily-report" element={<ProtectedRoute><DailyReport /></ProtectedRoute>} />
-      <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-      <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-      <Route path="/minigames/fetch" element={<ProtectedRoute><FetchGame /></ProtectedRoute>} />
-      */}
-      
-      {/* Catch all - redirect to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <div className="bg-white text-gray-900">
+      <Header />
+      <main className="bg-white">
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            {/* Public routes */}
+            <Route path="/" element={<PublicRoute><PageTransition><LandingPage /></PageTransition></PublicRoute>} />
+            <Route path="/login" element={<PublicRoute><PageTransition><Login /></PageTransition></PublicRoute>} />
+            <Route path="/register" element={<PublicRoute><PageTransition><Register /></PageTransition></PublicRoute>} />
+            
+            {/* Protected routes */}
+            <Route path="/dashboard" element={<ProtectedRoute><PageTransition><Dashboard /></PageTransition></ProtectedRoute>} />
+            <Route path="/shop" element={<ProtectedRoute><PageTransition><Shop /></PageTransition></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><PageTransition><ProfilePage /></PageTransition></ProtectedRoute>} />
+            
+            {/* Protected onboarding flow */}
+            <Route path="/onboarding/species" element={<ProtectedRoute><PageTransition><SpeciesSelection /></PageTransition></ProtectedRoute>} />
+            <Route path="/onboarding/breed" element={<ProtectedRoute><PageTransition><BreedSelection /></PageTransition></ProtectedRoute>} />
+            <Route path="/onboarding/naming" element={<ProtectedRoute><PageTransition><PetNaming /></PageTransition></ProtectedRoute>} />
+            
+            {/* Catch all - redirect to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AnimatePresence>
+      </main>
+    </div>
   );
 }
 
+// Main App component with AuthProvider and ToastProvider wrapper
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AuthProvider>
   );
 }

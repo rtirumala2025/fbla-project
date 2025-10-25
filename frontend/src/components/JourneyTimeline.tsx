@@ -42,11 +42,11 @@ export const JourneyTimeline = () => {
   ];
 
   return (
-    <section className="py-24 md:py-32 px-6" id="how-it-works">
-      <div className="max-w-6xl mx-auto">
+    <section className="py-16 md:py-20 px-6 bg-white" id="how-it-works">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
-          className="text-center mb-20"
+          className="text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -57,7 +57,7 @@ export const JourneyTimeline = () => {
             </span>
           </div>
           
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-50 mb-4">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-4">
             Six steps.
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
@@ -69,10 +69,10 @@ export const JourneyTimeline = () => {
         {/* Non-linear timeline */}
         <div className="relative">
           {/* Connecting line (not perfectly straight) */}
-          <div className="hidden md:block absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-slate-700 to-transparent ml-6" />
+          <div className="hidden md:block absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-gray-300 to-transparent ml-6" />
 
           {/* Steps */}
-          <div className="space-y-16 md:space-y-12">
+          <div className="space-y-10 md:space-y-8">
             {steps.map((step, index) => (
               <motion.div
                 key={index}
@@ -93,14 +93,14 @@ export const JourneyTimeline = () => {
                 <div className={`md:col-span-5 ${
                   index % 2 === 0 ? 'md:col-start-3' : 'md:col-start-8'
                 }`}>
-                  <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 hover:border-indigo-500/50 transition-colors">
+                  <div className="bg-white border border-gray-200 rounded-2xl p-8 hover:border-indigo-500/50 transition-colors shadow-lg hover:shadow-xl">
                     <div className="text-sm font-bold text-indigo-400 mb-2">
                       Step {step.number}
                     </div>
-                    <h3 className="text-2xl md:text-3xl font-black text-slate-50 mb-4">
+                    <h3 className="text-2xl md:text-3xl font-black text-gray-900 mb-4">
                       {step.title}
                     </h3>
-                    <p className="text-slate-400 leading-relaxed text-base md:text-lg">
+                    <p className="text-gray-600 leading-relaxed text-base md:text-lg">
                       {step.description}
                     </p>
                   </div>

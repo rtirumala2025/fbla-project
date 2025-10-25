@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Heart, Zap, Smile, Droplets, Activity, 
-  ShoppingBag, User, HelpCircle, BarChart3,
-  MessageCircle
+  ShoppingBag, BarChart3, MessageCircle
 } from 'lucide-react';
 
 interface PetStats {
@@ -25,7 +24,8 @@ interface PetData {
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const [petData, setPetData] = useState<PetData>({
+  // TODO: Replace with Supabase data fetching in Phase 2
+  const [petData] = useState<PetData>({
     name: localStorage.getItem('petName') || 'Buddy',
     species: localStorage.getItem('selectedSpecies') || 'dog',
     breed: localStorage.getItem('selectedBreed') || 'labrador',
@@ -44,6 +44,39 @@ export const Dashboard = () => {
   const [money, setMoney] = useState(100);
   const [notifications, setNotifications] = useState<string[]>([]);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  
+  // Pet chat messages
+  const petMessages = [
+    "I'm feeling great today! 🌟",
+    "Can we play fetch soon? 🎾",
+    "Thanks for feeding me! 🍖",
+    "I love spending time with you! ❤️",
+    "That was so much fun! 😄",
+    "I'm ready for an adventure! 🗺️",
+    "You're the best pet parent ever! 🏆",
+    "Can we go to the park? 🌳",
+    "I need some belly rubs! 🤗",
+    "Let's learn something new together! 📚",
+    "I'm getting stronger every day! 💪",
+    "Time for a nap? 😴",
+  ];
+  
+  const [currentMessage, setCurrentMessage] = useState(petMessages[0]);
+  const [messageVisible, setMessageVisible] = useState(true);
+  
+  // Rotate pet messages every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageVisible(false);
+      setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * petMessages.length);
+        setCurrentMessage(petMessages[randomIndex]);
+        setMessageVisible(true);
+      }, 300);
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [petMessages]);
 
   // Simulate stat decay over time
   useEffect(() => {
@@ -132,50 +165,20 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Top Navigation */}
-      <nav className="bg-slate-800/50 backdrop-blur-xl border-b border-slate-700 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-xl">
-              🐾
-            </div>
-            <span className="text-xl font-black text-slate-50">Companion</span>
-          </div>
-
-          {/* Money display */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-4 py-2">
-              <span className="text-2xl">💰</span>
-              <span className="font-bold text-amber-400">{money}</span>
-            </div>
-
-            {/* Quick nav */}
-            <div className="hidden md:flex items-center gap-3">
-              <button className="p-2 text-slate-400 hover:text-slate-300 transition-colors">
-                <ShoppingBag className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-slate-400 hover:text-slate-300 transition-colors">
-                <BarChart3 className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-slate-400 hover:text-slate-300 transition-colors">
-                <HelpCircle className="w-5 h-5" />
-              </button>
-              <button className="p-2 text-slate-400 hover:text-slate-300 transition-colors">
-                <User className="w-5 h-5" />
-              </button>
-            </div>
+    <div className="min-h-screen bg-gray-100 pt-16">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Money display */}
+        <div className="flex items-center justify-end mb-6">
+          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-4 py-2">
+            <span className="text-2xl">💰</span>
+            <span className="font-bold text-amber-400">{money}</span>
           </div>
         </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left sidebar - Stats */}
           <div className="lg:col-span-1 space-y-6">
             {/* Pet info card */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6">
+            <div className="bg-white border-2 border-gray-300 rounded-2xl p-6 shadow-xl">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-3xl">
                   {petData.species === 'dog' && '🐕'}
@@ -184,37 +187,37 @@ export const Dashboard = () => {
                   {petData.species === 'rabbit' && '🐰'}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-slate-50">{petData.name}</h2>
-                  <p className="text-sm text-slate-400 capitalize">{petData.breed.replace('-', ' ')}</p>
+                  <h2 className="text-2xl font-black text-gray-900">{petData.name}</h2>
+                  <p className="text-sm text-gray-600 capitalize">{petData.breed.replace('-', ' ')}</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-4 text-sm">
                 <div>
-                  <span className="text-slate-500">Age</span>
-                  <p className="font-bold text-slate-300">{petData.age} days</p>
+                  <span className="text-gray-500">Age</span>
+                  <p className="font-bold text-gray-900">{petData.age} days</p>
                 </div>
                 <div>
-                  <span className="text-slate-500">Level</span>
-                  <p className="font-bold text-slate-300">{petData.level}</p>
+                  <span className="text-gray-500">Level</span>
+                  <p className="font-bold text-gray-900">{petData.level}</p>
                 </div>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-slate-50 mb-4">Stats</h3>
+            <div className="bg-white border-2 border-gray-300 rounded-2xl p-6 shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Stats</h3>
               <div className="space-y-4">
                 {/* Health */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Heart className="w-4 h-4 text-red-400" />
-                      <span className="text-sm font-semibold text-slate-300">Health</span>
+                      <span className="text-sm font-semibold text-gray-700">Health</span>
                     </div>
-                    <span className="text-sm font-bold text-slate-50">{Math.round(stats.health)}%</span>
+                    <span className="text-sm font-bold text-gray-900">{Math.round(stats.health)}%</span>
                   </div>
-                  <div className="h-2 bg-slate-900 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       className={`h-full bg-gradient-to-r ${getStatColor(stats.health)}`}
                       initial={{ width: 0 }}
@@ -229,11 +232,11 @@ export const Dashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Activity className="w-4 h-4 text-orange-400" />
-                      <span className="text-sm font-semibold text-slate-300">Hunger</span>
+                      <span className="text-sm font-semibold text-gray-700">Hunger</span>
                     </div>
-                    <span className="text-sm font-bold text-slate-50">{Math.round(stats.hunger)}%</span>
+                    <span className="text-sm font-bold text-gray-900">{Math.round(stats.hunger)}%</span>
                   </div>
-                  <div className="h-2 bg-slate-900 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       className={`h-full bg-gradient-to-r ${getStatColor(stats.hunger)}`}
                       animate={{ width: `${stats.hunger}%` }}
@@ -247,11 +250,11 @@ export const Dashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Smile className="w-4 h-4 text-yellow-400" />
-                      <span className="text-sm font-semibold text-slate-300">Happiness</span>
+                      <span className="text-sm font-semibold text-gray-700">Happiness</span>
                     </div>
-                    <span className="text-sm font-bold text-slate-50">{Math.round(stats.happiness)}%</span>
+                    <span className="text-sm font-bold text-gray-900">{Math.round(stats.happiness)}%</span>
                   </div>
-                  <div className="h-2 bg-slate-900 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       className={`h-full bg-gradient-to-r ${getStatColor(stats.happiness)}`}
                       animate={{ width: `${stats.happiness}%` }}
@@ -265,11 +268,11 @@ export const Dashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Droplets className="w-4 h-4 text-cyan-400" />
-                      <span className="text-sm font-semibold text-slate-300">Cleanliness</span>
+                      <span className="text-sm font-semibold text-gray-700">Cleanliness</span>
                     </div>
-                    <span className="text-sm font-bold text-slate-50">{Math.round(stats.cleanliness)}%</span>
+                    <span className="text-sm font-bold text-gray-900">{Math.round(stats.cleanliness)}%</span>
                   </div>
-                  <div className="h-2 bg-slate-900 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       className={`h-full bg-gradient-to-r ${getStatColor(stats.cleanliness)}`}
                       animate={{ width: `${stats.cleanliness}%` }}
@@ -283,11 +286,11 @@ export const Dashboard = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Zap className="w-4 h-4 text-purple-400" />
-                      <span className="text-sm font-semibold text-slate-300">Energy</span>
+                      <span className="text-sm font-semibold text-gray-700">Energy</span>
                     </div>
-                    <span className="text-sm font-bold text-slate-50">{Math.round(stats.energy)}%</span>
+                    <span className="text-sm font-bold text-gray-900">{Math.round(stats.energy)}%</span>
                   </div>
-                  <div className="h-2 bg-slate-900 rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       className={`h-full bg-gradient-to-r ${getStatColor(stats.energy)}`}
                       animate={{ width: `${stats.energy}%` }}
@@ -300,14 +303,14 @@ export const Dashboard = () => {
 
             {/* Notifications */}
             {notifications.length > 0 && (
-              <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6">
-                <h3 className="text-lg font-bold text-slate-50 mb-4">Notifications</h3>
+              <div className="bg-white border-2 border-gray-300 rounded-2xl p-6 shadow-xl">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Notifications</h3>
                 <div className="space-y-2">
                   <AnimatePresence>
                     {notifications.map((notif, index) => (
                       <motion.div
                         key={index}
-                        className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-sm text-indigo-300"
+                        className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-amber-700"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
@@ -319,11 +322,39 @@ export const Dashboard = () => {
                 </div>
               </div>
             )}
+            
+            {/* Pet Chat / AI Assistant */}
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-300 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center gap-2 mb-4">
+                <MessageCircle className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-lg font-bold text-gray-900">Pet Chat</h3>
+              </div>
+              <AnimatePresence mode="wait">
+                {messageVisible && (
+                  <motion.div
+                    key={currentMessage}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.5 }}
+                    className="bg-white border border-indigo-200 rounded-xl p-4 shadow-sm"
+                  >
+                    <p className="text-sm text-gray-800 leading-relaxed">
+                      <span className="font-semibold text-indigo-600">{petData.name}:</span>{' '}
+                      {currentMessage}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div className="mt-3 text-xs text-gray-500 text-center">
+                ✨ AI-powered companion
+              </div>
+            </div>
           </div>
 
           {/* Center - Pet display */}
           <div className="lg:col-span-2">
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-3xl p-12 min-h-[600px] flex flex-col">
+            <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-300 rounded-3xl p-12 min-h-[600px] flex flex-col shadow-xl">
               {/* Pet display */}
               <div className="flex-1 flex items-center justify-center mb-8">
                 <motion.div
@@ -403,16 +434,16 @@ export const Dashboard = () => {
               <div className="grid grid-cols-3 gap-3 mt-6">
                 <button 
                   onClick={() => navigate('/shop')}
-                  className="p-4 bg-slate-900/50 border border-slate-700 hover:border-indigo-500/50 text-slate-300 hover:text-indigo-400 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                  className="p-4 bg-white border-2 border-gray-300 hover:border-indigo-500 text-gray-800 hover:text-indigo-600 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
                 >
                   <ShoppingBag className="w-4 h-4" />
                   <span className="hidden md:inline">Shop</span>
                 </button>
-                <button className="p-4 bg-slate-900/50 border border-slate-700 hover:border-indigo-500/50 text-slate-300 hover:text-indigo-400 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
+                <button className="p-4 bg-white border-2 border-gray-300 hover:border-indigo-500 text-gray-800 hover:text-indigo-600 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
                   <BarChart3 className="w-4 h-4" />
                   <span className="hidden md:inline">Analytics</span>
                 </button>
-                <button className="p-4 bg-slate-900/50 border border-slate-700 hover:border-indigo-500/50 text-slate-300 hover:text-indigo-400 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
+                <button className="p-4 bg-white border-2 border-gray-300 hover:border-indigo-500 text-gray-800 hover:text-indigo-600 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
                   <MessageCircle className="w-4 h-4" />
                   <span className="hidden md:inline">AI Help</span>
                 </button>

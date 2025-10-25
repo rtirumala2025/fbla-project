@@ -3,12 +3,27 @@ module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
+  important: true, // Add !important to all utility classes
   theme: {
     extend: {
       colors: {
+        background: {
+          DEFAULT: '#E7E7E7',
+          light: '#E7E7E7',
+          dark: '#1a202c',
+        },
         primary: {
-          600: '#6366f1',
-          700: '#4f46e5',
+          DEFAULT: '#4F46E5',
+          50: '#EEF2FF',
+          100: '#E0E7FF',
+          200: '#C7D2FE',
+          300: '#A5B4FC',
+          400: '#818CF8',
+          500: '#6366F1',
+          600: '#4F46E5',
+          700: '#4338CA',
+          800: '#3730A3',
+          900: '#312E81',
         },
         secondary: {
           600: '#8b5cf6',
@@ -28,6 +43,9 @@ module.exports = {
           800: '#1e293b',
           900: '#0f172a',
         },
+      },
+      backgroundColor: {
+        DEFAULT: '#E7E7E7',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

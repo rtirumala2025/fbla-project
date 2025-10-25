@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../contexts/ToastContext';
 
 interface ShopItem {
   id: string;
   name: string;
-  category: 'food' | 'toy' | 'medicine';
+  category: 'food' | 'toy' | 'medicine' | 'energy';
   price: number;
   emoji: string;
   description: string;
@@ -23,6 +24,8 @@ const shopItems: ShopItem[] = [
   { id: '7', name: 'Chew Toy', category: 'toy', price: 18, emoji: '🦴', description: 'Durable chew', species: ['dog', 'rabbit'] },
   { id: '8', name: 'Medicine', category: 'medicine', price: 25, emoji: '💊', description: 'Health boost', species: ['dog', 'cat', 'bird', 'rabbit'] },
   { id: '9', name: 'Vitamins', category: 'medicine', price: 20, emoji: '💉', description: 'Daily vitamins', species: ['dog', 'cat', 'bird', 'rabbit'] },
+  { id: '10', name: 'Energy Drink', category: 'energy', price: 15, emoji: '⚡', description: 'Instant energy boost', species: ['dog', 'cat', 'bird', 'rabbit'] },
+  { id: '11', name: 'Power Potion', category: 'energy', price: 18, emoji: '🧪', description: 'Maximum energy', species: ['dog', 'cat', 'bird', 'rabbit'] },
 ];
 
 export const Shop = () => {
@@ -30,6 +33,7 @@ export const Shop = () => {
   const [cart, setCart] = useState<string[]>([]);
   const [balance] = useState(100); // TODO: Connect to global state
   const navigate = useNavigate();
+  const toast = useToast();
 
   const filteredItems = selectedCategory === 'all' 
     ? shopItems 
@@ -63,21 +67,22 @@ export const Shop = () => {
     const total = getTotalCost();
     if (balance >= total) {
       // TODO: Implement actual purchase logic with context
+      const itemCount = cart.length;
       setCart([]);
-      alert('Purchase successful! Items added to your inventory.');
+      toast.success(`Purchase successful! ${itemCount} item${itemCount > 1 ? 's' : ''} added to your inventory. 🎉`);
     } else {
-      alert('Not enough coins!');
+      toast.error('Not enough coins! 💰');
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 px-6 py-12">
+    <div className="min-h-screen bg-gray-100 px-6 py-12 pt-20">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-slate-400 hover:text-slate-300 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors font-semibold"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to Dashboard
@@ -101,19 +106,19 @@ export const Shop = () => {
           </div>
         </div>
 
-        <h1 className="text-4xl font-black text-slate-50 mb-2">Shop</h1>
-        <p className="text-slate-400 mb-8">Get supplies for your pet</p>
+        <h1 className="text-4xl font-black text-gray-900 mb-2">Shop</h1>
+        <p className="text-gray-600 mb-8">Get supplies for your pet</p>
 
         {/* Category filters */}
         <div className="flex gap-3 mb-8 flex-wrap">
-          {['all', 'food', 'toy', 'medicine'].map(category => (
+          {['all', 'food', 'toy', 'medicine', 'energy'].map(category => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
               className={`px-4 py-2 rounded-xl font-semibold transition-all capitalize ${
                 selectedCategory === category
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:text-gray-900 border-2 border-gray-300 hover:border-gray-400'
               }`}
             >
               {category}
@@ -128,30 +133,30 @@ export const Shop = () => {
             return (
               <motion.div
                 key={item.id}
-                className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 hover:border-indigo-500/50 transition-all"
+                className="bg-white border-2 border-gray-300 rounded-2xl p-6 hover:border-indigo-500 transition-all shadow-lg hover:shadow-xl"
                 whileHover={{ y: -5 }}
               >
                 <div className="text-5xl mb-4">{item.emoji}</div>
-                <h3 className="text-lg font-bold text-slate-50 mb-2">{item.name}</h3>
-                <p className="text-sm text-slate-400 mb-2">{item.description}</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{item.name}</h3>
+                <p className="text-sm text-gray-600 mb-2">{item.description}</p>
                 
                 {/* Category badge */}
-                <span className="inline-block px-3 py-1 bg-slate-900/50 border border-slate-700 rounded-full text-xs font-semibold text-slate-300 mb-4 capitalize">
+                <span className="inline-block px-3 py-1 bg-gray-100 border border-gray-300 rounded-full text-xs font-semibold text-gray-700 mb-4 capitalize">
                   {item.category}
                 </span>
                 
                 <div className="flex items-center justify-between mt-4">
-                  <span className="text-amber-400 font-bold">{item.price} coins</span>
+                  <span className="text-amber-600 font-bold">{item.price} coins</span>
                   <div className="flex items-center gap-2">
                     {itemCount > 0 && (
                       <>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-colors"
+                          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
                         >
                           -
                         </button>
-                        <span className="text-slate-300 font-bold">{itemCount}</span>
+                        <span className="text-gray-900 font-bold">{itemCount}</span>
                       </>
                     )}
                     <button
@@ -170,19 +175,19 @@ export const Shop = () => {
         {/* Cart summary */}
         {cart.length > 0 && (
           <motion.div
-            className="fixed bottom-6 right-6 bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl max-w-sm"
+            className="fixed bottom-6 right-6 bg-white border-2 border-gray-300 rounded-2xl p-6 shadow-2xl max-w-sm"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h3 className="text-lg font-bold text-slate-50 mb-4">Cart Summary</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Cart Summary</h3>
             <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-slate-300">
+              <div className="flex justify-between text-gray-700">
                 <span>Items:</span>
                 <span>{cart.length}</span>
               </div>
-              <div className="flex justify-between text-lg font-bold text-slate-50">
+              <div className="flex justify-between text-lg font-bold text-gray-900">
                 <span>Total:</span>
-                <span className="text-amber-400">{getTotalCost()} coins</span>
+                <span className="text-amber-600">{getTotalCost()} coins</span>
               </div>
             </div>
             <button
@@ -193,7 +198,7 @@ export const Shop = () => {
               Complete Purchase
             </button>
             {getTotalCost() > balance && (
-              <p className="text-red-400 text-sm mt-2 text-center">Not enough coins!</p>
+              <p className="text-red-600 text-sm mt-2 text-center">Not enough coins!</p>
             )}
           </motion.div>
         )}

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { BookOpen, Award, Users, BarChart2, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 const ValueCard = ({
   title,
@@ -22,7 +22,7 @@ const ValueCard = ({
 }) => {
   return (
     <motion.div
-      className={`group relative overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-800/40 backdrop-blur-sm transition-all duration-500 hover:border-indigo-500/50 ${
+      className={`group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg transition-all duration-500 hover:border-indigo-500/50 hover:shadow-xl ${
         size === 'large' ? 'md:col-span-2' : ''
       }`}
       initial={{ opacity: 0, y: 30 }}
@@ -54,11 +54,11 @@ const ValueCard = ({
 
         {/* Content side */}
         <div className="flex-1 p-8 md:p-12">
-          <h3 className="text-2xl md:text-3xl font-black text-slate-50 mb-4">
+          <h3 className="text-2xl md:text-3xl font-black text-gray-900 mb-4">
             {title}
           </h3>
           
-          <p className="text-slate-400 mb-6 leading-relaxed">
+          <p className="text-gray-600 mb-6 leading-relaxed">
             {description}
           </p>
           
@@ -66,7 +66,7 @@ const ValueCard = ({
             {tags.map((tag, i) => (
               <span 
                 key={i}
-                className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-slate-700/50 text-slate-300"
+                className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700"
               >
                 {tag}
               </span>
@@ -123,11 +123,11 @@ export const ValueProps = () => {
   ];
 
   return (
-    <section className="py-24 md:py-32 px-6 bg-slate-900/30">
+    <section className="py-16 md:py-20 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -139,17 +139,17 @@ export const ValueProps = () => {
             </span>
           </div>
           
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-50 mb-4">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-4">
             Built different.
           </h2>
           
-          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
             No gimmicks. Just real learning through play.
           </p>
         </motion.div>
 
         {/* Grid with broken layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {values.map((value, index) => (
             <ValueCard
               key={index}
