@@ -1,8 +1,6 @@
 import type { Database } from '../types/database.types';
 import { supabase } from '../lib/supabase';
 
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
-
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
@@ -11,19 +9,8 @@ export const profileService = {
    * Get user profile
    */
   async getProfile(userId: string): Promise<Profile | null> {
-    if (useMock) {
-      console.log('🔧 Mock mode: Returning mock profile');
-      return {
-        id: `mock-profile-${userId}`,
-        user_id: userId,
-        username: 'Mock User',
-        coins: 100,
-        avatar_url: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-    }
-
+    console.log('🔵 getProfile called for userId:', userId);
+    
     if (!supabase) {
       throw new Error('Supabase client not initialized');
     }
@@ -37,64 +24,88 @@ export const profileService = {
     if (error) {
       if (error.code === 'PGRST116') {
         // Profile doesn't exist yet
+        console.log('📭 No profile found for user:', userId);
         return null;
       }
-      console.error('Error fetching profile:', error);
+      console.error('❌ Error fetching profile:', error);
       throw error;
     }
 
+    console.log('✅ Profile found:', data);
     return data;
   },
 
   /**
    * Create user profile (called on signup)
+   * Uses the authenticated Supabase session to ensure correct user_id
    */
   async createProfile(userId: string, username: string): Promise<Profile> {
-    console.log('🔵 createProfile called:', { userId, username, useMock });
+    console.log('🔵 createProfile called with userId:', userId, 'username:', username);
     
-    if (useMock) {
-      console.warn('⚠️ Mock mode active - profile will NOT be saved to database');
-      return {
-        id: `mock-profile-${userId}`,
-        user_id: userId,
-        username,
-        coins: 100,
-        avatar_url: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-    }
-
     if (!supabase) {
       throw new Error('Supabase client not initialized. Check environment variables.');
     }
 
-    if (!userId || !username) {
-      throw new Error('userId and username are required');
+    if (!username || !username.trim()) {
+      throw new Error('Username is required');
     }
 
-    console.log('🔵 Inserting profile into Supabase...');
+    // Get the authenticated user from Supabase session
+    console.log('🔵 Getting authenticated user from Supabase session...');
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('❌ Failed to get authenticated user:', userError);
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
+    
+    if (!user) {
+      console.error('❌ No authenticated user found');
+      throw new Error('User not authenticated. Please log in again.');
+    }
+
+    console.log('✅ Authenticated user ID from Supabase:', user.id);
+    console.log('📝 User email:', user.email);
+    
+    // Verify the userId matches the authenticated user
+    if (userId !== user.id) {
+      console.warn('⚠️ userId mismatch! Provided:', userId, 'Authenticated:', user.id);
+      console.log('🔧 Using authenticated user ID:', user.id);
+    }
+
+    // Use the authenticated user's ID for the insert
+    const profileData = {
+      user_id: user.id,
+      username: username.trim(),
+      coins: 100,
+    };
+
+    console.log('🔵 Inserting profile into Supabase profiles table:', profileData);
+    
     const { data, error } = await supabase
       .from('profiles')
-      .insert({
-        user_id: userId,
-        username,
-        coins: 100, // Starting coins
-      })
+      .insert(profileData)
       .select()
       .single();
 
     if (error) {
-      console.error('❌ Profile creation failed:', error);
-      console.error('Error details:', { code: error.code, message: error.message, details: error.details });
+      console.error('❌ Profile creation failed with error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      console.error('Error details:', error.details);
+      console.error('Error hint:', error.hint);
       throw new Error(`Failed to create profile: ${error.message}`);
     }
 
     if (!data) {
+      console.error('❌ Profile insert succeeded but no data returned');
       throw new Error('Profile created but no data returned from database');
     }
 
-    console.log('✅ Profile created successfully in database:', data);
+    console.log('✅✅✅ Profile successfully persisted to database!');
+    console.log('Profile ID:', data.id);
+    console.log('Profile data:', data);
+    
     return data;
   },
 

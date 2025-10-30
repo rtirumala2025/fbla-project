@@ -53,7 +53,11 @@ export const SetupProfile = () => {
     setIsLoading(true);
 
     try {
-      console.log('🔵 SetupProfile: Starting profile creation for user:', currentUser.uid);
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('🔵 SetupProfile: Starting profile creation');
+      console.log('User ID:', currentUser.uid);
+      console.log('Username:', formData.username.trim());
+      console.log('═══════════════════════════════════════════════════════');
       
       // Create user profile and await completion
       const createdProfile = await profileService.createProfile(
@@ -66,7 +70,13 @@ export const SetupProfile = () => {
         throw new Error('Profile creation returned invalid data');
       }
       
-      console.log('✅ SetupProfile: Profile created with ID:', createdProfile.id);
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('✅✅✅ SetupProfile: Profile persisted successfully!');
+      console.log('Profile ID:', createdProfile.id);
+      console.log('Profile user_id:', createdProfile.user_id);
+      console.log('Profile username:', createdProfile.username);
+      console.log('Profile coins:', createdProfile.coins);
+      console.log('═══════════════════════════════════════════════════════');
       
       // Update profile with additional data if provided
       if (formData.avatar) {
@@ -84,7 +94,12 @@ export const SetupProfile = () => {
       // End transition next tick so ProtectedRoute can re-enable normal checks
       setTimeout(() => endTransition(), 0);
     } catch (err: any) {
-      console.error('❌ SetupProfile: Error creating profile:', err);
+      console.error('═══════════════════════════════════════════════════════');
+      console.error('❌❌❌ SetupProfile: PROFILE CREATION FAILED');
+      console.error('Error:', err);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
+      console.error('═══════════════════════════════════════════════════════');
       setError(err.message || 'Failed to create profile. Please try again.');
       setIsLoading(false);
     }
