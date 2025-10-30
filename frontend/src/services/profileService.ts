@@ -38,9 +38,13 @@ export const profileService = {
   /**
    * Create user profile (called on signup)
    * Uses the authenticated Supabase session to ensure correct user_id
+   * Includes retry logic to wait for session to be ready after OAuth
    */
-  async createProfile(userId: string, username: string): Promise<Profile> {
-    console.log('🔵 createProfile called with userId:', userId, 'username:', username);
+  async createProfile(username: string): Promise<Profile> {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🔵 createProfile called');
+    console.log('Username:', username);
+    console.log('═══════════════════════════════════════════════════════');
     
     if (!supabase) {
       throw new Error('Supabase client not initialized. Check environment variables.');
@@ -50,28 +54,44 @@ export const profileService = {
       throw new Error('Username is required');
     }
 
-    // Get the authenticated user from Supabase session
-    console.log('🔵 Getting authenticated user from Supabase session...');
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError) {
-      console.error('❌ Failed to get authenticated user:', userError);
-      throw new Error(`Authentication error: ${userError.message}`);
+    // Wait for authenticated user with retry logic (for OAuth callback timing)
+    console.log('🔵 Waiting for authenticated Supabase session...');
+    let user = null;
+    let attempts = 0;
+    const maxAttempts = 3;
+    const retryDelay = 500; // 500ms between retries
+
+    while (attempts < maxAttempts && !user) {
+      attempts++;
+      console.log(`🔄 Attempt ${attempts}/${maxAttempts} to get authenticated user...`);
+      
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('❌ Error getting user:', userError);
+        if (attempts >= maxAttempts) {
+          throw new Error(`Authentication error: ${userError.message}`);
+        }
+      } else if (currentUser) {
+        user = currentUser;
+        console.log('✅ Authenticated user found!');
+        break;
+      } else {
+        console.log('⏳ No user yet, waiting...');
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
     }
     
     if (!user) {
-      console.error('❌ No authenticated user found');
+      console.error('❌ No authenticated user found after', maxAttempts, 'attempts');
       throw new Error('User not authenticated. Please log in again.');
     }
 
     console.log('✅ Authenticated user ID from Supabase:', user.id);
     console.log('📝 User email:', user.email);
-    
-    // Verify the userId matches the authenticated user
-    if (userId !== user.id) {
-      console.warn('⚠️ userId mismatch! Provided:', userId, 'Authenticated:', user.id);
-      console.log('🔧 Using authenticated user ID:', user.id);
-    }
+    console.log('📝 User metadata:', user.user_metadata);
 
     // Use the authenticated user's ID for the insert
     const profileData = {
@@ -80,20 +100,23 @@ export const profileService = {
       coins: 100,
     };
 
-    console.log('🔵 Inserting profile into Supabase profiles table:', profileData);
+    console.log('🔵 Inserting profile into Supabase profiles table...');
+    console.log('Profile data:', profileData);
     
     const { data, error } = await supabase
       .from('profiles')
-      .insert(profileData)
+      .insert([profileData])
       .select()
       .single();
 
     if (error) {
-      console.error('❌ Profile creation failed with error:', error);
+      console.error('═══════════════════════════════════════════════════════');
+      console.error('❌❌❌ PROFILE INSERT FAILED');
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
       console.error('Error details:', error.details);
       console.error('Error hint:', error.hint);
+      console.error('═══════════════════════════════════════════════════════');
       throw new Error(`Failed to create profile: ${error.message}`);
     }
 
@@ -102,9 +125,14 @@ export const profileService = {
       throw new Error('Profile created but no data returned from database');
     }
 
-    console.log('✅✅✅ Profile successfully persisted to database!');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('✅✅✅ PROFILE SUCCESSFULLY SAVED TO DATABASE!');
     console.log('Profile ID:', data.id);
-    console.log('Profile data:', data);
+    console.log('Profile user_id:', data.user_id);
+    console.log('Profile username:', data.username);
+    console.log('Profile coins:', data.coins);
+    console.log('Profile created_at:', data.created_at);
+    console.log('═══════════════════════════════════════════════════════');
     
     return data;
   },

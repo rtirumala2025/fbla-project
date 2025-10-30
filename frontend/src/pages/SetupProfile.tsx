@@ -50,18 +50,25 @@ export const SetupProfile = () => {
       return;
     }
 
+    // Prevent duplicate submissions
+    if (isLoading) {
+      console.warn('⚠️ Profile creation already in progress, ignoring duplicate submit');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       console.log('═══════════════════════════════════════════════════════');
       console.log('🔵 SetupProfile: Starting profile creation');
-      console.log('User ID:', currentUser.uid);
-      console.log('Username:', formData.username.trim());
+      console.log('Current user UID:', currentUser.uid);
+      console.log('Current user email:', currentUser.email);
+      console.log('Username to save:', formData.username.trim());
       console.log('═══════════════════════════════════════════════════════');
       
       // Create user profile and await completion
+      // Note: createProfile now fetches user ID from Supabase session internally
       const createdProfile = await profileService.createProfile(
-        currentUser.uid, 
         formData.username.trim()
       );
       
@@ -76,6 +83,7 @@ export const SetupProfile = () => {
       console.log('Profile user_id:', createdProfile.user_id);
       console.log('Profile username:', createdProfile.username);
       console.log('Profile coins:', createdProfile.coins);
+      console.log('Timestamp:', new Date().toISOString());
       console.log('═══════════════════════════════════════════════════════');
       
       // Update profile with additional data if provided
@@ -99,8 +107,16 @@ export const SetupProfile = () => {
       console.error('Error:', err);
       console.error('Error message:', err.message);
       console.error('Error stack:', err.stack);
+      console.error('Timestamp:', new Date().toISOString());
       console.error('═══════════════════════════════════════════════════════');
-      setError(err.message || 'Failed to create profile. Please try again.');
+      
+      // Show error to user
+      const errorMessage = err.message || 'Failed to create profile. Please try again.';
+      setError(errorMessage);
+      
+      // Also show browser alert for visibility
+      alert(`Profile Creation Failed:\n\n${errorMessage}\n\nPlease check the console for details and try again.`);
+      
       setIsLoading(false);
     }
   };
