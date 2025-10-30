@@ -45,20 +45,38 @@ export const SetupProfile = () => {
       return;
     }
 
+    if (!currentUser.uid) {
+      setError('Invalid user session. Please try logging in again.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Create user profile
-      await profileService.createProfile(currentUser.uid, formData.username.trim());
+      console.log('🔵 SetupProfile: Starting profile creation for user:', currentUser.uid);
+      
+      // Create user profile and await completion
+      const createdProfile = await profileService.createProfile(
+        currentUser.uid, 
+        formData.username.trim()
+      );
+      
+      // Verify profile was created
+      if (!createdProfile || !createdProfile.id) {
+        throw new Error('Profile creation returned invalid data');
+      }
+      
+      console.log('✅ SetupProfile: Profile created with ID:', createdProfile.id);
       
       // Update profile with additional data if provided
       if (formData.avatar) {
+        console.log('🔵 SetupProfile: Updating avatar...');
         await profileService.updateProfile(currentUser.uid, {
           avatar_url: formData.avatar || null,
         });
       }
 
-      console.log('✅ Profile created successfully');
+      console.log('✅ SetupProfile: Profile setup complete, navigating to dashboard');
       
       // Mark user as returning and navigate explicitly
       markUserAsReturning();
@@ -66,9 +84,8 @@ export const SetupProfile = () => {
       // End transition next tick so ProtectedRoute can re-enable normal checks
       setTimeout(() => endTransition(), 0);
     } catch (err: any) {
-      console.error('❌ Error creating profile:', err);
+      console.error('❌ SetupProfile: Error creating profile:', err);
       setError(err.message || 'Failed to create profile. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
