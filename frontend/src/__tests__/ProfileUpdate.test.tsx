@@ -29,30 +29,34 @@ describe('Username Update and Persistence', () => {
   });
 
   test('updateUsername updates profile in database', async () => {
-    // Mock database update
-    const mockUpdate = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: '1',
-            user_id: mockUserId,
-            username: newUsername,
-            coins: 100,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            avatar_url: null,
-          },
-          error: null,
-        }),
-      }),
+    // Mock database update - need to include .select() in chain
+    const mockSingle = jest.fn().mockResolvedValue({
+      data: {
+        id: '1',
+        user_id: mockUserId,
+        username: newUsername,
+        coins: 100,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        avatar_url: null,
+      },
+      error: null,
     });
 
-    const mockEq = jest.fn().mockReturnValue(mockUpdate);
+    const mockSelect = jest.fn().mockReturnValue({
+      single: mockSingle,
+    });
+
+    const mockEq = jest.fn().mockReturnValue({
+      select: mockSelect,
+    });
+
+    const mockUpdate = jest.fn().mockReturnValue({
+      eq: mockEq,
+    });
 
     (supabase.from as jest.Mock).mockReturnValue({
-      update: jest.fn().mockReturnValue({
-        eq: mockEq,
-      }),
+      update: mockUpdate,
     });
 
     // Mock auth metadata update
@@ -79,29 +83,33 @@ describe('Username Update and Persistence', () => {
 
   test('updateUsername handles auth metadata update failure gracefully', async () => {
     // Mock successful database update
-    const mockUpdate = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: '1',
-            user_id: mockUserId,
-            username: newUsername,
-            coins: 100,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            avatar_url: null,
-          },
-          error: null,
-        }),
-      }),
+    const mockSingle = jest.fn().mockResolvedValue({
+      data: {
+        id: '1',
+        user_id: mockUserId,
+        username: newUsername,
+        coins: 100,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        avatar_url: null,
+      },
+      error: null,
     });
 
-    const mockEq = jest.fn().mockReturnValue(mockUpdate);
+    const mockSelect = jest.fn().mockReturnValue({
+      single: mockSingle,
+    });
+
+    const mockEq = jest.fn().mockReturnValue({
+      select: mockSelect,
+    });
+
+    const mockUpdate = jest.fn().mockReturnValue({
+      eq: mockEq,
+    });
 
     (supabase.from as jest.Mock).mockReturnValue({
-      update: jest.fn().mockReturnValue({
-        eq: mockEq,
-      }),
+      update: mockUpdate,
     });
 
     // Mock auth metadata update failure
@@ -151,29 +159,33 @@ describe('Username Update and Persistence', () => {
   test('updateProfile updates the updated_at timestamp', async () => {
     const now = new Date().toISOString();
     
-    const mockUpdate = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: '1',
-            user_id: mockUserId,
-            username: newUsername,
-            coins: 100,
-            created_at: now,
-            updated_at: now,
-            avatar_url: null,
-          },
-          error: null,
-        }),
-      }),
+    const mockSingle = jest.fn().mockResolvedValue({
+      data: {
+        id: '1',
+        user_id: mockUserId,
+        username: newUsername,
+        coins: 100,
+        created_at: now,
+        updated_at: now,
+        avatar_url: null,
+      },
+      error: null,
     });
 
-    const mockEq = jest.fn().mockReturnValue(mockUpdate);
+    const mockSelect = jest.fn().mockReturnValue({
+      single: mockSingle,
+    });
+
+    const mockEq = jest.fn().mockReturnValue({
+      select: mockSelect,
+    });
+
+    const mockUpdate = jest.fn().mockReturnValue({
+      eq: mockEq,
+    });
 
     (supabase.from as jest.Mock).mockReturnValue({
-      update: jest.fn().mockReturnValue({
-        eq: mockEq,
-      }),
+      update: mockUpdate,
     });
 
     (supabase.auth.updateUser as jest.Mock).mockResolvedValue({
