@@ -160,10 +160,34 @@ export const profileService = {
   },
 
   /**
-   * Update username
+   * Update username (updates both profile and auth metadata)
    */
   async updateUsername(userId: string, username: string): Promise<Profile> {
-    return await this.updateProfile(userId, { username });
+    console.log('🔵 updateUsername called for userId:', userId, 'new username:', username);
+    
+    // Update the profile in the database
+    const updatedProfile = await this.updateProfile(userId, { username });
+    
+    // Also update the user metadata in Supabase Auth
+    try {
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          display_name: username,
+        },
+      });
+      
+      if (authError) {
+        console.warn('⚠️ Failed to update auth metadata:', authError);
+        // Don't throw - profile update succeeded, auth metadata update is secondary
+      } else {
+        console.log('✅ Auth metadata updated successfully');
+      }
+    } catch (error) {
+      console.warn('⚠️ Error updating auth metadata:', error);
+      // Don't throw - profile update succeeded
+    }
+    
+    return updatedProfile;
   },
 
   /**

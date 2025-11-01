@@ -67,19 +67,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Method to refresh user state after profile creation
+  // Method to refresh user state after profile creation or update
   const refreshUserState = async () => {
     console.log('🔄 AuthContext: Refreshing user state...');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const mappedUser = mapSupabaseUser(session.user);
-        if (mappedUser) {
-          const isNew = await checkUserProfile(mappedUser.uid);
-          console.log('🔄 AuthContext: Refreshed - isNewUser:', isNew);
-          setIsNewUser(isNew);
-          setCurrentUser(mappedUser);
-        }
+        // Fetch the latest profile data from the database
+        const profile = await profileService.getProfile(session.user.id);
+        
+        // Create updated user object with latest username from profile
+        const updatedUser: User = {
+          uid: session.user.id,
+          email: session.user.email || null,
+          displayName: profile?.username || session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || null,
+        };
+        
+        const isNew = profile === null;
+        console.log('🔄 AuthContext: Refreshed - isNewUser:', isNew);
+        console.log('🔄 AuthContext: Updated displayName from profile:', updatedUser.displayName);
+        setIsNewUser(isNew);
+        setCurrentUser(updatedUser);
       }
     } catch (error) {
       console.error('Error refreshing user state:', error);
