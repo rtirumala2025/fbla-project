@@ -10,6 +10,9 @@
     "ajv": "^6.12.6",
     "ajv-keywords": "^3.5.2",
     "axios": "^1.6.2",
+    "canvas-confetti": "^1.9.3",
+    "classnames": "^2.5.1",
+    "dayjs": "^1.11.18",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.546.0",
     "react": "^18.2.0",
@@ -19,6 +22,7 @@
     "react-router-dom": "^6.18.0",
     "react-scripts": "5.0.1",
     "react-toastify": "^10.0.4",
+    "recharts": "^2.15.4",
     "web-vitals": "^2.1.4",
     "zustand": "^4.4.7"
   },
@@ -26,6 +30,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:integration": "react-scripts test --testPathPattern=Integration --watchAll=false",
+    "test:e2e": "cd .. && npx playwright test",
+    "test:e2e:ui": "cd .. && npx playwright test --ui",
+    "test:e2e:headed": "cd .. && npx playwright test --headed",
+    "lint": "eslint src --ext .ts,.tsx || true",
     "eject": "react-scripts eject",
     "verify:supabase": "node verify-supabase.js"
   },
@@ -48,9 +57,15 @@
     ]
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/canvas-confetti": "^1.6.4",
+    "@types/classnames": "^2.3.4",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.42",
     "@types/react-dom": "^18.2.18",
+    "@types/recharts": "^1.8.29",
+    "jest-axe": "^9.0.0",
+    "playwright": "^1.56.1",
     "typescript": "^4.9.5"
   }
 }

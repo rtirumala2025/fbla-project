@@ -141,6 +141,12 @@ export const profileService = {
    * Update user profile
    */
   async updateProfile(userId: string, updates: ProfileUpdate): Promise<Profile> {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🔵 updateProfile called');
+    console.log('  User ID:', userId);
+    console.log('  Updates:', updates);
+    console.log('  Timestamp:', new Date().toISOString());
+    
     const { data, error } = await supabase
       .from('profiles')
       .update({
@@ -152,10 +158,19 @@ export const profileService = {
       .single();
 
     if (error) {
-      console.error('Error updating profile:', error);
+      console.error('═══════════════════════════════════════════════════════');
+      console.error('❌ Profile update FAILED');
+      console.error('  Error code:', error.code);
+      console.error('  Error message:', error.message);
+      console.error('  Error details:', error.details);
+      console.error('═══════════════════════════════════════════════════════');
       throw error;
     }
 
+    console.log('✅ Profile updated successfully');
+    console.log('  Updated data:', data);
+    console.log('═══════════════════════════════════════════════════════');
+    
     return data;
   },
 
