@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { profileService } from '../services/profileService';
+import { withTimeout, isNetworkError } from '../utils/authHelpers';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
@@ -59,11 +60,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      const profile = await profileService.getProfile(userId);
+      // Add timeout to profile check (10 seconds)
+      const profile = await withTimeout(
+        profileService.getProfile(userId),
+        10000,
+        'Profile check timed out'
+      );
+      
       return profile === null; // true if no profile exists (new user)
     } catch (error) {
       console.error('Error checking user profile:', error);
-      return true; // Assume new user if error occurs
+      
+      // On network timeout, assume profile exists (safer default)
+      if (isNetworkError(error)) {
+        console.warn('Network error during profile check, assuming profile exists');
+        return false;
+      }
+      
+      return true; // Assume new user if other error occurs
     }
   };
 
@@ -208,10 +222,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // Add timeout wrapper (15 seconds)
+    const { data, error } = await withTimeout(
+      supabase.auth.signInWithPassword({
+        email,
+        password,
+      }),
+      15000,
+      'Sign-in request timed out. Please check your internet connection.'
+    );
 
     if (error) {
       throw new Error(error.message);
@@ -292,12 +311,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔵 AuthContext: Redirecting to Google OAuth');
       console.log('  Redirect URL:', redirectUrl);
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-        },
-      });
+      // Add timeout to OAuth initiation (10 seconds)
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUrl,
+          },
+        }),
+        10000,
+        'Google sign-in request timed out. Please check your internet connection.'
+      );
 
       if (error) {
         console.error('❌ Google sign-in error:', error);

@@ -4,6 +4,7 @@ import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
+import { formatAuthError, isNetworkError } from '../utils/authHelpers';
 import { validateSupabaseOAuth, generateSetupChecklist } from '../utils/validateSupabaseOAuth';
 import { OAuthConfigStatus } from '../components/auth/OAuthConfigStatus';
 
@@ -51,8 +52,9 @@ export const Login = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Invalid email or password. Please try again.');
+      setError(formatAuthError(err));
     } finally {
+      // ALWAYS reset loading state, even if error occurred
       setIsLoading(false);
     }
   };
@@ -64,10 +66,11 @@ export const Login = () => {
     
     try {
       await signInWithGoogle();
-      // Don't reset loading state - we're redirecting
+      // Don't reset loading state - we're redirecting to Google
     } catch (err: any) {
       console.error('❌ Google sign-in error:', err);
-      setError(err.message || 'Google sign-in failed. Please try again.');
+      setError(formatAuthError(err));
+      // Reset loading state on error
       setIsLoading(false);
     }
   };
