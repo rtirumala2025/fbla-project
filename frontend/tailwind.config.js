@@ -7,29 +7,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        primary: '#FF8B5A',
+        secondary: '#FFD166',
+        accent: '#06D6A0',
+        cream: '#FFF8F0',
+        charcoal: '#2D3142',
         background: {
           DEFAULT: '#E7E7E7',
           light: '#E7E7E7',
           dark: '#1a202c',
-        },
-        primary: {
-          DEFAULT: '#4F46E5',
-          50: '#EEF2FF',
-          100: '#E0E7FF',
-          200: '#C7D2FE',
-          300: '#A5B4FC',
-          400: '#818CF8',
-          500: '#6366F1',
-          600: '#4F46E5',
-          700: '#4338CA',
-          800: '#3730A3',
-          900: '#312E81',
-        },
-        secondary: {
-          600: '#8b5cf6',
-        },
-        accent: {
-          500: '#06b6d4',
         },
         slate: {
           50: '#f8fafc',
@@ -43,6 +29,12 @@ module.exports = {
           800: '#1e293b',
           900: '#0f172a',
         },
+      },
+      borderRadius: {
+        pet: '12px',
+      },
+      boxShadow: {
+        soft: '0 6px 18px rgba(45,49,66,0.08)'
       },
       backgroundColor: {
         DEFAULT: '#E7E7E7',

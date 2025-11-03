@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, Home, ShoppingCart, User, PawPrint } from 'lucide-react';
+import { Menu, X, LogOut, Home, ShoppingCart, User, PawPrint, Heart, Gamepad2, DollarSign, BarChart3 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsMoreMenuOpen(false);
   }, [location.pathname]);
   
   // Get auth state
@@ -27,15 +29,21 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  if (loading) {
-    return (
-      <header className="bg-gray-900 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="h-8 w-32 bg-gray-700 rounded animate-pulse"></div>
-        </div>
-      </header>
-    );
-  }
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMoreMenuOpen) {
+        const target = event.target as Element;
+        if (!target.closest('[data-dropdown]')) {
+          setIsMoreMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMoreMenuOpen]);
+
 
   const handleLogout = async () => {
     try {
@@ -46,11 +54,15 @@ const Header = () => {
     }
   };
 
-  // Navigation links for authenticated users (with icons)
-  const authNavLinks = [
-    { name: 'Dashboard', to: '/dashboard', icon: <Home size={18} className="mr-2" /> },
-    { name: 'Shop', to: '/shop', icon: <ShoppingCart size={18} className="mr-2" /> },
-    { name: 'Profile', to: '/profile', icon: <User size={18} className="mr-2" /> },
+  // Navigation links for all users - for testing purposes
+  const allNavLinks = [
+    { name: 'Dashboard', to: '/dashboard', icon: <Home size={20} /> },
+    { name: 'Feed', to: '/feed', icon: <Heart size={20} /> },
+    { name: 'Play', to: '/play', icon: <Gamepad2 size={20} /> },
+    { name: 'Earn', to: '/earn', icon: <DollarSign size={20} /> },
+    { name: 'Budget', to: '/budget', icon: <BarChart3 size={20} /> },
+    { name: 'Shop', to: '/shop', icon: <ShoppingCart size={20} /> },
+    { name: 'Profile', to: '/profile', icon: <User size={20} /> },
   ];
 
   // Navigation links for public users (anchor links to landing page sections)
@@ -65,77 +77,65 @@ const Header = () => {
     <header 
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-lg' : 'bg-white/90'
-      } text-black`}
+      } text-black border-b border-gray-100`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <NavLink to="/" className="flex items-center space-x-2 group">
-            <PawPrint className="h-6 w-6 text-indigo-600 group-hover:text-indigo-700 transition-colors" />
-            <span className="text-xl font-bold text-black">Companion</span>
+      <div className="max-w-[95vw] mx-auto px-8">
+        <div className="flex items-center justify-between h-20">
+          {/* Left Section - Logo */}
+          <NavLink to="/" className="flex items-center space-x-3 group flex-shrink-0">
+            <PawPrint className="h-8 w-8 text-indigo-600 group-hover:text-indigo-700 transition-colors" />
+            <span className="text-2xl font-bold text-black">Companion</span>
           </NavLink>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {currentUser ? (
-              // Authenticated user navigation with icons
-              authNavLinks.map((link) => (
-                <NavLink 
-                  key={link.to}
-                  to={link.to} 
-                  className={({ isActive }) => `flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive 
-                      ? 'text-white bg-indigo-600' 
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-black'
-                  }`}
-                >
-                  {link.icon}
-                  {link.name}
-                </NavLink>
-              ))
-            ) : (
-              // Public navigation (anchor links)
-              publicNavLinks.map((link) => (
-                <a
-                  key={link.to}
-                  href={link.to}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-black transition-colors relative group"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const target = document.querySelector(link.to);
-                    if (target) {
-                      target.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                >
-                  {link.name}
-                  <span className="absolute bottom-1 left-4 right-4 h-0.5 bg-gradient-to-r from-indigo-600 to-violet-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
-                </a>
-              ))
-            )}
-          </nav>
+          {/* Center Section - Navigation (Only when logged in and not loading) */}
+          {!loading && currentUser && (
+            <nav className="hidden lg:flex items-center justify-center flex-1 mx-12">
+              <div className="flex items-center gap-6">
+                {allNavLinks.map((link) => (
+                  <NavLink 
+                    key={link.to}
+                    to={link.to} 
+                    className={({ isActive }) => `flex items-center gap-2 px-5 py-3 rounded-lg text-base font-semibold transition-all ${
+                      isActive 
+                        ? 'text-white bg-indigo-600 shadow-md' 
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-black'
+                    }`}
+                  >
+                    {link.icon}
+                    <span>{link.name}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </nav>
+          )}
 
-          {/* Auth Buttons */}
-          <div className="flex items-center space-x-3">
-            {currentUser ? (
-              <button
-                onClick={handleLogout}
-                className="hidden md:flex items-center px-4 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors group"
-              >
-                <LogOut size={16} className="mr-2 group-hover:animate-pulse" />
-                <span>Sign Out</span>
-              </button>
+          {/* Right Section - Auth Buttons */}
+          <div className="flex items-center gap-6 flex-shrink-0">
+            {!loading && currentUser ? (
+              <>
+                {/* Welcome message for logged-in users */}
+                <div className="hidden lg:block text-sm text-gray-600">
+                  <span className="font-medium">Welcome, {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}! 👋</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="hidden lg:flex items-center gap-2 px-5 py-3 rounded-lg text-base font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors group"
+                >
+                  <LogOut size={20} className="group-hover:animate-pulse" />
+                  <span>Sign Out</span>
+                </button>
+              </>
             ) : (
               <>
                 <NavLink
                   to="/login"
-                  className="hidden md:block px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-black transition-colors"
+                  className="hidden lg:block px-5 py-3 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-100 hover:text-black transition-colors"
                 >
                   Log in
                 </NavLink>
                 <NavLink
-                  to="/register"
-                  className="hidden md:block px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 transition-opacity shadow-lg hover:shadow-indigo-500/20"
+                  to="/signup"
+                  className="hidden lg:block px-5 py-3 rounded-lg text-base font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 transition-opacity shadow-lg hover:shadow-indigo-500/20"
                 >
                   Get Started
                 </NavLink>
@@ -172,7 +172,13 @@ const Header = () => {
             <div className="px-2 pt-2 pb-4 space-y-1">
               {currentUser ? (
                 <>
-                  {authNavLinks.map((link) => (
+                  {/* Welcome message for mobile */}
+                  <div className="px-4 py-3 text-sm text-gray-600 bg-gray-50 rounded-lg mb-2">
+                    <span className="font-medium">Welcome, {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}! 👋</span>
+                  </div>
+                  
+                  {/* Show page navigation for logged-in users */}
+                  {allNavLinks.map((link) => (
                     <NavLink
                       key={link.to}
                       to={link.to}
@@ -183,17 +189,20 @@ const Header = () => {
                       {link.name}
                     </NavLink>
                   ))}
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full flex items-center px-4 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <LogOut size={18} className="mr-2" />
-                    Sign Out
-                  </button>
                 </>
+              ) : null}
+              
+              {currentUser ? (
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center px-4 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <LogOut size={18} className="mr-2" />
+                  Sign Out
+                </button>
               ) : (
                 <>
                   <NavLink
@@ -232,13 +241,13 @@ const Header = () => {
                     >
                       Log in
                     </NavLink>
-                    <NavLink
-                      to="/register"
-                      className="block px-4 py-3 text-center text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 rounded-lg transition-opacity mx-2 mt-2"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Get Started
-                    </NavLink>
+                        <NavLink
+                          to="/signup"
+                          className="block px-4 py-3 text-center text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 rounded-lg transition-opacity mx-2 mt-2"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Get Started
+                        </NavLink>
                   </div>
                 </>
               )}

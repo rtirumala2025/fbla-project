@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../common/Button';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Loader2, Heart, Zap, Coffee, Droplet } from 'lucide-react';
 import PetEmotionCard from './PetEmotionCard';
@@ -125,11 +126,15 @@ export const AIChat: React.FC = () => {
         
         const action = commandMap[command.toLowerCase()] || 'talk';
         
+        // Get Supabase access token for authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || '';
+
         response = await fetch('/api/pet/interact', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': currentUser ? `Bearer ${await currentUser.getIdToken()}` : '',
+            'Authorization': token ? `Bearer ${token}` : '',
           },
           body: JSON.stringify({
             session_id: sessionId,
@@ -139,11 +144,15 @@ export const AIChat: React.FC = () => {
         });
       } else {
         // Regular chat message
+        // Get Supabase access token for authentication
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || '';
+
         response = await fetch('/api/ai/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': currentUser ? `Bearer ${await currentUser.getIdToken()}` : '',
+            'Authorization': token ? `Bearer ${token}` : '',
           },
           body: JSON.stringify({
             session_id: sessionId,

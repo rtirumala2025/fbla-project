@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   Heart, Zap, Smile, Droplets, Activity, 
   ShoppingBag, BarChart3, MessageCircle
@@ -24,6 +25,7 @@ interface PetData {
 
 export const Dashboard = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   // TODO: Replace with Supabase data fetching in Phase 2
   const [petData] = useState<PetData>({
     name: localStorage.getItem('petName') || 'Buddy',
@@ -46,7 +48,7 @@ export const Dashboard = () => {
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   
   // Pet chat messages
-  const petMessages = [
+  const petMessages = useMemo(() => [
     "I'm feeling great today! 🌟",
     "Can we play fetch soon? 🎾",
     "Thanks for feeding me! 🍖",
@@ -59,7 +61,7 @@ export const Dashboard = () => {
     "Let's learn something new together! 📚",
     "I'm getting stronger every day! 💪",
     "Time for a nap? 😴",
-  ];
+  ], []);
   
   const [currentMessage, setCurrentMessage] = useState(petMessages[0]);
   const [messageVisible, setMessageVisible] = useState(true);
@@ -165,59 +167,73 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 pt-16">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-cream pt-24">
+      <div className="max-w-[90vw] mx-auto px-8 py-10">
+        {/* Welcome message */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-4xl font-bold text-charcoal mb-2">
+            Welcome{currentUser?.displayName ? `, ${currentUser.displayName}` : ''}! 👋
+          </h1>
+          <p className="text-lg text-gray-600">
+            Ready to take care of your virtual pet today?
+          </p>
+        </motion.div>
+
         {/* Money display */}
-        <div className="flex items-center justify-end mb-6">
-          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-4 py-2">
-            <span className="text-2xl">💰</span>
-            <span className="font-bold text-amber-400">{money}</span>
+        <div className="flex items-center justify-end mb-8">
+          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-full px-6 py-3">
+            <span className="text-3xl">💰</span>
+            <span className="font-bold text-amber-600 text-xl">{money}</span>
           </div>
         </div>
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-10">
           {/* Left sidebar - Stats */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-8">
             {/* Pet info card */}
-            <div className="bg-white border-2 border-gray-300 rounded-2xl p-6 shadow-xl">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-3xl">
+            <div className="bg-white rounded-pet p-8 shadow-soft">
+              <div className="flex items-center gap-5 mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl flex items-center justify-center text-4xl">
                   {petData.species === 'dog' && '🐕'}
                   {petData.species === 'cat' && '🐱'}
                   {petData.species === 'bird' && '🐦'}
                   {petData.species === 'rabbit' && '🐰'}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900">{petData.name}</h2>
-                  <p className="text-sm text-gray-600 capitalize">{petData.breed.replace('-', ' ')}</p>
+                  <h2 className="text-3xl font-black text-charcoal">{petData.name}</h2>
+                  <p className="text-base text-gray-600 capitalize">{petData.breed.replace('-', ' ')}</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-6 text-base">
                 <div>
                   <span className="text-gray-500">Age</span>
-                  <p className="font-bold text-gray-900">{petData.age} days</p>
+                  <p className="font-bold text-charcoal text-lg">{petData.age} days</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Level</span>
-                  <p className="font-bold text-gray-900">{petData.level}</p>
+                  <p className="font-bold text-charcoal text-lg">{petData.level}</p>
                 </div>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="bg-white border-2 border-gray-300 rounded-2xl p-6 shadow-xl">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Stats</h3>
-              <div className="space-y-4">
+            <div className="bg-white rounded-pet p-8 shadow-soft">
+              <h3 className="text-2xl font-bold text-charcoal mb-6">Stats</h3>
+              <div className="space-y-5">
                 {/* Health */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Heart className="w-4 h-4 text-red-400" />
-                      <span className="text-sm font-semibold text-gray-700">Health</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <Heart className="w-5 h-5 text-red-400" />
+                      <span className="text-base font-semibold text-gray-700">Health</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-900">{Math.round(stats.health)}%</span>
+                    <span className="text-base font-bold text-charcoal">{Math.round(stats.health)}%</span>
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       className={`h-full bg-gradient-to-r ${getStatColor(stats.health)}`}
                       initial={{ width: 0 }}

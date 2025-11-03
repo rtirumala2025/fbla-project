@@ -1,4 +1,14 @@
-import { supabase } from '../lib/supabase';
+const useMock = process.env.REACT_APP_USE_MOCK === 'true';
+
+// Import supabase only when not in mock mode
+let supabase: any = null;
+if (!useMock) {
+  try {
+    supabase = require('../lib/supabase').supabase;
+  } catch (error) {
+    console.warn('Failed to import supabase, using mock mode');
+  }
+}
 import type { Database } from '../types/database.types';
 
 type Pet = Database['public']['Tables']['pets']['Row'];

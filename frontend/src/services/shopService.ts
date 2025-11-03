@@ -1,9 +1,19 @@
-import { supabase } from '../lib/supabase';
 import type { Database } from '../types/database.types';
+
+const useMock = process.env.REACT_APP_USE_MOCK === 'true';
+
+// Import supabase only when not in mock mode
+let supabase: any = null;
+if (!useMock) {
+  try {
+    supabase = require('../lib/supabase').supabase;
+  } catch (error) {
+    console.warn('Failed to import supabase, using mock mode');
+  }
+}
 
 type ShopItem = Database['public']['Tables']['shop_items']['Row'];
 type Transaction = Database['public']['Tables']['transactions']['Insert'];
-type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export const shopService = {
   /**

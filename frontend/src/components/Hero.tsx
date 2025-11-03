@@ -14,7 +14,7 @@ export const Hero = () => {
       <div className="max-w-7xl mx-auto">
         {/* Badge */}
         <motion.div
-          className="flex items-center justify-center gap-3 mb-6"
+          className="flex items-center justify-center gap-3 mb-6 mt-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -55,7 +55,7 @@ export const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
         >
-          <Button variant="primary" size="lg" href="#start" className="mx-auto">
+          <Button variant="primary" size="lg" href="#start">
             Start Your Journey
           </Button>
         </motion.div>

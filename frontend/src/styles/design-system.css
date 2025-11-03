@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design Tokens: CSS variables allow future theming and high-contrast mode */
+:root {
+  --color-primary: #FF8B5A;
+  --color-secondary: #FFD166;
+  --color-accent: #06D6A0;
+  --color-cream: #FFF8F0;
+  --color-charcoal: #2D3142;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-cream: #1f2333; /* darker background variant */
+    --color-charcoal: #ECEFF4; /* light text on dark */
+  }
+}
+
+.high-contrast {
+  --color-primary: #ff6a00;
+  --color-secondary: #ffd000;
+  --color-accent: #00e19b;
+  --color-cream: #ffffff;
+  --color-charcoal: #000000;
+}
+
+@layer base {
+  html, body, #root {
+    background-color: var(--color-cream);
+    color: var(--color-charcoal);
+  }
+}
+
+@layer components {
+  .ds-card {
+    @apply bg-white rounded-pet shadow-soft border border-slate-200;
+  }
+  .ds-header {
+    @apply text-charcoal font-black tracking-tight;
+  }
+  .btn-primary {
+    @apply bg-primary text-white rounded-pet px-4 py-2 font-bold hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+  .btn-secondary {
+    @apply bg-secondary text-charcoal rounded-pet px-4 py-2 font-bold hover:opacity-95;
+  }
+  .token-bg-primary { background-color: var(--color-primary); }
+  .token-bg-secondary { background-color: var(--color-secondary); }
+  .token-bg-accent { background-color: var(--color-accent); }
+  .token-bg-cream { background-color: var(--color-cream); }
+  .token-text-charcoal { color: var(--color-charcoal); }
+}
+
+
