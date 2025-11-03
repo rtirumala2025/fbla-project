@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { profileService } from '../services/profileService';
 import { withTimeout, isNetworkError } from '../utils/authHelpers';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { User as SupabaseUser, AuthResponse, OAuthResponse } from '@supabase/supabase-js';
 
 interface User {
   uid: string;
@@ -223,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Add timeout wrapper (15 seconds)
-    const { data, error } = await withTimeout(
+    const authResponse = await withTimeout<AuthResponse>(
       supabase.auth.signInWithPassword({
         email,
         password,
@@ -231,6 +231,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       15000,
       'Sign-in request timed out. Please check your internet connection.'
     );
+    
+    const { data, error } = authResponse;
 
     if (error) {
       throw new Error(error.message);
@@ -312,7 +314,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('  Redirect URL:', redirectUrl);
       
       // Add timeout to OAuth initiation (10 seconds)
-      const { data, error } = await withTimeout(
+      const oauthResponse = await withTimeout<OAuthResponse>(
         supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
@@ -322,6 +324,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         10000,
         'Google sign-in request timed out. Please check your internet connection.'
       );
+      
+      const { data, error } = oauthResponse;
 
       if (error) {
         console.error('❌ Google sign-in error:', error);
