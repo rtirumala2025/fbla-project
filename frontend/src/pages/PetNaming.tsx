@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { usePet } from '../context/PetContext';
+import { useToast } from '../contexts/ToastContext';
 
 const randomNames = {
   dog: ['Max', 'Buddy', 'Charlie', 'Cooper', 'Rocky', 'Duke', 'Bear', 'Zeus', 'Tucker', 'Oliver'],
@@ -14,7 +16,10 @@ export const PetNaming = () => {
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
   const [breed, setBreed] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
   const navigate = useNavigate();
+  const { createPet } = usePet();
+  const toast = useToast();
 
   useEffect(() => {
     const storedSpecies = localStorage.getItem('selectedSpecies');
@@ -35,11 +40,26 @@ export const PetNaming = () => {
     setName(randomName);
   };
 
-  const handleContinue = () => {
-    if (name.trim()) {
-      localStorage.setItem('petName', name);
+  const handleContinue = async () => {
+    if (!name.trim()) return;
+    
+    setIsCreating(true);
+    try {
+      // Create pet in database via PetContext
+      await createPet(name.trim(), species);
+      
+      // Clean up temporary localStorage data
+      localStorage.removeItem('selectedSpecies');
+      localStorage.removeItem('selectedBreed');
+      
+      toast.success(`Welcome, ${name}! 🎉`);
+      
       // Redirect to dashboard
       navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Failed to create pet:', error);
+      toast.error(error.message || 'Failed to create pet');
+      setIsCreating(false);
     }
   };
 
@@ -136,11 +156,20 @@ export const PetNaming = () => {
             
             <button
               onClick={handleContinue}
-              disabled={!name.trim()}
+              disabled={!name.trim() || isCreating}
               className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Start Journey
-              <ArrowRight className="w-5 h-5" />
+              {isCreating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Creating...
+                </>
+              ) : (
+                <>
+                  Start Journey
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           </div>
         </motion.div>
