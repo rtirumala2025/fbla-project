@@ -7,6 +7,7 @@
 1. Open your Supabase project dashboard
 2. Navigate to **SQL Editor**
 3. Copy and paste the contents of each migration file in order:
+   - `000_profiles_table.sql` (MUST BE FIRST - creates core profiles table)
    - `001_user_preferences.sql`
    - `002_pets_table_complete.sql`
 4. Click **Run** for each migration
@@ -20,7 +21,8 @@ cd supabase
 # Apply migrations
 supabase db push
 
-# Or apply individually
+# Or apply individually (IN ORDER)
+supabase db execute --file migrations/000_profiles_table.sql
 supabase db execute --file migrations/001_user_preferences.sql
 supabase db execute --file migrations/002_pets_table_complete.sql
 ```
@@ -31,7 +33,8 @@ supabase db execute --file migrations/002_pets_table_complete.sql
 # Get connection string from Supabase dashboard
 psql "postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT].supabase.co:5432/postgres"
 
-# Then run each migration file
+# Then run each migration file (IN ORDER)
+\i migrations/000_profiles_table.sql
 \i migrations/001_user_preferences.sql
 \i migrations/002_pets_table_complete.sql
 ```
@@ -41,6 +44,12 @@ psql "postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT].supabase.co:5432/p
 After applying migrations, verify tables exist:
 
 ```sql
+-- Check profiles table
+SELECT table_name, column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'profiles'
+AND table_schema = 'public';
+
 -- Check user_preferences table
 SELECT table_name, column_name, data_type
 FROM information_schema.columns
@@ -56,13 +65,13 @@ AND table_schema = 'public';
 -- Verify RLS is enabled
 SELECT schemaname, tablename, rowsecurity
 FROM pg_tables
-WHERE tablename IN ('user_preferences', 'pets')
+WHERE tablename IN ('profiles', 'user_preferences', 'pets')
 AND schemaname = 'public';
 
 -- Check RLS policies
 SELECT schemaname, tablename, policyname, cmd
 FROM pg_policies
-WHERE tablename IN ('user_preferences', 'pets');
+WHERE tablename IN ('profiles', 'user_preferences', 'pets');
 ```
 
 ## Rollback (if needed)
