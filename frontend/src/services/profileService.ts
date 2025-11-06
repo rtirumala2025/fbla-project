@@ -170,7 +170,7 @@ export const profileService = {
     console.log('✅ Profile updated successfully');
     console.log('  Updated data:', data);
     console.log('═══════════════════════════════════════════════════════');
-    
+
     return data;
   },
 

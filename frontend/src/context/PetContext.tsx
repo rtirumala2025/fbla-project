@@ -35,16 +35,16 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
   // Load pet data from Supabase when userId changes
   const loadPet = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      if (!userId) {
-        setPet(null);
-        setLoading(false);
-        return;
-      }
+      setLoading(true);
+      setError(null);
       
+      try {
+        if (!userId) {
+          setPet(null);
+        setLoading(false);
+          return;
+        }
+        
       console.log('🔵 Loading pet for user:', userId);
       const { data, error } = await supabase
         .from('pets')
@@ -84,12 +84,12 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         console.log('📝 No pet found for user');
         setPet(null);
       }
-    } catch (err) {
+      } catch (err) {
       console.error('❌ Error loading pet:', err);
-      setError('Failed to load pet data');
-    } finally {
-      setLoading(false);
-    }
+        setError('Failed to load pet data');
+      } finally {
+        setLoading(false);
+      }
   }, [userId]);
 
   useEffect(() => {
@@ -166,11 +166,11 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         .from('pets')
         .insert({
           user_id: userId,
-          name,
+        name,
           species: type,
-          breed: 'Mixed',
-          age: 0,
-          level: 1,
+        breed: 'Mixed',
+        age: 0,
+        level: 1,
           health: 100,
           hunger: 75,
           happiness: 80,

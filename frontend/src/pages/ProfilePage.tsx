@@ -83,13 +83,13 @@ export const ProfilePage = () => {
       console.log('✅ ProfilePage: Profile updated successfully:', updatedProfile);
       
       setUserData(updatedProfile);
-      setIsEditingProfile(false);
+    setIsEditingProfile(false);
       
       // Refresh the auth context to update the display name everywhere
       await refreshUserState();
       console.log('✅ ProfilePage: Auth state refreshed');
       
-      toast.success('Profile updated successfully! 🎉');
+    toast.success('Profile updated successfully! 🎉');
     } catch (error) {
       console.error('❌ Error updating profile:', error);
       toast.error('Failed to update profile');
@@ -124,8 +124,8 @@ export const ProfilePage = () => {
       
       console.log('✅ ProfilePage: Pet updated successfully:', updatedPet);
       setPetData(updatedPet);
-      setIsEditingPet(false);
-      toast.success(`Pet renamed to ${tempPetName}! 🐾`);
+    setIsEditingPet(false);
+    toast.success(`Pet renamed to ${tempPetName}! 🐾`);
     } catch (error) {
       console.error('❌ Error updating pet:', error);
       toast.error('Failed to update pet name');
@@ -312,85 +312,85 @@ export const ProfilePage = () => {
             <div className="space-y-4">
               {petData ? (
                 <>
-                  {/* Pet Name */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Pet Name
-                    </label>
-                    {isEditingPet ? (
-                      <input
-                        type="text"
-                        value={tempPetName}
-                        onChange={(e) => setTempPetName(e.target.value)}
+              {/* Pet Name */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Pet Name
+                </label>
+                {isEditingPet ? (
+                  <input
+                    type="text"
+                    value={tempPetName}
+                    onChange={(e) => setTempPetName(e.target.value)}
                         disabled={saving}
                         className="w-full px-4 py-2 border-2 border-emerald-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 disabled:opacity-50"
-                        placeholder="Enter pet name"
-                      />
-                    ) : (
-                      <p className="px-4 py-2 bg-gray-100 rounded-lg text-gray-900 font-medium">
-                        {petData.name}
-                      </p>
-                    )}
-                  </div>
+                    placeholder="Enter pet name"
+                  />
+                ) : (
+                  <p className="px-4 py-2 bg-gray-100 rounded-lg text-gray-900 font-medium">
+                    {petData.name}
+                  </p>
+                )}
+              </div>
 
-                  {/* Species */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Species
-                    </label>
+              {/* Species */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Species
+                </label>
                     <p className="px-4 py-2 bg-gray-100 rounded-lg text-gray-600 font-medium capitalize">
-                      {petData.species}
-                    </p>
-                  </div>
+                  {petData.species}
+                </p>
+              </div>
 
-                  {/* Breed */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Breed
-                    </label>
+              {/* Breed */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Breed
+                </label>
                     <p className="px-4 py-2 bg-gray-100 rounded-lg text-gray-600 font-medium capitalize">
-                      {petData.breed}
-                    </p>
-                  </div>
+                  {petData.breed}
+                </p>
+              </div>
 
-                  {/* Age & Level */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Age
-                      </label>
-                      <p className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 font-bold text-center">
-                        {petData.age} days
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Level
-                      </label>
-                      <p className="px-4 py-2 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 font-bold text-center">
-                        Level {petData.level}
-                      </p>
-                    </div>
-                  </div>
+              {/* Age & Level */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Age
+                  </label>
+                  <p className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 font-bold text-center">
+                    {petData.age} days
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Level
+                  </label>
+                  <p className="px-4 py-2 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 font-bold text-center">
+                    Level {petData.level}
+                  </p>
+                </div>
+              </div>
 
-                  {/* Edit Actions */}
-                  {isEditingPet && (
-                    <div className="flex gap-3 pt-4">
-                      <button
-                        onClick={handleSavePet}
+              {/* Edit Actions */}
+              {isEditingPet && (
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={handleSavePet}
                         disabled={saving}
                         className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Save className="w-4 h-4" />
+                  >
+                    <Save className="w-4 h-4" />
                         {saving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                      <button
-                        onClick={handleCancelPet}
+                  </button>
+                  <button
+                    onClick={handleCancelPet}
                         disabled={saving}
                         className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors disabled:opacity-50"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                     </div>
                   )}
                 </>

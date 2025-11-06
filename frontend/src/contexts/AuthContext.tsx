@@ -98,9 +98,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         const isNew = profile === null;
-        console.log('🔄 AuthContext: Refreshed - isNewUser:', isNew);
+          console.log('🔄 AuthContext: Refreshed - isNewUser:', isNew);
         console.log('🔄 AuthContext: Updated displayName from profile:', updatedUser.displayName);
-        setIsNewUser(isNew);
+          setIsNewUser(isNew);
         setCurrentUser(updatedUser);
       }
     } catch (error) {
@@ -225,8 +225,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Add timeout wrapper (15 seconds)
     const authResponse = await withTimeout<AuthResponse>(
       supabase.auth.signInWithPassword({
-        email,
-        password,
+      email,
+      password,
       }),
       15000,
       'Sign-in request timed out. Please check your internet connection.'
@@ -316,10 +316,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Add timeout to OAuth initiation (10 seconds)
       const oauthResponse = await withTimeout<OAuthResponse>(
         supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: redirectUrl,
-          },
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+        },
         }),
         10000,
         'Google sign-in request timed out. Please check your internet connection.'
