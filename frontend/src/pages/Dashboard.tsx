@@ -169,7 +169,7 @@ export const Dashboard = () => {
     setSelectedAction(action);
     
     // Optimistic UI update - update balance immediately
-    let previousBalance = balance;
+    const currentBalance = profile?.coins || 0;
     let previousProfile = profile;
     
     if (cost > 0 && profile) {
