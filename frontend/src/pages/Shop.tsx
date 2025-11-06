@@ -56,11 +56,21 @@ export const Shop = () => {
       
       try {
         setLoading(true);
+        console.log('🔵 Shop: Loading profile balance for user:', currentUser.uid);
         const profileData = await profileService.getProfile(currentUser.uid);
-        setProfile(profileData);
-      } catch (error) {
-        console.error('Error loading profile:', error);
-        toast.error('Failed to load balance');
+        if (profileData) {
+          console.log('✅ Shop: Balance loaded successfully', { 
+            coins: profileData.coins,
+            username: profileData.username 
+          });
+          setProfile(profileData);
+        } else {
+          console.warn('⚠️ Shop: No profile found');
+          toast.error('Profile not found');
+        }
+      } catch (error: any) {
+        console.error('❌ Shop: Error loading profile:', error);
+        toast.error(`Failed to load balance: ${error.message || 'Unknown error'}`);
       } finally {
         setLoading(false);
       }
@@ -123,14 +133,24 @@ export const Shop = () => {
     
     setProcessing(true);
     
+    console.log('🔵 Shop: Processing purchase', {
+      itemCount: cart.length,
+      totalCost: total,
+      currentBalance: balance,
+      petId: pet.id
+    });
+    
     try {
       // Deduct coins from profile
       const newBalance = balance - total;
+      console.log(`💰 Shop: Deducting ${total} coins (${balance} → ${newBalance})`);
       await profileService.updateProfile(currentUser.uid, { coins: newBalance });
       setProfile({ ...profile, coins: newBalance });
+      console.log('✅ Shop: Coins deducted successfully');
       
       // Apply item effects to pet stats
       const statUpdates: Record<string, number> = {};
+      const itemEffects: string[] = [];
       
       for (const itemId of cart) {
         const item = shopItems.find(i => i.id === itemId);
@@ -141,22 +161,31 @@ export const Shop = () => {
           case 'food':
             statUpdates.hunger = Math.min(100, (statUpdates.hunger || pet.stats.hunger) + 20);
             statUpdates.health = Math.min(100, (statUpdates.health || pet.stats.health) + 5);
+            itemEffects.push(`${item.name}: +20 hunger, +5 health`);
             break;
           case 'medicine':
             statUpdates.health = Math.min(100, (statUpdates.health || pet.stats.health) + 30);
+            itemEffects.push(`${item.name}: +30 health`);
             break;
           case 'energy':
             statUpdates.energy = Math.min(100, (statUpdates.energy || pet.stats.energy) + 40);
+            itemEffects.push(`${item.name}: +40 energy`);
             break;
           case 'toy':
             statUpdates.happiness = Math.min(100, (statUpdates.happiness || pet.stats.happiness) + 25);
+            itemEffects.push(`${item.name}: +25 happiness`);
             break;
         }
       }
       
+      console.log('📊 Shop: Stat updates:', statUpdates);
+      console.log('📋 Shop: Item effects:', itemEffects);
+      
       // Update pet stats if any changes
       if (Object.keys(statUpdates).length > 0) {
+        console.log('🔵 Shop: Updating pet stats...');
         await updatePetStats(statUpdates);
+        console.log('✅ Shop: Pet stats updated successfully');
       }
       
       // Track inventory (optional - gracefully handles missing table)
@@ -216,12 +245,20 @@ export const Shop = () => {
       
       const itemCount = cart.length;
       setCart([]);
+      console.log(`✅ Shop: Purchase completed successfully! ${itemCount} item(s) purchased`);
       toast.success(`Purchase successful! ${itemCount} item${itemCount > 1 ? 's' : ''} applied to your pet! 🎉`);
-    } catch (error) {
-      console.error('Error processing purchase:', error);
-      toast.error('Failed to process purchase. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Shop: Error processing purchase:', error);
+      console.error('Error details:', { 
+        message: error.message, 
+        stack: error.stack,
+        cartItems: cart.length,
+        totalCost: total
+      });
+      toast.error(`Failed to process purchase: ${error.message || 'Unknown error'}`);
     } finally {
       setProcessing(false);
+      console.log('🏁 Shop: Purchase processing complete');
     }
   };
 

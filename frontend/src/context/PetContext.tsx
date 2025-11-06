@@ -127,7 +127,17 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       setPet(updatedPet);
       
       // Persist to database
-      console.log('🔵 Updating pet stats in DB:', updates);
+      console.log('🔵 PetContext: Updating pet stats in DB', {
+        petId: pet.id,
+        updates,
+        newStats: {
+          health: updatedStats.health,
+          hunger: updatedStats.hunger,
+          happiness: updatedStats.happiness,
+          cleanliness: updatedStats.cleanliness,
+          energy: updatedStats.energy,
+        }
+      });
       const { error } = await supabase
         .from('pets')
         .update({
@@ -142,16 +152,19 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         .eq('user_id', userId);
       
       if (error) {
-        console.error('❌ Error updating pet stats:', error);
-        throw new Error('Failed to update pet stats');
+        console.error('❌ PetContext: Error updating pet stats:', error);
+        console.error('Error details:', { code: error.code, message: error.message, details: error.details });
+        throw new Error(`Failed to update pet stats: ${error.message}`);
       } else {
-        console.log('✅ Pet stats updated in DB');
+        console.log('✅ PetContext: Pet stats updated in DB successfully');
       }
-    } catch (err) {
-      console.error('❌ Error updating pet stats:', err);
+    } catch (err: any) {
+      console.error('❌ PetContext: Error updating pet stats:', err);
+      console.error('Error details:', { message: err.message, stack: err.stack });
       // Reload pet to revert optimistic update
+      console.log('🔄 PetContext: Reloading pet to revert optimistic update');
       await loadPet();
-      throw new Error('Failed to update pet stats');
+      throw new Error(`Failed to update pet stats: ${err.message || 'Unknown error'}`);
     }
   }, [pet, userId, loadPet]);
   

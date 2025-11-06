@@ -50,11 +50,21 @@ export const Dashboard = () => {
       
       try {
         setLoadingProfile(true);
+        console.log('🔵 Dashboard: Loading profile for user:', currentUser.uid);
         const profileData = await profileService.getProfile(currentUser.uid);
-        setProfile(profileData);
-      } catch (error) {
-        console.error('Error loading profile:', error);
-        toast.error('Failed to load profile');
+        if (profileData) {
+          console.log('✅ Dashboard: Profile loaded successfully', { 
+            username: profileData.username, 
+            coins: profileData.coins 
+          });
+          setProfile(profileData);
+        } else {
+          console.warn('⚠️ Dashboard: No profile found for user');
+          toast.error('Profile not found. Please complete setup.');
+        }
+      } catch (error: any) {
+        console.error('❌ Dashboard: Error loading profile:', error);
+        toast.error(`Failed to load profile: ${error.message || 'Unknown error'}`);
       } finally {
         setLoadingProfile(false);
       }
@@ -168,41 +178,56 @@ export const Dashboard = () => {
     }
     
     try {
+      console.log(`🔵 Dashboard: Performing action "${action}" (cost: ${cost} coins)`);
+      
       // Deduct coins if action costs money
       if (cost > 0 && profile) {
         const newBalance = (profile.coins || 0) - cost;
+        console.log(`💰 Dashboard: Deducting ${cost} coins (${profile.coins} → ${newBalance})`);
         await profileService.updateProfile(currentUser.uid, { coins: newBalance });
         setProfile({ ...profile, coins: newBalance });
+        console.log('✅ Dashboard: Coins updated successfully');
       }
       
       // Perform pet action via PetContext (already handles optimistic updates)
       switch (action) {
         case 'feed':
+          console.log('🍖 Dashboard: Feeding pet...');
           await feedPet();
           addNotification(`Fed ${petData?.name || 'pet'}!`);
+          console.log('✅ Dashboard: Pet fed successfully');
           break;
         case 'play':
+          console.log('⚽ Dashboard: Playing with pet...');
           await playPet();
           addNotification(`Played with ${petData?.name || 'pet'}!`);
+          console.log('✅ Dashboard: Played with pet successfully');
           break;
         case 'bathe':
+          console.log('🛁 Dashboard: Bathing pet...');
           await bathePet();
           addNotification(`${petData?.name || 'Pet'} is squeaky clean!`);
+          console.log('✅ Dashboard: Pet bathed successfully');
           break;
         case 'rest':
+          console.log('😴 Dashboard: Pet resting...');
           await restPet();
           addNotification(`${petData?.name || 'Pet'} is well-rested!`);
+          console.log('✅ Dashboard: Pet rested successfully');
           break;
       }
       
       toast.success(`Action completed!`);
-    } catch (error) {
-      console.error('Error performing action:', error);
+      console.log(`✅ Dashboard: Action "${action}" completed successfully`);
+    } catch (error: any) {
+      console.error(`❌ Dashboard: Error performing action "${action}":`, error);
+      console.error('Error details:', { message: error.message, stack: error.stack });
       // Revert optimistic update on error
       if (cost > 0 && previousProfile) {
+        console.log('🔄 Dashboard: Reverting optimistic balance update');
         setProfile(previousProfile);
       }
-      toast.error('Failed to perform action');
+      toast.error(`Failed to perform action: ${error.message || 'Unknown error'}`);
     } finally {
       setTimeout(() => setSelectedAction(null), 1000);
     }
