@@ -6,6 +6,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePet } from '../context/PetContext';
 import { profileService } from '../services/profileService';
+import { supabase } from '../lib/supabase';
 import type { Database } from '../types/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -156,6 +157,61 @@ export const Shop = () => {
       // Update pet stats if any changes
       if (Object.keys(statUpdates).length > 0) {
         await updatePetStats(statUpdates);
+      }
+      
+      // Track inventory (optional - gracefully handles missing table)
+      try {
+        // Group items by item_id to count quantities
+        const itemCounts: Record<string, number> = {};
+        const itemNames: Record<string, string> = {};
+        
+        for (const itemId of cart) {
+          itemCounts[itemId] = (itemCounts[itemId] || 0) + 1;
+          const item = shopItems.find(i => i.id === itemId);
+          if (item) itemNames[itemId] = item.name;
+        }
+        
+        // Upsert inventory items
+        for (const [itemId, quantity] of Object.entries(itemCounts)) {
+          // Check if item already exists
+          const { data: existing } = await supabase
+            .from('pet_inventory')
+            .select('id, quantity')
+            .eq('user_id', currentUser.uid)
+            .eq('pet_id', pet.id)
+            .eq('item_id', itemId)
+            .single();
+          
+          if (existing) {
+            // Update existing item quantity
+            await supabase
+              .from('pet_inventory')
+              .update({ 
+                quantity: existing.quantity + quantity,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existing.id);
+          } else {
+            // Insert new item
+            await supabase
+              .from('pet_inventory')
+              .insert({
+                user_id: currentUser.uid,
+                pet_id: pet.id,
+                item_id: itemId,
+                item_name: itemNames[itemId] || 'Unknown',
+                quantity: quantity,
+              });
+          }
+        }
+      } catch (invErr: any) {
+        // Inventory tracking is optional - don't fail the purchase
+        if (invErr?.code === '42P01') {
+          // Table doesn't exist - that's OK, inventory is optional
+          console.log('Inventory table not found - skipping inventory tracking');
+        } else {
+          console.warn('Could not track inventory (optional feature):', invErr);
+        }
       }
       
       const itemCount = cart.length;

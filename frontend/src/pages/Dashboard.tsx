@@ -158,6 +158,15 @@ export const Dashboard = () => {
 
     setSelectedAction(action);
     
+    // Optimistic UI update - update balance immediately
+    let previousBalance = balance;
+    let previousProfile = profile;
+    
+    if (cost > 0 && profile) {
+      const optimisticBalance = (profile.coins || 0) - cost;
+      setProfile({ ...profile, coins: optimisticBalance });
+    }
+    
     try {
       // Deduct coins if action costs money
       if (cost > 0 && profile) {
@@ -166,7 +175,7 @@ export const Dashboard = () => {
         setProfile({ ...profile, coins: newBalance });
       }
       
-      // Perform pet action via PetContext
+      // Perform pet action via PetContext (already handles optimistic updates)
       switch (action) {
         case 'feed':
           await feedPet();
@@ -189,6 +198,10 @@ export const Dashboard = () => {
       toast.success(`Action completed!`);
     } catch (error) {
       console.error('Error performing action:', error);
+      // Revert optimistic update on error
+      if (cost > 0 && previousProfile) {
+        setProfile(previousProfile);
+      }
       toast.error('Failed to perform action');
     } finally {
       setTimeout(() => setSelectedAction(null), 1000);

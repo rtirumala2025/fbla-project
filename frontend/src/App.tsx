@@ -31,6 +31,7 @@ import ReactionGame from './pages/minigames/ReactionGame';
 import DreamWorld from './pages/minigames/DreamWorld';
 import { ProfilePage } from './pages/ProfilePage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles/globals.css';
 
 // Page transition wrapper component
@@ -172,11 +173,13 @@ function AppContent() {
 // Main App component with AuthProvider and ToastProvider wrapper
 function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <AppContent />
-      </ToastProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
