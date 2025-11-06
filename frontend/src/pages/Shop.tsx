@@ -1,8 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
+import { usePet } from '../context/PetContext';
+import { profileService } from '../services/profileService';
+import type { Database } from '../types/database.types';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface ShopItem {
   id: string;
@@ -31,9 +37,38 @@ const shopItems: ShopItem[] = [
 export const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [cart, setCart] = useState<string[]>([]);
-  const [balance] = useState(100); // TODO: Connect to global state
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
+  const { currentUser } = useAuth();
+  const { pet, updatePetStats } = usePet();
+  
+  // Load profile balance
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!currentUser?.uid) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        const profileData = await profileService.getProfile(currentUser.uid);
+        setProfile(profileData);
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        toast.error('Failed to load balance');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadProfile();
+  }, [currentUser?.uid, toast]);
+  
+  const balance = profile?.coins || 0;
 
   const filteredItems = selectedCategory === 'all' 
     ? shopItems 
@@ -63,15 +98,74 @@ export const Shop = () => {
     return cart.filter(id => id === itemId).length;
   };
 
-  const handlePurchase = () => {
+  const handlePurchase = async () => {
+    if (!currentUser?.uid || !profile) {
+      toast.error('Please log in to make a purchase');
+      return;
+    }
+    
+    if (!pet) {
+      toast.error('Please create a pet first!');
+      return;
+    }
+    
     const total = getTotalCost();
-    if (balance >= total) {
-      // TODO: Implement actual purchase logic with context
+    if (balance < total) {
+      toast.error('Not enough coins! 💰');
+      return;
+    }
+    
+    if (cart.length === 0) {
+      toast.error('Your cart is empty!');
+      return;
+    }
+    
+    setProcessing(true);
+    
+    try {
+      // Deduct coins from profile
+      const newBalance = balance - total;
+      await profileService.updateProfile(currentUser.uid, { coins: newBalance });
+      setProfile({ ...profile, coins: newBalance });
+      
+      // Apply item effects to pet stats
+      const statUpdates: Record<string, number> = {};
+      
+      for (const itemId of cart) {
+        const item = shopItems.find(i => i.id === itemId);
+        if (!item) continue;
+        
+        // Apply item effects based on category
+        switch (item.category) {
+          case 'food':
+            statUpdates.hunger = Math.min(100, (statUpdates.hunger || pet.stats.hunger) + 20);
+            statUpdates.health = Math.min(100, (statUpdates.health || pet.stats.health) + 5);
+            break;
+          case 'medicine':
+            statUpdates.health = Math.min(100, (statUpdates.health || pet.stats.health) + 30);
+            break;
+          case 'energy':
+            statUpdates.energy = Math.min(100, (statUpdates.energy || pet.stats.energy) + 40);
+            break;
+          case 'toy':
+            statUpdates.happiness = Math.min(100, (statUpdates.happiness || pet.stats.happiness) + 25);
+            break;
+        }
+      }
+      
+      // Update pet stats if any changes
+      if (Object.keys(statUpdates).length > 0) {
+        await updatePetStats(statUpdates);
+      }
+      
       const itemCount = cart.length;
       setCart([]);
-      toast.success(`Purchase successful! ${itemCount} item${itemCount > 1 ? 's' : ''} added to your inventory. 🎉`);
-    } else {
-      toast.error('Not enough coins! 💰');
+      toast.success(`Purchase successful! ${itemCount} item${itemCount > 1 ? 's' : ''} applied to your pet! 🎉`);
+    } catch (error) {
+      console.error('Error processing purchase:', error);
+      toast.error('Failed to process purchase. Please try again.');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -107,7 +201,16 @@ export const Shop = () => {
         </div>
 
         <h1 className="text-4xl font-black text-gray-900 mb-2">Shop</h1>
-        <p className="text-gray-600 mb-8">Get supplies for your pet</p>
+        <p className="text-gray-600 mb-8">
+          {pet ? `Get supplies for ${pet.name}` : 'Get supplies for your pet'}
+        </p>
+        
+        {loading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="text-gray-600 mt-2">Loading shop...</p>
+          </div>
+        )}
 
         {/* Category filters */}
         <div className="flex gap-3 mb-8 flex-wrap">
@@ -192,10 +295,10 @@ export const Shop = () => {
             </div>
             <button
               onClick={handlePurchase}
-              disabled={getTotalCost() > balance}
+              disabled={getTotalCost() > balance || processing || cart.length === 0}
               className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-3 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Complete Purchase
+              {processing ? 'Processing...' : 'Complete Purchase'}
             </button>
             {getTotalCost() > balance && (
               <p className="text-red-600 text-sm mt-2 text-center">Not enough coins!</p>

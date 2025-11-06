@@ -2,10 +2,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePet } from '../context/PetContext';
+import { profileService } from '../services/profileService';
+import { useToast } from '../contexts/ToastContext';
 import { 
   Heart, Zap, Smile, Droplets, Activity, 
   ShoppingBag, BarChart3, MessageCircle
 } from 'lucide-react';
+import type { Database } from '../types/database.types';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface PetStats {
   health: number;
@@ -26,26 +32,56 @@ interface PetData {
 export const Dashboard = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  // TODO: Replace with Supabase data fetching in Phase 2
-  const [petData] = useState<PetData>({
-    name: localStorage.getItem('petName') || 'Buddy',
-    species: localStorage.getItem('selectedSpecies') || 'dog',
-    breed: localStorage.getItem('selectedBreed') || 'labrador',
-    age: 1,
-    level: 1,
-  });
-
-  const [stats, setStats] = useState<PetStats>({
+  const { pet, loading: petLoading, feed: feedPet, play: playPet, bathe: bathePet, rest: restPet, updatePetStats } = usePet();
+  const toast = useToast();
+  
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [notifications, setNotifications] = useState<string[]>([]);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  
+  // Load profile on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!currentUser?.uid) {
+        setLoadingProfile(false);
+        return;
+      }
+      
+      try {
+        setLoadingProfile(true);
+        const profileData = await profileService.getProfile(currentUser.uid);
+        setProfile(profileData);
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        toast.error('Failed to load profile');
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+    
+    loadProfile();
+  }, [currentUser?.uid, toast]);
+  
+  // Derived pet data from PetContext
+  const petData: PetData | null = pet ? {
+    name: pet.name,
+    species: pet.species,
+    breed: pet.breed,
+    age: pet.age,
+    level: pet.level,
+  } : null;
+  
+  // Stats from pet
+  const stats: PetStats = pet?.stats || {
     health: 100,
     hunger: 75,
     happiness: 80,
     cleanliness: 90,
     energy: 85,
-  });
-
-  const [money, setMoney] = useState(100);
-  const [notifications, setNotifications] = useState<string[]>([]);
-  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  };
+  
+  const money = profile?.coins || 0;
   
   // Pet chat messages
   const petMessages = useMemo(() => [
@@ -80,28 +116,24 @@ export const Dashboard = () => {
     return () => clearInterval(interval);
   }, [petMessages]);
 
-  // Simulate stat decay over time
+  // Check for low stats and show notifications
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(prev => ({
-        health: Math.max(0, prev.health - 0.1),
-        hunger: Math.max(0, prev.hunger - 0.5),
-        happiness: Math.max(0, prev.happiness - 0.3),
-        cleanliness: Math.max(0, prev.cleanliness - 0.2),
-        energy: Math.max(0, prev.energy - 0.4),
-      }));
-
-      // Check for warnings
-      if (stats.hunger < 30) {
-        addNotification(`${petData.name} is getting hungry!`);
-      }
-      if (stats.cleanliness < 40) {
-        addNotification(`${petData.name} needs a bath.`);
-      }
-    }, 5000); // Every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [stats, petData.name]);
+    if (!pet || !petData) return;
+    
+    if (stats.hunger < 30) {
+      addNotification(`${petData.name} is getting hungry!`);
+    }
+    if (stats.cleanliness < 40) {
+      addNotification(`${petData.name} needs a bath.`);
+    }
+    if (stats.health < 30) {
+      addNotification(`${petData.name} needs medical attention!`);
+    }
+    if (stats.energy < 20) {
+      addNotification(`${petData.name} is very tired!`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stats.hunger, stats.cleanliness, stats.health, stats.energy, petData?.name]);
 
   const addNotification = (message: string) => {
     setNotifications(prev => {
@@ -112,44 +144,55 @@ export const Dashboard = () => {
     });
   };
 
-  const handleAction = (action: string, cost: number = 0) => {
+  const handleAction = async (action: string, cost: number = 0) => {
+    if (!pet || !currentUser?.uid) {
+      toast.error('Please create a pet first!');
+      return;
+    }
+
     if (cost > 0 && money < cost) {
       addNotification("Not enough coins!");
+      toast.error('Not enough coins!');
       return;
     }
 
     setSelectedAction(action);
     
-    switch (action) {
-      case 'feed':
-        setStats(prev => ({ ...prev, hunger: Math.min(100, prev.hunger + 30) }));
-        setMoney(prev => prev - cost);
-        addNotification(`Fed ${petData.name}!`);
-        break;
-      case 'play':
-        setStats(prev => ({ 
-          ...prev, 
-          happiness: Math.min(100, prev.happiness + 25),
-          energy: Math.max(0, prev.energy - 15)
-        }));
-        addNotification(`Played with ${petData.name}!`);
-        break;
-      case 'bathe':
-        setStats(prev => ({ ...prev, cleanliness: Math.min(100, prev.cleanliness + 40) }));
-        setMoney(prev => prev - cost);
-        addNotification(`${petData.name} is squeaky clean!`);
-        break;
-      case 'rest':
-        setStats(prev => ({ 
-          ...prev, 
-          energy: Math.min(100, prev.energy + 35),
-          health: Math.min(100, prev.health + 5)
-        }));
-        addNotification(`${petData.name} is well-rested!`);
-        break;
+    try {
+      // Deduct coins if action costs money
+      if (cost > 0 && profile) {
+        const newBalance = (profile.coins || 0) - cost;
+        await profileService.updateProfile(currentUser.uid, { coins: newBalance });
+        setProfile({ ...profile, coins: newBalance });
+      }
+      
+      // Perform pet action via PetContext
+      switch (action) {
+        case 'feed':
+          await feedPet();
+          addNotification(`Fed ${petData?.name || 'pet'}!`);
+          break;
+        case 'play':
+          await playPet();
+          addNotification(`Played with ${petData?.name || 'pet'}!`);
+          break;
+        case 'bathe':
+          await bathePet();
+          addNotification(`${petData?.name || 'Pet'} is squeaky clean!`);
+          break;
+        case 'rest':
+          await restPet();
+          addNotification(`${petData?.name || 'Pet'} is well-rested!`);
+          break;
+      }
+      
+      toast.success(`Action completed!`);
+    } catch (error) {
+      console.error('Error performing action:', error);
+      toast.error('Failed to perform action');
+    } finally {
+      setTimeout(() => setSelectedAction(null), 1000);
     }
-
-    setTimeout(() => setSelectedAction(null), 1000);
   };
 
   const getStatColor = (value: number) => {
@@ -166,6 +209,39 @@ export const Dashboard = () => {
     return '🙂';
   };
 
+  // Show loading state
+  if (petLoading || loadingProfile) {
+    return (
+      <div className="min-h-screen bg-cream pt-24 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your pet...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show message if no pet
+  if (!pet || !petData) {
+    return (
+      <div className="min-h-screen bg-cream pt-24 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">🐾</div>
+          <h2 className="text-2xl font-bold text-charcoal mb-2">No Pet Yet!</h2>
+          <p className="text-gray-600 mb-6">
+            Create your virtual pet to get started.
+          </p>
+          <button
+            onClick={() => navigate('/onboarding/species')}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
+          >
+            Create Your Pet
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-cream pt-24">
       <div className="max-w-[90vw] mx-auto px-8 py-10">
@@ -179,7 +255,7 @@ export const Dashboard = () => {
             Welcome{currentUser?.displayName ? `, ${currentUser.displayName}` : ''}! 👋
           </h1>
           <p className="text-lg text-gray-600">
-            Ready to take care of your virtual pet today?
+            Ready to take care of {petData.name} today?
           </p>
         </motion.div>
 
@@ -356,7 +432,7 @@ export const Dashboard = () => {
                     className="bg-white border border-indigo-200 rounded-xl p-4 shadow-sm"
                   >
                     <p className="text-sm text-gray-800 leading-relaxed">
-                      <span className="font-semibold text-indigo-600">{petData.name}:</span>{' '}
+                      <span className="font-semibold text-indigo-600">{petData?.name || 'Pet'}:</span>{' '}
                       {currentMessage}
                     </p>
                   </motion.div>
