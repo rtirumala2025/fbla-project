@@ -133,49 +133,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }, 10000); // 10 second timeout
     
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session }, error }: { data: { session: any }, error: any }) => {
-      console.log('🔵 AuthContext: Initial session check');
-      console.log('  Session exists:', !!session);
-      console.log('  User email:', session?.user?.email || 'No user');
-      console.log('  Session error:', error?.message || 'none');
-      console.log('  Session expires at:', session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A');
-      
-      const mappedUser = mapSupabaseUser(session?.user || null);
-      console.log('  Mapped user:', mappedUser?.email || 'null');
-      
+    // CRITICAL FIX: Restore session on page refresh using getSession()
+    // This ensures the user session persists across page refreshes
+    const restoreSession = async () => {
       try {
-        if (mappedUser) {
-          // Check if user has a profile
-          const isNew = await checkUserProfile(mappedUser.uid);
-          console.log('  Is new user:', isNew);
-          setIsNewUser(isNew);
-        } else {
+        console.log('🔵 AuthContext: Restoring session from localStorage...');
+        
+        // Use getSession() to restore persisted session from localStorage
+        // This is called on app initialization to restore the user's session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        console.log('🔵 AuthContext: Initial session check');
+        console.log('  Session exists:', !!session);
+        console.log('  User email:', session?.user?.email || 'No user');
+        console.log('  Session error:', error?.message || 'none');
+        console.log('  Session expires at:', session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A');
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          setCurrentUser(null);
           setIsNewUser(false);
+          setLoading(false);
+          clearTimeout(fallbackTimeout);
+          return;
         }
-      } catch (profileError) {
-        console.error('❌ Error checking user profile:', profileError);
-        setIsNewUser(false); // Default to not new user if check fails
+        
+        const mappedUser = mapSupabaseUser(session?.user || null);
+        console.log('  Mapped user:', mappedUser?.email || 'null');
+        
+        try {
+          if (mappedUser) {
+            // Check if user has a profile
+            const isNew = await checkUserProfile(mappedUser.uid);
+            console.log('  Is new user:', isNew);
+            setIsNewUser(isNew);
+          } else {
+            setIsNewUser(false);
+          }
+        } catch (profileError) {
+          console.error('❌ Error checking user profile:', profileError);
+          setIsNewUser(false); // Default to not new user if check fails
+        }
+        
+        setCurrentUser(mappedUser);
+        setLoading(false);
+        clearTimeout(fallbackTimeout); // Clear timeout since we completed successfully
+      } catch (err: any) {
+        console.error('❌ Error restoring session:', err);
+        setCurrentUser(null);
+        setIsNewUser(false);
+        setLoading(false);
+        clearTimeout(fallbackTimeout); // Clear timeout since we completed (with error)
       }
-      
-      setCurrentUser(mappedUser);
-      setLoading(false);
-      clearTimeout(fallbackTimeout); // Clear timeout since we completed successfully
-    }).catch((err: any) => {
-      console.error('❌ Error getting session:', err);
-      setCurrentUser(null);
-      setIsNewUser(false);
-      setLoading(false);
-      clearTimeout(fallbackTimeout); // Clear timeout since we completed (with error)
-    });
+    };
+    
+    // Restore session immediately on mount
+    restoreSession();
 
-    // Listen for auth changes - this will fire for all auth events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
+    // CRITICAL FIX: Listen for auth changes - this will fire for all auth events
+    // (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED, etc.)
+    // This ensures the user state is always in sync with Supabase auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       console.log('🔵 AuthContext: Auth state change detected');
       console.log('  Event type:', event);
       console.log('  Has session:', !!session);
       console.log('  User email:', session?.user?.email || 'none');
       console.log('  Session expires at:', session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A');
+      
+      // Handle different auth events
+      if (event === 'SIGNED_OUT') {
+        console.log('🔵 AuthContext: User signed out, clearing state');
+        setCurrentUser(null);
+        setIsNewUser(false);
+        setLoading(false);
+        return;
+      }
       
       const mappedUser = mapSupabaseUser(session?.user || null);
       console.log('  Setting user:', mappedUser?.email || 'null');
@@ -345,17 +377,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('🔵 AuthContext: Signing out user...');
+    
     // Mock sign out for development
     if (process.env.REACT_APP_USE_MOCK === 'true') {
       setCurrentUser(null);
+      setIsNewUser(false);
       return;
     }
 
+    // CRITICAL FIX: Properly sign out from Supabase
+    // This clears the session from localStorage and invalidates the token
     const { error } = await supabase.auth.signOut();
+    
     if (error) {
+      console.error('❌ Error signing out:', error);
       throw new Error(error.message);
     }
+    
+    console.log('✅ AuthContext: User signed out successfully');
+    
+    // Clear local state
     setCurrentUser(null);
+    setIsNewUser(false);
+    
+    // CRITICAL FIX: Reload the page after successful logout
+    // This ensures all state is cleared and the user is redirected to login
+    // The reload happens after a short delay to allow the signOut to complete
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 100);
   };
 
   const value = {

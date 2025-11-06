@@ -54,27 +54,40 @@ export const profileService = {
       throw new Error('Username is required');
     }
 
-    // Wait for authenticated user with retry logic (for OAuth callback timing)
+    // CRITICAL FIX: Guard against missing session by calling getUser()
+    // This ensures we have a valid authenticated session before creating the profile
+    // Includes retry logic for OAuth callback timing
     console.log('🔵 Waiting for authenticated Supabase session...');
     let user = null;
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 5; // Increased attempts for better reliability
     const retryDelay = 500; // 500ms between retries
 
     while (attempts < maxAttempts && !user) {
       attempts++;
       console.log(`🔄 Attempt ${attempts}/${maxAttempts} to get authenticated user...`);
       
+      // CRITICAL: Use getUser() to verify the session exists and is valid
+      // This throws an error if there's no session, which we catch and handle
       const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
       
       if (userError) {
         console.error('❌ Error getting user:', userError);
-        if (attempts >= maxAttempts) {
+        console.error('  Error code:', userError.message);
+        
+        // If it's a session error, provide a clear message
+        if (userError.message.includes('session') || userError.message.includes('JWT')) {
+          if (attempts >= maxAttempts) {
+            throw new Error('Auth session missing! Please log in again.');
+          }
+        } else if (attempts >= maxAttempts) {
           throw new Error(`Authentication error: ${userError.message}`);
         }
       } else if (currentUser) {
         user = currentUser;
         console.log('✅ Authenticated user found!');
+        console.log('  User ID:', user.id);
+        console.log('  User email:', user.email);
         break;
       } else {
         console.log('⏳ No user yet, waiting...');
@@ -84,9 +97,11 @@ export const profileService = {
       }
     }
     
+    // CRITICAL FIX: Only insert profile if user exists
+    // This prevents "Auth session missing!" errors
     if (!user) {
       console.error('❌ No authenticated user found after', maxAttempts, 'attempts');
-      throw new Error('User not authenticated. Please log in again.');
+      throw new Error('Auth session missing! Please log in again.');
     }
 
     console.log('✅ Authenticated user ID from Supabase:', user.id);

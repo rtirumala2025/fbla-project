@@ -45,12 +45,19 @@ const Header = () => {
   }, [isMoreMenuOpen]);
 
 
+  // CRITICAL FIX: Properly handle logout
+  // The signOut function in AuthContext now handles navigation and page reload
+  // We just need to call it and handle any errors
   const handleLogout = async () => {
     try {
+      console.log('🔵 Header: Logging out user...');
       await signOut();
+      // Note: signOut() in AuthContext now handles navigation and page reload
+      // No need to navigate here as it will reload the page
+    } catch (error: any) {
+      console.error('❌ Header: Failed to log out', error);
+      // If logout fails, still try to navigate to login
       navigate('/login');
-    } catch (error) {
-      console.error('Failed to log out', error);
     }
   };
 
