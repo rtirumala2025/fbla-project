@@ -1,64 +1,92 @@
-# 🚨 URGENT: Apply Database Migrations to Fix 406 Errors
+# 🚨 CRITICAL: Apply Database Migrations to Unblock App
 
-## Problem
-Your app shows `406 Not Acceptable` errors because **the database tables don't exist yet**.
+## Step-by-Step Migration Execution
 
-The migration files exist but haven't been applied to your Supabase database.
+### Prerequisites
+- ✅ Supabase project URL: `https://xhhtkjtcdeewesijxbts.supabase.co`
+- ✅ Access to Supabase Dashboard: https://supabase.com/dashboard/project/xhhtkjtcdeewesijxbts
+- ✅ SQL Editor access
 
-## Solution: Apply Migrations Manually
+---
 
-### Step 1: Open Supabase SQL Editor
+## Migration 1: Profiles Table (MUST RUN FIRST)
 
-1. Go to https://supabase.com/dashboard
-2. Select your project: `xhhtkjtcdeewesijxbts`
-3. Click **SQL Editor** in the left sidebar
-4. Click **New query**
+**File**: `supabase/migrations/000_profiles_table.sql`
 
-### Step 2: Apply Each Migration (IN ORDER)
+**Steps**:
+1. Open Supabase Dashboard → SQL Editor
+2. Click "New query"
+3. Copy the entire contents of `000_profiles_table.sql`
+4. Paste into SQL Editor
+5. Click **Run** (bottom right)
+6. Verify: Should see "Success. No rows returned"
 
-Copy and paste the contents of each file below into the SQL Editor and click **Run** after each one:
+**What it creates**:
+- `profiles` table (username, coins, avatar_url)
+- RLS policies (users can only access their own profile)
+- Auto-create profile trigger on user signup
+- Indexes for performance
 
-#### Migration 1: `000_profiles_table.sql`
+---
 
-```bash
-cat supabase/migrations/000_profiles_table.sql
-```
+## Migration 2: User Preferences Table
 
-Copy the entire contents and run it in SQL Editor.
+**File**: `supabase/migrations/001_user_preferences.sql`
 
-#### Migration 2: `001_user_preferences.sql`
+**Steps**:
+1. In SQL Editor, click "New query"
+2. Copy contents of `001_user_preferences.sql`
+3. Paste and click **Run**
 
-```bash
-cat supabase/migrations/001_user_preferences.sql
-```
+**What it creates**:
+- `user_preferences` table (sound, music, notifications settings)
+- RLS policies
+- Settings persistence for users
 
-Copy the entire contents and run it in SQL Editor.
+---
 
-#### Migration 3: `002_pets_table_complete.sql`
+## Migration 3: Pets Table
 
-```bash
-cat supabase/migrations/002_pets_table_complete.sql
-```
+**File**: `supabase/migrations/002_pets_table_complete.sql`
 
-Copy the entire contents and run it in SQL Editor.
+**Steps**:
+1. In SQL Editor, click "New query"
+2. Copy contents of `002_pets_table_complete.sql`
+3. Paste and click **Run**
 
-### Step 3: Verify Tables Exist
+**What it creates**:
+- `pets` table (name, species, breed, stats: health, hunger, happiness, cleanliness, energy)
+- RLS policies
+- One pet per user constraint
 
-Run this verification query in SQL Editor:
+---
 
+## Verification Queries
+
+After running all 3 migrations, run these verification queries:
+
+### 1. Check Tables Exist
 ```sql
--- Check all tables exist
 SELECT 
-  schemaname, 
   tablename, 
   rowsecurity AS rls_enabled
 FROM pg_tables
-WHERE 
-  schemaname = 'public' 
-  AND tablename IN ('profiles', 'pets', 'user_preferences')
+WHERE schemaname = 'public'
+AND tablename IN ('profiles', 'pets', 'user_preferences')
 ORDER BY tablename;
+```
 
--- Check RLS policies exist
+**Expected Result**:
+```
+tablename          | rls_enabled
+-------------------+------------
+pets               | true
+profiles           | true
+user_preferences   | true
+```
+
+### 2. Check RLS Policies
+```sql
 SELECT 
   schemaname, 
   tablename, 
@@ -67,34 +95,44 @@ SELECT
 FROM pg_policies
 WHERE tablename IN ('profiles', 'pets', 'user_preferences')
 ORDER BY tablename, cmd;
-
--- Check table columns
-SELECT 
-  table_name, 
-  column_name, 
-  data_type 
-FROM information_schema.columns
-WHERE 
-  table_schema = 'public' 
-  AND table_name IN ('profiles', 'pets', 'user_preferences')
-ORDER BY table_name, ordinal_position;
 ```
 
-Expected output:
-- **3 tables**: profiles, pets, user_preferences
-- **RLS enabled**: true for all 3 tables
-- **12+ RLS policies**: SELECT, INSERT, UPDATE, DELETE for each table
-- **30+ columns total** across all tables
+**Expected Result**: 12 rows (4 policies per table: SELECT, INSERT, UPDATE, DELETE)
 
-### Step 4: Create Profile for Test User
+### 3. Check Table Structure
+```sql
+-- Profiles columns
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'profiles'
+ORDER BY ordinal_position;
 
-After migrations, manually create a profile for your test user:
+-- Pets columns
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'pets'
+ORDER BY ordinal_position;
+
+-- User preferences columns
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'user_preferences'
+ORDER BY ordinal_position;
+```
+
+---
+
+## Create Test User Profile
+
+After migrations, create a profile for your test user:
 
 ```sql
--- Insert profile for test user
+-- Replace USER_ID with your actual user ID from browser console
+-- (Get it by logging in and checking auth.users table or browser console logs)
+
 INSERT INTO public.profiles (user_id, username, coins)
 VALUES (
-  '13cab41e-af70-41fa-b4e7-0f664afe0115',  -- Your test user ID from console logs
+  'YOUR_USER_ID_HERE',  -- Replace this!
   'test_user',
   100
 )
@@ -103,99 +141,41 @@ ON CONFLICT (user_id) DO UPDATE SET
   updated_at = NOW();
 
 -- Verify profile created
-SELECT * FROM public.profiles WHERE user_id = '13cab41e-af70-41fa-b4e7-0f664afe0115';
+SELECT * FROM public.profiles WHERE user_id = 'YOUR_USER_ID_HERE';
 ```
 
-### Step 5: Reload Your App
+**To find your user ID**:
+1. Log in to the app
+2. Open browser console (F12)
+3. Look for: `🔵 Loading pet for user: <user-id>`
+4. Or check Supabase Dashboard → Authentication → Users
 
-1. Go back to `http://localhost:3002`
-2. Hard refresh (Cmd+Shift+R on Mac, Ctrl+Shift+R on Windows)
-3. Check browser console - the `406` errors should be **GONE**
-4. You should see:
-   - `profileService.ts:27` → ✅ Profile found
-   - `PetContext.tsx:84` → ✅ Ready to create pet
-
-## Quick Commands (Terminal)
-
-### Option A: Copy migration contents to clipboard (Mac)
-
-```bash
-# Copy profiles migration
-cat supabase/migrations/000_profiles_table.sql | pbcopy
-# Now paste into Supabase SQL Editor and run
-
-# Copy user_preferences migration
-cat supabase/migrations/001_user_preferences.sql | pbcopy
-# Paste and run
-
-# Copy pets migration
-cat supabase/migrations/002_pets_table.sql | pbcopy
-# Paste and run
-```
-
-### Option B: Use Supabase CLI (if installed)
-
-```bash
-# Login to Supabase
-supabase login
-
-# Link to your project
-supabase link --project-ref xhhtkjtcdeewesijxbts
-
-# Apply all migrations
-supabase db push
-
-# Verify
-supabase db diff
-```
+---
 
 ## Troubleshooting
 
 ### Error: "relation already exists"
-✅ **Safe to ignore** - means the table was already created. Continue with next migration.
-
-### Error: "permission denied"
-❌ **Check your Supabase permissions** - you may need to use the service role key or contact your project admin.
+✅ **Safe to ignore** - Table was already created. Continue with next migration.
 
 ### Error: "function update_updated_at_column already exists"
-✅ **Safe to ignore** - the function is shared across tables. Use `CREATE OR REPLACE FUNCTION` (already in migration).
+✅ **Safe to ignore** - Function is shared across tables. The migration uses `CREATE OR REPLACE`.
 
-### Still getting 406 errors after migrations?
-1. Check the verification queries show all 3 tables
-2. Verify RLS is enabled: `rowsecurity = true`
-3. Ensure you're logged in as `test@fbla-project.test`
-4. Hard refresh the browser
-5. Check Network tab - status should be `200 OK` not `406`
+### Error: "permission denied"
+❌ **Check**: You need to be project owner or have SQL execution permissions.
 
-## Expected Results
-
-### Before Migrations (Current State):
-```
-❌ GET /rest/v1/profiles?... → 406 Not Acceptable
-❌ GET /rest/v1/pets?... → 406 Not Acceptable
-❌ No profile found for user
-❌ No pet found for user
-```
-
-### After Migrations (Fixed State):
-```
-✅ GET /rest/v1/profiles?... → 200 OK
-✅ GET /rest/v1/pets?... → 200 OK (or 404 if no pet yet)
-✅ Profile loaded: { username: 'test_user', coins: 100 }
-✅ Ready to create pet
-```
-
-## Next Steps After Migrations
-
-1. ✅ Verify all 3 tables exist
-2. ✅ Create profile for test user
-3. ✅ Reload app and confirm 406 errors are gone
-4. ✅ Test creating a pet
-5. ✅ Test updating username in profile
-6. ✅ Test updating settings
+### Error: "duplicate key value violates unique constraint"
+✅ **Safe to ignore** - Policy/trigger already exists. The migration uses `CREATE OR REPLACE` / `DROP IF EXISTS`.
 
 ---
 
-**DO THIS NOW** → Go to Supabase SQL Editor and apply the 3 migrations in order!
+## Next Steps After Migrations
 
+1. ✅ Hard refresh your app (Cmd+Shift+R / Ctrl+Shift+R)
+2. ✅ Check browser console - should see `✅ Profile found` instead of `406 Not Acceptable`
+3. ✅ Test creating a pet - should save to database
+4. ✅ Test updating username - should persist
+5. ✅ Test settings - should save preferences
 
+---
+
+**Status**: ⏳ Waiting for migrations to be applied

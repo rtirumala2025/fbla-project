@@ -1,120 +1,339 @@
 # 📊 Database Migration Execution Report
 
-**Date**: November 3, 2025  
+**Date**: Generated on execution  
 **Branch**: `fix/username-save-auth-check`  
-**Commit**: `f16eba1` (uncommitted changes committed)
+**Status**: ⏳ Ready for execution
 
 ---
 
-## ✅ Actions Completed
+## Pre-Execution Checklist
 
-### 1. Committed Uncommitted Changes ✅
+### ✅ Code Changes Committed
+- [x] `PetContext.tsx` - Supabase integration complete
+- [x] `AuthContext.tsx` - Timeout handling added
+- [x] `PetNaming.tsx` - Uses PetContext.createPet()
+- [x] `ProfilePage.tsx` - Full Supabase integration
+- [x] `profileService.ts` - Complete CRUD operations
 
-**Status**: ✅ **COMPLETED**
+### ✅ Migration Files Verified
+- [x] `000_profiles_table.sql` - 93 lines, complete
+- [x] `001_user_preferences.sql` - 68 lines, complete
+- [x] `002_pets_table_complete.sql` - 68 lines, complete
 
-**Files Committed**:
-- `frontend/src/context/PetContext.tsx` - Improved error handling and Supabase integration
-- `frontend/src/contexts/AuthContext.tsx` - Better timeout handling for auth requests
-- `frontend/src/pages/PetNaming.tsx` - Updated to use PetContext
-- `frontend/src/pages/ProfilePage.tsx` - Enhanced profile management
-- `frontend/src/services/profileService.ts` - Improved retry logic for OAuth
-
-**Commit Hash**: `f16eba1`  
-**Message**: "fix: improve PetContext and AuthContext with better error handling and Supabase integration"
-
-**Pushed to**: `origin/fix/username-save-auth-check` ✅
-
----
-
-### 2. Migration Files Prepared ✅
-
-**Status**: ✅ **READY FOR APPLICATION**
-
-All 3 migration files have been read and verified:
-
-1. **`supabase/migrations/000_profiles_table.sql`** (93 lines)
-   - Creates `profiles` table
-   - 4 RLS policies (SELECT, INSERT, UPDATE, DELETE)
-   - Auto-create profile trigger on signup
-   - Indexes for performance
-
-2. **`supabase/migrations/001_user_preferences.sql`** (68 lines)
-   - Creates `user_preferences` table
-   - 4 RLS policies
-   - Settings persistence (sound, music, notifications, etc.)
-
-3. **`supabase/migrations/002_pets_table_complete.sql`** (68 lines)
-   - Creates `pets` table
-   - 4 RLS policies
-   - Complete pet stats (health, hunger, happiness, cleanliness, energy)
+### ⏳ Database Migrations (PENDING)
+- [ ] Migration 1: `profiles` table
+- [ ] Migration 2: `user_preferences` table
+- [ ] Migration 3: `pets` table
 
 ---
 
-## ⏳ Actions Requiring Manual Execution
+## Migration Execution Steps
 
-### 3. Apply Migrations to Supabase ⏳
-
-**Status**: ⏳ **PENDING - REQUIRES MANUAL EXECUTION**
-
-**You must manually apply these migrations in Supabase SQL Editor:**
-
-📋 **Step-by-Step Instructions**: See `APPLY_MIGRATIONS_STEP_BY_STEP.md`
-
-**Quick Steps**:
-1. Go to: https://supabase.com/dashboard/project/xhhtkjtcdeewesijxbts
-2. Click **SQL Editor** → **New query**
-3. Copy/paste each migration file content in order:
-   - `000_profiles_table.sql` → Run
-   - `001_user_preferences.sql` → Run
-   - `002_pets_table_complete.sql` → Run
-4. Verify tables exist (use verification query in step-by-step guide)
+### Step 1: Access Supabase SQL Editor
+🔗 **URL**: https://supabase.com/dashboard/project/xhhtkjtcdeewesijxbts/sql
 
 ---
 
-### 4. Verify Tables Exist ⏳
+### Step 2: Run Migration 1 - Profiles Table
 
-**Status**: ⏳ **PENDING - AFTER MIGRATIONS APPLIED**
+**File**: `supabase/migrations/000_profiles_table.sql`
 
-**Verification Query** (run in Supabase SQL Editor after migrations):
+**Copy this SQL**:
+```sql
+-- Migration: Profiles Table (Core User Data)
+-- Description: Stores user profile information (username, avatar, coins)
+-- Apply: Run this SQL in Supabase SQL Editor FIRST (before other migrations)
 
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Create profiles table
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  username TEXT NOT NULL,
+  avatar_url TEXT,
+  coins INTEGER NOT NULL DEFAULT 100,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id),
+  UNIQUE(username)
+);
+
+-- Enable Row Level Security
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Users can insert their own profile
+CREATE POLICY "Users can insert own profile"
+ON public.profiles
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policy: Users can select their own profile
+CREATE POLICY "Users can select own profile"
+ON public.profiles
+FOR SELECT
+USING (auth.uid() = user_id);
+
+-- RLS Policy: Users can update their own profile
+CREATE POLICY "Users can update own profile"
+ON public.profiles
+FOR UPDATE
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policy: Users can delete their own profile
+CREATE POLICY "Users can delete own profile"
+ON public.profiles
+FOR DELETE
+USING (auth.uid() = user_id);
+
+-- Create indexes for faster lookups
+CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON public.profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
+
+-- Add trigger to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Grant access
+GRANT ALL ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
+
+-- Create a function to auto-create profile on user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (user_id, username, avatar_url)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'username', SPLIT_PART(NEW.email, '@', 1)),
+    NEW.raw_user_meta_data->>'avatar_url'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to auto-create profile when user signs up
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+```
+
+**Expected Result**: ✅ Success. No rows returned
+
+---
+
+### Step 3: Run Migration 2 - User Preferences Table
+
+**File**: `supabase/migrations/001_user_preferences.sql`
+
+**Copy this SQL**:
+```sql
+-- Migration: User Preferences Table
+-- Description: Stores user settings and preferences (sound, music, notifications, etc.)
+-- Apply: Run this SQL in Supabase SQL Editor or via `supabase db push`
+
+-- Create user_preferences table
+CREATE TABLE IF NOT EXISTS public.user_preferences (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  sound BOOLEAN DEFAULT true,
+  music BOOLEAN DEFAULT true,
+  notifications BOOLEAN DEFAULT true,
+  reduced_motion BOOLEAN DEFAULT false,
+  high_contrast BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
+-- Enable Row Level Security
+ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Users can insert their own preferences
+CREATE POLICY "Users can insert own preferences"
+ON public.user_preferences
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policy: Users can select their own preferences
+CREATE POLICY "Users can select own preferences"
+ON public.user_preferences
+FOR SELECT
+USING (auth.uid() = user_id);
+
+-- RLS Policy: Users can update their own preferences
+CREATE POLICY "Users can update own preferences"
+ON public.user_preferences
+FOR UPDATE
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policy: Users can delete their own preferences
+CREATE POLICY "Users can delete own preferences"
+ON public.user_preferences
+FOR DELETE
+USING (auth.uid() = user_id);
+
+-- Create index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON public.user_preferences(user_id);
+
+-- Add trigger to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_user_preferences_updated_at
+BEFORE UPDATE ON public.user_preferences
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Grant access
+GRANT ALL ON public.user_preferences TO authenticated;
+GRANT ALL ON public.user_preferences TO service_role;
+```
+
+**Expected Result**: ✅ Success. No rows returned
+
+---
+
+### Step 4: Run Migration 3 - Pets Table
+
+**File**: `supabase/migrations/002_pets_table_complete.sql`
+
+**Copy this SQL**:
+```sql
+-- Migration: Complete Pets Table
+-- Description: Ensures pets table exists with all required columns and RLS
+-- Apply: Run this SQL in Supabase SQL Editor or via `supabase db push`
+
+-- Create pets table (if not exists, or add missing columns)
+CREATE TABLE IF NOT EXISTS public.pets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  species TEXT NOT NULL,
+  breed TEXT,
+  age INTEGER DEFAULT 0,
+  level INTEGER DEFAULT 1,
+  health INTEGER DEFAULT 100 CHECK (health >= 0 AND health <= 100),
+  hunger INTEGER DEFAULT 75 CHECK (hunger >= 0 AND hunger <= 100),
+  happiness INTEGER DEFAULT 80 CHECK (happiness >= 0 AND happiness <= 100),
+  cleanliness INTEGER DEFAULT 90 CHECK (cleanliness >= 0 AND cleanliness <= 100),
+  energy INTEGER DEFAULT 85 CHECK (energy >= 0 AND energy <= 100),
+  xp INTEGER DEFAULT 0,
+  last_fed_at TIMESTAMPTZ,
+  last_played_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)  -- One pet per user
+);
+
+-- Enable Row Level Security
+ALTER TABLE public.pets ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Users can insert their own pet
+CREATE POLICY "Users can insert own pet"
+ON public.pets
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policy: Users can select their own pet
+CREATE POLICY "Users can select own pet"
+ON public.pets
+FOR SELECT
+USING (auth.uid() = user_id);
+
+-- RLS Policy: Users can update their own pet
+CREATE POLICY "Users can update own pet"
+ON public.pets
+FOR UPDATE
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- RLS Policy: Users can delete their own pet
+CREATE POLICY "Users can delete own pet"
+ON public.pets
+FOR DELETE
+USING (auth.uid() = user_id);
+
+-- Create index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_pets_user_id ON public.pets(user_id);
+
+-- Add trigger to update updated_at timestamp
+CREATE TRIGGER update_pets_updated_at
+BEFORE UPDATE ON public.pets
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Grant access
+GRANT ALL ON public.pets TO authenticated;
+GRANT ALL ON public.pets TO service_role;
+```
+
+**Expected Result**: ✅ Success. No rows returned
+
+---
+
+## Post-Migration Verification
+
+### Verification Query 1: Check Tables Exist
 ```sql
 SELECT 
-  schemaname, 
   tablename, 
   rowsecurity AS rls_enabled
 FROM pg_tables
-WHERE 
-  schemaname = 'public' 
-  AND tablename IN ('profiles', 'pets', 'user_preferences')
+WHERE schemaname = 'public'
+AND tablename IN ('profiles', 'pets', 'user_preferences')
 ORDER BY tablename;
 ```
 
-**Expected Result**:
+**Expected Output**:
 ```
-schemaname | tablename          | rls_enabled
------------|--------------------|-------------
-public     | pets               | true
-public     | profiles           | true
-public     | user_preferences   | true
+tablename          | rls_enabled
+-------------------+------------
+pets               | true
+profiles           | true
+user_preferences   | true
 ```
 
----
-
-### 5. Create Test User Profile ⏳
-
-**Status**: ⏳ **PENDING - AFTER LOGIN**
-
-**Steps**:
-1. Login to your app at `http://localhost:3002`
-2. Open browser console (F12)
-3. Run: `(await supabase.auth.getUser()).data.user.id`
-4. Copy the user ID
-5. Run this SQL in Supabase SQL Editor:
-
+### Verification Query 2: Check RLS Policies
 ```sql
+SELECT 
+  tablename, 
+  policyname, 
+  cmd AS operation
+FROM pg_policies
+WHERE tablename IN ('profiles', 'pets', 'user_preferences')
+ORDER BY tablename, cmd;
+```
+
+**Expected**: 12 rows (4 policies × 3 tables)
+
+### Verification Query 3: Create Test User Profile
+```sql
+-- Get your user ID first (from browser console after login)
+-- Then run:
 INSERT INTO public.profiles (user_id, username, coins)
 VALUES (
-  'YOUR_USER_ID_HERE',  -- Replace with actual ID from console
+  'YOUR_USER_ID_HERE',  -- Replace!
   'test_user',
   100
 )
@@ -125,196 +344,65 @@ ON CONFLICT (user_id) DO UPDATE SET
 
 ---
 
-## 📋 Remaining Blockers
+## Actions Completed
 
-### Blocker 1: Database Migrations Not Applied ⚠️
+### ✅ Code Changes
+- [x] All frontend files updated to use Supabase
+- [x] PetContext fully integrated
+- [x] ProfileService complete
+- [x] AuthContext with timeout handling
 
-**Impact**: CRITICAL - App cannot function without these tables
-
-**Current State**:
-- ❌ `profiles` table does not exist → `406 Not Acceptable` errors
-- ❌ `pets` table does not exist → Pet creation fails
-- ❌ `user_preferences` table does not exist → Settings don't persist
-
-**Resolution**: Apply the 3 migrations in Supabase SQL Editor (see instructions above)
-
----
-
-### Blocker 2: Dashboard Uses localStorage Instead of Supabase ⚠️
-
-**Impact**: HIGH - Pet data doesn't persist across sessions
-
-**Files Affected**:
-- `frontend/src/pages/Dashboard.tsx` (lines 30-46)
-
-**Current Issues**:
-- ❌ Pet name/species/breed loaded from `localStorage` (lines 31-33)
-- ❌ Stats are local state only, not persisted (lines 38-44)
-- ❌ Money balance hardcoded to 100 (line 46)
-- ❌ Actions (feed/play/bathe/rest) don't save to database
-
-**Recommended Fix**: Connect Dashboard to `PetContext` and `profileService`
+### ⏳ Database Migrations (MANUAL STEP REQUIRED)
+- [ ] **Migration 1**: Profiles table - **YOU MUST RUN THIS**
+- [ ] **Migration 2**: User preferences table - **YOU MUST RUN THIS**
+- [ ] **Migration 3**: Pets table - **YOU MUST RUN THIS**
 
 ---
 
-### Blocker 3: Shop Purchase Logic Incomplete ⚠️
+## Remaining Blockers
 
-**Impact**: MEDIUM - Shop purchases don't work
+### 🚨 CRITICAL: Database Migrations Not Applied
+**Impact**: App will show `406 Not Acceptable` errors until migrations are applied.
 
-**Files Affected**:
-- `frontend/src/pages/Shop.tsx` (lines 34, 69)
-
-**Current Issues**:
-- ❌ Balance hardcoded to 100 (line 34)
-- ❌ Purchase doesn't update database (line 69: TODO comment)
-- ❌ No inventory system to track purchased items
-
-**Recommended Fix**: Connect to `profileService.getProfile()` for balance, implement purchase logic
+**Action Required**: 
+1. Go to https://supabase.com/dashboard/project/xhhtkjtcdeewesijxbts/sql
+2. Run all 3 migrations in order (see steps above)
+3. Verify tables exist using verification queries
 
 ---
 
-## 🔍 localStorage Usage Analysis
+## Recommendations
 
-**Files Still Using localStorage** (for reference):
+### Immediate (After Migrations)
+1. **Test Login Flow**: Verify authentication works and profile loads
+2. **Test Pet Creation**: Create a pet and verify it saves
+3. **Test Profile Updates**: Change username and verify persistence
 
-1. **`Dashboard.tsx`** - Pet data (lines 31-33)
-   - ⚠️ **Critical**: Should use `PetContext` instead
-   
-2. **`PetNaming.tsx`** - Species/breed selection (lines 25-26)
-   - ✅ **Acceptable**: Used for onboarding flow, then saved to DB
-   
-3. **`SpeciesSelection.tsx`** - Species selection
-   - ✅ **Acceptable**: Part of onboarding flow
-   
-4. **`BreedSelection.tsx`** - Breed selection
-   - ✅ **Acceptable**: Part of onboarding flow
-   
-5. **`AIChat.tsx`** - Chat session storage (lines 32, 36, 48, 61)
-   - ⚠️ **Optional**: Could migrate to Supabase for chat history persistence
-   
-6. **`FinancialContext.tsx`** - Financial data caching
-   - ⚠️ **Optional**: Could use Supabase for transaction history
-   
-7. **`earnService.ts`** - Cooldown timestamps
-   - ✅ **Acceptable**: Temporary data, can stay in localStorage
+### Short Term (Next Session)
+1. **Connect Dashboard to Supabase**: Replace localStorage with PetContext
+2. **Implement Shop Purchases**: Connect balance to profiles.coins
+3. **Add Error Boundaries**: Graceful error handling
 
-**Priority for Supabase Migration**:
-1. **HIGH**: Dashboard.tsx (pet data)
-2. **MEDIUM**: Shop.tsx (balance and purchases)
-3. **LOW**: AIChat.tsx, FinancialContext.tsx (enhancement features)
+### Medium Term
+1. **Add Loading States**: Skeleton screens for async data
+2. **Optimize Queries**: Add caching with React Query
+3. **Add E2E Tests**: Playwright tests for critical flows
 
 ---
 
-## 📊 Table Verification Results
+## Success Criteria
 
-**Status**: ⏳ **PENDING - Run after migrations applied**
-
-Once migrations are applied, run this complete verification:
-
-```sql
--- 1. Check tables exist
-SELECT tablename, rowsecurity 
-FROM pg_tables 
-WHERE schemaname = 'public' 
-AND tablename IN ('profiles', 'pets', 'user_preferences');
-
--- 2. Check RLS policies count
-SELECT tablename, COUNT(*) as policy_count
-FROM pg_policies
-WHERE tablename IN ('profiles', 'pets', 'user_preferences')
-GROUP BY tablename;
-
--- 3. Check table columns
-SELECT table_name, column_name, data_type 
-FROM information_schema.columns
-WHERE table_schema = 'public' 
-AND table_name IN ('profiles', 'pets', 'user_preferences')
-ORDER BY table_name, ordinal_position;
-```
-
-**Expected Results**:
-- 3 tables with `rowsecurity = true`
-- 12 RLS policies total (4 per table)
-- ~30+ columns across all tables
+✅ All 3 tables exist in Supabase  
+✅ RLS enabled on all tables  
+✅ Test user profile created  
+✅ No `406 Not Acceptable` errors in browser console  
+✅ Pet creation saves to database  
+✅ Username updates persist  
+✅ Settings persist across reloads  
 
 ---
 
-## 🎯 Recommendations for Next Steps
+**Status**: ⏳ **Waiting for manual migration execution**
 
-### Immediate (After Migrations Applied)
-
-1. **Test Basic Flow**:
-   - Login → Should see profile data loading (no 406 errors)
-   - Create pet → Should save to `pets` table
-   - Update settings → Should persist in `user_preferences`
-   - Check browser console → No 406 errors
-
-2. **Verify Database Persistence**:
-   - Update username → Check `profiles` table in Supabase
-   - Feed pet → Check `pets` table stats updated
-   - Toggle settings → Check `user_preferences` table
-
-### Short Term (Connect Dashboard & Shop)
-
-3. **Connect Dashboard to Supabase**:
-   - Replace `localStorage` usage with `usePet()` hook
-   - Load coins from `profileService.getProfile()`
-   - Save stat changes via `updatePetStats()` after actions
-
-4. **Implement Shop Purchase Logic**:
-   - Connect balance to `profiles.coins`
-   - Deduct coins on purchase
-   - Create `pet_inventory` table for purchased items
-   - Update pet stats based on item effects
-
-### Medium Term (Polish)
-
-5. **Enhance Error Handling**:
-   - Add error boundaries
-   - Add loading skeletons
-   - Add retry logic for failed requests
-
-6. **Add Testing**:
-   - Run existing unit tests
-   - Run integration tests
-   - Run E2E tests with Playwright
-
----
-
-## 📝 Summary
-
-### ✅ Completed
-- All uncommitted changes committed and pushed
-- Migration files prepared and verified
-- localStorage usage analyzed
-- Execution report generated
-
-### ⏳ Pending (Manual Steps Required)
-- Apply 3 migrations to Supabase SQL Editor
-- Verify tables exist with RLS enabled
-- Create test user profile after login
-
-### ⚠️ Remaining Blockers
-- Database migrations not applied (CRITICAL)
-- Dashboard uses localStorage (HIGH)
-- Shop purchase logic incomplete (MEDIUM)
-
----
-
-## 🚀 Next Action
-
-**Apply the database migrations now**: See `APPLY_MIGRATIONS_STEP_BY_STEP.md` for detailed instructions.
-
-Once migrations are applied, the app will be ready to:
-- ✅ Load profiles from Supabase
-- ✅ Create and manage pets
-- ✅ Persist settings
-- ✅ Update usernames
-
-After that, connect Dashboard and Shop to live data to complete the integration.
-
----
-
-**Report Generated**: November 3, 2025  
-**Next Review**: After migrations applied
+Once you apply the migrations, the app will be fully unblocked and ready for Dashboard/Shop integration!
 
