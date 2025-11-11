@@ -1,230 +1,122 @@
-import type { Database } from '../types/database.types';
-import { supabase } from '../lib/supabase';
+import { apiRequest, ApiError } from '../api/httpClient';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
-type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
+export interface Preferences {
+  sound: boolean;
+  music: boolean;
+  notifications: boolean;
+  reduced_motion: boolean;
+  high_contrast: boolean;
+}
+
+export interface Profile {
+  id: string;
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+  coins: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+  preferences: Preferences;
+}
+
+export interface ProfileCreateInput {
+  username: string;
+  avatar_url?: string | null;
+  preferences?: Partial<Preferences>;
+}
+
+export interface ProfileUpdateInput {
+  username?: string;
+  avatar_url?: string | null;
+  preferences?: Partial<Preferences>;
+  coins?: number;
+}
+
+const mapPreferences = (input: Partial<Preferences> | undefined): Preferences => ({
+  sound: input?.sound ?? true,
+  music: input?.music ?? true,
+  notifications: input?.notifications ?? true,
+  reduced_motion: input?.reduced_motion ?? false,
+  high_contrast: input?.high_contrast ?? false,
+});
+
+const transformProfile = (data: any): Profile => ({
+  id: data.user_id,
+  user_id: data.user_id,
+  username: data.username,
+  avatar_url: data.avatar_url ?? null,
+  coins: data.coins ?? 0,
+  created_at: data.created_at ?? null,
+  updated_at: data.updated_at ?? null,
+  preferences: mapPreferences(data.preferences),
+});
 
 export const profileService = {
-  /**
-   * Get user profile
-   */
-  async getProfile(userId: string): Promise<Profile | null> {
-    console.log('🔵 getProfile called for userId:', userId);
-    
-    if (!supabase) {
-      throw new Error('Supabase client not initialized');
-    }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // Profile doesn't exist yet
-        console.log('📭 No profile found for user:', userId);
+  async getProfile(_userId?: string): Promise<Profile | null> {
+    try {
+      const data = await apiRequest<any>('/api/profiles/me', { allowedStatuses: [404] });
+      if (!data) {
         return null;
       }
-      console.error('❌ Error fetching profile:', error);
-      throw error;
-    }
-
-    console.log('✅ Profile found:', data);
-    return data;
-  },
-
-  /**
-   * Create user profile (called on signup)
-   * Uses the authenticated Supabase session to ensure correct user_id
-   * Includes retry logic to wait for session to be ready after OAuth
-   */
-  async createProfile(username: string): Promise<Profile> {
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔵 createProfile called');
-    console.log('Username:', username);
-    console.log('═══════════════════════════════════════════════════════');
-    
-    if (!supabase) {
-      throw new Error('Supabase client not initialized. Check environment variables.');
-    }
-
-    if (!username || !username.trim()) {
-      throw new Error('Username is required');
-    }
-
-    // CRITICAL FIX: Guard against missing session by calling getUser()
-    // This ensures we have a valid authenticated session before creating the profile
-    // Includes retry logic for OAuth callback timing
-    console.log('🔵 Waiting for authenticated Supabase session...');
-    let user = null;
-    let attempts = 0;
-    const maxAttempts = 5; // Increased attempts for better reliability
-    const retryDelay = 500; // 500ms between retries
-
-    while (attempts < maxAttempts && !user) {
-      attempts++;
-      console.log(`🔄 Attempt ${attempts}/${maxAttempts} to get authenticated user...`);
-      
-      // CRITICAL: Use getUser() to verify the session exists and is valid
-      // This throws an error if there's no session, which we catch and handle
-      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) {
-        console.error('❌ Error getting user:', userError);
-        console.error('  Error code:', userError.message);
-        
-        // If it's a session error, provide a clear message
-        if (userError.message.includes('session') || userError.message.includes('JWT')) {
-          if (attempts >= maxAttempts) {
-            throw new Error('Auth session missing! Please log in again.');
-          }
-        } else if (attempts >= maxAttempts) {
-          throw new Error(`Authentication error: ${userError.message}`);
-        }
-      } else if (currentUser) {
-        user = currentUser;
-        console.log('✅ Authenticated user found!');
-        console.log('  User ID:', user.id);
-        console.log('  User email:', user.email);
-        break;
-      } else {
-        console.log('⏳ No user yet, waiting...');
-        if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
+      if (!(data as any).user_id) {
+        return null;
       }
-    }
-    
-    // CRITICAL FIX: Only insert profile if user exists
-    // This prevents "Auth session missing!" errors
-    if (!user) {
-      console.error('❌ No authenticated user found after', maxAttempts, 'attempts');
-      throw new Error('Auth session missing! Please log in again.');
-    }
-
-    console.log('✅ Authenticated user ID from Supabase:', user.id);
-    console.log('📝 User email:', user.email);
-    console.log('📝 User metadata:', user.user_metadata);
-
-    // Use the authenticated user's ID for the insert
-    const profileData = {
-      user_id: user.id,
-      username: username.trim(),
-      coins: 100,
-    };
-
-    console.log('🔵 Inserting profile into Supabase profiles table...');
-    console.log('Profile data:', profileData);
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert([profileData])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('═══════════════════════════════════════════════════════');
-      console.error('❌❌❌ PROFILE INSERT FAILED');
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      console.error('Error details:', error.details);
-      console.error('Error hint:', error.hint);
-      console.error('═══════════════════════════════════════════════════════');
-      throw new Error(`Failed to create profile: ${error.message}`);
-    }
-
-    if (!data) {
-      console.error('❌ Profile insert succeeded but no data returned');
-      throw new Error('Profile created but no data returned from database');
-    }
-
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('✅✅✅ PROFILE SUCCESSFULLY SAVED TO DATABASE!');
-    console.log('Profile ID:', data.id);
-    console.log('Profile user_id:', data.user_id);
-    console.log('Profile username:', data.username);
-    console.log('Profile coins:', data.coins);
-    console.log('Profile created_at:', data.created_at);
-    console.log('═══════════════════════════════════════════════════════');
-    
-    return data;
-  },
-
-  /**
-   * Update user profile
-   */
-  async updateProfile(userId: string, updates: ProfileUpdate): Promise<Profile> {
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔵 updateProfile called');
-    console.log('  User ID:', userId);
-    console.log('  Updates:', updates);
-    console.log('  Timestamp:', new Date().toISOString());
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('═══════════════════════════════════════════════════════');
-      console.error('❌ Profile update FAILED');
-      console.error('  Error code:', error.code);
-      console.error('  Error message:', error.message);
-      console.error('  Error details:', error.details);
-      console.error('═══════════════════════════════════════════════════════');
-      throw error;
-    }
-
-    console.log('✅ Profile updated successfully');
-    console.log('  Updated data:', data);
-    console.log('═══════════════════════════════════════════════════════');
-
-    return data;
-  },
-
-  /**
-   * Update username (updates both profile and auth metadata)
-   */
-  async updateUsername(userId: string, username: string): Promise<Profile> {
-    console.log('🔵 updateUsername called for userId:', userId, 'new username:', username);
-    
-    // Update the profile in the database
-    const updatedProfile = await this.updateProfile(userId, { username });
-    
-    // Also update the user metadata in Supabase Auth
-    try {
-      const { error: authError } = await supabase.auth.updateUser({
-        data: {
-          display_name: username,
-        },
-      });
-      
-      if (authError) {
-        console.warn('⚠️ Failed to update auth metadata:', authError);
-        // Don't throw - profile update succeeded, auth metadata update is secondary
-      } else {
-        console.log('✅ Auth metadata updated successfully');
-      }
+      return transformProfile(data);
     } catch (error) {
-      console.warn('⚠️ Error updating auth metadata:', error);
-      // Don't throw - profile update succeeded
+      if (error instanceof ApiError && error.status === 404) {
+        return null;
+      }
+      throw error;
     }
-    
-    return updatedProfile;
   },
 
-  /**
-   * Update avatar
-   */
-  async updateAvatar(userId: string, avatarUrl: string): Promise<Profile> {
-    return await this.updateProfile(userId, { avatar_url: avatarUrl });
+  async createProfile(input: ProfileCreateInput | string): Promise<Profile> {
+    const payload: ProfileCreateInput = typeof input === 'string' ? { username: input } : input;
+    const data = await apiRequest<any>('/api/profiles', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: payload.username,
+        avatar_url: payload.avatar_url,
+        preferences: payload.preferences,
+      }),
+    });
+    return transformProfile(data);
+  },
+
+  async updateProfile(_userId: string, updates: ProfileUpdateInput): Promise<Profile> {
+    const data = await apiRequest<any>('/api/profiles/me', {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    return transformProfile(data);
+  },
+
+  async deleteProfile(): Promise<void> {
+    await apiRequest('/api/profiles/me', {
+      method: 'DELETE',
+    });
+  },
+
+  async updateUsername(_userId: string, username: string): Promise<Profile> {
+    return this.updateProfile(_userId, { username });
+  },
+
+  async uploadAvatar(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const data = await apiRequest<{ avatar_url: string }>('/api/profiles/me/avatar', {
+      method: 'POST',
+      body: formData,
+    });
+    return data.avatar_url;
+  },
+
+  async updateAvatar(_userId: string, file: File): Promise<Profile> {
+    await this.uploadAvatar(file);
+    const profile = await this.getProfile();
+    if (!profile) {
+      throw new Error('Profile not found after avatar upload');
+    }
+    return profile;
   },
 };
-

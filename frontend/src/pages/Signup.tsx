@@ -19,7 +19,7 @@ export const SignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
-  const { signUp } = useAuth();
+  const { signUp, demoModeAvailable, isDemoModeActive, enterDemoMode } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +62,18 @@ export const SignUp = () => {
     setIsLoading(true);
     
     try {
+      if (demoModeAvailable) {
+        await enterDemoMode({
+          email: formData.email || 'demo.user@example.com',
+          displayName: formData.displayName || 'Demo Explorer',
+        });
+        setSuccess(true);
+        setTimeout(() => {
+          navigate(from, { replace: true });
+        }, 1200);
+        return;
+      }
+
       console.log('Attempting Google OAuth...');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -87,6 +99,28 @@ export const SignUp = () => {
     } catch (err: any) {
       console.error('Google sign-up error:', err);
       setError(`Google sign-up failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDemoContinue = async () => {
+    if (!demoModeAvailable) return;
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await enterDemoMode({
+        email: formData.email || 'demo.user@example.com',
+        displayName: formData.displayName || 'Demo Explorer',
+      });
+      setSuccess(true);
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 1200);
+    } catch (err: any) {
+      console.error('Demo mode activation error:', err);
+      setError('Unable to enable demo mode. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -142,6 +176,34 @@ export const SignUp = () => {
         </motion.div>
 
         <motion.form className="mt-8 space-y-8" onSubmit={handleSubmit} variants={itemVariants}>
+          {demoModeAvailable && (
+            <motion.div
+              variants={itemVariants}
+              className="rounded-pet border border-amber-200 bg-amber-50 p-4 text-amber-900 shadow-sm"
+            >
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-start gap-3 md:items-center">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-500" />
+                  <div>
+                    <p className="font-semibold">Demo mode is available for this session.</p>
+                    <p className="text-sm text-amber-800">
+                      We&apos;ll create a sandbox account so you can finish onboarding without Supabase.
+                    </p>
+                  </div>
+                </div>
+                {!isDemoModeActive && (
+                  <button
+                    type="button"
+                    onClick={handleDemoContinue}
+                    disabled={isLoading}
+                    className="inline-flex items-center gap-2 self-start rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-600 disabled:opacity-60 md:self-auto"
+                  >
+                    <span>Use Demo Profile</span>
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}

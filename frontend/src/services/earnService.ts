@@ -1,4 +1,5 @@
 import { shopService } from './shopService';
+import { isSupabaseMock } from '@/lib/supabase';
 
 export type Chore = {
   id: string;
@@ -13,8 +14,6 @@ export type ChoreResult = {
   reward: number;
   completedAt: Date;
 };
-
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
 
 export const defaultChores: Chore[] = [
   { id: 'wash-dishes', name: 'Wash Dishes', reward: 15, timeSeconds: 30, difficulty: 'easy', cooldownSeconds: 60 },
@@ -57,7 +56,7 @@ export const earnService = {
 
     const reward = chore.reward;
 
-    if (useMock) {
+    if (isSupabaseMock()) {
       // Mock: just return and pretend we inserted a transaction
       return { reward, completedAt: new Date() };
     }

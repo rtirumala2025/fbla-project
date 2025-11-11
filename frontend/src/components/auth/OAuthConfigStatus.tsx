@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import { validateSupabaseOAuth, ValidationResult } from '../../utils/validateSupabaseOAuth';
 
 export const OAuthConfigStatus = () => {
@@ -86,7 +86,7 @@ export const OAuthConfigStatus = () => {
             </p>
             <ol className="text-sm text-gray-700 space-y-1 pl-5 list-decimal">
               <li>Check browser console (F12) for detailed validation output</li>
-              <li>Verify <code className="bg-gray-100 px-1 rounded">REACT_APP_USE_MOCK=false</code> in <code className="bg-gray-100 px-1 rounded">.env</code></li>
+              <li>Verify <code className="bg-gray-100 px-1 rounded">VITE_SUPABASE_USE_MOCK=false</code> in <code className="bg-gray-100 px-1 rounded">.env</code></li>
               <li>Enable Google OAuth in Supabase Dashboard</li>
               <li>Add redirect URLs to Supabase configuration</li>
               <li>Restart dev server after changes</li>

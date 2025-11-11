@@ -7,5 +7,9 @@
     "dotenv": "^17.2.3",
     "playwright": "^1.56.1",
     "tslib": "^2.8.1"
+  },
+  "scripts": {
+    "lint": "npm --prefix frontend run lint && ruff check app",
+    "test": "npm --prefix frontend run test:ci && pytest"
   }
 }

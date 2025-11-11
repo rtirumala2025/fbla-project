@@ -71,6 +71,7 @@ ENV/
 *.sqlite3
 *.db
 *.sql
+!supabase/migrations/*.sql
 
 # Frontend
 .cache/

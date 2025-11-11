@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <defs>
+    <style>
+      .title { font: bold 26px Arial, sans-serif; fill: #111827; }
+      .table-title { font: bold 18px Arial, sans-serif; fill: #1f2937; }
+      .column { font: 14px Arial, sans-serif; fill: #111827; }
+      .pk { font: italic 14px Arial, sans-serif; fill: #2563eb; }
+      .fk { font: italic 14px Arial, sans-serif; fill: #059669; }
+      .table { fill: #f9fafb; stroke: #4b5563; stroke-width: 2; rx: 12; ry: 12; }
+      .connection { stroke: #2563eb; stroke-width: 2.5; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="13" markerHeight="13" refX="10" refY="6" orient="auto">
+      <polygon points="0 0, 12 6, 0 12" fill="#2563eb" />
+    </marker>
+  </defs>
+
+  <rect x="20" y="20" width="1160" height="860" fill="#ffffff" stroke="#d1d5db" stroke-width="2" rx="30" ry="30"/>
+  <text x="600" y="70" text-anchor="middle" class="title">Supabase Relational Model – Virtual Pet Platform</text>
+
+  <!-- auth.users -->
+  <rect x="480" y="110" width="260" height="170" class="table"/>
+  <text x="610" y="145" text-anchor="middle" class="table-title">auth.users (supabase)</text>
+  <text x="500" y="180" class="pk">PK · id UUID</text>
+  <text x="500" y="205" class="column">email TEXT</text>
+  <text x="500" y="230" class="column">created_at TIMESTAMPTZ</text>
+  <text x="500" y="255" class="column">raw_user_meta_data JSONB</text>
+
+  <!-- profiles -->
+  <rect x="120" y="340" width="260" height="210" class="table"/>
+  <text x="250" y="375" text-anchor="middle" class="table-title">public.profiles</text>
+  <text x="140" y="410" class="pk">PK · id UUID</text>
+  <text x="140" y="435" class="fk">FK · user_id UUID → auth.users.id</text>
+  <text x="140" y="460" class="column">username TEXT UNIQUE</text>
+  <text x="140" y="485" class="column">avatar_url TEXT</text>
+  <text x="140" y="510" class="column">coins INTEGER (default 100)</text>
+  <text x="140" y="535" class="column">created_at · updated_at</text>
+
+  <!-- user_preferences -->
+  <rect x="470" y="340" width="260" height="240" class="table"/>
+  <text x="600" y="375" text-anchor="middle" class="table-title">public.user_preferences</text>
+  <text x="490" y="410" class="pk">PK · id UUID</text>
+  <text x="490" y="435" class="fk">FK · user_id UUID → auth.users.id</text>
+  <text x="490" y="460" class="column">sound BOOLEAN</text>
+  <text x="490" y="485" class="column">music BOOLEAN</text>
+  <text x="490" y="510" class="column">notifications BOOLEAN</text>
+  <text x="490" y="535" class="column">reduced_motion BOOLEAN</text>
+  <text x="490" y="560" class="column">high_contrast BOOLEAN</text>
+  <text x="490" y="585" class="column">created_at · updated_at</text>
+
+  <!-- pets -->
+  <rect x="820" y="320" width="260" height="280" class="table"/>
+  <text x="950" y="355" text-anchor="middle" class="table-title">public.pets</text>
+  <text x="840" y="390" class="pk">PK · id UUID</text>
+  <text x="840" y="415" class="fk">FK · user_id UUID → auth.users.id</text>
+  <text x="840" y="440" class="column">name TEXT</text>
+  <text x="840" y="465" class="column">species TEXT</text>
+  <text x="840" y="490" class="column">level INTEGER</text>
+  <text x="840" y="515" class="column">stats: health · hunger · happiness ...</text>
+  <text x="840" y="540" class="column">last_fed_at · last_played_at</text>
+  <text x="840" y="565" class="column">UNIQUE (user_id)</text>
+  <text x="840" y="590" class="column">created_at · updated_at</text>
+
+  <!-- pet_inventory -->
+  <rect x="160" y="620" width="280" height="210" class="table"/>
+  <text x="300" y="655" text-anchor="middle" class="table-title">public.pet_inventory</text>
+  <text x="180" y="690" class="pk">PK · id UUID</text>
+  <text x="180" y="715" class="fk">FK · user_id UUID → auth.users.id</text>
+  <text x="180" y="740" class="fk">FK · pet_id UUID → public.pets.id</text>
+  <text x="180" y="765" class="column">item_id TEXT</text>
+  <text x="180" y="790" class="column">quantity INTEGER</text>
+  <text x="180" y="815" class="column">created_at · updated_at</text>
+
+  <!-- finance_wallets -->
+  <rect x="510" y="640" width="260" height="190" class="table"/>
+  <text x="640" y="675" text-anchor="middle" class="table-title">public.finance_wallets</text>
+  <text x="530" y="710" class="pk">PK · id UUID</text>
+  <text x="530" y="735" class="fk">FK · user_id UUID → auth.users.id</text>
+  <text x="530" y="760" class="column">balance INTEGER</text>
+  <text x="530" y="785" class="column">lifetime_earned / spent</text>
+  <text x="530" y="810" class="column">created_at · updated_at</text>
+
+  <!-- finance_transactions -->
+  <rect x="860" y="640" width="280" height="220" class="table"/>
+  <text x="1000" y="675" text-anchor="middle" class="table-title">public.finance_transactions</text>
+  <text x="880" y="710" class="pk">PK · id UUID</text>
+  <text x="880" y="735" class="fk">FK · wallet_id UUID → finance_wallets.id</text>
+  <text x="880" y="760" class="fk">FK · user_id UUID → auth.users.id</text>
+  <text x="880" y="785" class="column">amount INTEGER</text>
+  <text x="880" y="810" class="column">transaction_type TEXT</text>
+  <text x="880" y="835" class="column">category · description · metadata</text>
+
+  <!-- finance_inventory -->
+  <rect x="840" y="70" width="260" height="200" class="table"/>
+  <text x="970" y="105" text-anchor="middle" class="table-title">public.finance_inventory</text>
+  <text x="860" y="140" class="pk">PK · id UUID</text>
+  <text x="860" y="165" class="fk">FK · wallet_id UUID → finance_wallets.id</text>
+  <text x="860" y="190" class="fk">FK · user_id UUID → auth.users.id</text>
+  <text x="860" y="215" class="column">item_id TEXT</text>
+  <text x="860" y="240" class="column">quantity INTEGER</text>
+  <text x="860" y="265" class="column">shop_item_id (nullable)</text>
+
+  <!-- finance_shop_items -->
+  <rect x="120" y="110" width="260" height="220" class="table"/>
+  <text x="250" y="145" text-anchor="middle" class="table-title">public.finance_shop_items</text>
+  <text x="140" y="180" class="pk">PK · id UUID</text>
+  <text x="140" y="205" class="column">sku TEXT UNIQUE</text>
+  <text x="140" y="230" class="column">name TEXT</text>
+  <text x="140" y="255" class="column">category TEXT</text>
+  <text x="140" y="280" class="column">price INTEGER</text>
+  <text x="140" y="305" class="column">metadata JSONB</text>
+
+  <!-- Connections -->
+  <line x1="610" y1="280" x2="610" y2="340" class="connection"/>
+  <line x1="480" y1="220" x2="380" y2="340" class="connection"/>
+  <line x1="740" y1="220" x2="820" y2="340" class="connection"/>
+  <line x1="250" y1="320" x2="250" y2="340" class="connection"/>
+  <line x1="300" y1="550" x2="300" y2="620" class="connection"/>
+  <line x1="600" y1="580" x2="640" y2="640" class="connection"/>
+  <line x1="860" y1="600" x2="900" y2="640" class="connection"/>
+  <line x1="760" y1="740" x2="860" y2="740" class="connection"/>
+  <line x1="380" y1="220" x2="480" y2="220" class="connection"/>
+  <line x1="970" y1="270" x2="970" y2="320" class="connection"/>
+
+  <!-- Legend -->
+  <rect x="460" y="820" width="280" height="40" class="table"/>
+  <text x="480" y="845" class="pk">Blue arrow = parent → child foreign key</text>
+</svg>
+

@@ -1,0 +1,245 @@
+%PDF-1.4
+%����
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 9 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 1781 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+(FBLA PRESENTATION DECK – VIRTUAL PET COMPANION) Tj
+T*
+(----------------------------------------------) Tj
+T*
+() Tj
+T*
+(❝ Use this outline with Google Slides, PowerPoint, or Marp. Each top-level heading \(`##`\)) Tj
+T*
+(   represents a slide.) Tj
+T*
+(❝ Suggested timing: 7 minutes total.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(SLIDE 1 – TITLE & TEAM) Tj
+T*
+(----------------------) Tj
+T*
+(• Project: Virtual Pet Companion – Financial Literacy Through Gameplay) Tj
+T*
+(• Team Members: *Add names*) Tj
+T*
+(• FBLA Intro to Programming • November 2025) Tj
+T*
+(• QR code / short link to live demo) Tj
+T*
+() Tj
+T*
+(SLIDE 2 – PROBLEM & VISION) Tj
+T*
+(--------------------------) Tj
+T*
+(• Students struggle to connect daily habits with budgeting concepts.) Tj
+T*
+(• Traditional lessons lack engagement or personalization.) Tj
+T*
+(• Our solution: gamified pet care + real-world finance scenarios + AI coaching.) Tj
+T*
+() Tj
+T*
+(SLIDE 3 – FEATURE SNAPSHOT) Tj
+T*
+(--------------------------) Tj
+T*
+(• Adopt & customize animated pets.) Tj
+T*
+(• Real-time stat management \(hunger, happiness, cleanliness, energy, health\).) Tj
+T*
+(• Mini-games & shop with balanced economy.) Tj
+T*
+(• AI mood insights, health forecasts, and spending advice.) Tj
+T*
+(• Accessibility-first design \(color-blind, reduced motion, keyboard nav\).) Tj
+T*
+() Tj
+T*
+(SLIDE 4 – ARCHITECTURE OVERVIEW) Tj
+T*
+(-------------------------------) Tj
+T*
+(• React + Vite frontend with Supabase JS.) Tj
+T*
+(• FastAPI backend exposing domain routers.) Tj
+T*
+(• Supabase Postgres for auth, pets, and transactions.) Tj
+T*
+(• AI service layer ready for OpenRouter integration.) Tj
+T*
+(• Callout: see `docs/architecture-diagram.mmd`.) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 9 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 1899 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+(SLIDE 5 – SUPABASE DATA MODEL) Tj
+T*
+(-----------------------------) Tj
+T*
+(• Profiles \(username, coins\) auto-created via trigger.) Tj
+T*
+(• Pets table with mood/XP stats \(1:1 per profile\).) Tj
+T*
+(• Transactions, inventory, and shop tables for economy.) Tj
+T*
+(• RLS policies enforce per-user access.) Tj
+T*
+(• Callout: `docs/supabase-erd.mmd`.) Tj
+T*
+() Tj
+T*
+(SLIDE 6 – DEMO HIGHLIGHTS) Tj
+T*
+(-------------------------) Tj
+T*
+(• Onboarding → Dashboard animations.) Tj
+T*
+(• Care loop \(feed/play/clean/rest\) with AI reactions.) Tj
+T*
+(• Finance dashboard & CSV export.) Tj
+T*
+(• Mini-game quick showcase \(Memory Match\).) Tj
+T*
+(• NextGen Lab \(voice, AR, weather concepts\).) Tj
+T*
+() Tj
+T*
+(SLIDE 7 – IMPACT & OUTCOMES) Tj
+T*
+(---------------------------) Tj
+T*
+(• Reinforces budgeting vocabulary \(income, expense, savings\).) Tj
+T*
+(• Encourages routine building via streaks and notifications.) Tj
+T*
+(• Analytics turn gameplay into reflective learning moments.) Tj
+T*
+(• Designed to scale into classroom challenges with leaderboards.) Tj
+T*
+() Tj
+T*
+(SLIDE 8 – ACCESSIBILITY & INCLUSION) Tj
+T*
+(-----------------------------------) Tj
+T*
+(• Dual themes + color-blind palette + high contrast.) Tj
+T*
+(• Keyboard-first navigation and descriptive tooltips.) Tj
+T*
+(• Screen-reader friendly headings and ARIA labels.) Tj
+T*
+(• Offline banner + caching for limited connectivity environments.) Tj
+T*
+() Tj
+T*
+(SLIDE 9 – TESTING & QUALITY) Tj
+T*
+(---------------------------) Tj
+T*
+(• Backend: pytest suites covering AI, finance, pets, analytics.) Tj
+T*
+(• Frontend: ESLint, unit tests, and Playwright smoke path.) Tj
+T*
+(• Automated coverage report \(`reports/test-coverage.md`\).) Tj
+T*
+(• Seed script ensures consistent judge-ready data.) Tj
+T*
+() Tj
+T*
+(SLIDE 10 – ROADMAP & CALL-TO-ACTION) Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 9 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 637 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+(-----------------------------------) Tj
+T*
+(• Upcoming: multi-pet families, classroom challenges, mobile PWA.) Tj
+T*
+(• AI: live LLM personalities via OpenRouter.) Tj
+T*
+(• Hardware: IoT badge for real-world habit tracking.) Tj
+T*
+(• Ask judges: feedback on curriculum alignment and partnership ideas.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+( PRESENTER NOTES) Tj
+T*
+( ---------------) Tj
+T*
+(• Pair this deck with `docs/demo-script.md`.) Tj
+T*
+(• Embed screenshots/gifs for care loop, analytics, and mini-games.) Tj
+T*
+(• Leave time for Q&A; reference user manual for detailed answers.) Tj
+T*
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000133 00000 n 
+0000000259 00000 n 
+0000002092 00000 n 
+0000002218 00000 n 
+0000004169 00000 n 
+0000004295 00000 n 
+0000004983 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+5053
+%%EOF

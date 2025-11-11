@@ -1,0 +1,93 @@
+%% Mermaid ERD describing Supabase schema for the Virtual Pet project
+%% Export via: mmdc -i docs/supabase-erd.mmd -o docs/supabase-erd.svg
+
+erDiagram
+    AUTH_USERS {
+        uuid id PK
+        text email
+        jsonb raw_user_meta_data
+        timestamptz created_at
+    }
+
+    PROFILES {
+        uuid id PK
+        uuid user_id FK
+        text username
+        text avatar_url
+        int coins
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    USER_PREFERENCES {
+        uuid id PK
+        uuid user_id FK
+        boolean sound
+        boolean music
+        boolean notifications
+        boolean reduced_motion
+        boolean high_contrast
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    PETS {
+        uuid id PK
+        uuid user_id FK
+        text name
+        text species
+        text breed
+        int age
+        int level
+        int xp
+        int health
+        int hunger
+        int happiness
+        int cleanliness
+        int energy
+        timestamptz last_fed_at
+        timestamptz last_played_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    SHOP_ITEMS {
+        uuid id PK
+        text name
+        text category
+        int price
+        text emoji
+        text description
+        text[] species
+        timestamptz created_at
+    }
+
+    TRANSACTIONS {
+        uuid id PK
+        uuid user_id FK
+        text item_id
+        text item_name
+        int amount
+        text transaction_type
+        timestamptz created_at
+    }
+
+    PET_INVENTORY {
+        uuid id PK
+        uuid pet_id FK
+        text item_id
+        int quantity
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    PROFILES ||--o{ PETS : "owns"
+    PROFILES ||--|| USER_PREFERENCES : "configures"
+    AUTH_USERS ||--|| PROFILES : "1:1 via trigger"
+    AUTH_USERS ||--o{ USER_PREFERENCES : "auth.uid()"
+    AUTH_USERS ||--o{ TRANSACTIONS : "records"
+    PETS ||--o{ PET_INVENTORY : "collects"
+    SHOP_ITEMS ||--o{ TRANSACTIONS : "purchased in"
+    SHOP_ITEMS ||--o{ PET_INVENTORY : "grants"
+    TRANSACTIONS }o--|| PETS : "optional pet context"
+

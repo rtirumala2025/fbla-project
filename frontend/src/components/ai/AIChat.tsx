@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '../common/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +12,12 @@ type Message = {
   timestamp: Date;
   action?: string;
   state?: any;
+  notifications?: string[];
+  healthForecast?: {
+    trend?: string;
+    risk?: string;
+    recommended_actions?: string[];
+  };
 };
 
 export const AIChat: React.FC = () => {
@@ -77,6 +82,10 @@ export const AIChat: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+    if (!currentUser) {
+      setError('Please sign in to chat with your pet.');
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -106,29 +115,60 @@ export const AIChat: React.FC = () => {
 
     try {
       let response;
-      let isCommand = false;
       
       // Handle commands (if any)
       if (input.startsWith('/')) {
         const [command, ...args] = input.slice(1).split(' ');
-        isCommand = true;
-        
-        // Map commands to pet actions
+        const normalizedCommand = command.toLowerCase();
         const commandMap: Record<string, string> = {
-          'feed': 'feed',
-          'play': 'play',
-          'sleep': 'sleep',
-          'pet': 'pet',
-          'train': 'train',
-          'clean': 'clean',
-          'status': 'status'
+          feed: 'feed',
+          play: 'play',
+          sleep: 'rest',
+          rest: 'rest',
+          nap: 'rest',
+          pet: 'play',
+          train: 'play',
+          clean: 'bathe',
+          wash: 'bathe',
+          bath: 'bathe',
+          status: 'status',
+          stats: 'status',
+          check: 'status',
+          help: 'status',
         };
-        
-        const action = commandMap[command.toLowerCase()] || 'talk';
-        
+
+        const action = commandMap[normalizedCommand] || 'status';
+        const argsText = args.join(' ');
+
         // Get Supabase access token for authentication
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token || '';
+
+        const interactPayload: Record<string, any> = {
+          session_id: sessionId,
+          action,
+          message: argsText || undefined,
+          original_prompt: input,
+        };
+
+        if (action === 'feed') {
+          if (argsText.includes('premium')) interactPayload.food_type = 'premium';
+          else if (argsText.includes('treat') || argsText.includes('snack')) interactPayload.food_type = 'treat';
+          else if (argsText.includes('healthy')) interactPayload.food_type = 'healthy';
+        } else if (action === 'play') {
+          if (argsText.includes('fetch')) interactPayload.game_type = 'fetch';
+          else if (argsText.includes('puzzle')) interactPayload.game_type = 'puzzle';
+          else if (argsText.includes('race')) interactPayload.game_type = 'race';
+        } else if (action === 'rest') {
+          const durationMatch = argsText.match(/\d+/);
+          if (durationMatch) {
+            interactPayload.duration_hours = parseInt(durationMatch[0], 10);
+          } else if (argsText.includes('overnight') || argsText.includes('long')) {
+            interactPayload.duration_hours = 8;
+          } else if (argsText.includes('nap') || argsText.includes('short')) {
+            interactPayload.duration_hours = 2;
+          }
+        }
 
         response = await fetch('/api/pet/interact', {
           method: 'POST',
@@ -136,11 +176,7 @@ export const AIChat: React.FC = () => {
             'Content-Type': 'application/json',
             'Authorization': token ? `Bearer ${token}` : '',
           },
-          body: JSON.stringify({
-            session_id: sessionId,
-            action: action,
-            message: action === 'talk' ? args.join(' ') : undefined,
-          }),
+          body: JSON.stringify(interactPayload),
         });
       } else {
         // Regular chat message
@@ -157,7 +193,6 @@ export const AIChat: React.FC = () => {
           body: JSON.stringify({
             session_id: sessionId,
             message: input,
-            model: 'meta-llama/llama-3-70b-instruct',
           }),
         });
       }
@@ -167,6 +202,10 @@ export const AIChat: React.FC = () => {
       }
 
       const data = await response.json();
+      if (data.session_id && data.session_id !== sessionId) {
+        setSessionId(data.session_id);
+        localStorage.setItem('petSessionId', data.session_id);
+      }
       
       // If this was a pet interaction, update the pet state
       if (data.pet_state) {
@@ -185,7 +224,9 @@ export const AIChat: React.FC = () => {
           newMessages[messageIndex] = {
             ...newMessages[messageIndex],
             content: data.message || data.response || "I'm not sure how to respond to that.",
-            state: data.pet_state ? { ...data.pet_state } : undefined
+            state: data.pet_state ? { ...data.pet_state } : undefined,
+            notifications: data.notifications || [],
+            healthForecast: data.health_forecast || data.pet_state?.health_forecast || undefined
           };
         }
         
@@ -410,6 +451,46 @@ export const AIChat: React.FC = () => {
                               </div>
                             )}
                           </div>
+                        </div>
+                      )}
+                      {message.notifications && message.notifications.length > 0 && (
+                        <div className="mt-2 text-xs bg-indigo-50/10 text-indigo-100 border border-indigo-200/30 rounded-lg p-2">
+                          <p className="font-semibold uppercase tracking-wide text-[10px] opacity-80">Tips</p>
+                          <ul className="list-disc list-inside space-y-1 mt-1">
+                            {message.notifications.map((note, idx) => (
+                              <li key={`${message.id}-note-${idx}`} className="opacity-90">
+                                {note}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {message.healthForecast && (
+                        <div className="mt-2 text-xs bg-white/10 border border-white/20 rounded-lg p-2">
+                          <div className="font-semibold uppercase tracking-wide text-[10px] opacity-80">
+                            Health Outlook
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-2">
+                            {message.healthForecast.trend && (
+                              <span className="inline-flex items-center rounded-full bg-indigo-500/20 px-2 py-0.5 text-[11px]">
+                                Trend: {message.healthForecast.trend}
+                              </span>
+                            )}
+                            {message.healthForecast.risk && (
+                              <span className="inline-flex items-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[11px]">
+                                Risk: {message.healthForecast.risk}
+                              </span>
+                            )}
+                          </div>
+                          {message.healthForecast.recommended_actions && message.healthForecast.recommended_actions.length > 0 && (
+                            <ul className="list-disc list-inside space-y-1 mt-1">
+                              {message.healthForecast.recommended_actions.map((rec, idx) => (
+                                <li key={`${message.id}-forecast-${idx}`} className="opacity-90">
+                                  {rec}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
                       )}
                       <p className={`text-xs mt-2 ${

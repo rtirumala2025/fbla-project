@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Virtual pet icon">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="100%" stop-color="#F97316" />
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="120" fill="url(#bg)" />
+  <path
+    d="M160 248c0-65 52-120 116-120s116 55 116 120-52 156-116 156S160 313 160 248z"
+    fill="#F8FAFC"
+  />
+  <path
+    d="M203 232c-12 0-22 11-22 25s10 25 22 25 22-11 22-25-10-25-22-25zm106 0c-12 0-22 11-22 25s10 25 22 25 22-11 22-25-10-25-22-25z"
+    fill="#0F172A"
+  />
+  <path
+    d="M200 340c28 26 70 28 112 0"
+    fill="none"
+    stroke="#0F172A"
+    stroke-linecap="round"
+    stroke-width="24"
+  />
+  <path
+    d="M120 224c0-48 36-92 80-104-12 24-18 53-12 88-36-6-64 6-68 16zm272 0c0-48-36-92-80-104 12 24 18 53 12 88 36-6 64 6 68 16z"
+    fill="url(#accent)"
+    opacity="0.9"
+  />
+  <circle cx="180" cy="210" r="24" fill="#0F172A" opacity="0.08" />
+  <circle cx="332" cy="210" r="24" fill="#0F172A" opacity="0.08" />
+</svg>
+

@@ -3,19 +3,18 @@ import { motion } from 'framer-motion';
 import { User, PawPrint, Coins, Calendar, Edit2, Save, X } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
-import { profileService } from '../services/profileService';
+import { profileService, type Profile as UserProfile } from '../services/profileService';
 import { supabase } from '../lib/supabase';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { Database } from '../types/database.types';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
 type Pet = Database['public']['Tables']['pets']['Row'];
 
 export const ProfilePage = () => {
   const toast = useToast();
   const { currentUser, refreshUserState } = useAuth();
   
-  const [userData, setUserData] = useState<Profile | null>(null);
+  const [userData, setUserData] = useState<UserProfile | null>(null);
   const [petData, setPetData] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

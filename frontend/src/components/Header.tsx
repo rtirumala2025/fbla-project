@@ -1,8 +1,24 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, Home, ShoppingCart, User, PawPrint, Heart, Gamepad2, DollarSign, BarChart3 } from 'lucide-react';
+import {
+  Menu,
+  X,
+  LogOut,
+  Home,
+  ShoppingCart,
+  User,
+  PawPrint,
+  Heart,
+  Gamepad2,
+  DollarSign,
+  BarChart3,
+  Wallet,
+  Users,
+  Sparkles,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import SyncStatusIndicator from './ui/SyncStatusIndicator';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -67,8 +83,11 @@ const Header = () => {
     { name: 'Feed', to: '/feed', icon: <Heart size={20} /> },
     { name: 'Play', to: '/play', icon: <Gamepad2 size={20} /> },
     { name: 'Earn', to: '/earn', icon: <DollarSign size={20} /> },
+    { name: 'Wallet', to: '/wallet', icon: <Wallet size={20} /> },
     { name: 'Budget', to: '/budget', icon: <BarChart3 size={20} /> },
     { name: 'Shop', to: '/shop', icon: <ShoppingCart size={20} /> },
+    { name: 'Quests', to: '/quests', icon: <Sparkles size={20} /> },
+    { name: 'Social', to: '/social', icon: <Users size={20} /> },
     { name: 'Profile', to: '/profile', icon: <User size={20} /> },
   ];
 
@@ -120,6 +139,7 @@ const Header = () => {
           <div className="flex items-center gap-6 flex-shrink-0">
             {!loading && currentUser ? (
               <>
+                <SyncStatusIndicator />
                 {/* Welcome message for logged-in users */}
                 <div className="hidden lg:block text-sm text-gray-600">
                   <span className="font-medium">Welcome, {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}! 👋</span>

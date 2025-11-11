@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="680" viewBox="0 0 1100 680">
+  <defs>
+    <style>
+      .title { font: bold 24px Arial, sans-serif; fill: #1f2937; }
+      .label { font: bold 18px Arial, sans-serif; fill: #111827; }
+      .body { font: 15px Arial, sans-serif; fill: #1f2937; }
+      .box { fill: #f3f4f6; stroke: #4b5563; stroke-width: 2; rx: 12; ry: 12; }
+      .cluster { fill: #e5e7eb; stroke: #9ca3af; stroke-width: 2; stroke-dasharray: 8 6; rx: 16; ry: 16; }
+      .arrow { stroke: #2563eb; stroke-width: 3; marker-end: url(#arrowhead); }
+      .arrow-secondary { stroke: #059669; stroke-width: 3; stroke-dasharray: 10 6; marker-end: url(#arrowhead-secondary); }
+    </style>
+    <marker id="arrowhead" markerWidth="13" markerHeight="13" refX="10" refY="6" orient="auto">
+      <polygon points="0 0, 12 6, 0 12" fill="#2563eb" />
+    </marker>
+    <marker id="arrowhead-secondary" markerWidth="13" markerHeight="13" refX="10" refY="6" orient="auto">
+      <polygon points="0 0, 12 6, 0 12" fill="#059669" />
+    </marker>
+  </defs>
+
+  <rect x="10" y="10" width="1080" height="660" fill="#ffffff" stroke="#d1d5db" stroke-width="2" rx="24" ry="24"/>
+  <text x="550" y="60" text-anchor="middle" class="title">FBLA Virtual Pet Platform – High Level Architecture</text>
+
+  <!-- Client -->
+  <rect x="70" y="110" width="200" height="160" class="box"/>
+  <text x="170" y="150" text-anchor="middle" class="label">Client Devices</text>
+  <text x="170" y="180" text-anchor="middle" class="body">Laptops · Tablets</text>
+  <text x="170" y="205" text-anchor="middle" class="body">Students · Judges</text>
+
+  <!-- Frontend -->
+  <rect x="340" y="110" width="260" height="200" class="box"/>
+  <text x="470" y="150" text-anchor="middle" class="label">Frontend SPA</text>
+  <text x="470" y="180" text-anchor="middle" class="body">React + Vite + TypeScript</text>
+  <text x="470" y="205" text-anchor="middle" class="body">Context providers · Framer Motion</text>
+  <text x="470" y="230" text-anchor="middle" class="body">Supabase JS client · Axios REST</text>
+  <text x="470" y="255" text-anchor="middle" class="body">Hosted via Vercel/Netlify</text>
+
+  <!-- Backend cluster -->
+  <rect x="670" y="100" width="360" height="220" class="cluster"/>
+  <text x="850" y="135" text-anchor="middle" class="label">FastAPI Backend (`app/`)</text>
+
+  <rect x="690" y="160" width="160" height="140" class="box"/>
+  <text x="770" y="195" text-anchor="middle" class="body">Routers</text>
+  <text x="770" y="220" text-anchor="middle" class="body">Auth · Pets · Finance</text>
+  <text x="770" y="245" text-anchor="middle" class="body">Analytics · Mini-games</text>
+
+  <rect x="870" y="160" width="140" height="140" class="box"/>
+  <text x="940" y="195" text-anchor="middle" class="body">Services &amp; Jobs</text>
+  <text x="940" y="220" text-anchor="middle" class="body">AI scoring</text>
+  <text x="940" y="245" text-anchor="middle" class="body">Ledger &amp; rewards</text>
+  <text x="940" y="270" text-anchor="middle" class="body">Sync orchestration</text>
+
+  <!-- Supabase cluster -->
+  <rect x="300" y="360" width="740" height="240" class="cluster"/>
+  <text x="670" y="395" text-anchor="middle" class="label">Supabase Platform</text>
+
+  <rect x="330" y="420" width="200" height="150" class="box"/>
+  <text x="430" y="455" text-anchor="middle" class="body">Postgres + RLS</text>
+  <text x="430" y="480" text-anchor="middle" class="body">Tables: profiles</text>
+  <text x="430" y="505" text-anchor="middle" class="body">pets · user_preferences</text>
+  <text x="430" y="530" text-anchor="middle" class="body">finance &amp; shop (seeded)</text>
+
+  <rect x="560" y="420" width="180" height="150" class="box"/>
+  <text x="650" y="455" text-anchor="middle" class="body">Auth &amp; Storage</text>
+  <text x="650" y="480" text-anchor="middle" class="body">Supabase Auth</text>
+  <text x="650" y="505" text-anchor="middle" class="body">OAuth, magic links</text>
+  <text x="650" y="530" text-anchor="middle" class="body">Storage buckets</text>
+
+  <rect x="770" y="420" width="240" height="150" class="box"/>
+  <text x="890" y="455" text-anchor="middle" class="body">Edge Integrations</text>
+  <text x="890" y="480" text-anchor="middle" class="body">Realtime channels</text>
+  <text x="890" y="505" text-anchor="middle" class="body">Policies · Functions</text>
+  <text x="890" y="530" text-anchor="middle" class="body">Webhooks → FastAPI</text>
+
+  <!-- External services -->
+  <rect x="90" y="380" width="180" height="200" class="box"/>
+  <text x="180" y="420" text-anchor="middle" class="label">External Services</text>
+  <text x="180" y="450" text-anchor="middle" class="body">OpenRouter (AI)</text>
+  <text x="180" y="475" text-anchor="middle" class="body">Weather API</text>
+  <text x="180" y="500" text-anchor="middle" class="body">Email provider</text>
+  <text x="180" y="525" text-anchor="middle" class="body">Telemetry (optional)</text>
+
+  <!-- Arrows -->
+  <line x1="270" y1="190" x2="340" y2="190" class="arrow"/>
+  <text x="305" y="175" text-anchor="middle" class="body">HTTPS</text>
+
+  <line x1="600" y1="210" x2="670" y2="210" class="arrow"/>
+  <text x="635" y="195" text-anchor="middle" class="body">REST / Webhooks</text>
+
+  <line x1="860" y1="320" x2="860" y2="420" class="arrow"/>
+  <text x="880" y="360" class="body">pg connection</text>
+
+  <line x1="470" y1="320" x2="470" y2="420" class="arrow"/>
+  <text x="490" y="365" class="body">Supabase JS</text>
+
+  <line x1="270" y1="460" x2="330" y2="460" class="arrow-secondary"/>
+  <text x="300" y="445" text-anchor="middle" class="body">Supabase SDK</text>
+
+  <line x1="770" y1="250" x2="770" y2="420" class="arrow"/>
+  <text x="790" y="335" class="body">Async tasks</text>
+
+  <line x1="200" y1="310" x2="350" y2="310" class="arrow-secondary"/>
+  <text x="275" y="295" text-anchor="middle" class="body">Webhooks &amp; APIs</text>
+
+  <!-- Legend -->
+  <rect x="60" y="590" width="230" height="70" class="box"/>
+  <text x="80" y="620" class="body">Solid blue → primary request/response</text>
+  <text x="80" y="646" class="body">Dashed green → third-party integrations</text>
+</svg>
+

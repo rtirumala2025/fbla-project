@@ -4,8 +4,8 @@
 
 Before testing, verify:
 
-- [ ] Dev server is running (`npm start`)
-- [ ] `.env` file has `REACT_APP_USE_MOCK=false`
+- [ ] Dev server is running (`npm run dev`)
+- [ ] `.env` file has `VITE_SUPABASE_USE_MOCK=false`
 - [ ] Browser DevTools console is open (F12 → Console tab)
 - [ ] You're in a fresh browser session (or incognito mode)
 
@@ -108,10 +108,10 @@ http://localhost:3000/auth/callback#access_token=...&expires_in=3600&...
 **Fix:**
 ```bash
 # Edit frontend/.env
-REACT_APP_USE_MOCK=false
+VITE_SUPABASE_USE_MOCK=false
 
 # Restart server
-npm start
+npm run dev
 ```
 
 ### Issue: No Redirect URL
@@ -224,8 +224,8 @@ Run this in browser console after clicking "Sign in with Google":
 console.log('Supabase client exists:', typeof supabase !== 'undefined');
 
 // Check environment
-console.log('Mock mode:', process.env.REACT_APP_USE_MOCK);
-console.log('Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
+console.log('Mock mode:', import.meta.env.VITE_SUPABASE_USE_MOCK);
+console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
 
 // Check session
 supabase.auth.getSession().then(({ data, error }) => {

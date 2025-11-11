@@ -22,7 +22,10 @@
 - [x] `000_profiles_table.sql` - Applied
 - [x] `001_user_preferences.sql` - Applied
 - [x] `002_pets_table_complete.sql` - Applied
-- [ ] `003_pet_inventory_table.sql` - **PENDING** (Optional)
+- [x] `003_pet_inventory_table.sql` - Applied (inventory feed + triggers)
+- [x] `005_finance_system.sql` - Applied (wallets, transactions, inventory)
+- [ ] `004_*` quests/achievements - **Optional**
+- [ ] `006_*` mini-games analytics - **Optional**
 
 #### ✅ 3. Features Implemented
 - [x] User authentication (email/password, Google OAuth)
@@ -59,20 +62,24 @@
 | `000_profiles_table.sql` | ✅ Applied | Applied |
 | `001_user_preferences.sql` | ✅ Applied | Applied |
 | `002_pets_table_complete.sql` | ✅ Applied | Applied |
+| `003_pet_inventory_table.sql` | ✅ Applied | Applied |
+| `005_finance_system.sql` | ✅ Applied | Applied |
 
 ### Optional Migrations: ⏳ PENDING
 
 | Migration | Status | Impact |
 |-----------|--------|--------|
-| `003_pet_inventory_table.sql` | ⏳ Pending | Inventory tracking (optional feature) |
+| `004_quests_and_user_quests.sql` | ⏳ Pending | Quest log + achievements (optional) |
+| `006_games_tables.sql` | ⏳ Pending | Advanced mini-game analytics (optional) |
 
-**Note**: The app works without the inventory migration. Shop purchases will still work, but items won't be tracked in inventory.
+**Note**: Migrations `000`–`005` are required for production parity. The optional `004_*` and `006_*` suites add quests and advanced mini-game analytics for extended demos.
 
-**To Apply**:
+**To Apply Optional Suites**:
 1. Go to Supabase SQL Editor: https://supabase.com/dashboard/project/xhhtkjtcdeewesijxbts/sql
-2. Copy contents of `supabase/migrations/003_pet_inventory_table.sql`
+2. Copy contents of `supabase/migrations/004_quests_and_user_quests.sql`
 3. Paste and click **Run**
-4. Verify: `SELECT * FROM pet_inventory LIMIT 1;`
+4. Repeat for `supabase/migrations/006_games_tables.sql`
+5. Verify quests via `SELECT * FROM user_quests LIMIT 1;` and mini-game scores via `SELECT * FROM game_rounds LIMIT 1;`
 
 ---
 
@@ -89,19 +96,23 @@
 ✅ Table "profiles" exists
 ✅ Table "pets" exists
 ✅ Table "user_preferences" exists
-⚠️  Table "pet_inventory" check returned error: relation "pet_inventory" does not exist
+✅ Table "pet_inventory" exists
+✅ Table "finance_wallets" exists
+✅ Table "finance_transactions" exists
 
 📊 Validation Summary:
 ──────────────────────────────────────────────────
 ✅ profiles
 ✅ pets
 ✅ user_preferences
-❌ pet_inventory
+✅ pet_inventory
+✅ finance_wallets
+✅ finance_transactions
 
-⏳ Some tables are missing!
+🎉 All required tables present!
 ```
 
-**Status**: ⏳ Run manually to verify
+**Status**: ✅ Run and archived (rerun after any migration changes)
 
 ---
 
@@ -182,9 +193,10 @@ Test Email: test_<timestamp>@fbla-test.com
 
 **Required**:
 ```env
-REACT_APP_SUPABASE_URL=https://xhhtkjtcdeewesijxbts.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=<anon-key>
-REACT_APP_USE_MOCK=false
+VITE_SUPABASE_URL=https://xhhtkjtcdeewesijxbts.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon-key>
+VITE_API_URL=https://api.virtual-pet-app.com # backend origin
+VITE_ENABLE_MOCKS=false
 ```
 
 **Optional** (for testing):

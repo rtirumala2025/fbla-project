@@ -1,0 +1,54 @@
+%% Mermaid architecture diagram for FBLA virtual pet system
+%% Export via: mmdc -i docs/architecture-diagram.mmd -o docs/architecture-diagram.png
+
+flowchart LR
+    subgraph Client["Student Device"]
+        Browser["React SPA\n(frontend/src)"]
+    end
+
+    subgraph Frontend["Frontend Layer"]
+        UI["UI Components\nPages, Layouts, Mini-games"]
+        State["Context & Hooks\nAuth, Pet, Theme, Offline Cache"]
+        APIClient["API Clients\nREST adapters, Supabase JS"]
+    end
+
+    subgraph Backend["Backend Layer (FastAPI)"]
+        Routers["Routers\nauth, pets, finance, games,\nanalytics, next_gen"]
+        Services["Service Layer\nAI, Finance, Games, Analytics"]
+        Models["SQLAlchemy Models\nPydantic Schemas"]
+    end
+
+    subgraph Data["Data & Integrations"]
+        Supabase["Supabase Postgres\nAuth, RLS policies, tables"]
+        Storage["Supabase Storage\nAvatars, assets (optional)"]
+        Analytics["Analytics Pipelines\nAggregations, leaderboards"]
+    end
+
+    subgraph AI["AI & Enhancements"]
+        OpenRouter["OpenRouter / LLM APIs\n(optional live calls)"]
+        Workers["Async Tasks & Schedulers\nDaily summaries, streak checks"]
+    end
+
+    Browser -->|HTTPS + JWT| UI
+    UI --> State
+    State --> APIClient
+    APIClient -->|REST/JSON| Routers
+    Routers --> Services
+    Services --> Models
+    Models -->|SQLAlchemy Async| Supabase
+    Services -->|SQLAlchemy| Analytics
+    Services --> Workers
+    Services -->|AI hooks| OpenRouter
+    APIClient -->|Supabase Realtime| Supabase
+    Supabase -->|Row Level Security| APIClient
+    Storage -.-> UI
+    Workers --> Analytics
+
+    classDef primary fill:#F4F1FF,stroke:#5C45C2,stroke-width:1px,color:#2E266F;
+    classDef secondary fill:#FDF4E6,stroke:#E26A2C,stroke-width:1px,color:#5A2E0B;
+    class Client primary;
+    class Frontend primary;
+    class Backend primary;
+    class Data secondary;
+    class AI secondary;
+

@@ -8,19 +8,17 @@
  * - Invalid token rejection
  */
 
-import { profileService } from '../services/profileService';
-import { supabase } from '../lib/supabase';
-import type { Database } from '../types/database.types';
-
-type Profile = Database['public']['Tables']['profiles']['Row'];
+import { createClient } from '@supabase/supabase-js';
+import { profileService, type Profile as ServiceProfile } from '../services/profileService';
+import { supabase, isSupabaseMock } from '../lib/supabase';
 
 // Skip these tests if in mock mode (they require real Supabase)
-const describeIfReal = process.env.REACT_APP_USE_MOCK === 'false' ? describe : describe.skip;
+const describeIfReal = isSupabaseMock() ? describe.skip : describe;
 
 describeIfReal('Profile Update Integration Tests', () => {
   let testUserId: string;
   let originalUsername: string;
-  let testProfile: Profile | null;
+  let testProfile: ServiceProfile | null;
 
   beforeAll(async () => {
     // Get current authenticated user
@@ -144,9 +142,8 @@ describeIfReal('Profile Update Integration Tests', () => {
 
   test('should reject update with invalid token', async () => {
     // Create a new Supabase client with invalid token
-    const { createClient } = require('@supabase/supabase-js');
-    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-    const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.log('⚠️ Skipping invalid token test - credentials not available');

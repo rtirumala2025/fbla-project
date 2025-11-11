@@ -51,16 +51,20 @@ export type Database = {
           name: string
           species: string
           breed: string
+          color_pattern: string | null
+          birthday: string | null
           age: number
           level: number
           health: number
           hunger: number
           happiness: number
+          cleanliness: number
           energy: number
           xp: number
           last_fed_at: string | null
           last_played_at: string | null
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -68,16 +72,20 @@ export type Database = {
           name: string
           species: string
           breed: string
+          color_pattern?: string | null
+          birthday?: string | null
           age?: number
           level?: number
           health?: number
           hunger?: number
           happiness?: number
+          cleanliness?: number
           energy?: number
           xp?: number
           last_fed_at?: string | null
           last_played_at?: string | null
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -85,16 +93,20 @@ export type Database = {
           name?: string
           species?: string
           breed?: string
+          color_pattern?: string | null
+          birthday?: string | null
           age?: number
           level?: number
           health?: number
           hunger?: number
           happiness?: number
+          cleanliness?: number
           energy?: number
           xp?: number
           last_fed_at?: string | null
           last_played_at?: string | null
           created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -220,6 +232,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "shop_items"
             referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_preferences: {
+        Row: {
+          user_id: string
+          sound: boolean | null
+          music: boolean | null
+          notifications: boolean | null
+          reduced_motion: boolean | null
+          high_contrast: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          user_id: string
+          sound?: boolean | null
+          music?: boolean | null
+          notifications?: boolean | null
+          reduced_motion?: boolean | null
+          high_contrast?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          user_id?: string
+          sound?: boolean | null
+          music?: boolean | null
+          notifications?: boolean | null
+          reduced_motion?: boolean | null
+          high_contrast?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           }
         ]
       }

@@ -1,68 +1,59 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
-interface Props {
+type ErrorBoundaryProps = {
   children: ReactNode;
-  fallback?: ReactNode;
-}
+};
 
-interface State {
+type ErrorBoundaryState = {
   hasError: boolean;
-  error: Error | null;
-}
+  message: string | null;
+};
 
-export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = {
     hasError: false,
-    error: null,
+    message: null,
   };
 
-  public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return {
+      hasError: true,
+      message: error.message ?? 'An unexpected error occurred.',
+    };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[ErrorBoundary]', error, info);
   }
 
-  private handleReset = () => {
-    this.setState({ hasError: false, error: null });
+  handleReload = () => {
+    window.location.reload();
   };
 
-  public render() {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
-      return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h2>
-            <p className="text-gray-600 mb-6">
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={this.handleReset}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
-              >
-                Try Again
-              </button>
-              <button
-                onClick={() => window.location.href = '/'}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-              >
-                Go Home
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+  render() {
+    if (!this.state.hasError) {
+      return this.props.children;
     }
 
-    return this.props.children;
+    return (
+      <div className="min-h-screen bg-slate-100 px-4 py-10">
+        <div className="mx-auto max-w-2xl rounded-xl border border-red-200 bg-red-50 p-6 shadow">
+          <h1 className="text-xl font-semibold text-red-700">Something went wrong</h1>
+          <p className="mt-2 text-sm text-red-600">
+            {this.state.message ?? 'The UI crashed unexpectedly. Please try refreshing the page.'}
+          </p>
+          <button
+            type="button"
+            onClick={this.handleReload}
+            className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-red-700"
+          >
+            Reload page
+          </button>
+        </div>
+      </div>
+    );
   }
 }
+
+export default ErrorBoundary;
 

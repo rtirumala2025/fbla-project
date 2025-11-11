@@ -52,7 +52,7 @@ Look for one of these:
 3. Check if you see `data: { url: null }` in the OAuth response
 
 **Solution:**
-- Verify `.env` file has `REACT_APP_USE_MOCK=false`
+- Verify `.env` file has `VITE_SUPABASE_USE_MOCK=false`
 - Restart dev server after changing `.env`
 - Check Supabase dashboard → Authentication → Providers → Google is enabled
 
@@ -63,9 +63,9 @@ Look for one of these:
 1. Check `frontend/.env` file exists
 2. Verify it contains:
    ```
-   REACT_APP_USE_MOCK=false
-   REACT_APP_SUPABASE_URL=https://your-project.supabase.co
-   REACT_APP_SUPABASE_ANON_KEY=your-anon-key
+   VITE_SUPABASE_USE_MOCK=false
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
    ```
 3. Restart dev server: `npm start`
 
@@ -98,12 +98,12 @@ Your `frontend/.env` should look like this:
 
 ```env
 # For production OAuth (real Google sign-in)
-REACT_APP_USE_MOCK=false
-REACT_APP_SUPABASE_URL=https://xhhtkjtcdeewesijxbts.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_USE_MOCK=false
+VITE_SUPABASE_URL=https://xhhtkjtcdeewesijxbts.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # For demo/testing (no real OAuth)
-# REACT_APP_USE_MOCK=true
+# VITE_SUPABASE_USE_MOCK=true
 ```
 
 ## Supabase Dashboard Configuration
@@ -168,7 +168,7 @@ If you need to demo the app without setting up OAuth:
 
 ```bash
 # In frontend/.env
-REACT_APP_USE_MOCK=true
+VITE_SUPABASE_USE_MOCK=true
 ```
 
 Then restart the server. Google button will be disabled, but email/password login will work with mock data.

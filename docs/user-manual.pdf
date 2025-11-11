@@ -1,0 +1,562 @@
+%PDF-1.4
+%����
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R 13 0 R] /Count 6 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 15 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 1746 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+(VIRTUAL PET COMPANION – USER MANUAL) Tj
+T*
+(-----------------------------------) Tj
+T*
+() Tj
+T*
+(❝ **Version:** 1.0 \(November 2025\)) Tj
+T*
+(❝ **Audience:** FBLA judges, student presenters, and demo participants) Tj
+T*
+(❝ **How to share:** Export this Markdown to PDF \(e.g., `npx @marp-team/marp-cli docs/user-) Tj
+T*
+(   manual.md --pdf`\) or print directly from Cursor.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(TABLE OF CONTENTS) Tj
+T*
+(-----------------) Tj
+T*
+(1. [Welcome]\(#welcome\)) Tj
+T*
+(2. [System Requirements]\(#system-requirements\)) Tj
+T*
+(3. [Getting Started]\(#getting-started\)) Tj
+T*
+(4. [Home & Navigation]\(#home--navigation\)) Tj
+T*
+(5. [Caring for Your Pet]\(#caring-for-your-pet\)) Tj
+T*
+(6. [AI Companion Features]\(#ai-companion-features\)) Tj
+T*
+(7. [Finance & Budgeting]\(#finance--budgeting\)) Tj
+T*
+(8. [Mini-Games & Challenges]\(#mini-games--challenges\)) Tj
+T*
+(9. [Analytics & Reports]\(#analytics--reports\)) Tj
+T*
+(10. [Accessibility & Inclusivity]\(#accessibility--inclusivity\)) Tj
+T*
+(11. [Next-Gen Innovation Lab]\(#next-gen-innovation-lab\)) Tj
+T*
+(12. [Troubleshooting & FAQs]\(#troubleshooting--faqs\)) Tj
+T*
+(13. [Glossary]\(#glossary\)) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(WELCOME) Tj
+T*
+(-------) Tj
+T*
+(The Virtual Pet Companion blends fun pet care with real-world financial literacy.) Tj
+T*
+(Students adopt a digital friend, earn and spend coins responsibly, and receive AI-) Tj
+T*
+(powered coaching that adapts to their play style.) Tj
+T*
+() Tj
+T*
+(This guide walks end-users through the full experience—from signing up to advanced) Tj
+T*
+(analytics—so you can comfortably present or evaluate the app during FBLA competition.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 15 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 1822 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+() Tj
+T*
+(SYSTEM REQUIREMENTS) Tj
+T*
+(-------------------) Tj
+T*
+(• Modern desktop browser \(Chrome, Edge, Safari, Firefox\) with JavaScript enabled.) Tj
+T*
+(• Optional microphone for voice command prototypes \(Next-Gen Lab\).) Tj
+T*
+(• Stable internet connection to sync with Supabase \(works offline in limited mode\).) Tj
+T*
+(• Screen reader support tested on macOS VoiceOver and NVDA.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(GETTING STARTED) Tj
+T*
+(---------------) Tj
+T*
+(1. **Visit the app** using the deployment URL or `http://localhost:5173` in development.) Tj
+T*
+(2. **Create an account** via Email/Password or Supabase magic link \(if enabled\).) Tj
+T*
+(3. **Verify your email** \(Supabase handles this automatically\).) Tj
+T*
+(4. **Complete onboarding:**) Tj
+T*
+(   - Choose species and breed.) Tj
+T*
+(   - Customize colors and name.) Tj
+T*
+(   - Confirm starting personality quiz \(optional\).) Tj
+T*
+(5. **Land on the dashboard** where your pet is animated and core stats are visible.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(HOME & NAVIGATION) Tj
+T*
+(-----------------) Tj
+T*
+(• **Header Bar:** Displays coins, notifications, theme toggle, and quick actions.) Tj
+T*
+(• **Floating Action Buttons:** Shortcuts to feed, play, clean, and rest screens.) Tj
+T*
+(• **Sidebar / Drawer:** Access shop, analytics, mini-games, settings, and help.) Tj
+T*
+(• **Status Chips:** Live meters for hunger, happiness, cleanliness, energy, and health.) Tj
+T*
+(• **Toast Notifications:** Provide instant feedback \(e.g., “+15 coins earned!”\).) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(CARING FOR YOUR PET) Tj
+T*
+(-------------------) Tj
+T*
+(Each care action adjusts multiple stats and leaves a record in the AI diary.) Tj
+T*
+() Tj
+T*
+(Action | Description | Impact | Cooldown) Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 15 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 1915 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+(------ | ----------- | ------ | --------) Tj
+T*
+(Feed | Serve meals or treats selected from inventory. | Increases hunger, happiness. | 5) Tj
+T*
+(minutes) Tj
+T*
+(Play | Launch quick activities \(fetch, puzzles\). | Boosts happiness, can lower energy. |) Tj
+T*
+(3 minutes) Tj
+T*
+(Clean | Bathe or groom. | Raises cleanliness and health. | 10 minutes) Tj
+T*
+(Rest | Put pet to sleep or schedule naps. | Restores energy; slight hunger loss. |) Tj
+T*
+(Dynamic) Tj
+T*
+() Tj
+T*
+(Tips:) Tj
+T*
+(• Combine actions with shop purchases \(e.g., vitamins\) to supercharge recovery.) Tj
+T*
+(• Keep an eye on the AI recommendations sidebar for mood-specific advice.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(AI COMPANION FEATURES) Tj
+T*
+(---------------------) Tj
+T*
+(The AI service observes stats, diary entries, and care history to guide players.) Tj
+T*
+() Tj
+T*
+(• **Mood Analysis:** Scores happiness, health, energy, cleanliness, and hunger to) Tj
+T*
+(  classify the current mood \(Happy, Hungry, Tired, Sad, Sick\).) Tj
+T*
+(• **Personality Profile:** Deterministically assigns traits \(e.g., Playful, Gentle\) that) Tj
+T*
+(  tweak stat decay rates.) Tj
+T*
+(• **Notifications:** Issues warnings for low stats or congratulates strong routines.) Tj
+T*
+(• **Natural Language Commands:** Enter phrases like “Give Luna a long nap” to trigger) Tj
+T*
+(  recommended actions.) Tj
+T*
+(• **Health Forecast:** Predicts upcoming risks with a short summary and contributing) Tj
+T*
+(  factors.) Tj
+T*
+(• **Mini-Game Difficulty:** Suggests gentle, standard, or advanced challenges based on) Tj
+T*
+(  care performance.) Tj
+T*
+() Tj
+T*
+(All AI insights are generated locally through the app/services/ai_service.py stubs and) Tj
+T*
+(can be swapped with a live OpenRouter integration for extended demos.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(FINANCE & BUDGETING) Tj
+T*
+(-------------------) Tj
+T*
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 15 0 R >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 2006 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+(Students learn real budgeting by earning and spending responsibly.) Tj
+T*
+() Tj
+T*
+(• **Wallet Overview:** Displays balance, lifetime earned/spent, and budget warnings.) Tj
+T*
+(• **Earn Screen \(`/earn`\):** Complete chores, lessons, or streaks for coins. Each) Tj
+T*
+(  activity includes a description reinforcing financial vocabulary \(allowance, income,) Tj
+T*
+(  savings\).) Tj
+T*
+(• **Shop \(`/shop`\):** Buy consumables, toys, and health items. Categories correspond to) Tj
+T*
+(  Needs vs Wants for easy discussion with judges.) Tj
+T*
+(• **Inventory:** Track owned items and their quantities. Use items during care actions.) Tj
+T*
+(• **Transactions Ledger:** Filterable list of expenses/income with timestamps.) Tj
+T*
+(• **Leaderboard:** Friendly competition showing top savers and care scores \(aggregated) Tj
+T*
+(  from transaction metadata\).) Tj
+T*
+() Tj
+T*
+(Encourage players to set weekly savings goals and monitor the AI “budget warnings” for) Tj
+T*
+(coaching moments.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(MINI-GAMES & CHALLENGES) Tj
+T*
+(-----------------------) Tj
+T*
+(Mini-games reinforce decision making and reaction skills while rewarding coins.) Tj
+T*
+() Tj
+T*
+(• **Fetch Game:** Timed clicks to catch treats; showcases adaptive difficulty.) Tj
+T*
+(• **Puzzle Game:** Drag-and-drop logic puzzles that emphasize planning.) Tj
+T*
+(• **Reaction Game:** Reflex challenge with progressive speed.) Tj
+T*
+(• **Memory Match:** Card-matching exercise to improve focus.) Tj
+T*
+(• **DreamWorld:** Guided meditation for mindful rest; pairs with energy restoration.) Tj
+T*
+(• **NextGen Hub:** Prototype space for future AR, weather-based care, and social play.) Tj
+T*
+() Tj
+T*
+(Each mini-game grants coins, experience points \(XP\), and diary entries consumed by AI) Tj
+T*
+(analytics.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(ANALYTICS & REPORTS) Tj
+T*
+(-------------------) Tj
+T*
+(Navigate to /analytics to review dashboards:) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 15 0 R >> >> /Contents 12 0 R >>
+endobj
+12 0 obj
+<< /Length 1904 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+(• **Daily Overview:** Line and bar charts for stat changes, coins earned/spent.) Tj
+T*
+(• **Weekly Summary:** AI-generated suggestions, goal progress, and streak badges.) Tj
+T*
+(• **CSV Export:** Download data for spreadsheets or judge review.) Tj
+T*
+(• **AI Insights Panel:** Summaries pulled from mood, personality, and care-style) Tj
+T*
+(  analysis.) Tj
+T*
+(• **Health Timeline:** Visualizes how rest, play, and nutrition interact over time.) Tj
+T*
+() Tj
+T*
+(Pro Tip: Demonstrate exporting CSV, then open it in a spreadsheet to show real-world) Tj
+T*
+(applicability.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(ACCESSIBILITY & INCLUSIVITY) Tj
+T*
+(---------------------------) Tj
+T*
+(• **Theme Toggle:** Light/Dark and high contrast modes.) Tj
+T*
+(• **Color-Blind Safe Palette:** Verified with Tetracolor and WCAG AA compliance.) Tj
+T*
+(• **Keyboard Navigation:** All interactive elements include focus rings and shortcuts) Tj
+T*
+(  \(documented on `/help`\).) Tj
+T*
+(• **Reduced Motion:** Disables parallax and intense animations for sensitive users.) Tj
+T*
+(• **Screenshots & Audio:** Tooltips provide text equivalents for sound cues.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(NEXT-GEN INNOVATION LAB) Tj
+T*
+(-----------------------) Tj
+T*
+(Discuss these future-facing concepts during your presentation:) Tj
+T*
+() Tj
+T*
+(• **Voice Commands:** Prototype interface for “Hey Companion, feed Spark!” \(integrates) Tj
+T*
+(  with AI parser\).) Tj
+T*
+(• **AR Sessions:** Placeholder cards for projecting pets into augmented reality.) Tj
+T*
+(• **Weather Reactions:** Pulls live weather \(mocked\) to influence pet mood.) Tj
+T*
+(• **Social Pings:** Concept for exchanging care packages with classmates.) Tj
+T*
+() Tj
+T*
+(These features demonstrate vision beyond the core requirement and invite judge) Tj
+T*
+(questions.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 15 0 R >> >> /Contents 14 0 R >>
+endobj
+14 0 obj
+<< /Length 1584 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+(TROUBLESHOOTING & FAQS) Tj
+T*
+(----------------------) Tj
+T*
+(**Q: My stats are not updating.**) Tj
+T*
+(A: Ensure you are online. If the offline banner is visible, stats cache locally and sync) Tj
+T*
+(once reconnected.) Tj
+T*
+() Tj
+T*
+(**Q: I forgot my password.**) Tj
+T*
+(A: Use Supabase’s password reset link from the login page.) Tj
+T*
+() Tj
+T*
+(**Q: The AI responses feel repetitive.**) Tj
+T*
+(A: That’s expected with the deterministic stub. Enable OpenRouter in .env for live) Tj
+T*
+(responses.) Tj
+T*
+() Tj
+T*
+(**Q: Why is the shop empty?**) Tj
+T*
+(A: Run the seed script \(scripts/seed_competition_data.sql\) or confirm Supabase) Tj
+T*
+(migrations were executed.) Tj
+T*
+() Tj
+T*
+(**Q: Can multiple pets be managed?**) Tj
+T*
+(A: Currently limited to one pet per profile to simplify analytics. Roadmap includes) Tj
+T*
+(multi-pet support.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(GLOSSARY) Tj
+T*
+(--------) Tj
+T*
+(• **Coins:** In-app currency earned via activities and spent in the shop.) Tj
+T*
+(• **XP \(Experience Points\):** Progress measure unlocking achievements.) Tj
+T*
+(• **RLS \(Row Level Security\):** Supabase feature ensuring users access only their data.) Tj
+T*
+(• **Supabase:** Backend-as-a-service providing Postgres, auth, and storage.) Tj
+T*
+(• **OpenRouter:** Optional AI gateway for advanced language model responses.) Tj
+T*
+() Tj
+T*
+(---) Tj
+T*
+() Tj
+T*
+(**Need presenter tips?** Pair this manual with docs/presentation-deck.md and docs/demo-) Tj
+T*
+(script.md to deliver a confident FBLA demo. Good luck! 🎉) Tj
+T*
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 16
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000153 00000 n 
+0000000280 00000 n 
+0000002078 00000 n 
+0000002205 00000 n 
+0000004079 00000 n 
+0000004206 00000 n 
+0000006173 00000 n 
+0000006301 00000 n 
+0000008360 00000 n 
+0000008489 00000 n 
+0000010446 00000 n 
+0000010575 00000 n 
+0000012212 00000 n 
+trailer
+<< /Size 16 /Root 1 0 R >>
+startxref
+12283
+%%EOF

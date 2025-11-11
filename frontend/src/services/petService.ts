@@ -1,25 +1,22 @@
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
-
-// Import supabase only when not in mock mode
-let supabase: any = null;
-if (!useMock) {
-  try {
-    supabase = require('../lib/supabase').supabase;
-  } catch (error) {
-    console.warn('Failed to import supabase, using mock mode');
-  }
-}
-import type { Database } from '../types/database.types';
+import { supabase, isSupabaseMock } from '@/lib/supabase';
+import type { Database } from '@/types/database.types';
 
 type Pet = Database['public']['Tables']['pets']['Row'];
 type PetInsert = Database['public']['Tables']['pets']['Insert'];
 type PetUpdate = Database['public']['Tables']['pets']['Update'];
+
+const ensureSupabase = () => {
+  if (isSupabaseMock()) {
+    throw new Error('Supabase mock is enabled. Real-time pet interactions require real Supabase credentials.');
+  }
+};
 
 export const petService = {
   /**
    * Get user's pet
    */
   async getPet(userId: string): Promise<Pet | null> {
+    ensureSupabase();
     const { data, error } = await supabase
       .from('pets')
       .select('*')
@@ -42,6 +39,7 @@ export const petService = {
    * Create a new pet for a user
    */
   async createPet(petData: PetInsert): Promise<Pet> {
+    ensureSupabase();
     const { data, error } = await supabase
       .from('pets')
       .insert(petData)
@@ -60,6 +58,7 @@ export const petService = {
    * Update pet stats
    */
   async updatePet(petId: string, updates: PetUpdate): Promise<Pet> {
+    ensureSupabase();
     const { data, error } = await supabase
       .from('pets')
       .update({
@@ -89,15 +88,16 @@ export const petService = {
       happiness?: number;
       cleanliness?: number;
       energy?: number;
-    }
+    },
   ): Promise<Pet> {
-    return await this.updatePet(petId, stats);
+    return this.updatePet(petId, stats);
   },
 
   /**
    * Increment pet age (called daily or on specific triggers)
    */
   async incrementAge(petId: string): Promise<Pet> {
+    ensureSupabase();
     const { data: pet } = await supabase
       .from('pets')
       .select('age')
@@ -108,7 +108,7 @@ export const petService = {
       throw new Error('Pet not found');
     }
 
-    return await this.updatePet(petId, {
+    return this.updatePet(petId, {
       age: pet.age + 1,
     });
   },
@@ -117,6 +117,7 @@ export const petService = {
    * Level up pet
    */
   async levelUp(petId: string): Promise<Pet> {
+    ensureSupabase();
     const { data: pet } = await supabase
       .from('pets')
       .select('level')
@@ -127,7 +128,7 @@ export const petService = {
       throw new Error('Pet not found');
     }
 
-    return await this.updatePet(petId, {
+    return this.updatePet(petId, {
       level: pet.level + 1,
     });
   },

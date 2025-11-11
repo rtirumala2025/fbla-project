@@ -1,0 +1,182 @@
+%PDF-1.4
+%����
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 7 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 2720 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+(FBLA DEMO STORYBOARD – VIRTUAL PET COMPANION) Tj
+T*
+(--------------------------------------------) Tj
+T*
+() Tj
+T*
+(❝ Each numbered scene corresponds to a segment in the demo video. Pair with `docs/demo-) Tj
+T*
+(   script.md` for dialogue and timing cues.) Tj
+T*
+() Tj
+T*
+(Scene | Visual Focus | Actions & Animations | Narration Highlights | Callouts) Tj
+T*
+(|-------|--------------|----------------------|----------------------|----------|) Tj
+T*
+(1 | Title card with FBLA + team logo | Fade-in background, animated pet silhouette |) Tj
+T*
+("Welcome to Virtual Pet Companion — where pet care meets financial literacy." | Display) Tj
+T*
+(URL + QR code) Tj
+T*
+(2 | Presenter on camera or voice-over | Picture-in-picture, slide overlay with problem) Tj
+T*
+(statement | "Students need engaging ways to connect daily habits with budgeting." |) Tj
+T*
+(Problem → Vision icons) Tj
+T*
+(3 | App onboarding screen | Screen capture of signup and species selection | "In under a) Tj
+T*
+(minute, we personalize a pet with name, species, and starter traits." | Highlight) Tj
+T*
+(accessibility toggle) Tj
+T*
+(4 | Dashboard hero view | Animated pet idle loop, stat meters pulsing | "The dashboard) Tj
+T*
+(keeps hunger, happiness, cleanliness, energy, and health front-and-center." | Show) Tj
+T*
+(offline banner indicator) Tj
+T*
+(5 | Care action modal \(Feed\) | Click feed button, select item, stats animate upward |) Tj
+T*
+("Feeding Luna brings stats back into the green and logs the action in the AI diary." |) Tj
+T*
+(Overlay tip: cooldown timer) Tj
+T*
+(6 | AI Companion drawer | Slide out recommendation cards | "Our AI companion analyzes) Tj
+T*
+(mood and recommends next steps using Supabase data." | Tag mood icons) Tj
+T*
+(7 | Finance screen \(Wallet + Shop\) | Scroll wallet summary → open shop → purchase item |) Tj
+T*
+("Students practice budgeting: earn coins, compare needs vs wants, and review transaction) Tj
+T*
+(history." | Highlight CSV export) Tj
+T*
+(8 | Mini-game showcase | Memory match clip \(speed ramp\), coins reward popup | "Quick) Tj
+T*
+(mini-games reinforce focus and deliver rewards that tie back to the economy." | Overlay) Tj
+T*
+('Adaptive Difficulty') Tj
+T*
+(9 | Analytics dashboard | Filter to weekly view, reveal AI insights | "Teachers access) Tj
+T*
+(analytics for weekly reflections and downloadable CSVs for grading." | Show) Tj
+T*
+(share/download buttons) Tj
+T*
+(10 | Next-Gen Lab | Cycle voice command mock, AR storyboard panels | "Our innovation lab) Tj
+T*
+(teases voice commands, AR interactions, and weather-aware care loops." | Future roadmap) Tj
+T*
+(badges) Tj
+T*
+(11 | Accessibility spotlight | Toggle high-contrast mode, tab through interface |) Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 7 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 1437 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+54 756 Td
+("Accessibility is built-in: keyboard shortcuts, high contrast themes, and reduced motion) Tj
+T*
+(modes." | WCAG badge) Tj
+T*
+(12 | Closing slide | Logo, team names, thank you message | "Thank you, judges. Scan the) Tj
+T*
+(QR code for source, docs, and deployment links." | Display feedback prompt) Tj
+T*
+() Tj
+T*
+(PRODUCTION NOTES) Tj
+T*
+(----------------) Tj
+T*
+() Tj
+T*
+(• **Capture resolution:** 1920×1080 \(16:9\) at 30 fps.) Tj
+T*
+(• **Transitions:** 0.4 s cross-dissolve between scenes; hold each primary beat for 6–8) Tj
+T*
+(  seconds.) Tj
+T*
+(• **Audio bed:** Light instrumental track mixed at –18 LUFS. Duck to –24 LUFS during) Tj
+T*
+(  narration.) Tj
+T*
+(• **Lower thirds:** Introduce each presenter with name and role during scenes 2 and 3.) Tj
+T*
+(• **Captions:** Generate `.srt` via `scripts/generate_captions.py` \(planned\) to meet) Tj
+T*
+(  accessibility expectations.) Tj
+T*
+(• **Brand palette:** Use Tailwind theme colors `#2563EB`, `#F97316`, `#111827` for) Tj
+T*
+(  overlays.) Tj
+T*
+() Tj
+T*
+(ASSET CHECKLIST) Tj
+T*
+(---------------) Tj
+T*
+() Tj
+T*
+(• Screen recordings exported as `.mov` or `.mp4`) Tj
+T*
+(• Voice-over script from `docs/demo-script.md`) Tj
+T*
+(• B-roll GIFs \(`frontend/public/assets/demo/`\)) Tj
+T*
+(• Logo SVG \(`frontend/public/logo.svg`\)) Tj
+T*
+(• Captions + transcript \(`docs/demo-transcript.md`, generated post-recording\)) Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000253 00000 n 
+0000003025 00000 n 
+0000003151 00000 n 
+0000004640 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+4710
+%%EOF

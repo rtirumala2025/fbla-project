@@ -1,93 +1,130 @@
 # Database Migration Instructions
 
-## How to Apply Migrations
+The Supabase/PostgreSQL schema is maintained through the SQL files in `supabase/migrations`.  
+Each migration is idempotent and wrapped in an explicit transaction. Apply them in numeric order:
 
-### Option 1: Supabase SQL Editor (Recommended for Manual Testing)
+```
+000_core_schema.sql
+001_profiles_and_preferences.sql
+002_pets.sql
+003_social_layer.sql
+004_accessories_and_art_cache.sql
+005_finance_system.sql
+006_quests.sql
+007_games.sql
+008_analytics_and_sync.sql
+009_realtime_and_replication.sql
+```
 
-1. Open your Supabase project dashboard
-2. Navigate to **SQL Editor**
-3. Copy and paste the contents of each migration file in order:
-   - `000_profiles_table.sql` (MUST BE FIRST - creates core profiles table)
-   - `001_user_preferences.sql`
-   - `002_pets_table_complete.sql`
-4. Click **Run** for each migration
+## Applying Migrations
 
-### Option 2: Supabase CLI (Recommended for Production)
+### Option 1 – Supabase CLI (recommended)
 
 ```bash
-# From project root
+# from the project root
 cd supabase
 
-# Apply migrations
+# apply every migration in order
 supabase db push
 
-# Or apply individually (IN ORDER)
-supabase db execute --file migrations/000_profiles_table.sql
-supabase db execute --file migrations/001_user_preferences.sql
-supabase db execute --file migrations/002_pets_table_complete.sql
+# or execute a single migration file
+supabase db execute --file migrations/005_finance_system.sql
 ```
 
-### Option 3: Direct psql Connection
+### Option 2 – Supabase SQL Editor
+
+1. Sign in to the Supabase dashboard for the project.
+2. Navigate to **SQL Editor → New query**.
+3. Paste the contents of the first migration file (`000_core_schema.sql`) and run it.
+4. Repeat for each subsequent file, ensuring the numeric order is preserved.
+
+### Option 3 – Direct `psql`
 
 ```bash
-# Get connection string from Supabase dashboard
-psql "postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT].supabase.co:5432/postgres"
+# Replace placeholders with your Supabase connection values.
+psql "postgresql://postgres:<YOUR-PASSWORD>@db.<PROJECT>.supabase.co:5432/postgres"
 
-# Then run each migration file (IN ORDER)
-\i migrations/000_profiles_table.sql
-\i migrations/001_user_preferences.sql
-\i migrations/002_pets_table_complete.sql
+# Then execute each migration in order.
+\i migrations/000_core_schema.sql
+\i migrations/001_profiles_and_preferences.sql
+...
+\i migrations/009_realtime_and_replication.sql
 ```
 
-## Verification
+## Post-Migration Verification
 
-After applying migrations, verify tables exist:
+Run the following queries to confirm the schema is healthy and RLS is active:
 
 ```sql
--- Check profiles table
-SELECT table_name, column_name, data_type
-FROM information_schema.columns
-WHERE table_name = 'profiles'
-AND table_schema = 'public';
-
--- Check user_preferences table
-SELECT table_name, column_name, data_type
-FROM information_schema.columns
-WHERE table_name = 'user_preferences'
-AND table_schema = 'public';
-
--- Check pets table
-SELECT table_name, column_name, data_type
-FROM information_schema.columns
-WHERE table_name = 'pets'
-AND table_schema = 'public';
-
--- Verify RLS is enabled
-SELECT schemaname, tablename, rowsecurity
+-- 1. Confirm critical tables exist
+SELECT tablename, rowsecurity
 FROM pg_tables
-WHERE tablename IN ('profiles', 'user_preferences', 'pets')
-AND schemaname = 'public';
+WHERE schemaname = 'public'
+  AND tablename IN (
+    'users', 'profiles', 'user_preferences', 'pets',
+    'finance_wallets', 'finance_transactions', 'finance_goals', 'finance_inventory',
+    'quests', 'user_quests',
+    'game_rounds', 'game_sessions', 'game_leaderboards', 'game_achievements',
+    'analytics_daily_snapshots', 'analytics_notifications', 'cloud_sync_snapshots',
+    'friends', 'public_profiles'
+  )
+ORDER BY tablename;
 
--- Check RLS policies
+-- 2. Check compatibility views (expected: view)
+SELECT table_name, table_type
+FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN ('shop_items', 'transactions', 'pet_inventory');
+
+-- 3. Inspect a sample policy set
 SELECT schemaname, tablename, policyname, cmd
 FROM pg_policies
-WHERE tablename IN ('profiles', 'user_preferences', 'pets');
+WHERE tablename IN ('profiles', 'pets', 'finance_wallets', 'user_quests')
+ORDER BY tablename, cmd;
 ```
 
-## Rollback (if needed)
+For a deeper audit, review `db_verification_queries.sql` in the repository which includes additional integrity checks.
+
+## Rollback Helpers
+
+To remove the custom schema (for example in a staging reset), drop tables in reverse dependency order:
 
 ```sql
--- Drop user_preferences table
-DROP TABLE IF EXISTS public.user_preferences CASCADE;
-
--- Drop pets table (careful - this deletes all pet data!)
-DROP TABLE IF EXISTS public.pets CASCADE;
+DROP VIEW IF EXISTS public.transactions, public.shop_items, public.pet_inventory;
+DROP TABLE IF EXISTS public.analytics_notifications,
+                     public.analytics_monthly_snapshots,
+                     public.analytics_weekly_snapshots,
+                     public.analytics_daily_snapshots,
+                     public.cloud_sync_snapshots,
+                     public.game_achievements,
+                     public.game_leaderboards,
+                     public.game_sessions,
+                     public.game_rounds,
+                     public.user_quests,
+                     public.quests,
+                     public.finance_inventory,
+                     public.finance_transactions,
+                     public.finance_shop_items,
+                     public.finance_goals,
+                     public.finance_wallets,
+                     public.pet_art_cache,
+                     public.user_accessories,
+                     public.accessories,
+                     public.public_profiles,
+                     public.friends,
+                     public.pets,
+                     public.user_preferences,
+                     public.profiles,
+                     public.users
+CASCADE;
+DROP TYPE IF EXISTS public.pet_mood;
 ```
 
-## Notes
+## Additional Notes
 
-- These migrations are idempotent (safe to run multiple times)
-- RLS policies ensure users can only access their own data
-- Triggers automatically update `updated_at` timestamps
-- One pet per user constraint enforced via UNIQUE(user_id)
+- `000_core_schema.sql` integrates Supabase Auth with the `public.users` table via triggers.
+- RLS is enforced on every user-owned table. Service-role connections (used by the FastAPI backend) bypass RLS, but regular authenticated clients only see their own rows.
+- Compatibility views (`shop_items`, `transactions`, `pet_inventory`) keep legacy Supabase client code working while the backend uses the richer `finance_*` tables.
+- `009_realtime_and_replication.sql` adds the new tables to the `supabase_realtime` publication and forces `REPLICA IDENTITY FULL` where real-time updates are expected.
 
+Always back up production data before applying migrations.
