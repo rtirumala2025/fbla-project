@@ -25,7 +25,7 @@ const PetDisplay = ({ name, species }: { name: string; species: string }) => {
 };
 
 // Stats Component
-const PetStats = ({ stats }: { stats: Record<string, number> }) => {
+const PetStats = ({ stats }: { stats: { [key: string]: number } }) => {
   const statConfig = {
     health: { color: 'bg-red-400', label: 'Health' },
     hunger: { color: 'bg-yellow-400', label: 'Hunger' },
@@ -82,7 +82,7 @@ const PetActions = ({ onAction }: { onAction: (action: string) => void }) => {
   );
 };
 
-interface PetStatsState {
+interface PetStats {
   health: number;
   hunger: number;
   happiness: number;
@@ -93,24 +93,13 @@ interface PetStatsState {
 interface PetData {
   name: string;
   species: string;
-  stats: PetStatsState;
+  stats: PetStats;
 }
 
 // Main Dashboard Page
 export function DashboardPage() {
   const navigate = useNavigate();
   const { currentUser, loading } = useAuth();
-  const [pet, setPet] = useState<PetData>({
-    name: 'Luna',
-    species: 'dog',
-    stats: {
-      health: 100,
-      hunger: 70,
-      happiness: 80,
-      cleanliness: 90,
-      energy: 85,
-    },
-  });
   
   useEffect(() => {
     if (!loading && !currentUser) {
@@ -128,11 +117,22 @@ export function DashboardPage() {
       </div>
     );
   }
+  const [pet, setPet] = useState<PetData>({
+    name: 'Luna',
+    species: 'dog',
+    stats: {
+      health: 100,
+      hunger: 70,
+      happiness: 80,
+      cleanliness: 90,
+      energy: 85,
+    },
+  });
 
   const handleAction = (action: string) => {
-    setPet((prev) => {
-      const newPet: PetData = { ...prev, stats: { ...prev.stats } };
-
+    setPet(prev => {
+      const newPet = { ...prev, stats: { ...prev.stats } };
+      
       switch (action) {
         case 'feed':
           newPet.stats.hunger = Math.min(100, prev.stats.hunger + 15);
@@ -147,10 +147,8 @@ export function DashboardPage() {
         case 'heal':
           newPet.stats.health = Math.min(100, prev.stats.health + 10);
           break;
-        default:
-          break;
       }
-
+      
       return newPet;
     });
   };
@@ -200,7 +198,7 @@ export function DashboardPage() {
           >
             <div className="bg-white p-6 rounded-xl shadow-md">
               <h2 className="text-xl font-semibold mb-4 text-gray-800">Pet Stats</h2>
-              <PetStats stats={{ ...pet.stats }} />
+<PetStats stats={{ ...pet.stats }} />
             </div>
             
             <div className="bg-white p-6 rounded-xl shadow-md">

@@ -62,21 +62,21 @@ This guide explains how to configure Google OAuth for the Companion app.
 - Check browser console for detailed error messages
 
 ### Google Sign-In Button Doesn't Work
-- Verify `VITE_SUPABASE_USE_MOCK=false` in `.env` file
+- Verify `REACT_APP_USE_MOCK=false` in `.env` file
 - Check browser console for errors
 - Ensure Supabase project URL and anon key are correct in `.env`
 
 ## Environment Variables
 Make sure your `.env` file contains:
 ```env
-VITE_SUPABASE_USE_MOCK=false
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
+REACT_APP_USE_MOCK=false
+REACT_APP_SUPABASE_URL=https://your-project.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ## For Demo/Development
 If you want to skip OAuth configuration for demo purposes, set:
 ```env
-VITE_SUPABASE_USE_MOCK=true
+REACT_APP_USE_MOCK=true
 ```
 This will use mock authentication instead of real OAuth.

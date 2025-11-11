@@ -1,14 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { apiRequest, clearAuthTokens, getTokens, setAuthTokens, type AuthTokens, unauthenticatedRequest } from '../api/httpClient';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import { profileService } from '../services/profileService';
-import type { Profile } from '../services/profileService';
-import { isSupabaseMock } from '@/lib/supabase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   uid: string;
   email: string | null;
   displayName: string | null;
-  avatarUrl: string | null;
 }
 
 type AuthContextType = {
@@ -16,61 +14,19 @@ type AuthContextType = {
   loading: boolean;
   isNewUser: boolean;
   isTransitioning: boolean;
-  demoModeAvailable: boolean;
-  isDemoModeActive: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-  checkUserProfile: (userId?: string) => Promise<boolean>;
+  checkUserProfile: (userId: string) => Promise<boolean>;
   refreshUserState: () => Promise<void>;
   markUserAsReturning: () => void;
   endTransition: () => void;
-  enterDemoMode: (options?: DemoModeOptions) => Promise<void>;
 };
-
-type DemoModeOptions = {
-  email?: string | null;
-  displayName?: string | null;
-  avatarUrl?: string | null;
-};
-
-const DEMO_MODE_STORAGE_KEY = 'virtual-pet.demo-mode';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const decodeJwt = (token: string): { sub?: string; email?: string; exp?: number } => {
-  try {
-    const [, payload] = token.split('.');
-    if (!payload) return {};
-    if (typeof window === 'undefined') {
-      return {};
-    }
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const pad = normalized.length % 4;
-    const padded = pad ? normalized + '='.repeat(4 - pad) : normalized;
-    const decoded = window.atob(padded);
-    return JSON.parse(decoded);
-  } catch (error) {
-    console.warn('Failed to decode JWT', error);
-    return {};
-  }
-};
-
-const mapProfileToUser = (profile: Profile | null, claims: { sub?: string; email?: string }): User | null => {
-  const uid = claims.sub || profile?.user_id;
-  if (!uid) {
-    return null;
-  }
-  return {
-    uid,
-    email: claims.email || null,
-    displayName: profile?.username || null,
-    avatarUrl: profile?.avatar_url || null,
-  };
-};
-
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -78,306 +34,320 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
+// Helper function to convert Supabase user to our User type
+const mapSupabaseUser = (supabaseUser: SupabaseUser | null): User | null => {
+  if (!supabaseUser) return null;
+  
+  return {
+    uid: supabaseUser.id,
+    email: supabaseUser.email || null,
+    displayName: supabaseUser.user_metadata?.display_name || supabaseUser.email?.split('@')[0] || null,
+  };
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const demoModeAvailable = isSupabaseMock();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isDemoModeActive, setIsDemoModeActive] = useState(false);
 
-  const persistDemoMode = useCallback((active: boolean) => {
-    if (typeof window === 'undefined') {
-      return;
+  // Helper function to check if user has a profile
+  const checkUserProfile = async (userId: string): Promise<boolean> => {
+    try {
+      if (process.env.REACT_APP_USE_MOCK === 'true') {
+        // In mock mode, assume user has profile
+        return false;
+      }
+      
+      const profile = await profileService.getProfile(userId);
+      return profile === null; // true if no profile exists (new user)
+    } catch (error) {
+      console.error('Error checking user profile:', error);
+      return true; // Assume new user if error occurs
     }
-    if (active) {
-      window.localStorage.setItem(DEMO_MODE_STORAGE_KEY, 'true');
-    } else {
-      window.localStorage.removeItem(DEMO_MODE_STORAGE_KEY);
+  };
+
+  // Method to refresh user state after profile creation or update
+  const refreshUserState = async () => {
+    console.log('🔄 AuthContext: Refreshing user state...');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // Fetch the latest profile data from the database
+        const profile = await profileService.getProfile(session.user.id);
+        
+        // Create updated user object with latest username from profile
+        const updatedUser: User = {
+          uid: session.user.id,
+          email: session.user.email || null,
+          displayName: profile?.username || session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || null,
+        };
+        
+        const isNew = profile === null;
+        console.log('🔄 AuthContext: Refreshed - isNewUser:', isNew);
+        console.log('🔄 AuthContext: Updated displayName from profile:', updatedUser.displayName);
+        setIsNewUser(isNew);
+        setCurrentUser(updatedUser);
+      }
+    } catch (error) {
+      console.error('Error refreshing user state:', error);
     }
-  }, []);
+  };
 
-  const createDemoUser = useCallback((options?: DemoModeOptions): User => {
-    const email = options?.email ?? 'demo.user@example.com';
-    const displayName =
-      options?.displayName ??
-      (email ? email.split('@')[0]?.replace(/\W+/g, ' ').trim() || 'Demo Explorer' : 'Demo Explorer');
+  // Method to directly mark user as not new (after successful profile creation)
+  const markUserAsReturning = () => {
+    console.log('✅ AuthContext: Marking user as returning (profile exists)');
+    setIsNewUser(false);
+    setIsTransitioning(true);
+  };
 
-    return {
-      uid: 'demo-user',
-      email,
-      displayName,
-      avatarUrl: options?.avatarUrl ?? 'https://api.dicebear.com/7.x/bottts/png?seed=CompanionDemo',
+  // Method to end transition window after navigation completes
+  const endTransition = () => {
+    if (isTransitioning) {
+      console.log('✅ AuthContext: Ending transition window');
+      setIsTransitioning(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log('🔵 AuthContext: Initializing...');
+    console.log('🔵 AuthContext: Supabase client:', supabase ? 'initialized' : 'NOT initialized');
+    
+    // Fallback timeout to ensure loading never gets stuck
+    const fallbackTimeout = setTimeout(() => {
+      console.warn('⏰ AuthContext: Fallback timeout - forcing loading to false');
+      setLoading(false);
+    }, 10000); // 10 second timeout
+    
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session }, error }: { data: { session: any }, error: any }) => {
+      console.log('🔵 AuthContext: Initial session check');
+      console.log('  Session exists:', !!session);
+      console.log('  User email:', session?.user?.email || 'No user');
+      console.log('  Session error:', error?.message || 'none');
+      console.log('  Session expires at:', session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A');
+      
+      const mappedUser = mapSupabaseUser(session?.user || null);
+      console.log('  Mapped user:', mappedUser?.email || 'null');
+      
+      try {
+        if (mappedUser) {
+          // Check if user has a profile
+          const isNew = await checkUserProfile(mappedUser.uid);
+          console.log('  Is new user:', isNew);
+          setIsNewUser(isNew);
+        } else {
+          setIsNewUser(false);
+        }
+      } catch (profileError) {
+        console.error('❌ Error checking user profile:', profileError);
+        setIsNewUser(false); // Default to not new user if check fails
+      }
+      
+      setCurrentUser(mappedUser);
+      setLoading(false);
+      clearTimeout(fallbackTimeout); // Clear timeout since we completed successfully
+    }).catch((err: any) => {
+      console.error('❌ Error getting session:', err);
+      setCurrentUser(null);
+      setIsNewUser(false);
+      setLoading(false);
+      clearTimeout(fallbackTimeout); // Clear timeout since we completed (with error)
+    });
+
+    // Listen for auth changes - this will fire for all auth events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+      console.log('🔵 AuthContext: Auth state change detected');
+      console.log('  Event type:', event);
+      console.log('  Has session:', !!session);
+      console.log('  User email:', session?.user?.email || 'none');
+      console.log('  Session expires at:', session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A');
+      
+      const mappedUser = mapSupabaseUser(session?.user || null);
+      console.log('  Setting user:', mappedUser?.email || 'null');
+      
+      try {
+        if (mappedUser) {
+          // Check if user has a profile
+          const isNew = await checkUserProfile(mappedUser.uid);
+          console.log('  Is new user:', isNew);
+          setIsNewUser(isNew);
+        } else {
+          setIsNewUser(false);
+        }
+      } catch (profileError) {
+        console.error('❌ Error checking user profile in auth change:', profileError);
+        setIsNewUser(false); // Default to not new user if check fails
+      }
+      
+      setCurrentUser(mappedUser);
+      setLoading(false);
+    });
+
+    return () => {
+      console.log('🔵 AuthContext: Cleaning up subscription');
+      clearTimeout(fallbackTimeout);
+      subscription.unsubscribe();
     };
   }, []);
 
-  const activateDemoUser = useCallback(
-    (options?: DemoModeOptions) => {
-      const demoUser = createDemoUser(options);
-      setCurrentUser(demoUser);
-      setIsNewUser(false);
-      setIsTransitioning(false);
-      setIsDemoModeActive(true);
-      setLoading(false);
-      persistDemoMode(true);
-    },
-    [createDemoUser, persistDemoMode],
-  );
-
-  const deactivateDemoMode = useCallback(() => {
-    setIsDemoModeActive(false);
-    persistDemoMode(false);
-  }, [persistDemoMode]);
-
-  const hydrateFromTokens = useCallback(async () => {
-    const storedTokens = getTokens();
-    const storedDemoPreference =
-      demoModeAvailable &&
-      typeof window !== 'undefined' &&
-      window.localStorage.getItem(DEMO_MODE_STORAGE_KEY) === 'true';
-
-    if (!storedTokens?.accessToken) {
-      if (demoModeAvailable && storedDemoPreference) {
-        activateDemoUser();
-        return;
-      }
-
-      deactivateDemoMode();
-      setCurrentUser(null);
-      setIsNewUser(false);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const claims = decodeJwt(storedTokens.accessToken);
-      const profile = await profileService.getProfile();
-      if (!profile) {
-        setIsNewUser(true);
-        setCurrentUser(
-          mapProfileToUser(null, claims) || {
-            uid: claims.sub || 'unknown',
-            email: claims.email || null,
-            displayName: null,
-            avatarUrl: null,
-          },
-        );
-      } else {
-        setIsNewUser(false);
-        setCurrentUser(mapProfileToUser(profile, claims));
-      }
-    } catch (error) {
-      console.error('Failed to hydrate auth state', error);
-      clearAuthTokens();
-      setCurrentUser(null);
-      setIsNewUser(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [activateDemoUser, deactivateDemoMode, demoModeAvailable]);
-
-  useEffect(() => {
-    void hydrateFromTokens();
-  }, [hydrateFromTokens]);
-
-  const refreshUserState = useCallback(async () => {
-    if (isDemoModeActive) {
-      activateDemoUser();
-      return;
-    }
-
-    const activeTokens = getTokens();
-    if (!activeTokens?.accessToken) {
-      setCurrentUser(null);
-      setIsNewUser(false);
-      return;
-    }
-
-    const claims = decodeJwt(activeTokens.accessToken);
-    try {
-      const profile = await profileService.getProfile();
-      if (!profile) {
-        setIsNewUser(true);
-        setCurrentUser(mapProfileToUser(null, claims));
-      } else {
-        setIsNewUser(false);
-        setCurrentUser(mapProfileToUser(profile, claims));
-      }
-    } catch (error) {
-      console.error('Failed to refresh user state', error);
-      throw error;
-    }
-  }, [activateDemoUser, isDemoModeActive]);
-
-  const enterDemoMode = useCallback(
-    async (options?: DemoModeOptions) => {
-      if (!demoModeAvailable) {
-        throw new Error('Demo mode is not available without Supabase mock configuration.');
-      }
-      setLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      activateDemoUser(options);
-    },
-    [activateDemoUser, demoModeAvailable],
-  );
-
-  const signIn = useCallback(
-    async (email: string, password: string) => {
-      if (demoModeAvailable) {
-        await enterDemoMode({
-          email,
-          displayName: email ? email.split('@')[0] : undefined,
-        });
-        return;
-      }
-
-      const response = await unauthenticatedRequest<{
-        access_token: string;
-        refresh_token: string;
-        expires_in?: number;
-      }>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
-
-      setAuthTokens({
-        accessToken: response.access_token,
-        refreshToken: response.refresh_token,
-        expiresIn: response.expires_in,
-      });
-
-      await refreshUserState();
-    },
-    [demoModeAvailable, enterDemoMode, refreshUserState],
-  );
-
-  const signUp = useCallback(
-    async (email: string, password: string, displayName: string) => {
-      if (demoModeAvailable) {
-        await enterDemoMode({ email, displayName });
-        return;
-      }
-
-      const response = await unauthenticatedRequest<{
-        access_token: string;
-        refresh_token: string;
-        expires_in?: number;
-      }>('/api/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({ email, password, username: displayName }),
-      });
-
-      const tokens: AuthTokens = {
-        accessToken: response.access_token,
-        refreshToken: response.refresh_token,
-        expiresIn: response.expires_in,
+  const signIn = async (email: string, password: string) => {
+    // Mock authentication for development
+    if (process.env.REACT_APP_USE_MOCK === 'true') {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create mock user
+      const mockUser = {
+        uid: 'mock-user-123',
+        email: email,
+        displayName: email.split('@')[0],
       };
-      setAuthTokens(tokens);
-
-      await profileService.createProfile({ username: displayName });
-      await refreshUserState();
-    },
-    [demoModeAvailable, enterDemoMode, refreshUserState],
-  );
-
-  const signInWithGoogle = useCallback(async () => {
-    if (demoModeAvailable) {
-      await enterDemoMode({
-        email: 'demo.google@companion.app',
-        displayName: 'Demo Explorer',
-      });
+      
+      setCurrentUser(mockUser);
       return;
     }
 
-    throw new Error('Google sign-in is not configured for the new authentication system.');
-  }, [demoModeAvailable, enterDemoMode]);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  const signOut = useCallback(async () => {
-    if (isDemoModeActive || demoModeAvailable) {
-      deactivateDemoMode();
-      setCurrentUser(null);
-      setIsNewUser(false);
-      setIsTransitioning(false);
-      setLoading(false);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    setCurrentUser(mapSupabaseUser(data.user));
+  };
+
+  const signUp = async (email: string, password: string, displayName: string) => {
+    // Mock authentication for development
+    if (process.env.REACT_APP_USE_MOCK === 'true') {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create mock user
+      const mockUser = {
+        uid: `mock-user-${Date.now()}`,
+        email: email,
+        displayName: displayName || email.split('@')[0],
+      };
+      
+      setCurrentUser(mockUser);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          display_name: displayName,
+        },
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // Create user profile
+    if (data.user) {
+      const { error: profileError } = await supabase.from('profiles').insert({
+        user_id: data.user.id,
+        username: displayName,
+        coins: 100, // Starting coins
+      });
+
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
+      }
+    }
+
+    setCurrentUser(mapSupabaseUser(data.user));
+  };
+
+  const signInWithGoogle = async () => {
+    console.log('🔵 AuthContext: Google sign-in initiated');
+    
+    // Mock authentication for development
+    if (process.env.REACT_APP_USE_MOCK === 'true') {
+      console.log('🔧 Mock mode: Simulating Google sign-in');
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create mock user
+      const mockUser = {
+        uid: 'mock-google-user-123',
+        email: 'mockuser@gmail.com',
+        displayName: 'Mock Google User',
+      };
+      
+      setCurrentUser(mockUser);
       return;
     }
 
     try {
-      const activeTokens = getTokens();
-      await apiRequest('/api/auth/logout', {
-        method: 'POST',
-        body: JSON.stringify({ refresh_token: activeTokens?.refreshToken }),
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+      console.log('🔵 AuthContext: Redirecting to Google OAuth');
+      console.log('  Redirect URL:', redirectUrl);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+        },
       });
-    } catch (error) {
-      console.warn('Logout request failed', error);
-    } finally {
-      clearAuthTokens();
+
+      if (error) {
+        console.error('❌ Google sign-in error:', error);
+        throw new Error(error.message);
+      }
+
+      if (data?.url) {
+        console.log('✅ Redirecting to Google OAuth URL');
+        window.location.href = data.url;
+      } else {
+        throw new Error('No redirect URL received from Supabase');
+      }
+    } catch (err: any) {
+      console.error('❌ Google sign-in failed:', err);
+      throw new Error(err.message || 'Google sign-in failed');
+    }
+  };
+
+  const signOut = async () => {
+    // Mock sign out for development
+    if (process.env.REACT_APP_USE_MOCK === 'true') {
       setCurrentUser(null);
-      setIsNewUser(false);
-    }
-  }, [deactivateDemoMode, demoModeAvailable, isDemoModeActive]);
-
-  const checkUserProfile = useCallback(async (_userId?: string) => {
-    if (isDemoModeActive || demoModeAvailable) {
-      return false;
+      return;
     }
 
-    try {
-      const profile = await profileService.getProfile();
-      return profile === null;
-    } catch (error) {
-      console.error('Failed to check user profile', error);
-      return true;
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw new Error(error.message);
     }
-  }, [demoModeAvailable, isDemoModeActive]);
+    setCurrentUser(null);
+  };
 
-  const markUserAsReturning = useCallback(() => {
-    setIsNewUser(false);
-    setIsTransitioning(true);
-  }, []);
+  const value = {
+    currentUser,
+    loading,
+    isNewUser,
+    isTransitioning,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signOut,
+    checkUserProfile,
+    refreshUserState,
+    markUserAsReturning,
+    endTransition,
+  };
 
-  const endTransition = useCallback(() => {
-    if (isTransitioning) {
-      setIsTransitioning(false);
-    }
-  }, [isTransitioning]);
-
-  const value = useMemo<AuthContextType>(
-    () => ({
-      currentUser,
-      loading,
-      isNewUser,
-      isTransitioning,
-      demoModeAvailable,
-      isDemoModeActive,
-      signIn,
-      signUp,
-      signInWithGoogle,
-      signOut,
-      checkUserProfile,
-      refreshUserState,
-      markUserAsReturning,
-      endTransition,
-      enterDemoMode,
-    }),
-    [
-      currentUser,
-      loading,
-      isNewUser,
-      isTransitioning,
-      demoModeAvailable,
-      isDemoModeActive,
-      signIn,
-      signUp,
-      signInWithGoogle,
-      signOut,
-      checkUserProfile,
-      refreshUserState,
-      markUserAsReturning,
-      endTransition,
-      enterDemoMode,
-    ],
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

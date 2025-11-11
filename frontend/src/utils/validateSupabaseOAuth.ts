@@ -32,22 +32,22 @@ export const validateSupabaseOAuth = async (): Promise<ValidationResult> => {
   console.log('\n📋 Step 1: Checking Environment Variables');
   console.log('─────────────────────────────────────────');
   
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  const useMock = import.meta.env.VITE_SUPABASE_USE_MOCK;
+  const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+  const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+  const useMock = process.env.REACT_APP_USE_MOCK;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     result.isValid = false;
     result.errors.push('Missing Supabase environment variables');
-    console.error('❌ VITE_SUPABASE_URL:', supabaseUrl ? '✓ Set' : '✗ Missing');
-    console.error('❌ VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓ Set' : '✗ Missing');
+    console.error('❌ REACT_APP_SUPABASE_URL:', supabaseUrl ? '✓ Set' : '✗ Missing');
+    console.error('❌ REACT_APP_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓ Set' : '✗ Missing');
   } else {
     result.info.push('Environment variables configured');
-    console.log('✅ VITE_SUPABASE_URL:', supabaseUrl);
-    console.log('✅ VITE_SUPABASE_ANON_KEY:', supabaseAnonKey.substring(0, 20) + '...');
+    console.log('✅ REACT_APP_SUPABASE_URL:', supabaseUrl);
+    console.log('✅ REACT_APP_SUPABASE_ANON_KEY:', supabaseAnonKey.substring(0, 20) + '...');
   }
 
-  console.log('📌 VITE_SUPABASE_USE_MOCK:', useMock || 'false');
+  console.log('📌 REACT_APP_USE_MOCK:', useMock || 'false');
   
   if (useMock === 'true') {
     result.warnings.push('Mock mode is enabled - OAuth will not work');
@@ -155,13 +155,9 @@ export const validateSupabaseOAuth = async (): Promise<ValidationResult> => {
   console.log('');
   console.log('3. Google Cloud Console');
   console.log('   ☐ Authorized JavaScript origins:');
-  const supabaseDisplayUrl = supabaseUrl || 'https://your-project.supabase.co';
-  console.log('      •', supabaseDisplayUrl);
+  console.log('      •', supabaseUrl || 'https://your-project.supabase.co');
   console.log('   ☐ Authorized redirect URIs:');
-  const supabaseRedirectUrl = supabaseUrl
-    ? `${supabaseUrl}/auth/v1/callback`
-    : 'https://your-project.supabase.co/auth/v1/callback';
-  console.log('      •', supabaseRedirectUrl);
+  console.log('      •', `${supabaseUrl}/auth/v1/callback` || 'https://your-project.supabase.co/auth/v1/callback');
   console.log('');
 
   // Final summary
@@ -200,7 +196,7 @@ export const validateSupabaseOAuth = async (): Promise<ValidationResult> => {
  */
 export const generateSetupChecklist = (): string => {
   const currentOrigin = window.location.origin;
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+  const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://your-project.supabase.co';
   
   return `
 # Supabase Google OAuth Setup Checklist
@@ -210,9 +206,9 @@ export const generateSetupChecklist = (): string => {
 Create or update \`frontend/.env\`:
 
 \`\`\`env
-VITE_SUPABASE_USE_MOCK=false
-VITE_SUPABASE_URL=${supabaseUrl}
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
+REACT_APP_USE_MOCK=false
+REACT_APP_SUPABASE_URL=${supabaseUrl}
+REACT_APP_SUPABASE_ANON_KEY=your-anon-key-here
 \`\`\`
 
 ## 2. Supabase Dashboard Configuration

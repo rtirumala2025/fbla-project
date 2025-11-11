@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Zap, Droplet, Coffee } from 'lucide-react';
+import { Heart, Zap, Droplet, Coffee, Activity, Smile } from 'lucide-react';
 
 interface PetState {
   mood: string;

@@ -1,8 +1,7 @@
-@import './design-system.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import './design-system.css';
 
 :root {
   --background-color: #ffffff;
@@ -13,18 +12,6 @@ html, body, #root {
   background-color: #ffffff;
   margin: 0;
   padding: 0;
-}
-
-html[data-theme='dark'] body {
-  @apply bg-slate-900 text-slate-100;
-}
-
-html[data-theme='dark'] .ds-card {
-  @apply bg-slate-800 text-slate-100 border border-slate-700;
-}
-
-html.color-blind [data-role='stat-positive'] {
-  background-image: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(0,0,0,0.2) 6px, rgba(0,0,0,0.2) 12px);
 }
 
 @layer base {

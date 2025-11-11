@@ -1,21 +1,25 @@
-import { supabase, isSupabaseMock } from '@/lib/supabase';
-import type { Database } from '@/types/database.types';
+import type { Database } from '../types/database.types';
+
+const useMock = process.env.REACT_APP_USE_MOCK === 'true';
+
+// Import supabase only when not in mock mode
+let supabase: any = null;
+if (!useMock) {
+  try {
+    supabase = require('../lib/supabase').supabase;
+  } catch (error) {
+    console.warn('Failed to import supabase, using mock mode');
+  }
+}
 
 type ShopItem = Database['public']['Tables']['shop_items']['Row'];
 type Transaction = Database['public']['Tables']['transactions']['Insert'];
-
-const ensureSupabase = () => {
-  if (isSupabaseMock()) {
-    throw new Error('Supabase mock is enabled. Shop interactions require real Supabase credentials.');
-  }
-};
 
 export const shopService = {
   /**
    * Get all shop items
    */
   async getShopItems(): Promise<ShopItem[]> {
-    ensureSupabase();
     const { data, error } = await supabase
       .from('shop_items')
       .select('*')
@@ -33,7 +37,6 @@ export const shopService = {
    * Get user's coin balance
    */
   async getUserBalance(userId: string): Promise<number> {
-    ensureSupabase();
     const { data, error } = await supabase
       .from('profiles')
       .select('coins')
@@ -55,7 +58,6 @@ export const shopService = {
     userId: string,
     items: Array<{ id: string; name: string; price: number }>
   ): Promise<{ success: boolean; newBalance: number }> {
-    ensureSupabase();
     try {
       // Calculate total cost
       const totalCost = items.reduce((sum, item) => sum + item.price, 0);
@@ -117,7 +119,6 @@ export const shopService = {
    * Add coins to user balance (rewards, etc.)
    */
   async addCoins(userId: string, amount: number, reason: string): Promise<number> {
-    ensureSupabase();
     const currentBalance = await this.getUserBalance(userId);
     const newBalance = currentBalance + amount;
 
@@ -148,7 +149,6 @@ export const shopService = {
    * Get user's transaction history
    */
   async getTransactionHistory(userId: string, limit: number = 10): Promise<any[]> {
-    ensureSupabase();
     const { data, error } = await supabase
       .from('transactions')
       .select('*')

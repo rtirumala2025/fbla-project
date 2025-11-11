@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Pet, PetSpecies, PetStats } from '@/types/pet';
-import { supabase, isSupabaseMock } from '../lib/supabase';
+import { Pet, PetStats } from '@/types/pet';
+import { supabase } from '../lib/supabase';
 
 interface PetContextType {
   pet: Pet | null;
@@ -32,73 +32,25 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const usingMock = isSupabaseMock();
-
-  const buildDemoPet = useCallback((): Pet => {
-    const now = new Date();
-    return {
-      id: 'demo-pet',
-      ownerId: userId ?? 'demo-user',
-      name: 'Nova',
-      species: 'fox',
-      breed: 'Arctic',
-      age: 2,
-      level: 7,
-      experience: 1450,
-      color_pattern: 'snowfall',
-      birthday: now.toISOString(),
-      stats: {
-        health: 92,
-        hunger: 48,
-        happiness: 88,
-        cleanliness: 76,
-        energy: 67,
-        hygiene: 72,
-        mood: 'playful',
-        level: 7,
-        xp: 1450,
-        is_sick: false,
-        lastUpdated: now,
-      },
-      createdAt: now,
-      updatedAt: now,
-      diary: [
-        {
-          id: 'demo-entry-1',
-          mood: 'excited',
-          note: 'Nova mastered a new trick and earned bonus XP!',
-          created_at: now.toISOString(),
-        },
-      ],
-      seasonal_state: null,
-    };
-  }, [userId]);
 
   // Load pet data from Supabase when userId changes
   const loadPet = useCallback(async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        if (!userId) {
-          setPet(null);
+    setLoading(true);
+    setError(null);
+    
+    try {
+      if (!userId) {
+        setPet(null);
         setLoading(false);
-          return;
-        }
-
-        if (usingMock) {
-          const demoPet = buildDemoPet();
-          setPet(demoPet);
-          setLoading(false);
-          return;
-        }
-        
+        return;
+      }
+      
       console.log('🔵 Loading pet for user:', userId);
       const { data, error } = await supabase
         .from('pets')
         .select('*')
         .eq('user_id', userId)
-        .maybeSingle();
+        .single();
       
       if (error && error.code !== 'PGRST116') {
         // PGRST116 = no rows found (user has no pet yet)
@@ -109,73 +61,40 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         // Map DB fields to Pet type
         const loadedPet: Pet = {
           id: data.id,
-          ownerId: data.user_id,
           name: data.name,
-          species: data.species as PetSpecies,
+          species: data.species as 'dog' | 'cat' | 'bird' | 'rabbit',
           breed: data.breed || 'Mixed',
-          color_pattern: data.color_pattern,
-          birthday: data.birthday,
-          age: data.age ?? 0,
-          level: data.level ?? 1,
-          experience: data.xp ?? 0,
+          age: data.age || 0,
+          level: data.level || 1,
+          experience: data.xp || 0,
+          ownerId: data.user_id,
           createdAt: new Date(data.created_at),
-          updatedAt: new Date(data.updated_at ?? data.created_at),
+          updatedAt: new Date(data.updated_at),
           stats: {
-            health: data.health ?? 100,
-            hunger: data.hunger ?? 50,
-            happiness: data.happiness ?? 50,
-            cleanliness: data.cleanliness ?? 60,
-            energy: data.energy ?? 50,
-            lastUpdated: data.updated_at ? new Date(data.updated_at) : new Date(data.created_at),
-            hygiene: data.cleanliness ?? 60,
-            mood: data.happiness && data.hunger ? (data.happiness > 70 && data.hunger < 40 ? 'playful' : 'calm') : undefined,
-            level: data.level ?? 1,
-            xp: data.xp ?? 0,
-            is_sick: (data.health ?? 0) < 40,
+            health: data.health || 100,
+            hunger: data.hunger || 50,
+            happiness: data.happiness || 50,
+            cleanliness: data.cleanliness || 50,
+            energy: data.energy || 50,
+            lastUpdated: new Date(data.updated_at),
           },
-          diary: [],
         };
         setPet(loadedPet);
       } else {
         console.log('📝 No pet found for user');
         setPet(null);
       }
-      } catch (err) {
+    } catch (err) {
       console.error('❌ Error loading pet:', err);
-        setError('Failed to load pet data');
-      } finally {
-        setLoading(false);
-      }
-  }, [userId, usingMock, buildDemoPet]);
+      setError('Failed to load pet data');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
 
   useEffect(() => {
     loadPet();
   }, [loadPet]);
-
-  useEffect(() => {
-    if (!userId || isSupabaseMock()) {
-      return;
-    }
-    const channel = supabase
-      .channel(`public:pets:user:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pets',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          void loadPet();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId, loadPet]);
 
   const updatePetStats = useCallback(async (updates: Partial<PetStats>) => {
     if (!pet || !userId) return;
@@ -188,11 +107,14 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         lastUpdated: now,
       };
       
-      (['health', 'hunger', 'happiness', 'cleanliness', 'energy'] as const).forEach((key) => {
-        const currentValue = updatedStats[key];
-        if (typeof currentValue === 'number') {
-          const clamped = Math.min(100, Math.max(0, currentValue));
-          updatedStats[key] = clamped;
+      // Ensure stats stay within bounds
+      Object.keys(updatedStats).forEach(key => {
+        if (key === 'lastUpdated') return;
+        const statKey = key as keyof PetStats;
+        const value = updatedStats[statKey];
+        if (typeof value === 'number') {
+          if (value > 100) updatedStats[statKey] = 100 as any;
+          if (value < 0) updatedStats[statKey] = 0 as any;
         }
       });
       
@@ -203,23 +125,9 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         updatedAt: now,
       };
       setPet(updatedPet);
-
-      if (usingMock) {
-        return;
-      }
       
       // Persist to database
-      console.log('🔵 PetContext: Updating pet stats in DB', {
-        petId: pet.id,
-        updates,
-        newStats: {
-          health: updatedStats.health,
-          hunger: updatedStats.hunger,
-          happiness: updatedStats.happiness,
-          cleanliness: updatedStats.cleanliness,
-          energy: updatedStats.energy,
-        }
-      });
+      console.log('🔵 Updating pet stats in DB:', updates);
       const { error } = await supabase
         .from('pets')
         .update({
@@ -234,21 +142,18 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         .eq('user_id', userId);
       
       if (error) {
-        console.error('❌ PetContext: Error updating pet stats:', error);
-        console.error('Error details:', { code: error.code, message: error.message, details: error.details });
-        throw new Error(`Failed to update pet stats: ${error.message}`);
+        console.error('❌ Error updating pet stats:', error);
+        throw new Error('Failed to update pet stats');
       } else {
-        console.log('✅ PetContext: Pet stats updated in DB successfully');
+        console.log('✅ Pet stats updated in DB');
       }
-    } catch (err: any) {
-      console.error('❌ PetContext: Error updating pet stats:', err);
-      console.error('Error details:', { message: err.message, stack: err.stack });
+    } catch (err) {
+      console.error('❌ Error updating pet stats:', err);
       // Reload pet to revert optimistic update
-      console.log('🔄 PetContext: Reloading pet to revert optimistic update');
       await loadPet();
-      throw new Error(`Failed to update pet stats: ${err.message || 'Unknown error'}`);
+      throw new Error('Failed to update pet stats');
     }
-  }, [pet, userId, loadPet, usingMock]);
+  }, [pet, userId, loadPet]);
   
   const createPet = useCallback(async (name: string, type: string) => {
     if (!userId) throw new Error('User not authenticated');
@@ -256,23 +161,6 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     try {
       console.log('🔵 Creating pet in DB:', { name, type, userId });
       const now = new Date();
-
-      if (usingMock) {
-        const baseDemoPet = buildDemoPet();
-        const demoPet = {
-          ...baseDemoPet,
-          name,
-          species: type as PetSpecies,
-          stats: {
-            ...baseDemoPet.stats,
-            happiness: 85,
-            energy: 80,
-          },
-          updatedAt: now,
-        };
-        setPet(demoPet);
-        return;
-      }
       
       const { data, error } = await supabase
         .from('pets')
@@ -281,8 +169,6 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           name,
           species: type,
           breed: 'Mixed',
-          color_pattern: null,
-          birthday: null,
           age: 0,
           level: 1,
           health: 100,
@@ -331,7 +217,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       console.error('❌ Error creating pet:', err);
       throw new Error(err.message || 'Failed to create pet');
     }
-  }, [userId, buildDemoPet, usingMock]);
+  }, [userId]);
   
   const feed = useCallback(async () => {
     if (!pet) return;

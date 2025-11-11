@@ -166,8 +166,8 @@ export const PetNaming = () => {
                 </>
               ) : (
                 <>
-              Start Journey
-              <ArrowRight className="w-5 h-5" />
+                  Start Journey
+                  <ArrowRight className="w-5 h-5" />
                 </>
               )}
             </button>

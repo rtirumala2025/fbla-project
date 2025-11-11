@@ -93,7 +93,7 @@ export async function testSupabaseConnection() {
   } catch (error: any) {
     console.error('❌ Supabase connection test failed:', error.message);
     console.log('\n📝 Troubleshooting:');
-    console.log('   1. Check your .env file has correct VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+    console.log('   1. Check your .env file has correct REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY');
     console.log('   2. Restart the dev server after changing .env');
     console.log('   3. Verify your Supabase project is active');
     console.log('   4. Check PHASE_2_SETUP_GUIDE.md for setup instructions');

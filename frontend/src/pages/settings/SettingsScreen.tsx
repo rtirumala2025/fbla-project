@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { useSoundPreferences } from '../../contexts/SoundContext';
 
 export const SettingsScreen: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { currentUser } = useAuth();
-  const { effectsEnabled, ambientEnabled, setEffectsEnabled, setAmbientEnabled } = useSoundPreferences();
   const [sound, setSound] = useState(true);
   const [music, setMusic] = useState(true);
   const [notifications, setNotifications] = useState(true);
@@ -43,12 +41,8 @@ export const SettingsScreen: React.FC = () => {
           setNotifications(data.notifications ?? true);
           setReducedMotion(data.reduced_motion ?? false);
           setHighContrast(data.high_contrast ?? false);
-          setEffectsEnabled(data.sound ?? true);
-          setAmbientEnabled(data.music ?? true);
         } else {
           console.log('📝 No preferences found, using defaults');
-          setEffectsEnabled(true);
-          setAmbientEnabled(true);
         }
       } catch (error) {
         console.error('❌ Failed to load preferences:', error);
@@ -58,15 +52,7 @@ export const SettingsScreen: React.FC = () => {
     };
 
     loadPreferences();
-  }, [currentUser?.uid, setAmbientEnabled, setEffectsEnabled]);
-
-  useEffect(() => {
-    setSound(effectsEnabled);
-  }, [effectsEnabled]);
-
-  useEffect(() => {
-    setMusic(ambientEnabled);
-  }, [ambientEnabled]);
+  }, [currentUser?.uid]);
 
   // Apply high contrast mode
   useEffect(() => {
@@ -152,7 +138,6 @@ export const SettingsScreen: React.FC = () => {
                   onChange={e => {
                     const newValue = e.target.checked;
                     setSound(newValue);
-                    setEffectsEnabled(newValue);
                     savePreference('sound', newValue);
                   }} 
                 /> 
@@ -165,7 +150,6 @@ export const SettingsScreen: React.FC = () => {
                   onChange={e => {
                     const newValue = e.target.checked;
                     setMusic(newValue);
-                    setAmbientEnabled(newValue);
                     savePreference('music', newValue);
                   }} 
                 /> 

@@ -4,27 +4,27 @@
 ```bash
 cd frontend
 npm install
-npm run dev
+npm start
 ```
 
 ## Tests
 ```bash
-npm run test
+npm test -- --watchAll=false
 npm run lint
 ```
 
 ## Mocks vs Real Supabase
 
-**Without `.env` file:** The app falls back to a lightweight mock Supabase client. Database operations won't work, but the UI is fully functional for demo/demo purposes.
+**Without `.env` file:** The app runs with placeholder Supabase client. Database operations won't work, but the UI is fully functional for demo purposes.
 
 **To connect to real Supabase:** Create a `.env` file in the `frontend` directory with:
 ```env
-VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
-VITE_SUPABASE_USE_MOCK=false
+REACT_APP_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=your-anon-key-here
+REACT_APP_USE_MOCK=true  # Optional: set to 'true' to force mock data even with Supabase configured
 ```
 
-Set `VITE_SUPABASE_USE_MOCK=true` only when you intentionally want to run offline with seeded data. Then restart the dev server: `npm run dev`.
+Then restart: `npm start`
 
 Example Supabase queries used in services:
 ```ts
