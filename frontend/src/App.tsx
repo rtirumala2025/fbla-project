@@ -49,10 +49,8 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, loading, isNewUser, isTransitioning } = useAuth();
-  const location = useLocation();
+  const { loading } = useAuth();
 
-  // Don't check auth while still loading
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -61,42 +59,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // If not authenticated, redirect to login
-  if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // During transition (post-profile creation), allow navigation without redirects
-  if (isTransitioning) {
-    return <>{children}</>;
-  }
-
-  // If user is new and not on setup-profile page, redirect to setup
-  if (isNewUser && location.pathname !== '/setup-profile') {
-    return <Navigate to="/setup-profile" replace />;
-  }
-
-  // If user is not new and on setup-profile page, redirect to dashboard
-  if (!isNewUser && location.pathname === '/setup-profile') {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   return <>{children}</>;
 };
 
 // Public route component
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, isNewUser } = useAuth();
-  const location = useLocation();
-
-  // If user is logged in, redirect appropriately
-  if (currentUser) {
-    if (['/login', '/register', '/signup'].includes(location.pathname)) {
-      // Redirect new users to setup, returning users to dashboard
-      return <Navigate to={isNewUser ? "/setup-profile" : "/dashboard"} replace />;
-    }
-  }
-
   return <>{children}</>;
 };
 

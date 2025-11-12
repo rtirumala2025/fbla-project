@@ -87,27 +87,25 @@ const Header = () => {
             <span className="text-2xl font-bold text-black">Companion</span>
           </NavLink>
 
-          {/* Center Section - Navigation (Only when logged in and not loading) */}
-          {!loading && currentUser && (
-            <nav className="hidden lg:flex items-center justify-center flex-1 mx-12">
-              <div className="flex items-center gap-6">
-                {allNavLinks.map((link) => (
-                  <NavLink 
-                    key={link.to}
-                    to={link.to} 
-                    className={({ isActive }) => `flex items-center gap-2 px-5 py-3 rounded-lg text-base font-semibold transition-all ${
-                      isActive 
-                        ? 'text-white bg-indigo-600 shadow-md' 
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-black'
-                    }`}
-                  >
-                    {link.icon}
-                    <span>{link.name}</span>
-                  </NavLink>
-                ))}
-              </div>
-            </nav>
-          )}
+          {/* Center Section - Navigation (always visible for demo access) */}
+          <nav className="hidden lg:flex items-center justify-center flex-1 mx-12">
+            <div className="flex items-center gap-6">
+              {allNavLinks.map((link) => (
+                <NavLink 
+                  key={link.to}
+                  to={link.to} 
+                  className={({ isActive }) => `flex items-center gap-2 px-5 py-3 rounded-lg text-base font-semibold transition-all ${
+                    isActive 
+                      ? 'text-white bg-indigo-600 shadow-md' 
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-black'
+                  }`}
+                >
+                  {link.icon}
+                  <span>{link.name}</span>
+                </NavLink>
+              ))}
+            </div>
+          </nav>
 
           {/* Right Section - Auth Buttons */}
           <div className="flex items-center gap-6 flex-shrink-0">
@@ -170,28 +168,19 @@ const Header = () => {
             className="md:hidden overflow-hidden bg-white border-t border-gray-200 shadow-lg"
           >
             <div className="px-2 pt-2 pb-4 space-y-1">
-              {currentUser ? (
-                <>
-                  {/* Welcome message for mobile */}
-                  <div className="px-4 py-3 text-sm text-gray-600 bg-gray-50 rounded-lg mb-2">
-                    <span className="font-medium">Welcome, {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}! 👋</span>
-                  </div>
-                  
-                  {/* Show page navigation for logged-in users */}
-                  {allNavLinks.map((link) => (
-                    <NavLink
-                      key={link.to}
-                      to={link.to}
-                      className="flex items-center px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {link.icon}
-                      {link.name}
-                    </NavLink>
-                  ))}
-                </>
-              ) : null}
-              
+              {/* Show page navigation for mobile users */}
+              {allNavLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className="flex items-center px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.icon}
+                  {link.name}
+                </NavLink>
+              ))}
+
               {currentUser ? (
                 <button
                   onClick={() => {
