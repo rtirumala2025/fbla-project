@@ -27,4 +27,8 @@ export const supabase = supabaseUrl && supabaseAnonKey
     })
   : createMockClient();
 
+export const isSupabaseMock = (): boolean => {
+  return !supabaseUrl || !supabaseAnonKey;
+};
+
 export default supabase;
