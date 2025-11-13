@@ -1,3 +1,7 @@
+/**
+ * SignUp Page
+ * User registration page with email and Google OAuth support
+ */
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react';
@@ -19,7 +23,7 @@ export const SignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,32 +66,11 @@ export const SignUp = () => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting Google OAuth...');
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { 
-          redirectTo: window.location.origin + '/auth/callback',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        },
-      });
-      
-      if (error) {
-        console.error('Google sign-up error:', error);
-        setError(`Google sign-up failed: ${error.message}`);
-      } else if (data?.url) {
-        console.log('Redirecting to Google OAuth...');
-        window.location.href = data.url;
-      } else {
-        console.log('No redirect URL received');
-        setError('Google sign-up failed. Please try again.');
-      }
+      await signInWithGoogle();
+      // signInWithGoogle handles navigation internally
     } catch (err: any) {
       console.error('Google sign-up error:', err);
       setError(`Google sign-up failed: ${err.message || 'Unknown error'}`);
-    } finally {
       setIsLoading(false);
     }
   };
