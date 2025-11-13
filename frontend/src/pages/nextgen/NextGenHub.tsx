@@ -81,13 +81,10 @@ export const NextGenHub: React.FC = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
-        if (!token) return;
         const [snapshotData, ar, habitPrediction, seasonalEvent, leaderboardEntries] = await Promise.all([
-          fetchSnapshot({ token }),
-          fetchARSession({ token }),
-          fetchHabitPrediction({ token }),
+          fetchSnapshot(),
+          fetchARSession(),
+          fetchHabitPrediction(),
           fetchSeasonalEvent(),
           minigameService.fetchLeaderboard('fetch'),
         ]);
@@ -122,10 +119,7 @@ export const NextGenHub: React.FC = () => {
       const transcript = event.results[0][0].transcript;
       setIsListening(false);
       try {
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
-        if (!token) return;
-        const response = await sendVoiceCommand({ transcript }, { token });
+        const response = await sendVoiceCommand({ transcript });
         setVoiceResult(response);
         setNotifications((prev) => [
           {
@@ -179,13 +173,9 @@ export const NextGenHub: React.FC = () => {
   const handleCloudSave = async () => {
     if (!pet || !currentUser?.uid) return;
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) return;
-      const response = await saveCloudState(
-        { state: { pet, stats: pet.stats, timestamp: new Date().toISOString() } },
-        { token },
-      );
+      const response = await saveCloudState({
+        state: { pet, stats: pet.stats, timestamp: new Date().toISOString() },
+      });
       setCloudStatus(`Cloud save at ${new Date(response.saved_at).toLocaleTimeString()}`);
       toast.success('Cloud state saved!');
     } catch (error: any) {
@@ -201,13 +191,11 @@ export const NextGenHub: React.FC = () => {
     const prompt = formData.get('prompt') as string;
     if (!targetId || !prompt) return;
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) return;
-      const response = await sendSocialInteraction(
-        { pet_id: pet.id, target_pet_id: targetId, prompt },
-        { token },
-      );
+      const response = await sendSocialInteraction({
+        pet_id: pet.id,
+        target_pet_id: targetId,
+        prompt,
+      });
       setSocialResponse(response);
       toast.success('Social interaction recorded.');
     } catch (error: any) {

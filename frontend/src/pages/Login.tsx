@@ -5,13 +5,13 @@
 import type { FormEvent } from 'react';
 
 type LoginProps = {
-  onSuccess: () => void;
+  onSuccess?: () => void;
 };
 
 export const Login = ({ onSuccess }: LoginProps) => {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onSuccess();
+    onSuccess?.();
   };
 
   return (

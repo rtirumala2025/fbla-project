@@ -51,7 +51,7 @@ const buildSnapshot = (pet: Pet | null) => {
 };
 
 export const SyncBridge = ({ pet, onRefreshPet }: SyncBridgeProps) => {
-  const { enqueueChange, cloudState, pullCloudState } = useSyncManager();
+  const { enqueueChange, cloudState, refresh } = useSyncManager();
   const lastSnapshotRef = useRef<string | null>(null);
   const appliedVersionRef = useRef<number>(cloudState?.version ?? 0);
   const attemptedInitialPullRef = useRef<boolean>(false);
@@ -59,9 +59,9 @@ export const SyncBridge = ({ pet, onRefreshPet }: SyncBridgeProps) => {
   useEffect(() => {
     if (pet && !cloudState && !attemptedInitialPullRef.current) {
       attemptedInitialPullRef.current = true;
-      void pullCloudState();
+      void refresh();
     }
-  }, [pet, cloudState, pullCloudState]);
+  }, [pet, cloudState, refresh]);
 
   useEffect(() => {
     if (!cloudState) {

@@ -7,12 +7,13 @@ import { motion } from 'framer-motion';
 import { User, PawPrint, Coins, Calendar, Edit2, Save, X } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
-import { profileService, type Profile as UserProfile } from '../services/profileService';
+import { profileService } from '../services/profileService';
 import { supabase } from '../lib/supabase';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { Database } from '../types/database.types';
 
 type Pet = Database['public']['Tables']['pets']['Row'];
+type UserProfile = Database['public']['Tables']['profiles']['Row'];
 
 export const ProfilePage = () => {
   const toast = useToast();

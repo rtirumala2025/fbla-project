@@ -8,7 +8,6 @@ import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle } from 'lucide-r
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { supabase } from '../lib/supabase';
 
 export const SignUp = () => {
   const [formData, setFormData] = useState({

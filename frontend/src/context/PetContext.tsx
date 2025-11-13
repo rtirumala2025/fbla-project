@@ -108,15 +108,11 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       };
       
       // Ensure stats stay within bounds
-      Object.keys(updatedStats).forEach(key => {
-        if (key === 'lastUpdated') return;
-        const statKey = key as keyof PetStats;
-        const value = updatedStats[statKey];
-        if (typeof value === 'number') {
-          if (value > 100) updatedStats[statKey] = 100 as any;
-          if (value < 0) updatedStats[statKey] = 0 as any;
-        }
-      });
+      updatedStats.health = Math.max(0, Math.min(100, updatedStats.health));
+      updatedStats.hunger = Math.max(0, Math.min(100, updatedStats.hunger));
+      updatedStats.happiness = Math.max(0, Math.min(100, updatedStats.happiness));
+      updatedStats.cleanliness = Math.max(0, Math.min(100, updatedStats.cleanliness));
+      updatedStats.energy = Math.max(0, Math.min(100, updatedStats.energy));
       
       // Optimistic update
       const updatedPet: Pet = {
