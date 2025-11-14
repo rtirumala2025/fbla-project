@@ -27,7 +27,7 @@ export const MathQuiz: React.FC<Props> = ({ onComplete }) => {
   };
 
   return (
-    <div className="min-h-screen pt-20 px-6 pb-10">
+    <div className="min-h-screen px-6 pb-10">
       <div className="max-w-xl mx-auto ds-card p-4">
         <h2 className="text-xl font-bold mb-3">Math Quiz</h2>
         <form className="grid grid-cols-2 gap-3" onSubmit={(e) => { e.preventDefault(); submit(); }}>

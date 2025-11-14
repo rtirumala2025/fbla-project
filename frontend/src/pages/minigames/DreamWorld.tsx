@@ -207,7 +207,7 @@ export const DreamWorld: React.FC<Props> = ({ difficulty: initialDifficulty = 'n
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 px-6 pb-16 pt-24 text-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 px-6 pb-16 text-slate-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 lg:flex-row">
         <div className="flex-1 space-y-4">
           <div className="rounded-3xl border border-indigo-500/40 bg-indigo-900/40 p-6 shadow-xl backdrop-blur">

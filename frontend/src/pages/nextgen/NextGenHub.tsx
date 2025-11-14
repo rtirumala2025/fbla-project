@@ -261,7 +261,7 @@ export const NextGenHub: React.FC = () => {
         notifications={notifications}
         onDismiss={(id) => setNotifications((prev) => prev.filter((item) => item.id !== id))}
       />
-      <div className={`min-h-screen bg-gradient-to-br ${gradient.replace(' text-white', '')} px-6 pb-16 pt-24 ${moodBannerIsDark ? 'text-white' : 'text-slate-900'}`}>
+      <div className={`min-h-screen bg-gradient-to-br ${gradient.replace(' text-white', '')} px-6 pb-16 ${moodBannerIsDark ? 'text-white' : 'text-slate-900'}`}>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

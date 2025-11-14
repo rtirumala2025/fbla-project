@@ -75,7 +75,7 @@ export const BudgetDashboard: React.FC = () => {
   }, [filtered]);
 
   return (
-    <div className="min-h-screen bg-cream pt-24 px-8 pb-12">
+    <div className="min-h-screen bg-cream px-8 pb-12">
       <div className="max-w-[90vw] mx-auto">
         <header className="flex items-center justify-between mb-10">
           <div>

@@ -152,7 +152,7 @@ export const WalletPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream pt-24">
+      <div className="min-h-screen bg-cream">
         <div className="mx-auto flex max-w-5xl items-center justify-center">
           <LoadingSpinner size="lg" />
         </div>
@@ -162,7 +162,7 @@ export const WalletPage: React.FC = () => {
 
   if (!summary) {
     return (
-      <div className="min-h-screen bg-cream pt-24">
+      <div className="min-h-screen bg-cream">
         <div className="mx-auto max-w-4xl rounded-3xl border border-red-200 bg-red-50 p-10 text-center text-red-700">
           <p>Wallet data unavailable. Please try refreshing the page.</p>
           <button
@@ -182,7 +182,7 @@ export const WalletPage: React.FC = () => {
   const completedGoals = summary.goals.filter((goal) => goal.status === 'completed');
 
   return (
-    <div className="min-h-screen bg-cream pt-24 pb-16">
+    <div className="min-h-screen bg-cream pb-16">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-10 flex items-center justify-between">
           <button

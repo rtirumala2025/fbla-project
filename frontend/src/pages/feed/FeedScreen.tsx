@@ -59,7 +59,7 @@ export const FeedScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 px-6 pb-10">
+    <div className="min-h-screen px-6 pb-10">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => navigate(-1)} className="text-slate-600 hover:text-charcoal" aria-label="Back to dashboard">← Back</button>

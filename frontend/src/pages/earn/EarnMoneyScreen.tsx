@@ -24,7 +24,7 @@ export const EarnMoneyScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 px-6 pb-10">
+    <div className="min-h-screen px-6 pb-10">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-black text-charcoal mb-4">Earn Money</h1>
         <div className="flex gap-2 mb-6" role="tablist" aria-label="Earn Tabs">

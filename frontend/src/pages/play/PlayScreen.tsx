@@ -32,7 +32,7 @@ export const PlayScreen: React.FC = () => {
   const isDark = gradient.includes('text-white');
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${gradient.replace(' text-white', '')} pt-20 px-6 pb-10 ${isDark ? 'text-white' : 'text-charcoal'}`}>
+    <div className={`min-h-screen bg-gradient-to-br ${gradient.replace(' text-white', '')} px-6 pb-10 ${isDark ? 'text-white' : 'text-charcoal'}`}>
       <div className="max-w-5xl mx-auto">
         <button className="mb-4 text-sm font-semibold flex items-center gap-1" onClick={() => navigate(-1)}>
           ← Back

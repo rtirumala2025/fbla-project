@@ -44,7 +44,7 @@ export const CleanScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 px-6 pb-10">
+    <div className="min-h-screen px-6 pb-10">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => navigate(-1)} aria-label="Back">← Back</button>

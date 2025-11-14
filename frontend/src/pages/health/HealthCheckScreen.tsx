@@ -32,7 +32,7 @@ export const HealthCheckScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 px-6 pb-10">
+    <div className="min-h-screen px-6 pb-10">
       <div className="max-w-5xl mx-auto">
         <button onClick={() => navigate(-1)} className="mb-4">← Back</button>
         <h1 className="text-3xl font-black text-charcoal mb-4">Health Check for {pet.name}</h1>

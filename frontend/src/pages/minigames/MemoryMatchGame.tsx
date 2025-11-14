@@ -149,7 +149,7 @@ export const MemoryMatchGame: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-cream px-6 pb-16 pt-24">
+    <div className="min-h-screen bg-cream px-6 pb-16">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 lg:flex-row">
         <div className="flex-1 space-y-4">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
