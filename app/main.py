@@ -13,11 +13,14 @@ from app.routers import (
     analytics,
     art,
     auth,
+    budget_advisor,
     coach,
     finance,
     games,
     health,
+    name_validator,
     next_gen,
+    pet_commands,
     pets,
     profiles,
     quests,
@@ -52,8 +55,10 @@ def create_application() -> FastAPI:
     application.include_router(auth.router)
     application.include_router(ai.router)
     application.include_router(art.router)
+    application.include_router(budget_advisor.router)
     application.include_router(pets.router)
     application.include_router(pets.legacy_router)
+    application.include_router(pet_commands.router)
     application.include_router(finance.router)
     application.include_router(games.router)
     application.include_router(analytics.router)
@@ -65,6 +70,7 @@ def create_application() -> FastAPI:
     application.include_router(coach.router)
     application.include_router(sync.router)
     application.include_router(users.router)
+    application.include_router(name_validator.router)
 
     return application
 
