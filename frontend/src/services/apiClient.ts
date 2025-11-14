@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from '../lib/supabase';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -13,12 +14,17 @@ const apiClient = axios.create({
 
 // Request interceptor (add auth token if needed)
 apiClient.interceptors.request.use(
-  (config) => {
-    // Add authorization header if needed
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+  async (config) => {
+    // Add Supabase auth token if available
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+      }
+    } catch (error) {
+      // If auth fails, continue without token (for public endpoints)
+      console.warn('Failed to get auth token:', error);
+    }
     return config;
   },
   (error) => {
@@ -70,6 +76,18 @@ export const api = {
    */
   async healthCheck() {
     const response = await apiClient.get('/health');
+    return response.data;
+  },
+
+  /**
+   * Analyze budget and get AI recommendations
+   */
+  async analyzeBudget(transactions: any[], monthlyBudget?: number, userId?: string) {
+    const response = await apiClient.post('/api/budget-advisor/analyze', {
+      transactions,
+      monthly_budget: monthlyBudget,
+      user_id: userId,
+    });
     return response.data;
   },
 };
