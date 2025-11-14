@@ -1,8 +1,11 @@
 /**
  * PetAIDashboard Component
  * Displays AI insights, mood, personality, and natural language commands
+ * FBLA Competition-Level: Enhanced with validation, tooltips, error messages, smooth transitions, mobile-friendly, and logging
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AlertCircle, HelpCircle, CheckCircle2, Send, Loader2 } from 'lucide-react';
 import {
   getPetAIHelp,
   getPetAIInsights,
@@ -16,11 +19,15 @@ import type {
   PetNotification,
 } from '../../types/pet';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useInteractionLogger } from '../../hooks/useInteractionLogger';
 
 interface CommandHistoryEntry {
   input: string;
   result: PetCommandResponse;
 }
+
+const MIN_COMMAND_LENGTH = 2;
+const MAX_COMMAND_LENGTH = 200;
 
 export function PetAIDashboard() {
   const [insights, setInsights] = useState<PetAIInsights | null>(null);
@@ -32,6 +39,11 @@ export function PetAIDashboard() {
   const [commandText, setCommandText] = useState('');
   const [commandLoading, setCommandLoading] = useState(false);
   const [commandHistory, setCommandHistory] = useState<CommandHistoryEntry[]>([]);
+  const [commandError, setCommandError] = useState<string | null>(null);
+  const [commandTouched, setCommandTouched] = useState(false);
+  const [showCommandTooltip, setShowCommandTooltip] = useState(false);
+  const commandInputRef = useRef<HTMLInputElement>(null);
+  const { logFormSubmit, logFormValidation, logFormError, logUserAction } = useInteractionLogger('PetAIDashboard');
 
   const refreshInsights = useCallback(async () => {
     try {
@@ -59,26 +71,95 @@ export function PetAIDashboard() {
     refreshInsights();
   }, [refreshInsights]);
 
+  const validateCommand = (value: string): string | null => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 'Command cannot be empty';
+    }
+    if (trimmed.length < MIN_COMMAND_LENGTH) {
+      return `Command must be at least ${MIN_COMMAND_LENGTH} characters`;
+    }
+    if (trimmed.length > MAX_COMMAND_LENGTH) {
+      return `Command must be no more than ${MAX_COMMAND_LENGTH} characters`;
+    }
+    return null;
+  };
+
+  const handleCommandChange = (value: string) => {
+    setCommandText(value);
+    setCommandTouched(true);
+    setCommandError(null);
+    
+    if (commandTouched) {
+      const error = validateCommand(value);
+      setCommandError(error);
+      if (error) {
+        logFormValidation('command', false, error);
+      } else {
+        logFormValidation('command', true);
+      }
+    }
+    
+    logUserAction('command_input', { length: value.length });
+  };
+
   const handleCommandSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (!commandText.trim()) return;
+      setCommandTouched(true);
+      
+      const validationError = validateCommand(commandText);
+      if (validationError) {
+        setCommandError(validationError);
+        logFormError('command', validationError);
+        commandInputRef.current?.focus();
+        return;
+      }
+
+      if (!commandText.trim()) {
+        const emptyError = 'Command cannot be empty';
+        setCommandError(emptyError);
+        logFormError('command', emptyError);
+        commandInputRef.current?.focus();
+        return;
+      }
 
       try {
         setCommandLoading(true);
+        setCommandError(null);
         setError(null);
-        const result = await parsePetAICommand({ command_text: commandText });
-        setCommandHistory((prev) => [{ input: commandText, result }, ...prev].slice(0, 5));
+        
+        logFormSubmit({ command: commandText.trim() }, false);
+        
+        const result = await parsePetAICommand({ command_text: commandText.trim() });
+        setCommandHistory((prev) => [{ input: commandText.trim(), result }, ...prev].slice(0, 5));
         setCommandText('');
+        setCommandTouched(false);
+        
+        logFormSubmit({ command: commandText.trim() }, true);
+        logUserAction('command_success', { action: result.action, confidence: result.confidence });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to parse command.';
+        setCommandError(message);
         setError(message);
+        logFormError('command_parse', message, { command: commandText.trim() });
       } finally {
         setCommandLoading(false);
       }
     },
-    [commandText],
+    [commandText, commandTouched, logFormSubmit, logFormError, logFormValidation, logUserAction],
   );
+
+  const handleCommandBlur = () => {
+    setCommandTouched(true);
+    const error = validateCommand(commandText);
+    setCommandError(error);
+    if (error) {
+      logFormValidation('command', false, error);
+    }
+  };
+
+  const isCommandValid = !commandError && commandText.trim().length >= MIN_COMMAND_LENGTH;
 
   const combinedSuggestions = useMemo(() => {
     if (!insights) {
@@ -234,26 +315,144 @@ export function PetAIDashboard() {
           </ul>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700">Natural Language Commands</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            Try phrases like &ldquo;feed my cat tuna&rdquo; or &ldquo;let&apos;s play fetch&rdquo;.
-          </p>
-          <form className="mt-3 space-y-3" onSubmit={handleCommandSubmit}>
-            <input
-              className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Type a command..."
-              value={commandText}
-              onChange={(event) => setCommandText(event.target.value)}
-              disabled={commandLoading}
-            />
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-sm font-semibold text-slate-700">Natural Language Commands</h3>
             <button
-              type="submit"
-              className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow hover:bg-indigo-700 disabled:opacity-50"
-              disabled={commandLoading}
+              type="button"
+              className="inline-flex items-center"
+              onMouseEnter={() => setShowCommandTooltip(true)}
+              onMouseLeave={() => setShowCommandTooltip(false)}
+              onFocus={() => setShowCommandTooltip(true)}
+              onBlur={() => setShowCommandTooltip(false)}
+              aria-label="Command help"
             >
-              {commandLoading ? 'Analyzing...' : 'Parse Command'}
+              <HelpCircle className="w-4 h-4 text-slate-400 hover:text-indigo-500 transition-colors" />
             </button>
+          </div>
+          
+          {/* Tooltip */}
+          <AnimatePresence>
+            {showCommandTooltip && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="mb-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600"
+              >
+                <p className="font-semibold mb-1">Try commands like:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>&ldquo;feed my cat tuna&rdquo;</li>
+                  <li>&ldquo;let&apos;s play fetch&rdquo;</li>
+                  <li>&ldquo;give my pet a bath&rdquo;</li>
+                  <li>&ldquo;check my pet&apos;s health&rdquo;</li>
+                </ul>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          <p className="mt-1 text-xs text-slate-500 mb-3">
+            Use natural language to interact with your pet
+          </p>
+          
+          <form className="mt-3 space-y-3" onSubmit={handleCommandSubmit}>
+            <div className="relative">
+              <input
+                ref={commandInputRef}
+                type="text"
+                className={`w-full rounded-md border px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  commandTouched && commandError
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                    : commandTouched && isCommandValid
+                    ? 'border-green-500 focus:border-indigo-500 focus:ring-indigo-500/20'
+                    : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/20'
+                }`}
+                placeholder="Type a command..."
+                value={commandText}
+                onChange={(event) => handleCommandChange(event.target.value)}
+                onBlur={handleCommandBlur}
+                disabled={commandLoading}
+                maxLength={MAX_COMMAND_LENGTH}
+                aria-invalid={commandTouched && !!commandError}
+                aria-describedby={commandTouched && commandError ? 'command-error' : commandTouched && isCommandValid ? 'command-success' : undefined}
+              />
+              
+              {/* Validation icon */}
+              {commandTouched && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <AnimatePresence mode="wait">
+                    {commandError ? (
+                      <motion.div
+                        key="error"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                      >
+                        <AlertCircle className="w-4 h-4 text-red-500" aria-hidden="true" />
+                      </motion.div>
+                    ) : isCommandValid ? (
+                      <motion.div
+                        key="success"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-green-500" aria-hidden="true" />
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
+            
+            {/* Error message */}
+            <AnimatePresence>
+              {commandTouched && commandError && (
+                <motion.p
+                  id="command-error"
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  className="text-xs text-red-600 font-medium"
+                  role="alert"
+                >
+                  {commandError}
+                </motion.p>
+              )}
+              {commandTouched && isCommandValid && (
+                <motion.p
+                  id="command-success"
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  className="text-xs text-green-600 font-medium"
+                >
+                  Ready to send!
+                </motion.p>
+              )}
+            </AnimatePresence>
+            
+            <motion.button
+              type="submit"
+              whileHover={!commandLoading && isCommandValid ? { scale: 1.02 } : {}}
+              whileTap={!commandLoading && isCommandValid ? { scale: 0.98 } : {}}
+              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto"
+              disabled={commandLoading || !isCommandValid}
+              aria-label={isCommandValid ? "Submit command" : "Please enter a valid command"}
+            >
+              {commandLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Analyzing...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Parse Command</span>
+                </>
+              )}
+            </motion.button>
           </form>
 
           {commandHistory.length > 0 && (

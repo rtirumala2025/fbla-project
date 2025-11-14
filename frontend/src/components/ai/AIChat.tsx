@@ -3,8 +3,9 @@ import { Button } from '../common/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Loader2, Heart, Zap, Coffee, Droplet } from 'lucide-react';
+import { Send, Bot, User, Loader2, Heart, Zap, Coffee, Droplet, AlertCircle, HelpCircle } from 'lucide-react';
 import PetEmotionCard from './PetEmotionCard';
+import { useInteractionLogger } from '../../hooks/useInteractionLogger';
 
 type Message = {
   id: string;
@@ -26,6 +27,9 @@ export const AIChat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { currentUser } = useAuth();
+  const { logFormSubmit, logFormError, logUserAction } = useInteractionLogger('AIChat');
+  const [inputError, setInputError] = useState<string | null>(null);
+  const [showInputTooltip, setShowInputTooltip] = useState(false);
 
   // Generate a unique session ID if not exists
   useEffect(() => {
@@ -76,7 +80,21 @@ export const AIChat: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    
+    // Validation
+    if (!input.trim()) {
+      setInputError('Please enter a message');
+      inputRef.current?.focus();
+      return;
+    }
+    
+    if (input.trim().length > 1000) {
+      setInputError('Message must be 1000 characters or less');
+      inputRef.current?.focus();
+      return;
+    }
+    
+    if (isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -87,9 +105,14 @@ export const AIChat: React.FC = () => {
 
     // Add user message to chat
     setMessages(prev => [...prev, userMessage]);
+    const messageContent = input.trim();
     setInput('');
+    setInputError(null);
     setIsLoading(true);
     setError(null);
+    
+    logFormSubmit({ message: messageContent }, false);
+    logUserAction('message_sent', { length: messageContent.length });
 
     // Create a placeholder for the assistant's response
     const assistantMessageId = `temp-${Date.now()}`;
@@ -191,6 +214,8 @@ export const AIChat: React.FC = () => {
         
         return newMessages;
       });
+      
+      logFormSubmit({ message: messageContent }, true);
     } catch (err) {
       console.error('Error sending message:', err);
       
@@ -210,8 +235,17 @@ export const AIChat: React.FC = () => {
       });
       
       setError('Failed to get response. Please check your connection and try again.');
+      logFormError('chat_error', 'Failed to get response', { message: messageContent });
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const handleInputChange = (value: string) => {
+    setInput(value);
+    setInputError(null);
+    if (value.length > 1000) {
+      setInputError('Message must be 1000 characters or less');
     }
   };
 
@@ -480,14 +514,61 @@ export const AIChat: React.FC = () => {
         </AnimatePresence>
         
         <div className="relative">
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              type="button"
+              className="inline-flex items-center"
+              onMouseEnter={() => setShowInputTooltip(true)}
+              onMouseLeave={() => setShowInputTooltip(false)}
+              onFocus={() => setShowInputTooltip(true)}
+              onBlur={() => setShowInputTooltip(false)}
+              aria-label="Chat help"
+            >
+              <HelpCircle className="w-4 h-4 text-gray-400 hover:text-indigo-500 transition-colors" />
+            </button>
+            {input.length > 0 && (
+              <span className={`text-xs ${input.length > 900 ? 'text-amber-500' : 'text-gray-500'}`}>
+                {input.length}/1000
+              </span>
+            )}
+          </div>
+          
+          <AnimatePresence>
+            {showInputTooltip && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute bottom-full mb-2 left-0 p-3 bg-gray-800 text-white text-sm rounded-lg shadow-xl z-50 max-w-xs"
+              >
+                <p className="font-semibold mb-1">Try commands:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  <li>/feed - Feed your pet</li>
+                  <li>/play - Play with pet</li>
+                  <li>/sleep - Put pet to sleep</li>
+                  <li>/status - Check pet status</li>
+                </ul>
+                <div className="absolute bottom-0 left-4 translate-y-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
           <input
             ref={inputRef}
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => handleInputChange(e.target.value)}
             placeholder="Type a message or try /help..."
-            className="w-full p-3 pr-16 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-70 transition-all duration-200"
+            className={`w-full p-3 pr-16 border rounded-xl focus:ring-2 focus:border-transparent disabled:opacity-70 transition-all duration-200 ${
+              inputError
+                ? 'border-red-500 focus:ring-red-500/20'
+                : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
+            }`}
             disabled={isLoading}
+            maxLength={1000}
+            aria-invalid={!!inputError}
+            aria-describedby={inputError ? 'input-error' : undefined}
             onKeyDown={(e) => {
               // Allow new lines with Shift+Enter
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -496,6 +577,21 @@ export const AIChat: React.FC = () => {
               }
             }}
           />
+          
+          <AnimatePresence>
+            {inputError && (
+              <motion.p
+                id="input-error"
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="absolute bottom-full mb-1 left-0 text-xs text-red-600 font-medium bg-white px-2 py-1 rounded shadow"
+                role="alert"
+              >
+                {inputError}
+              </motion.p>
+            )}
+          </AnimatePresence>
           <button
             type="submit"
             disabled={!input.trim() || isLoading}

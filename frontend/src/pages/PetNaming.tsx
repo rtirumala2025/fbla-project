@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, ArrowLeft, Sparkles, AlertCircle, HelpCircle, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePet } from '../context/PetContext';
 import { useToast } from '../contexts/ToastContext';
+import { useInteractionLogger } from '../hooks/useInteractionLogger';
 
 const randomNames = {
   dog: ['Max', 'Buddy', 'Charlie', 'Cooper', 'Rocky', 'Duke', 'Bear', 'Zeus', 'Tucker', 'Oliver'],
@@ -12,14 +13,23 @@ const randomNames = {
   rabbit: ['Thumper', 'Clover', 'Cotton', 'Hop', 'Bunny', 'Snowball', 'Fluffy', 'Peter', 'Daisy', 'Oreo'],
 };
 
+const MIN_NAME_LENGTH = 2;
+const MAX_NAME_LENGTH = 20;
+
 export const PetNaming = () => {
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
   const [breed, setBreed] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [touched, setTouched] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { createPet } = usePet();
   const toast = useToast();
+  const { logFormSubmit, logFormValidation, logFormError, logUserAction } = useInteractionLogger('PetNaming');
 
   useEffect(() => {
     const storedSpecies = localStorage.getItem('selectedSpecies');
@@ -34,16 +44,75 @@ export const PetNaming = () => {
     setBreed(storedBreed);
   }, [navigate]);
 
+  // Validate name
+  const validateName = (value: string): string | null => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 'Pet name is required';
+    }
+    if (trimmed.length < MIN_NAME_LENGTH) {
+      return `Name must be at least ${MIN_NAME_LENGTH} characters`;
+    }
+    if (trimmed.length > MAX_NAME_LENGTH) {
+      return `Name must be no more than ${MAX_NAME_LENGTH} characters`;
+    }
+    // Check for invalid characters (only letters, numbers, spaces, hyphens, apostrophes)
+    if (!/^[a-zA-Z0-9\s'-]+$/.test(trimmed)) {
+      return 'Name can only contain letters, numbers, spaces, hyphens, and apostrophes';
+    }
+    return null;
+  };
+
+  const handleNameChange = (value: string) => {
+    setName(value);
+    setTouched(true);
+    
+    if (touched) {
+      const error = validateName(value);
+      setValidationError(error);
+      if (error) {
+        logFormValidation('name', false, error);
+      } else {
+        logFormValidation('name', true);
+      }
+    }
+    
+    logUserAction('name_input', { length: value.length });
+  };
+
   const generateRandomName = () => {
     const names = randomNames[species as keyof typeof randomNames] || randomNames.dog;
     const randomName = names[Math.floor(Math.random() * names.length)];
     setName(randomName);
+    setTouched(true);
+    setValidationError(null);
+    logUserAction('generate_random_name', { species, generatedName: randomName });
   };
 
   const handleContinue = async () => {
-    if (!name.trim()) return;
+    setTouched(true);
+    const error = validateName(name);
+    
+    if (error) {
+      setValidationError(error);
+      logFormError('name', error);
+      toast.error(error);
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (!name.trim()) {
+      const emptyError = 'Pet name is required';
+      setValidationError(emptyError);
+      logFormError('name', emptyError);
+      toast.error(emptyError);
+      inputRef.current?.focus();
+      return;
+    }
     
     setIsCreating(true);
+    logFormSubmit({ name: name.trim(), species, breed }, false);
+    
     try {
       // Create pet in database via PetContext
       await createPet(name.trim(), species);
@@ -52,23 +121,40 @@ export const PetNaming = () => {
       localStorage.removeItem('selectedSpecies');
       localStorage.removeItem('selectedBreed');
       
+      logFormSubmit({ name: name.trim(), species, breed }, true);
       toast.success(`Welcome, ${name}! 🎉`);
       
-      // Redirect to dashboard
-      navigate('/dashboard');
+      // Redirect to dashboard with smooth transition
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 300);
     } catch (error: any) {
       console.error('Failed to create pet:', error);
-      toast.error(error.message || 'Failed to create pet');
+      const errorMessage = error.message || 'Failed to create pet';
+      logFormError('pet_creation', errorMessage, { name: name.trim(), species, breed });
+      toast.error(errorMessage);
       setIsCreating(false);
     }
   };
 
   const handleBack = () => {
+    logUserAction('navigate_back');
     navigate('/onboarding/breed');
   };
 
+  const handleBlur = () => {
+    setTouched(true);
+    const error = validateName(name);
+    setValidationError(error);
+    if (error) {
+      logFormValidation('name', false, error);
+    }
+  };
+
+  const isValid = !validationError && name.trim().length >= MIN_NAME_LENGTH;
+
   return (
-    <div className="min-h-screen bg-slate-900 px-6 py-12 flex items-center">
+    <div className="min-h-screen bg-slate-900 px-4 sm:px-6 py-8 sm:py-12 flex items-center">
       <div className="max-w-2xl mx-auto w-full">
         {/* Progress indicator */}
         <div className="flex items-center justify-center gap-2 mb-12">
@@ -79,9 +165,10 @@ export const PetNaming = () => {
 
         {/* Main card */}
         <motion.div
-          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-3xl p-12"
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl sm:rounded-3xl p-6 sm:p-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
         >
           {/* Pet preview */}
           <div className="text-center mb-8">
@@ -111,66 +198,218 @@ export const PetNaming = () => {
           </div>
 
           {/* Naming section */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-black text-slate-50 mb-4">
+          <motion.div 
+            className="text-center mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-50 mb-4">
               Name your companion
             </h1>
-            <p className="text-xl text-slate-400">
+            <p className="text-lg sm:text-xl text-slate-400">
               This is the start of something special
             </p>
-          </div>
+          </motion.div>
 
           {/* Name input */}
           <div className="mb-6">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter a name..."
-              className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-6 py-4 text-slate-50 text-center text-2xl font-bold placeholder-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-              maxLength={20}
-            />
-            <p className="text-center text-sm text-slate-500 mt-2">
-              {name.length}/20 characters
-            </p>
+            <div className="relative">
+              <label 
+                htmlFor="pet-name-input" 
+                className="block text-sm font-medium text-slate-300 mb-2 text-center"
+              >
+                Pet Name
+                <button
+                  type="button"
+                  className="ml-2 inline-flex items-center"
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                  onFocus={() => setShowTooltip(true)}
+                  onBlur={() => setShowTooltip(false)}
+                  aria-label="Name requirements"
+                >
+                  <HelpCircle className="w-4 h-4 text-slate-400 hover:text-indigo-400 transition-colors" />
+                </button>
+              </label>
+              
+              {/* Tooltip */}
+              <AnimatePresence>
+                {showTooltip && (
+                  <motion.div
+                    ref={tooltipRef}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-slate-800 border border-slate-600 rounded-lg shadow-xl text-sm text-slate-200"
+                  >
+                    <p className="font-semibold mb-1">Name Requirements:</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>2-20 characters</li>
+                      <li>Letters, numbers, spaces only</li>
+                      <li>Hyphens and apostrophes allowed</li>
+                      <li>No special symbols</li>
+                    </ul>
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="relative">
+                <input
+                  ref={inputRef}
+                  id="pet-name-input"
+                  type="text"
+                  value={name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  onBlur={handleBlur}
+                  placeholder="Enter a name..."
+                  className={`w-full bg-slate-900/50 border rounded-xl px-6 py-4 text-slate-50 text-center text-xl md:text-2xl font-bold placeholder-slate-500 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    touched && validationError
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                      : touched && isValid
+                      ? 'border-green-500 focus:border-indigo-500 focus:ring-indigo-500/20'
+                      : 'border-slate-700 focus:border-indigo-500 focus:ring-indigo-500/20'
+                  }`}
+                  maxLength={MAX_NAME_LENGTH}
+                  aria-invalid={touched && !!validationError}
+                  aria-describedby={touched && validationError ? 'name-error' : touched && isValid ? 'name-success' : undefined}
+                  disabled={isCreating}
+                />
+                
+                {/* Validation icon */}
+                {touched && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <AnimatePresence mode="wait">
+                      {validationError ? (
+                        <motion.div
+                          key="error"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                        >
+                          <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" />
+                        </motion.div>
+                      ) : isValid ? (
+                        <motion.div
+                          key="success"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                        >
+                          <CheckCircle2 className="w-5 h-5 text-green-500" aria-hidden="true" />
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </div>
+
+              {/* Character count and error message */}
+              <div className="mt-2 text-center">
+                <AnimatePresence mode="wait">
+                  {touched && validationError ? (
+                    <motion.p
+                      key="error"
+                      id="name-error"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      className="text-sm text-red-400 font-medium"
+                      role="alert"
+                    >
+                      {validationError}
+                    </motion.p>
+                  ) : touched && isValid ? (
+                    <motion.p
+                      key="success"
+                      id="name-success"
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      className="text-sm text-green-400 font-medium"
+                    >
+                      Great name!
+                    </motion.p>
+                  ) : (
+                    <motion.p
+                      key="count"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className={`text-sm transition-colors ${
+                        name.length > MAX_NAME_LENGTH * 0.9
+                          ? 'text-amber-400'
+                          : 'text-slate-500'
+                      }`}
+                    >
+                      {name.length}/{MAX_NAME_LENGTH} characters
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
 
           {/* Random name button */}
-          <button
+          <motion.button
+            type="button"
             onClick={generateRandomName}
-            className="w-full mb-8 px-6 py-3 bg-slate-900/50 border border-slate-700 text-slate-300 font-semibold rounded-xl hover:border-indigo-500/50 hover:text-indigo-400 transition-all flex items-center justify-center gap-2"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full mb-8 px-6 py-3 bg-slate-900/50 border border-slate-700 text-slate-300 font-semibold rounded-xl hover:border-indigo-500/50 hover:text-indigo-400 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isCreating}
+            aria-label="Generate a random pet name"
           >
             <Sparkles className="w-5 h-5" />
             Generate Random Name
-          </button>
+          </motion.button>
 
           {/* Navigation */}
-          <div className="flex gap-4">
-            <button
+          <div className="flex flex-col sm:flex-row gap-4">
+            <motion.button
+              type="button"
               onClick={handleBack}
-              className="flex-1 px-6 py-4 bg-slate-900/50 border border-slate-700 text-slate-300 font-bold rounded-xl hover:border-slate-600 transition-all flex items-center justify-center gap-2"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1 px-6 py-4 bg-slate-900/50 border border-slate-700 text-slate-300 font-bold rounded-xl hover:border-slate-600 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isCreating}
+              aria-label="Go back to previous step"
             >
               <ArrowLeft className="w-5 h-5" />
-              Back
-            </button>
+              <span className="hidden sm:inline">Back</span>
+            </motion.button>
             
-            <button
+            <motion.button
+              type="button"
               onClick={handleContinue}
-              disabled={!name.trim() || isCreating}
-              className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={!isValid || isCreating}
+              whileHover={!isCreating && isValid ? { scale: 1.02 } : {}}
+              whileTap={!isCreating && isValid ? { scale: 0.98 } : {}}
+              className={`flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
+                isValid && !isCreating
+                  ? 'hover:shadow-lg hover:shadow-indigo-500/50 hover:-translate-y-0.5'
+                  : ''
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              aria-label={isValid ? "Continue to create your pet" : "Please enter a valid pet name"}
             >
               {isCreating ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Creating...
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="rounded-full h-5 w-5 border-2 border-white border-t-transparent"
+                  />
+                  <span>Creating...</span>
                 </>
               ) : (
                 <>
-                  Start Journey
+                  <span>Start Journey</span>
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
-            </button>
+            </motion.button>
           </div>
         </motion.div>
       </div>

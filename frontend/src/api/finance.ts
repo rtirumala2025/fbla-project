@@ -191,3 +191,56 @@ export async function listGoals(): Promise<FinanceResponse> {
   return apiRequest<FinanceResponse>(`${API_BASE}/goals`);
 }
 
+// Budget Advisor API
+export interface BudgetAdvisorTransaction {
+  amount: number;
+  category: string;
+  date: string;
+  description?: string;
+}
+
+export interface BudgetAdvisorRequest {
+  transactions: BudgetAdvisorTransaction[];
+  monthly_budget?: number;
+}
+
+export interface BudgetAdvisorResponse {
+  status: 'success' | 'error';
+  data?: {
+    total_spending: number;
+    total_income: number;
+    net_balance: number;
+    average_daily_spending: number;
+    top_categories: string[];
+    trends: Array<{
+      category: string;
+      total_spent: number;
+      transaction_count: number;
+      average_amount: number;
+      trend: 'increasing' | 'decreasing' | 'stable';
+      percentage_change?: number;
+    }>;
+    overspending_alerts: Array<{
+      category: string;
+      current_spending: number;
+      budget_limit?: number;
+      excess_amount?: number;
+      severity: 'low' | 'medium' | 'high';
+      recommendation: string;
+    }>;
+    suggestions: string[];
+    analysis_period: {
+      start: string;
+      end: string;
+    };
+  };
+  message: string;
+}
+
+export async function analyzeBudget(request: BudgetAdvisorRequest): Promise<BudgetAdvisorResponse> {
+  return apiRequest<BudgetAdvisorResponse>('/api/budget-advisor/analyze', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
