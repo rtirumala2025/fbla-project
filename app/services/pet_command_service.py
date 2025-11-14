@@ -7,6 +7,7 @@ This service processes natural language commands for virtual pets, supporting:
 - Structured responses with suggestions
 - Comprehensive logging
 - Fail-safe fallback responses
+- Database integration verification
 
 Production-ready implementation with full error handling and logging.
 """
@@ -20,11 +21,17 @@ from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.models.pet import Pet
 from app.services import ai_service, pet_service
 
+# Configure structured logging
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s:%(lineno)d] - %(message)s'
+)
 
 
 @dataclass
@@ -549,6 +556,7 @@ async def execute_command(
     1. Parses the command into actionable steps
     2. Executes each step in sequence
     3. Returns structured results with suggestions
+    4. Verifies database connectivity and pet existence
     
     Args:
         session: Database session
@@ -558,37 +566,81 @@ async def execute_command(
     Returns:
         Dictionary with execution results, suggestions, and metadata
     """
-    logger.info(f"Processing command for user {user_id}: {command[:100]}")
+    logger.info(
+        f"Processing command for user {user_id} - "
+        f"Command: '{command[:100]}', Session: {session is not None}"
+    )
+    
+    # Validate input
+    if not command or not command.strip():
+        logger.warning(f"Empty command received from user {user_id}")
+        return {
+            "success": False,
+            "message": "Command cannot be empty. Please provide a command like 'feed my pet' or 'play fetch'.",
+            "suggestions": [
+                "Try commands like: 'feed my pet', 'play fetch', 'let my pet sleep'",
+                "You can combine commands: 'feed my pet then play fetch'",
+            ],
+            "results": [],
+            "confidence": 0.0,
+        }
     
     # Parse the command
     parsed = _parse_command(command)
     
-    # Get pet for context
+    # Get pet for context - verify database connection
     try:
+        logger.debug(f"Fetching pet from database for user {user_id}")
         pet = await pet_service.get_pet_by_user(session, user_id)
         if not pet:
-            logger.warning(f"Pet not found for user {user_id}")
+            logger.warning(f"Pet not found for user {user_id} - user needs to create a pet")
             return {
                 "success": False,
                 "message": "Pet not found. Please create a pet first.",
-                "suggestions": ["Create a pet to start caring for your virtual companion."],
+                "suggestions": [
+                    "Create a pet to start caring for your virtual companion.",
+                    "Visit the pet creation page to get started.",
+                ],
                 "results": [],
                 "confidence": 0.0,
             }
+        logger.debug(f"Pet found: {pet.name} (ID: {pet.id}, Species: {pet.species})")
     except Exception as e:
-        logger.error(f"Error fetching pet: {e}", exc_info=True)
+        logger.error(
+            f"Database error fetching pet for user {user_id}: {e}",
+            exc_info=True
+        )
         return {
             "success": False,
             "message": f"Error accessing pet: {str(e)}",
-            "suggestions": ["Please try again later."],
+            "suggestions": [
+                "Please try again later.",
+                "If the problem persists, contact support.",
+            ],
             "results": [],
             "confidence": 0.0,
         }
     
     # Fetch the actual pet model for stat tracking
     # Import here to avoid circular dependency
-    from app.services.pet_service import _fetch_pet as fetch_pet_model
-    pet_model = await fetch_pet_model(session, user_id)
+    try:
+        from app.services.pet_service import _fetch_pet as fetch_pet_model
+        logger.debug(f"Fetching pet model for stat tracking (user {user_id})")
+        pet_model = await fetch_pet_model(session, user_id)
+        logger.debug(
+            f"Pet model loaded - Stats: hunger={pet_model.hunger}, "
+            f"happiness={pet_model.happiness}, energy={pet_model.energy}, "
+            f"health={pet_model.health}, mood={pet_model.mood}"
+        )
+    except Exception as e:
+        logger.error(f"Error fetching pet model: {e}", exc_info=True)
+        return {
+            "success": False,
+            "message": f"Error loading pet data: {str(e)}",
+            "suggestions": ["Please try again later."],
+            "results": [],
+            "confidence": 0.0,
+        }
     
     # Execute steps
     results: List[Dict[str, Any]] = []
@@ -606,8 +658,11 @@ async def execute_command(
             "steps_executed": 0,
         }
     
-    for step in parsed.steps:
-        logger.info(f"Executing step: {step.action} with parameters {step.parameters}")
+    for step_idx, step in enumerate(parsed.steps, 1):
+        logger.info(
+            f"Executing step {step_idx}/{len(parsed.steps)}: {step.action} "
+            f"with parameters {step.parameters} (confidence: {step.confidence:.2f})"
+        )
         
         try:
             if step.action == "feed":
@@ -621,7 +676,7 @@ async def execute_command(
             elif step.action == "trick":
                 result = await _execute_trick(session, user_id, step.parameters, pet_model)
             else:
-                logger.warning(f"Unknown action: {step.action}")
+                logger.warning(f"Unknown action '{step.action}' in step {step_idx}")
                 result = CommandResult(
                     success=False,
                     action=step.action,
@@ -629,7 +684,13 @@ async def execute_command(
                 )
             
             if not result.success:
+                logger.warning(f"Step {step_idx} ({step.action}) failed: {result.message}")
                 all_successful = False
+            else:
+                logger.debug(
+                    f"Step {step_idx} ({step.action}) succeeded - "
+                    f"Stat changes: {result.stat_changes}"
+                )
             
             results.append({
                 "action": result.action,
@@ -639,11 +700,22 @@ async def execute_command(
                 "pet_state": result.pet_state,
             })
             
-            # Refresh pet model for next step
-            pet_model = await fetch_pet_model(session, user_id)
+            # Refresh pet model for next step to get updated stats
+            try:
+                pet_model = await fetch_pet_model(session, user_id)
+                logger.debug(f"Pet model refreshed after step {step_idx}")
+            except Exception as refresh_error:
+                logger.error(
+                    f"Error refreshing pet model after step {step_idx}: {refresh_error}",
+                    exc_info=True
+                )
+                # Continue with previous pet_model state
             
         except Exception as e:
-            logger.error(f"Error executing step {step.action}: {e}", exc_info=True)
+            logger.error(
+                f"Error executing step {step_idx} ({step.action}): {e}",
+                exc_info=True
+            )
             all_successful = False
             results.append({
                 "action": step.action,
@@ -674,7 +746,11 @@ async def execute_command(
         if pet_model.cleanliness < 50:
             final_suggestions.append("Consider giving your pet a bath.")
     
-    logger.info(f"Command execution completed. Success: {all_successful}, Steps: {len(results)}")
+    logger.info(
+        f"Command execution completed for user {user_id} - "
+        f"Success: {all_successful}, Steps executed: {len(results)}, "
+        f"Confidence: {parsed.confidence:.2f}, Suggestions: {len(final_suggestions)}"
+    )
     
     return {
         "success": all_successful,

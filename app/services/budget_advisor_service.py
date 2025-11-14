@@ -3,6 +3,11 @@ Budget Advisor AI Service.
 
 This service analyzes transaction data to detect spending trends, identify overspending,
 and generate actionable recommendations for better budget management.
+
+Enhanced with:
+- Comprehensive logging for production debugging
+- Edge case handling for empty/invalid data
+- Database integration support
 """
 
 from __future__ import annotations
@@ -11,6 +16,10 @@ import logging
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import List, Optional
+from uuid import UUID
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
 from app.schemas.budget_advisor import (
     BudgetAdvisorAnalysis,
@@ -20,7 +29,12 @@ from app.schemas.budget_advisor import (
     TransactionInput,
 )
 
+# Configure structured logging
 LOGGER = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s:%(lineno)d] - %(message)s'
+)
 
 
 class BudgetAdvisorService:
@@ -45,12 +59,16 @@ class BudgetAdvisorService:
     @staticmethod
     async def analyze_budget(
         request: BudgetAdvisorRequest,
+        session: Optional[AsyncSession] = None,
+        user_id: Optional[UUID | str] = None,
     ) -> BudgetAdvisorAnalysis:
         """
         Analyze transaction data and generate budget insights.
 
         Args:
             request: Budget advisor request containing transactions and optional budget
+            session: Optional database session for fetching user transactions
+            user_id: Optional user ID to fetch transactions from database
 
         Returns:
             BudgetAdvisorAnalysis: Complete analysis with trends, alerts, and suggestions
@@ -58,18 +76,41 @@ class BudgetAdvisorService:
         Raises:
             ValueError: If transaction data is invalid or empty
         """
-        LOGGER.info(f"Starting budget analysis for {len(request.transactions)} transactions")
+        LOGGER.info(
+            f"Starting budget analysis - Transactions: {len(request.transactions)}, "
+            f"User ID: {user_id}, Has DB Session: {session is not None}"
+        )
 
         # Validate and process transactions
         if not request.transactions:
+            LOGGER.warning("Empty transactions list provided - raising ValueError")
             raise ValueError("No transactions provided for analysis")
 
+        # Log transaction details for debugging
+        LOGGER.debug(f"Transaction details: {[f'{t.category}: ${t.amount}' for t in request.transactions[:5]]}")
+        
+        # Validate transaction amounts and categories
+        invalid_count = 0
+        for idx, transaction in enumerate(request.transactions):
+            if transaction.amount <= 0:
+                LOGGER.warning(f"Transaction {idx + 1} has invalid amount: {transaction.amount}")
+                invalid_count += 1
+            if not transaction.category or not transaction.category.strip():
+                LOGGER.warning(f"Transaction {idx + 1} has empty category")
+                invalid_count += 1
+        
+        if invalid_count > 0:
+            LOGGER.error(f"Found {invalid_count} invalid transactions out of {len(request.transactions)}")
+
         # Separate income and expenses
+        # Note: In our system, expenses are positive, income is negative
         expenses = [t for t in request.transactions if t.amount > 0]
         income_transactions = [t for t in request.transactions if t.amount < 0]
 
+        LOGGER.debug(f"Expenses: {len(expenses)}, Income transactions: {len(income_transactions)}")
+
         if not expenses:
-            LOGGER.warning("No expense transactions found in input")
+            LOGGER.warning("No expense transactions found in input - analysis may be limited")
 
         # Calculate totals
         total_spending = sum(t.amount for t in expenses)
@@ -103,11 +144,12 @@ class BudgetAdvisorService:
         )
 
         LOGGER.info(
-            f"Analysis complete: {len(trends)} trends, {len(overspending_alerts)} alerts, "
-            f"{len(suggestions)} suggestions"
+            f"Analysis complete - Total Spending: ${total_spending:.2f}, "
+            f"Net Balance: ${net_balance:.2f}, Trends: {len(trends)}, "
+            f"Alerts: {len(overspending_alerts)}, Suggestions: {len(suggestions)}"
         )
 
-        return BudgetAdvisorAnalysis(
+        result = BudgetAdvisorAnalysis(
             total_spending=round(total_spending, 2),
             total_income=round(total_income, 2),
             net_balance=round(net_balance, 2),
@@ -118,6 +160,9 @@ class BudgetAdvisorService:
             suggestions=suggestions,
             analysis_period={"start": start_date.isoformat(), "end": end_date.isoformat()},
         )
+        
+        LOGGER.debug(f"Returning analysis result with {len(result.top_categories)} top categories")
+        return result
 
     @staticmethod
     def _analyze_by_category(

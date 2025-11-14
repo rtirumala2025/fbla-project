@@ -3,6 +3,11 @@ Name validation service for pets and accounts.
 
 Validates user-inputted names for uniqueness, profanity, character limits,
 and formatting. Provides suggestions for invalid names.
+
+Enhanced with:
+- Comprehensive logging for production debugging
+- Edge case handling for empty/invalid data
+- Database integration verification
 """
 
 from __future__ import annotations
@@ -18,7 +23,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.pet import Pet
 from app.models.profile import Profile
 
+# Configure structured logging
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s:%(lineno)d] - %(message)s'
+)
 
 # Minimum and maximum character limits
 MIN_LENGTH = 3
@@ -147,33 +157,56 @@ async def _check_uniqueness(
     """
     normalized = _normalize_name(name)
     
+    logger.debug(
+        f"Checking uniqueness for {name_type} name '{name}' "
+        f"(normalized: '{normalized}', exclude_user_id: {exclude_user_id})"
+    )
+    
     try:
         if name_type == "pet":
             # Check pets table
+            logger.debug(f"Querying pets table for name '{normalized}'")
             stmt = select(Pet).where(Pet.name.ilike(normalized))
             if exclude_user_id:
+                logger.debug(f"Excluding user_id {exclude_user_id} from uniqueness check")
                 stmt = stmt.where(Pet.user_id != exclude_user_id)
             result = await session.execute(stmt)
             existing = result.scalar_one_or_none()
             
             if existing:
+                logger.info(f"Pet name '{name}' is already taken (existing pet ID: {existing.id})")
                 return False, "This pet name is already taken."
+            else:
+                logger.debug(f"Pet name '{name}' is available")
         
         elif name_type == "account":
             # Check profiles table
+            logger.debug(f"Querying profiles table for username '{normalized}'")
             stmt = select(Profile).where(Profile.username.ilike(normalized))
             if exclude_user_id:
+                logger.debug(f"Excluding user_id {exclude_user_id} from uniqueness check")
                 stmt = stmt.where(Profile.user_id != exclude_user_id)
             result = await session.execute(stmt)
             existing = result.scalar_one_or_none()
             
             if existing:
+                logger.info(f"Username '{name}' is already taken (existing profile ID: {existing.id})")
                 return False, "This username is already taken."
+            else:
+                logger.debug(f"Username '{name}' is available")
+        else:
+            logger.error(f"Invalid name_type: {name_type}. Expected 'pet' or 'account'")
+            raise NameValidationError(f"Invalid name_type: {name_type}")
         
         return True, None
     
+    except NameValidationError:
+        raise
     except Exception as e:
-        logger.error(f"Error checking uniqueness for {name_type} name '{name}': {e}")
+        logger.error(
+            f"Database error checking uniqueness for {name_type} name '{name}': {e}",
+            exc_info=True
+        )
         raise NameValidationError(f"Database error while checking uniqueness: {str(e)}") from e
 
 
@@ -267,6 +300,11 @@ async def validate_name(
             "errors": List[str]
         }
     """
+    logger.info(
+        f"Validating {name_type} name '{name}' "
+        f"(exclude_user_id: {exclude_user_id}, session: {session is not None})"
+    )
+    
     errors = []
     suggestions = []
     
@@ -275,10 +313,22 @@ async def validate_name(
         logger.warning(f"Empty name provided for {name_type} validation")
         errors.append("Name cannot be empty.")
         suggestions = _generate_suggestions("", ["empty"])
+        logger.debug(f"Generated {len(suggestions)} suggestions for empty name")
         return {
             "status": "error",
             "valid": False,
             "suggestions": suggestions,
+            "errors": errors,
+        }
+    
+    # Validate name_type
+    if name_type not in ["pet", "account"]:
+        logger.error(f"Invalid name_type: {name_type}. Expected 'pet' or 'account'")
+        errors.append(f"Invalid name type: {name_type}")
+        return {
+            "status": "error",
+            "valid": False,
+            "suggestions": [],
             "errors": errors,
         }
     
@@ -303,21 +353,34 @@ async def validate_name(
     # Check uniqueness (only if other validations pass)
     if length_valid and format_valid and profanity_valid:
         try:
+            logger.debug("All basic validations passed, checking uniqueness in database")
             unique_valid, uniqueness_error = await _check_uniqueness(
                 session, normalized, name_type, exclude_user_id
             )
             if not unique_valid:
+                logger.info(f"Name '{name}' failed uniqueness check: {uniqueness_error}")
                 errors.append(uniqueness_error)
+        except NameValidationError as e:
+            logger.error(f"NameValidationError during uniqueness check: {e}")
+            errors.append(str(e))
         except Exception as e:
-            logger.error(f"Error during uniqueness check: {e}")
+            logger.error(
+                f"Unexpected error during uniqueness check for '{name}': {e}",
+                exc_info=True
+            )
             errors.append("Unable to verify name uniqueness. Please try again.")
+    else:
+        logger.debug(
+            f"Skipping uniqueness check - basic validations failed: "
+            f"length={length_valid}, format={format_valid}, profanity={profanity_valid}"
+        )
     
     # Generate suggestions if invalid
     if errors:
         suggestions = _generate_suggestions(normalized, errors)
         logger.info(
-            f"Name '{name}' failed validation for {name_type}: {errors}. "
-            f"Generated {len(suggestions)} suggestions."
+            f"Name '{name}' failed validation for {name_type} - Errors: {errors}, "
+            f"Generated {len(suggestions)} suggestions: {suggestions[:3]}"
         )
         return {
             "status": "error",
@@ -327,7 +390,7 @@ async def validate_name(
         }
     
     # All validations passed
-    logger.info(f"Name '{name}' passed validation for {name_type}")
+    logger.info(f"Name '{name}' passed all validations for {name_type}")
     return {
         "status": "success",
         "valid": True,

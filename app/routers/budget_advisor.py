@@ -92,9 +92,11 @@ async def analyze_budget(
                 detail=f"Invalid transaction data: {', '.join(invalid_transactions)}",
             )
 
-        # Perform analysis
-        LOGGER.debug("Starting budget analysis")
-        analysis = await BudgetAdvisorService.analyze_budget(request)
+        # Perform analysis with database session and user_id for future integration
+        LOGGER.debug("Starting budget analysis with database session")
+        analysis = await BudgetAdvisorService.analyze_budget(
+            request, session=session, user_id=user_id
+        )
 
         # Log analysis results
         LOGGER.info(
