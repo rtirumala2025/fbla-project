@@ -87,85 +87,93 @@ const Header = () => {
         isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-lg' : 'bg-white/90'
       } text-black border-b border-gray-100`}
     >
-      <div className="max-w-[95vw] mx-auto px-8">
-        <div className="flex items-center justify-between h-20">
+      <div className="w-full max-w-full mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
+        <div className="flex items-center justify-between min-h-[4rem] sm:min-h-[5rem] h-auto py-2 sm:py-3 gap-2 sm:gap-4">
           {/* Left Section - Logo */}
-          <NavLink to="/" className="flex items-center space-x-3 group flex-shrink-0">
-            <PawPrint className="h-8 w-8 text-indigo-600 group-hover:text-indigo-700 transition-colors" />
-            <span className="text-2xl font-bold text-black">Companion</span>
+          <NavLink 
+            to="/" 
+            className="flex items-center space-x-1 sm:space-x-2 md:space-x-3 group flex-shrink-0 min-w-0"
+          >
+            <PawPrint className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-indigo-600 group-hover:text-indigo-700 transition-colors flex-shrink-0" />
+            <span className="text-lg sm:text-xl md:text-2xl font-bold text-black truncate max-w-[120px] sm:max-w-[150px] md:max-w-none">
+              Companion
+            </span>
           </NavLink>
 
-          {/* Center Section - Navigation (always visible for demo access) */}
-          <nav className="hidden lg:flex items-center justify-center flex-1 mx-12">
-            <div className="flex items-center gap-6">
+          {/* Center Section - Navigation (hidden on smaller screens, visible on xl+) */}
+          <nav className="hidden xl:flex items-center justify-center flex-1 mx-4 lg:mx-8 min-w-0">
+            <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 flex-wrap justify-center max-w-full">
               {allNavLinks.map((link) => (
                 <NavLink 
                   key={link.to}
                   to={link.to} 
-                  className={({ isActive }) => `flex items-center gap-2 px-5 py-3 rounded-lg text-base font-semibold transition-all ${
+                  className={({ isActive }) => `flex items-center gap-1 lg:gap-2 px-2 lg:px-3 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
                     isActive 
                       ? 'text-white bg-indigo-600 shadow-md' 
                       : 'text-gray-700 hover:bg-gray-100 hover:text-black'
                   }`}
                 >
-                  {link.icon}
-                  <span>{link.name}</span>
+                  <span className="flex-shrink-0">{link.icon}</span>
+                  <span className="truncate max-w-[80px] lg:max-w-[100px] xl:max-w-none">{link.name}</span>
                 </NavLink>
               ))}
             </div>
           </nav>
 
           {/* Right Section - Auth Buttons */}
-          <div className="flex items-center gap-6 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 flex-shrink-0 min-w-0">
             {!loading && currentUser ? (
               <>
-                {/* Welcome message for logged-in users */}
-                <div className="hidden lg:block text-sm text-gray-600">
-                  <span className="font-medium">Welcome, {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}! 👋</span>
+                {/* Welcome message for logged-in users - hidden on smaller screens */}
+                <div className="hidden xl:block text-xs lg:text-sm text-gray-600 min-w-0">
+                  <span className="font-medium truncate max-w-[150px] lg:max-w-[200px] xl:max-w-none block">
+                    Welcome, {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}! 👋
+                  </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="hidden lg:flex items-center gap-2 px-5 py-3 rounded-lg text-base font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors group"
+                  className="hidden xl:flex items-center gap-1 lg:gap-2 px-3 lg:px-4 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors group whitespace-nowrap flex-shrink-0"
                 >
-                  <LogOut size={20} className="group-hover:animate-pulse" />
-                  <span>Sign Out</span>
+                  <LogOut className="h-4 w-4 lg:h-5 lg:w-5 xl:h-5 xl:w-5 group-hover:animate-pulse flex-shrink-0" />
+                  <span className="hidden lg:inline">Sign Out</span>
                 </button>
               </>
             ) : (
               <>
                 <NavLink
                   to="/login"
-                  className="hidden lg:block px-5 py-3 rounded-lg text-base font-semibold text-gray-700 hover:bg-gray-100 hover:text-black transition-colors"
+                  className="hidden xl:block px-3 lg:px-4 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold text-gray-700 hover:bg-gray-100 hover:text-black transition-colors whitespace-nowrap flex-shrink-0"
                 >
                   Log in
                 </NavLink>
                 <NavLink
                   to="/signup"
-                  className="hidden lg:block px-5 py-3 rounded-lg text-base font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 transition-opacity shadow-lg hover:shadow-indigo-500/20"
+                  className="hidden xl:block px-3 lg:px-4 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 transition-opacity shadow-lg hover:shadow-indigo-500/20 whitespace-nowrap flex-shrink-0"
                 >
                   Get Started
                 </NavLink>
               </>
             )}
 
-            {/* Mobile menu button */}
+            {/* Mobile menu button - visible on screens smaller than xl */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-black focus:outline-none transition-colors"
-              aria-expanded="false"
+              className="xl:hidden inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-black focus:outline-none transition-colors flex-shrink-0"
+              aria-expanded={isMobileMenuOpen}
+              aria-label={isMobileMenuOpen ? 'Close main menu' : 'Open main menu'}
             >
-              <span className="sr-only">Open main menu</span>
+              <span className="sr-only">{isMobileMenuOpen ? 'Close main menu' : 'Open main menu'}</span>
               {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6" />
               ) : (
-                <Menu className="h-6 w-6" />
+                <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
               )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu - visible on screens smaller than xl */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -173,7 +181,7 @@ const Header = () => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="md:hidden overflow-hidden bg-white border-t border-gray-200 shadow-lg"
+            className="xl:hidden overflow-hidden bg-white border-t border-gray-200 shadow-lg max-h-[calc(100vh-5rem)] overflow-y-auto"
           >
             <div className="px-2 pt-2 pb-4 space-y-1">
               {/* Show page navigation for mobile users */}
