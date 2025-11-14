@@ -43,16 +43,15 @@ export const WalletPage: React.FC = () => {
         setSummary(response.summary);
       } catch (error: any) {
         console.error('WalletPage: Failed to load finance summary', error);
-        if (!silent) {
-          toast.error(error?.message || 'Failed to load wallet details');
-        }
+        // Don't show toast - error is already displayed on the page
+        // The API will fallback to mock data automatically
       } finally {
         if (!silent) {
           setLoading(false);
         }
       }
     },
-    [toast],
+    [], // No dependencies - prevents re-creation
   );
 
   useEffect(() => {

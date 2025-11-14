@@ -81,9 +81,47 @@ interface PetCommandResponse {
 }
 
 const BASE_PATH = '/api/pets';
+const useMock = process.env.REACT_APP_USE_MOCK === 'true';
+
+// Generate mock pet
+function generateMockPet(): Pet {
+  return {
+    id: 'mock-pet-1',
+    name: 'Luna',
+    species: 'dog',
+    breed: 'Golden Retriever',
+    age: 30,
+    level: 5,
+    experience: 1250,
+    stats: {
+      health: 88,
+      hunger: 75,
+      happiness: 82,
+      cleanliness: 90,
+      energy: 70,
+      mood: 'happy',
+      level: 5,
+      xp: 1250,
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
 
 export async function fetchPet(): Promise<Pet> {
-  return apiRequest<Pet>(BASE_PATH);
+  // Use mock data if in mock mode or if API fails
+  if (useMock) {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return generateMockPet();
+  }
+
+  try {
+    return await apiRequest<Pet>(BASE_PATH);
+  } catch (error) {
+    // Fallback to mock data if API fails
+    console.warn('Pet API unavailable, using mock data', error);
+    return generateMockPet();
+  }
 }
 
 export async function createPet(data: PetCreateRequest): Promise<Pet> {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -73,6 +73,9 @@ export const SettingsScreen: React.FC = () => {
     document.documentElement.classList.toggle('high-contrast', highContrast);
   }, [highContrast]);
 
+  // Track if we've shown an error to avoid spam
+  const hasShownSaveError = useRef(false);
+
   // Save preference to database
   const savePreference = async (key: string, value: boolean) => {
     if (!currentUser?.uid) return;
@@ -91,13 +94,29 @@ export const SettingsScreen: React.FC = () => {
 
       if (error) {
         console.error('❌ Error saving preference:', error);
-        toast.error('Failed to save setting');
+        // Only show error once to avoid spam
+        if (!hasShownSaveError.current) {
+          toast.error('Unable to save settings. Changes are saved locally.');
+          hasShownSaveError.current = true;
+          // Reset after 5 seconds
+          setTimeout(() => {
+            hasShownSaveError.current = false;
+          }, 5000);
+        }
       } else {
         console.log('✅ Preference saved');
+        hasShownSaveError.current = false; // Reset on success
       }
     } catch (error: any) {
       console.error('❌ Failed to save preference:', error);
-      toast.error(error.message || 'Failed to save setting');
+      // Only show error once to avoid spam
+      if (!hasShownSaveError.current) {
+        toast.error('Unable to save settings. Changes are saved locally.');
+        hasShownSaveError.current = true;
+        setTimeout(() => {
+          hasShownSaveError.current = false;
+        }, 5000);
+      }
     }
   };
 

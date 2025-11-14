@@ -2,7 +2,7 @@
  * AnalyticsDashboard Page
  * Analytics dashboard with charts and insights
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ExpensePieChart from '../../components/analytics/ExpensePieChart';
 import TrendChart from '../../components/analytics/TrendChart';
 import { DailyChallengeCard } from '../../components/minigames/DailyChallengeCard';
@@ -16,23 +16,50 @@ export const AnalyticsDashboard: React.FC = () => {
   const [snapshot, setSnapshot] = useState<AnalyticsSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isLoadingRef = useRef(false);
 
   const loadSnapshot = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      return;
+    }
+    
     try {
+      isLoadingRef.current = true;
       setLoading(true);
+      setError(null);
+      
       const response = await fetchSnapshot();
       setSnapshot(response);
+      setError(null);
     } catch (error: any) {
       console.error('Failed to load analytics snapshot', error);
-      toast.error(error?.message || 'Unable to load analytics');
+      
+      // Determine user-friendly error message
+      let errorMessage = 'Unable to load analytics';
+      if (error?.message) {
+        if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
+          errorMessage = 'Unable to connect to analytics server. Please check your connection or try again later.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
+      
+      // Don't show toast notification - the error is already displayed prominently on the page
+      // This prevents redundant notifications when the error state is visible
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [toast]);
+  }, []); // No dependencies - use refs instead
 
   useEffect(() => {
     loadSnapshot();
-  }, [loadSnapshot]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const handleExport = async () => {
     if (!snapshot) return;
@@ -107,14 +134,29 @@ export const AnalyticsDashboard: React.FC = () => {
     );
   }
 
-  if (!snapshot) {
+  if (!snapshot && !loading) {
     return (
       <div className="min-h-screen bg-cream px-6 py-24">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-700">
-          Unable to load analytics. Please try again later.
+        <div className="mx-auto max-w-3xl space-y-4">
+          <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-700">
+            <h2 className="text-xl font-semibold mb-2">Unable to Load Analytics</h2>
+            <p className="mb-4">{error || 'The analytics server is not available. Please check your connection or try again later.'}</p>
+            <button
+              onClick={() => {
+                loadSnapshot();
+              }}
+              className="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
+  }
+
+  if (!snapshot) {
+    return null;
   }
 
   const today = snapshot.end_of_day;

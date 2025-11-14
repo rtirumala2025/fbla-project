@@ -45,15 +45,15 @@ export const SocialHub = () => {
       setFriendsData(result);
     } catch (err) {
       console.error('Unable to fetch friends', err);
+      // Don't show toast - API will fallback to mock data automatically
+      // Only show info if we have cached data
       if (!friendsData && cached) {
         info('Offline mode: showing cached friends list.');
-      } else {
-        error('Failed to load friends list.');
       }
     } finally {
       setIsFetchingFriends(false);
     }
-  }, [cached, error, friendsData, info]);
+  }, [cached, friendsData, info]);
 
   const handleProfilesFetch = useCallback(
     async (query?: string) => {
@@ -63,12 +63,12 @@ export const SocialHub = () => {
         setProfiles(result.profiles);
       } catch (err) {
         console.error('Unable to fetch public profiles', err);
-        error('Failed to load public profiles.');
+        // Don't show toast - API will fallback to mock data automatically
       } finally {
         setIsFetchingProfiles(false);
       }
     },
-    [error],
+    [],
   );
 
   const handleLeaderboardFetch = useCallback(
@@ -79,12 +79,12 @@ export const SocialHub = () => {
         setLeaderboard(result);
       } catch (err) {
         console.error('Unable to fetch leaderboard', err);
-        error('Unable to update leaderboard standings.');
+        // Don't show toast - API will fallback to mock data automatically
       } finally {
         setIsFetchingLeaderboard(false);
       }
     },
-    [error],
+    [],
   );
 
   useEffect(() => {

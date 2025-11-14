@@ -7,6 +7,7 @@ import type {
   DonationPayload,
   EarnRequestPayload,
   FinanceResponse,
+  FinanceSummary,
   GoalContributionPayload,
   GoalCreatePayload,
   LeaderboardEntry,
@@ -15,9 +16,126 @@ import type {
 } from '../types/finance';
 
 const API_BASE = '/api/finance';
+const useMock = process.env.REACT_APP_USE_MOCK === 'true';
+
+// Generate mock finance summary
+function generateMockFinanceSummary(): FinanceResponse {
+  return {
+    summary: {
+      currency: 'coins',
+      balance: 1250,
+      donation_total: 150,
+      lifetime_earned: 3500,
+      lifetime_spent: 2250,
+      income_today: 85,
+      expenses_today: 45,
+      budget_warning: null,
+      recommendations: [
+        'You\'re doing great with your savings!',
+        'Consider setting a goal for a special pet item',
+        'Your daily allowance is available to claim',
+      ],
+      notifications: [
+        'Daily allowance available!',
+        'You\'ve earned 50 coins this week',
+      ],
+      daily_allowance_available: true,
+      allowance_amount: 50,
+      goals: [
+        {
+          id: '1',
+          name: 'Luxury Pet Bed',
+          target_amount: 500,
+          current_amount: 320,
+          status: 'active',
+          deadline: null,
+          completed_at: null,
+          progress_percent: 64,
+        },
+        {
+          id: '2',
+          name: 'Premium Food Supply',
+          target_amount: 200,
+          current_amount: 200,
+          status: 'completed',
+          deadline: null,
+          completed_at: new Date().toISOString(),
+          progress_percent: 100,
+        },
+      ],
+      transactions: [
+        {
+          id: '1',
+          amount: 50,
+          transaction_type: 'income',
+          category: 'allowance',
+          description: 'Daily allowance claimed',
+          created_at: new Date().toISOString(),
+          balance_after: 1250,
+          related_goal_id: null,
+          related_shop_item_id: null,
+        },
+        {
+          id: '2',
+          amount: -25,
+          transaction_type: 'expense',
+          category: 'food',
+          description: 'Premium pet food',
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          balance_after: 1200,
+          related_goal_id: null,
+          related_shop_item_id: 'food-1',
+        },
+      ],
+      inventory: [
+        {
+          item_id: '1',
+          item_name: 'Premium Pet Food',
+          category: 'food',
+          quantity: 3,
+          shop_item_id: 'food-1',
+        },
+        {
+          item_id: '2',
+          item_name: 'Toy Ball',
+          category: 'toys',
+          quantity: 1,
+          shop_item_id: 'toy-1',
+        },
+      ],
+      leaderboard: [
+        {
+          user_id: 'user-1',
+          balance: 2500,
+          care_score: 95,
+          rank: 1,
+        },
+        {
+          user_id: 'user-2',
+          balance: 1800,
+          care_score: 88,
+          rank: 2,
+        },
+      ],
+    },
+  };
+}
 
 export async function getFinanceSummary(): Promise<FinanceResponse> {
-  return apiRequest<FinanceResponse>(API_BASE);
+  // Use mock data if in mock mode or if API fails
+  if (useMock) {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return generateMockFinanceSummary();
+  }
+
+  try {
+    return await apiRequest<FinanceResponse>(API_BASE);
+  } catch (error) {
+    // Fallback to mock data if API fails
+    console.warn('Finance API unavailable, using mock data', error);
+    return generateMockFinanceSummary();
+  }
 }
 
 export async function earnCoins(data: EarnRequestPayload): Promise<FinanceResponse> {

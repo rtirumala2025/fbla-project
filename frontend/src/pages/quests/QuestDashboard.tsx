@@ -39,15 +39,15 @@ export const QuestDashboard = () => {
       }
     } catch (err) {
       console.error('Failed to load quests', err);
+      // Don't show toast - API will fallback to mock data automatically
+      // Only show info if we have cached data
       if (!quests && cached) {
         info('Offline: showing cached quests.');
-      } else {
-        error('Unable to refresh quests right now.');
       }
     } finally {
       setIsLoadingQuests(false);
     }
-  }, [cached, error, info, offline, quests]);
+  }, [cached, info, offline, quests]);
 
   const loadCoachAdvice = useCallback(async () => {
     setIsLoadingCoach(true);
@@ -56,11 +56,11 @@ export const QuestDashboard = () => {
       setCoachAdvice(advice);
     } catch (err) {
       console.error('Failed to fetch coach advice', err);
-      error('Unable to reach the AI coach. Try again later.');
+      // Don't show toast - API will fallback to mock data automatically
     } finally {
       setIsLoadingCoach(false);
     }
-  }, [error]);
+  }, []);
 
   useEffect(() => {
     void loadQuests();

@@ -77,7 +77,16 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export const useSoundPreferences = (): SoundContextValue => {
   const context = useContext(SoundContext);
   if (!context) {
-    throw new Error('useSoundPreferences must be used within a SoundProvider');
+    // Return defaults instead of throwing - allows usage without provider
+    console.warn('useSoundPreferences used without SoundProvider, using defaults');
+    return {
+      effectsEnabled: true,
+      ambientEnabled: true,
+      toggleEffects: () => {},
+      toggleAmbient: () => {},
+      setEffectsEnabled: () => {},
+      setAmbientEnabled: () => {},
+    };
   }
   return context;
 };

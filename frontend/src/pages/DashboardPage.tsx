@@ -101,22 +101,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const { currentUser, loading } = useAuth();
   
-  useEffect(() => {
-    if (!loading && !currentUser) {
-      navigate('/login', { state: { from: '/dashboard' } });
-    }
-  }, [currentUser, loading, navigate]);
-  
-  if (loading || !currentUser) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="text-2xl font-semibold text-gray-700 mb-4">Loading...</div>
-          <div className="w-16 h-16 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
+  // All hooks must be called before any conditional returns
   const [pet, setPet] = useState<PetData>({
     name: 'Luna',
     species: 'dog',
@@ -128,6 +113,24 @@ export function DashboardPage() {
       energy: 85,
     },
   });
+  
+  useEffect(() => {
+    if (!loading && !currentUser) {
+      navigate('/login', { state: { from: '/dashboard' } });
+    }
+  }, [currentUser, loading, navigate]);
+  
+  // Conditional returns after all hooks
+  if (loading || !currentUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-2xl font-semibold text-gray-700 mb-4">Loading...</div>
+          <div className="w-16 h-16 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   const handleAction = (action: string) => {
     setPet(prev => {
