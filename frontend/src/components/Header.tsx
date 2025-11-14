@@ -183,17 +183,17 @@ const Header = () => {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="xl:hidden overflow-hidden bg-white border-t border-gray-200 shadow-lg max-h-[calc(100vh-5rem)] overflow-y-auto"
           >
-            <div className="px-2 pt-2 pb-4 space-y-1">
+            <div className="px-2 sm:px-4 pt-2 pb-4 space-y-1 max-w-full overflow-x-hidden">
               {/* Show page navigation for mobile users */}
               {allNavLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
-                  className="flex items-center px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors min-w-0 w-full"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {link.icon}
-                  {link.name}
+                  <span className="flex-shrink-0">{link.icon}</span>
+                  <span className="truncate flex-1 min-w-0">{link.name}</span>
                 </NavLink>
               ))}
 
@@ -203,16 +203,16 @@ const Header = () => {
                     handleLogout();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full flex items-center px-4 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
-                  <LogOut size={18} className="mr-2" />
-                  Sign Out
+                  <LogOut className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                  <span className="truncate">Sign Out</span>
                 </button>
               ) : (
                 <>
                   <NavLink
                     to="/"
-                    className="block px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors"
+                    className="block px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors truncate"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Home
@@ -223,7 +223,7 @@ const Header = () => {
                     <a
                       key={link.to}
                       href={link.to}
-                      className="block px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors"
+                      className="block px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors truncate"
                       onClick={(e) => {
                         e.preventDefault();
                         setIsMobileMenuOpen(false);
@@ -241,18 +241,18 @@ const Header = () => {
                   <div className="pt-2 mt-2 border-t border-gray-200">
                     <NavLink
                       to="/login"
-                      className="block px-4 py-3 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors"
+                      className="block px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-black rounded-lg transition-colors truncate"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Log in
                     </NavLink>
-                        <NavLink
-                          to="/signup"
-                          className="block px-4 py-3 text-center text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 rounded-lg transition-opacity mx-2 mt-2"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          Get Started
-                        </NavLink>
+                    <NavLink
+                      to="/signup"
+                      className="block px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 rounded-lg transition-opacity mx-2 mt-2 text-center truncate"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Get Started
+                    </NavLink>
                   </div>
                 </>
               )}
