@@ -3,6 +3,7 @@
  * Handles pet CRUD, actions, diary, and AI insights/notifications
  */
 import { apiRequest } from './httpClient';
+import type { Pet, PetStats } from '../types/pet';
 
 // Pet types - using existing pet.ts types and extending as needed
 interface PetActionRequest {
@@ -78,8 +79,6 @@ interface PetCommandResponse {
   parameters: Record<string, unknown>;
   note: string;
 }
-
-import type { Pet, PetStats } from '../types/pet';
 
 const BASE_PATH = '/api/pets';
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, Home, ShoppingCart, User, PawPrint, Heart, Gamepad2, DollarSign, BarChart3 } from 'lucide-react';
+import { Menu, X, LogOut, Home, ShoppingCart, User, PawPrint, Heart, Gamepad2, DollarSign, BarChart3, Sparkles, Calendar, Wallet, Users, Target, Zap, Palette, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
@@ -62,6 +62,14 @@ const Header = () => {
     { name: 'Earn', to: '/earn', icon: <DollarSign size={20} /> },
     { name: 'Budget', to: '/budget', icon: <BarChart3 size={20} /> },
     { name: 'Shop', to: '/shop', icon: <ShoppingCart size={20} /> },
+    { name: 'Analytics', to: '/analytics', icon: <Sparkles size={20} /> },
+    { name: 'Events', to: '/events', icon: <Calendar size={20} /> },
+    { name: 'Wallet', to: '/wallet', icon: <Wallet size={20} /> },
+    { name: 'Social', to: '/social', icon: <Users size={20} /> },
+    { name: 'Quests', to: '/quests', icon: <Target size={20} /> },
+    { name: 'NextGen', to: '/nextgen', icon: <Zap size={20} /> },
+    { name: 'Avatar', to: '/customize/avatar', icon: <Palette size={20} /> },
+    { name: 'Settings', to: '/settings', icon: <Settings size={20} /> },
     { name: 'Profile', to: '/profile', icon: <User size={20} /> },
   ];
 

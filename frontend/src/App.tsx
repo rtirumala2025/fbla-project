@@ -29,7 +29,15 @@ import FetchGame from './pages/minigames/FetchGame';
 import PuzzleGame from './pages/minigames/PuzzleGame';
 import ReactionGame from './pages/minigames/ReactionGame';
 import DreamWorld from './pages/minigames/DreamWorld';
+import MemoryMatchGame from './pages/minigames/MemoryMatchGame';
 import { ProfilePage } from './pages/ProfilePage';
+import { AnalyticsDashboard } from './pages/analytics/AnalyticsDashboard';
+import { EventCalendarPage } from './pages/events/EventCalendarPage';
+import { WalletPage } from './pages/finance/WalletPage';
+import { SocialHub } from './pages/social/SocialHub';
+import { QuestDashboard } from './pages/quests/QuestDashboard';
+import { NextGenHub } from './pages/nextgen/NextGenHub';
+import { AvatarStudio } from './pages/pets/AvatarStudio';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import './styles/globals.css';
 
@@ -113,13 +121,40 @@ function AppContent() {
             <Route path="/health" element={<ProtectedRoute><PageTransition><HealthCheckScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/earn" element={<ProtectedRoute><PageTransition><EarnMoneyScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><PageTransition><SettingsScreen /></PageTransition></ProtectedRoute>} />
+            {/* eslint-disable-next-line */}
             <Route path="/help" element={<ProtectedRoute><PageTransition><HelpScreen /></PageTransition></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><PageTransition><AnalyticsDashboard /></PageTransition></ProtectedRoute>} />
+            <Route path="/events" element={<ProtectedRoute><PageTransition><EventCalendarPage /></PageTransition></ProtectedRoute>} />
+            <Route path="/wallet" element={<ProtectedRoute><PageTransition><WalletPage /></PageTransition></ProtectedRoute>} />
+            <Route path="/social" element={<ProtectedRoute><PageTransition><SocialHub /></PageTransition></ProtectedRoute>} />
+            <Route path="/quests" element={<ProtectedRoute><PageTransition><QuestDashboard /></PageTransition></ProtectedRoute>} />
+            <Route
+              path="/nextgen"
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <NextGenHub />
+                  </PageTransition>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/customize/avatar"
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <AvatarStudio />
+                  </PageTransition>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Mini-games */}
             <Route path="/minigames/fetch" element={<ProtectedRoute><PageTransition><FetchGame /></PageTransition></ProtectedRoute>} />
             <Route path="/minigames/puzzle" element={<ProtectedRoute><PageTransition><PuzzleGame /></PageTransition></ProtectedRoute>} />
             <Route path="/minigames/reaction" element={<ProtectedRoute><PageTransition><ReactionGame /></PageTransition></ProtectedRoute>} />
             <Route path="/minigames/dream" element={<ProtectedRoute><PageTransition><DreamWorld /></PageTransition></ProtectedRoute>} />
+            <Route path="/minigames/memory" element={<ProtectedRoute><PageTransition><MemoryMatchGame /></PageTransition></ProtectedRoute>} />
             
             {/* Protected onboarding flow */}
             <Route path="/onboarding/species" element={<ProtectedRoute><PageTransition><SpeciesSelection /></PageTransition></ProtectedRoute>} />
