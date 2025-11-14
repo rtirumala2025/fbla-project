@@ -5,7 +5,7 @@ Pydantic schemas for pet customization.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import List, Optional, Literal
+from typing import Any, Dict, List, Optional, Literal
 from uuid import UUID
 from uuid import uuid4
 
@@ -294,4 +294,76 @@ class PetHealthSummary(BaseModel):
 
     summary: str
     mood: str
+
+
+class PetCommandAIRequest(BaseModel):
+    """
+    Natural language command request for pet actions.
+    
+    Supports single and multi-step commands like:
+    - "feed my pet"
+    - "play fetch then let my pet sleep"
+    - "bathe my pet and then feed it a treat"
+    """
+
+    command: str = Field(..., min_length=1, max_length=500, description="Natural language command for pet action(s)")
+    session_id: Optional[str] = Field(
+        default=None,
+        max_length=128,
+        description="Optional session ID for maintaining context across commands",
+    )
+
+
+class PetCommandStepResult(BaseModel):
+    """
+    Result of executing a single command step.
+    """
+
+    action: str = Field(..., description="The action that was executed")
+    success: bool = Field(..., description="Whether the action succeeded")
+    message: str = Field(..., description="Pet's reaction or result message")
+    stat_changes: Optional[Dict[str, int]] = Field(
+        default=None,
+        description="Changes to pet stats (hunger, happiness, energy, etc.)",
+    )
+    pet_state: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Current pet state after action",
+    )
+
+
+class PetCommandAIResponse(BaseModel):
+    """
+    Structured response from pet command AI endpoint.
+    
+    Includes:
+    - Execution results for each step
+    - Success status
+    - Suggestions for next actions
+    - Confidence score
+    - Fail-safe fallback when command cannot be understood
+    """
+
+    success: bool = Field(..., description="Overall success of command execution")
+    message: str = Field(..., description="Summary message about the execution")
+    suggestions: List[str] = Field(
+        default_factory=list,
+        description="Contextual suggestions for next actions or command improvements",
+    )
+    results: List[PetCommandStepResult] = Field(
+        default_factory=list,
+        description="Results for each executed step (empty if command was invalid)",
+    )
+    confidence: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score for command parsing (0.0 = invalid, 1.0 = high confidence)",
+    )
+    original_command: str = Field(..., description="The original command that was processed")
+    steps_executed: int = Field(
+        default=0,
+        ge=0,
+        description="Number of command steps that were executed",
+    )
 
