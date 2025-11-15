@@ -1,0 +1,202 @@
+[
+  {
+    "action": "rest",
+    "timestamp": "2025-11-07T17:38:57.197450",
+    "stat_changes": {
+      "energy": 35,
+      "health": 5,
+      "coins": 0
+    },
+    "coins_spent": 0
+  },
+  {
+    "action": "train",
+    "timestamp": "2025-11-07T18:38:57.197450",
+    "stat_changes": {
+      "happiness": 15,
+      "energy": -20,
+      "coins": -20
+    },
+    "coins_spent": 20
+  },
+  {
+    "action": "feed",
+    "timestamp": "2025-11-07T18:57:57.197450",
+    "stat_changes": {
+      "hunger": 30,
+      "happiness": 5,
+      "coins": -10
+    },
+    "coins_spent": 10
+  },
+  {
+    "action": "clean",
+    "timestamp": "2025-11-07T19:28:57.197450",
+    "stat_changes": {
+      "cleanliness": 30,
+      "health": 3,
+      "coins": -5
+    },
+    "coins_spent": 5
+  },
+  {
+    "action": "train",
+    "timestamp": "2025-11-07T20:52:57.197450",
+    "stat_changes": {
+      "happiness": 15,
+      "energy": -20,
+      "coins": -20
+    },
+    "coins_spent": 20
+  },
+  {
+    "action": "feed",
+    "timestamp": "2025-11-07T21:59:57.197450",
+    "stat_changes": {
+      "hunger": 30,
+      "happiness": 5,
+      "coins": -10
+    },
+    "coins_spent": 10
+  },
+  {
+    "action": "train",
+    "timestamp": "2025-11-07T22:22:57.197450",
+    "stat_changes": {
+      "happiness": 15,
+      "energy": -20,
+      "coins": -20
+    },
+    "coins_spent": 20
+  },
+  {
+    "action": "bathe",
+    "timestamp": "2025-11-08T02:47:57.197450",
+    "stat_changes": {
+      "cleanliness": 40,
+      "happiness": 10,
+      "coins": -15
+    },
+    "coins_spent": 15
+  },
+  {
+    "action": "bathe",
+    "timestamp": "2025-11-08T04:48:57.197450",
+    "stat_changes": {
+      "cleanliness": 40,
+      "happiness": 10,
+      "coins": -15
+    },
+    "coins_spent": 15
+  },
+  {
+    "action": "play",
+    "timestamp": "2025-11-08T06:58:57.197450",
+    "stat_changes": {
+      "happiness": 25,
+      "energy": -15,
+      "coins": 0
+    },
+    "coins_spent": 0
+  },
+  {
+    "action": "feed",
+    "timestamp": "2025-11-08T09:00:57.197450",
+    "stat_changes": {
+      "hunger": 30,
+      "happiness": 5,
+      "coins": -10
+    },
+    "coins_spent": 10
+  },
+  {
+    "action": "bathe",
+    "timestamp": "2025-11-08T10:00:57.197450",
+    "stat_changes": {
+      "cleanliness": 40,
+      "happiness": 10,
+      "coins": -15
+    },
+    "coins_spent": 15
+  },
+  {
+    "action": "play",
+    "timestamp": "2025-11-08T10:23:57.197450",
+    "stat_changes": {
+      "happiness": 25,
+      "energy": -15,
+      "coins": 0
+    },
+    "coins_spent": 0
+  },
+  {
+    "action": "play",
+    "timestamp": "2025-11-08T11:14:57.197450",
+    "stat_changes": {
+      "happiness": 25,
+      "energy": -15,
+      "coins": 0
+    },
+    "coins_spent": 0
+  },
+  {
+    "action": "rest",
+    "timestamp": "2025-11-08T13:20:57.197450",
+    "stat_changes": {
+      "energy": 35,
+      "health": 5,
+      "coins": 0
+    },
+    "coins_spent": 0
+  },
+  {
+    "action": "feed",
+    "timestamp": "2025-11-08T14:09:57.197450",
+    "stat_changes": {
+      "hunger": 30,
+      "happiness": 5,
+      "coins": -10
+    },
+    "coins_spent": 10
+  },
+  {
+    "action": "train",
+    "timestamp": "2025-11-08T14:22:57.197450",
+    "stat_changes": {
+      "happiness": 15,
+      "energy": -20,
+      "coins": -20
+    },
+    "coins_spent": 20
+  },
+  {
+    "action": "clean",
+    "timestamp": "2025-11-08T14:50:57.197450",
+    "stat_changes": {
+      "cleanliness": 30,
+      "health": 3,
+      "coins": -5
+    },
+    "coins_spent": 5
+  },
+  {
+    "action": "bathe",
+    "timestamp": "2025-11-08T15:16:57.197450",
+    "stat_changes": {
+      "cleanliness": 40,
+      "happiness": 10,
+      "coins": -15
+    },
+    "coins_spent": 15
+  },
+  {
+    "action": "feed",
+    "timestamp": "2025-11-08T15:26:57.197450",
+    "stat_changes": {
+      "hunger": 30,
+      "happiness": 5,
+      "coins": -10
+    },
+    "coins_spent": 10
+  }
+]

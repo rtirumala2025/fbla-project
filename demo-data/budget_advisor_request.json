@@ -1,0 +1,185 @@
+{
+  "transactions": [
+    {
+      "amount": 79.8,
+      "category": "health",
+      "date": "2025-10-15",
+      "description": "Health purchase"
+    },
+    {
+      "amount": 44.42,
+      "category": "education",
+      "date": "2025-10-16",
+      "description": "Education purchase"
+    },
+    {
+      "amount": 5.51,
+      "category": "transport",
+      "date": "2025-10-16",
+      "description": "Transport purchase"
+    },
+    {
+      "amount": 31.3,
+      "category": "education",
+      "date": "2025-10-18",
+      "description": "Education purchase"
+    },
+    {
+      "amount": 187.4,
+      "category": "education",
+      "date": "2025-10-18",
+      "description": "Education purchase"
+    },
+    {
+      "amount": 138.22,
+      "category": "shopping",
+      "date": "2025-10-18",
+      "description": "Shopping purchase"
+    },
+    {
+      "amount": 227.1,
+      "category": "bills",
+      "date": "2025-10-18",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 142.91,
+      "category": "bills",
+      "date": "2025-10-19",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 10.05,
+      "category": "food",
+      "date": "2025-10-19",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 42.58,
+      "category": "food",
+      "date": "2025-10-24",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 37.84,
+      "category": "shopping",
+      "date": "2025-10-25",
+      "description": "Shopping purchase"
+    },
+    {
+      "amount": 129.47,
+      "category": "bills",
+      "date": "2025-10-25",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 267.95,
+      "category": "bills",
+      "date": "2025-10-25",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 153.03,
+      "category": "education",
+      "date": "2025-10-26",
+      "description": "Education purchase"
+    },
+    {
+      "amount": 94.23,
+      "category": "shopping",
+      "date": "2025-10-26",
+      "description": "Shopping purchase"
+    },
+    {
+      "amount": 86.65,
+      "category": "bills",
+      "date": "2025-10-26",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 56.49,
+      "category": "bills",
+      "date": "2025-10-26",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 40.82,
+      "category": "food",
+      "date": "2025-10-29",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 29.42,
+      "category": "food",
+      "date": "2025-10-30",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 19.9,
+      "category": "food",
+      "date": "2025-10-31",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 73.16,
+      "category": "entertainment",
+      "date": "2025-11-01",
+      "description": "Entertainment purchase"
+    },
+    {
+      "amount": 20.58,
+      "category": "transport",
+      "date": "2025-11-01",
+      "description": "Transport purchase"
+    },
+    {
+      "amount": 57.33,
+      "category": "bills",
+      "date": "2025-11-01",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 90.0,
+      "category": "health",
+      "date": "2025-11-01",
+      "description": "Health purchase"
+    },
+    {
+      "amount": 35.37,
+      "category": "shopping",
+      "date": "2025-11-02",
+      "description": "Shopping purchase"
+    },
+    {
+      "amount": 23.33,
+      "category": "food",
+      "date": "2025-11-02",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 98.22,
+      "category": "entertainment",
+      "date": "2025-11-02",
+      "description": "Entertainment purchase"
+    },
+    {
+      "amount": 21.3,
+      "category": "transport",
+      "date": "2025-11-02",
+      "description": "Transport purchase"
+    },
+    {
+      "amount": 19.51,
+      "category": "food",
+      "date": "2025-11-03",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 14.62,
+      "category": "food",
+      "date": "2025-11-04",
+      "description": "Food purchase"
+    }
+  ],
+  "monthly_budget": 1000.0
+}

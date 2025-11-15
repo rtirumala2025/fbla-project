@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '../common/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -30,6 +30,39 @@ export const AIChat: React.FC = () => {
   const { logFormSubmit, logFormError, logUserAction } = useInteractionLogger('AIChat');
   const [inputError, setInputError] = useState<string | null>(null);
   const [showInputTooltip, setShowInputTooltip] = useState(false);
+  const sessionTokenRef = useRef<string | null>(null);
+  const sessionTokenExpiryRef = useRef<number>(0);
+
+  // Memoized command map
+  const commandMap = useMemo(() => ({
+    'feed': 'feed',
+    'play': 'play',
+    'sleep': 'sleep',
+    'pet': 'pet',
+    'train': 'train',
+    'clean': 'clean',
+    'status': 'status'
+  }), []);
+
+  // Cached session token getter (avoids repeated auth calls)
+  const getSessionToken = useCallback(async () => {
+    const now = Date.now();
+    // Cache token for 5 minutes
+    if (sessionTokenRef.current && now < sessionTokenExpiryRef.current) {
+      return sessionTokenRef.current;
+    }
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || '';
+      sessionTokenRef.current = token;
+      sessionTokenExpiryRef.current = now + (5 * 60 * 1000); // 5 minutes
+      return token;
+    } catch (error) {
+      console.error('Failed to get session token:', error);
+      return '';
+    }
+  }, []);
 
   // Generate a unique session ID if not exists
   useEffect(() => {
@@ -54,16 +87,24 @@ export const AIChat: React.FC = () => {
     }
   }, []);
 
-  // Save chat history when messages or pet state changes
+  // Save chat history when messages or pet state changes (debounced)
   useEffect(() => {
-    if (sessionId && (messages.length > 0 || petState)) {
-      const chatData = {
-        messages,
-        petState,
-        lastUpdated: new Date().toISOString()
-      };
-      localStorage.setItem(`chat_${sessionId}`, JSON.stringify(chatData));
-    }
+    if (!sessionId || (messages.length === 0 && !petState)) return;
+    
+    const timeoutId = setTimeout(() => {
+      try {
+        const chatData = {
+          messages,
+          petState,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem(`chat_${sessionId}`, JSON.stringify(chatData));
+      } catch (e) {
+        console.error('Failed to save chat history', e);
+      }
+    }, 500); // Debounce by 500ms to avoid excessive writes
+    
+    return () => clearTimeout(timeoutId);
   }, [messages, petState, sessionId]);
 
   // Focus input on load
@@ -73,10 +114,15 @@ export const AIChat: React.FC = () => {
     }
   }, []);
 
-  // Auto-scroll to bottom of messages
+  // Auto-scroll to bottom of messages (only when new messages arrive)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (messages.length > 0) {
+      // Use requestAnimationFrame for smoother scrolling
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+  }, [messages.length]); // Only depend on length to avoid unnecessary scrolls
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,26 +178,12 @@ export const AIChat: React.FC = () => {
       let isCommand = false;
       
       // Handle commands (if any)
+      const token = await getSessionToken();
+      
       if (input.startsWith('/')) {
         const [command, ...args] = input.slice(1).split(' ');
         isCommand = true;
-        
-        // Map commands to pet actions
-        const commandMap: Record<string, string> = {
-          'feed': 'feed',
-          'play': 'play',
-          'sleep': 'sleep',
-          'pet': 'pet',
-          'train': 'train',
-          'clean': 'clean',
-          'status': 'status'
-        };
-        
-        const action = commandMap[command.toLowerCase()] || 'talk';
-        
-        // Get Supabase access token for authentication
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token || '';
+        const action = commandMap[command.toLowerCase() as keyof typeof commandMap] || 'talk';
 
         response = await fetch('/api/pet/interact', {
           method: 'POST',
@@ -167,10 +199,6 @@ export const AIChat: React.FC = () => {
         });
       } else {
         // Regular chat message
-        // Get Supabase access token for authentication
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token || '';
-
         response = await fetch('/api/ai/chat', {
           method: 'POST',
           headers: {
@@ -241,21 +269,21 @@ export const AIChat: React.FC = () => {
     }
   };
   
-  const handleInputChange = (value: string) => {
+  const handleInputChange = useCallback((value: string) => {
     setInput(value);
     setInputError(null);
     if (value.length > 1000) {
       setInputError('Message must be 1000 characters or less');
     }
-  };
+  }, []);
 
-  // Format message timestamp
-  const formatTime = (date: Date) => {
+  // Format message timestamp (memoized)
+  const formatTime = useCallback((date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  }, []);
 
-  // Get pet mood emoji
-  const getMoodEmoji = (mood: string) => {
+  // Get pet mood emoji (memoized)
+  const getMoodEmoji = useCallback((mood: string) => {
     const emojis: Record<string, string> = {
       happy: '😊',
       excited: '🎉',
@@ -267,7 +295,7 @@ export const AIChat: React.FC = () => {
       sick: '🤒'
     };
     return emojis[mood.toLowerCase()] || '🐾';
-  };
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-100">

@@ -1,0 +1,649 @@
+{
+  "generated_at": "2025-11-14T17:03:57.198196",
+  "user_profile": {
+    "username": "fbla_demo_user",
+    "email": "fbla-demo@example.com",
+    "coins": 500,
+    "level": 5,
+    "pet": {
+      "name": "Max",
+      "species": "rabbit",
+      "breed": "Golden Retriever",
+      "health": 86,
+      "hunger": 58,
+      "happiness": 85,
+      "cleanliness": 92,
+      "energy": 74
+    },
+    "preferences": {
+      "sound": true,
+      "music": true,
+      "notifications": true,
+      "theme": "light"
+    }
+  },
+  "transactions": [
+    {
+      "amount": 79.8,
+      "category": "health",
+      "date": "2025-10-15",
+      "description": "Health purchase"
+    },
+    {
+      "amount": 44.42,
+      "category": "education",
+      "date": "2025-10-16",
+      "description": "Education purchase"
+    },
+    {
+      "amount": 5.51,
+      "category": "transport",
+      "date": "2025-10-16",
+      "description": "Transport purchase"
+    },
+    {
+      "amount": 31.3,
+      "category": "education",
+      "date": "2025-10-18",
+      "description": "Education purchase"
+    },
+    {
+      "amount": 187.4,
+      "category": "education",
+      "date": "2025-10-18",
+      "description": "Education purchase"
+    },
+    {
+      "amount": 138.22,
+      "category": "shopping",
+      "date": "2025-10-18",
+      "description": "Shopping purchase"
+    },
+    {
+      "amount": 227.1,
+      "category": "bills",
+      "date": "2025-10-18",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 142.91,
+      "category": "bills",
+      "date": "2025-10-19",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 10.05,
+      "category": "food",
+      "date": "2025-10-19",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 42.58,
+      "category": "food",
+      "date": "2025-10-24",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 37.84,
+      "category": "shopping",
+      "date": "2025-10-25",
+      "description": "Shopping purchase"
+    },
+    {
+      "amount": 129.47,
+      "category": "bills",
+      "date": "2025-10-25",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 267.95,
+      "category": "bills",
+      "date": "2025-10-25",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 153.03,
+      "category": "education",
+      "date": "2025-10-26",
+      "description": "Education purchase"
+    },
+    {
+      "amount": 94.23,
+      "category": "shopping",
+      "date": "2025-10-26",
+      "description": "Shopping purchase"
+    },
+    {
+      "amount": 86.65,
+      "category": "bills",
+      "date": "2025-10-26",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 56.49,
+      "category": "bills",
+      "date": "2025-10-26",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 40.82,
+      "category": "food",
+      "date": "2025-10-29",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 29.42,
+      "category": "food",
+      "date": "2025-10-30",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 19.9,
+      "category": "food",
+      "date": "2025-10-31",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 73.16,
+      "category": "entertainment",
+      "date": "2025-11-01",
+      "description": "Entertainment purchase"
+    },
+    {
+      "amount": 20.58,
+      "category": "transport",
+      "date": "2025-11-01",
+      "description": "Transport purchase"
+    },
+    {
+      "amount": 57.33,
+      "category": "bills",
+      "date": "2025-11-01",
+      "description": "Bills purchase"
+    },
+    {
+      "amount": 90.0,
+      "category": "health",
+      "date": "2025-11-01",
+      "description": "Health purchase"
+    },
+    {
+      "amount": 35.37,
+      "category": "shopping",
+      "date": "2025-11-02",
+      "description": "Shopping purchase"
+    },
+    {
+      "amount": 23.33,
+      "category": "food",
+      "date": "2025-11-02",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 98.22,
+      "category": "entertainment",
+      "date": "2025-11-02",
+      "description": "Entertainment purchase"
+    },
+    {
+      "amount": 21.3,
+      "category": "transport",
+      "date": "2025-11-02",
+      "description": "Transport purchase"
+    },
+    {
+      "amount": 19.51,
+      "category": "food",
+      "date": "2025-11-03",
+      "description": "Food purchase"
+    },
+    {
+      "amount": 14.62,
+      "category": "food",
+      "date": "2025-11-04",
+      "description": "Food purchase"
+    }
+  ],
+  "budget_advisor_request": {
+    "transactions": [
+      {
+        "amount": 79.8,
+        "category": "health",
+        "date": "2025-10-15",
+        "description": "Health purchase"
+      },
+      {
+        "amount": 44.42,
+        "category": "education",
+        "date": "2025-10-16",
+        "description": "Education purchase"
+      },
+      {
+        "amount": 5.51,
+        "category": "transport",
+        "date": "2025-10-16",
+        "description": "Transport purchase"
+      },
+      {
+        "amount": 31.3,
+        "category": "education",
+        "date": "2025-10-18",
+        "description": "Education purchase"
+      },
+      {
+        "amount": 187.4,
+        "category": "education",
+        "date": "2025-10-18",
+        "description": "Education purchase"
+      },
+      {
+        "amount": 138.22,
+        "category": "shopping",
+        "date": "2025-10-18",
+        "description": "Shopping purchase"
+      },
+      {
+        "amount": 227.1,
+        "category": "bills",
+        "date": "2025-10-18",
+        "description": "Bills purchase"
+      },
+      {
+        "amount": 142.91,
+        "category": "bills",
+        "date": "2025-10-19",
+        "description": "Bills purchase"
+      },
+      {
+        "amount": 10.05,
+        "category": "food",
+        "date": "2025-10-19",
+        "description": "Food purchase"
+      },
+      {
+        "amount": 42.58,
+        "category": "food",
+        "date": "2025-10-24",
+        "description": "Food purchase"
+      },
+      {
+        "amount": 37.84,
+        "category": "shopping",
+        "date": "2025-10-25",
+        "description": "Shopping purchase"
+      },
+      {
+        "amount": 129.47,
+        "category": "bills",
+        "date": "2025-10-25",
+        "description": "Bills purchase"
+      },
+      {
+        "amount": 267.95,
+        "category": "bills",
+        "date": "2025-10-25",
+        "description": "Bills purchase"
+      },
+      {
+        "amount": 153.03,
+        "category": "education",
+        "date": "2025-10-26",
+        "description": "Education purchase"
+      },
+      {
+        "amount": 94.23,
+        "category": "shopping",
+        "date": "2025-10-26",
+        "description": "Shopping purchase"
+      },
+      {
+        "amount": 86.65,
+        "category": "bills",
+        "date": "2025-10-26",
+        "description": "Bills purchase"
+      },
+      {
+        "amount": 56.49,
+        "category": "bills",
+        "date": "2025-10-26",
+        "description": "Bills purchase"
+      },
+      {
+        "amount": 40.82,
+        "category": "food",
+        "date": "2025-10-29",
+        "description": "Food purchase"
+      },
+      {
+        "amount": 29.42,
+        "category": "food",
+        "date": "2025-10-30",
+        "description": "Food purchase"
+      },
+      {
+        "amount": 19.9,
+        "category": "food",
+        "date": "2025-10-31",
+        "description": "Food purchase"
+      },
+      {
+        "amount": 73.16,
+        "category": "entertainment",
+        "date": "2025-11-01",
+        "description": "Entertainment purchase"
+      },
+      {
+        "amount": 20.58,
+        "category": "transport",
+        "date": "2025-11-01",
+        "description": "Transport purchase"
+      },
+      {
+        "amount": 57.33,
+        "category": "bills",
+        "date": "2025-11-01",
+        "description": "Bills purchase"
+      },
+      {
+        "amount": 90.0,
+        "category": "health",
+        "date": "2025-11-01",
+        "description": "Health purchase"
+      },
+      {
+        "amount": 35.37,
+        "category": "shopping",
+        "date": "2025-11-02",
+        "description": "Shopping purchase"
+      },
+      {
+        "amount": 23.33,
+        "category": "food",
+        "date": "2025-11-02",
+        "description": "Food purchase"
+      },
+      {
+        "amount": 98.22,
+        "category": "entertainment",
+        "date": "2025-11-02",
+        "description": "Entertainment purchase"
+      },
+      {
+        "amount": 21.3,
+        "category": "transport",
+        "date": "2025-11-02",
+        "description": "Transport purchase"
+      },
+      {
+        "amount": 19.51,
+        "category": "food",
+        "date": "2025-11-03",
+        "description": "Food purchase"
+      },
+      {
+        "amount": 14.62,
+        "category": "food",
+        "date": "2025-11-04",
+        "description": "Food purchase"
+      }
+    ],
+    "monthly_budget": 1000.0
+  },
+  "pet_interactions": [
+    {
+      "action": "rest",
+      "timestamp": "2025-11-07T17:38:57.197450",
+      "stat_changes": {
+        "energy": 35,
+        "health": 5,
+        "coins": 0
+      },
+      "coins_spent": 0
+    },
+    {
+      "action": "train",
+      "timestamp": "2025-11-07T18:38:57.197450",
+      "stat_changes": {
+        "happiness": 15,
+        "energy": -20,
+        "coins": -20
+      },
+      "coins_spent": 20
+    },
+    {
+      "action": "feed",
+      "timestamp": "2025-11-07T18:57:57.197450",
+      "stat_changes": {
+        "hunger": 30,
+        "happiness": 5,
+        "coins": -10
+      },
+      "coins_spent": 10
+    },
+    {
+      "action": "clean",
+      "timestamp": "2025-11-07T19:28:57.197450",
+      "stat_changes": {
+        "cleanliness": 30,
+        "health": 3,
+        "coins": -5
+      },
+      "coins_spent": 5
+    },
+    {
+      "action": "train",
+      "timestamp": "2025-11-07T20:52:57.197450",
+      "stat_changes": {
+        "happiness": 15,
+        "energy": -20,
+        "coins": -20
+      },
+      "coins_spent": 20
+    },
+    {
+      "action": "feed",
+      "timestamp": "2025-11-07T21:59:57.197450",
+      "stat_changes": {
+        "hunger": 30,
+        "happiness": 5,
+        "coins": -10
+      },
+      "coins_spent": 10
+    },
+    {
+      "action": "train",
+      "timestamp": "2025-11-07T22:22:57.197450",
+      "stat_changes": {
+        "happiness": 15,
+        "energy": -20,
+        "coins": -20
+      },
+      "coins_spent": 20
+    },
+    {
+      "action": "bathe",
+      "timestamp": "2025-11-08T02:47:57.197450",
+      "stat_changes": {
+        "cleanliness": 40,
+        "happiness": 10,
+        "coins": -15
+      },
+      "coins_spent": 15
+    },
+    {
+      "action": "bathe",
+      "timestamp": "2025-11-08T04:48:57.197450",
+      "stat_changes": {
+        "cleanliness": 40,
+        "happiness": 10,
+        "coins": -15
+      },
+      "coins_spent": 15
+    },
+    {
+      "action": "play",
+      "timestamp": "2025-11-08T06:58:57.197450",
+      "stat_changes": {
+        "happiness": 25,
+        "energy": -15,
+        "coins": 0
+      },
+      "coins_spent": 0
+    },
+    {
+      "action": "feed",
+      "timestamp": "2025-11-08T09:00:57.197450",
+      "stat_changes": {
+        "hunger": 30,
+        "happiness": 5,
+        "coins": -10
+      },
+      "coins_spent": 10
+    },
+    {
+      "action": "bathe",
+      "timestamp": "2025-11-08T10:00:57.197450",
+      "stat_changes": {
+        "cleanliness": 40,
+        "happiness": 10,
+        "coins": -15
+      },
+      "coins_spent": 15
+    },
+    {
+      "action": "play",
+      "timestamp": "2025-11-08T10:23:57.197450",
+      "stat_changes": {
+        "happiness": 25,
+        "energy": -15,
+        "coins": 0
+      },
+      "coins_spent": 0
+    },
+    {
+      "action": "play",
+      "timestamp": "2025-11-08T11:14:57.197450",
+      "stat_changes": {
+        "happiness": 25,
+        "energy": -15,
+        "coins": 0
+      },
+      "coins_spent": 0
+    },
+    {
+      "action": "rest",
+      "timestamp": "2025-11-08T13:20:57.197450",
+      "stat_changes": {
+        "energy": 35,
+        "health": 5,
+        "coins": 0
+      },
+      "coins_spent": 0
+    },
+    {
+      "action": "feed",
+      "timestamp": "2025-11-08T14:09:57.197450",
+      "stat_changes": {
+        "hunger": 30,
+        "happiness": 5,
+        "coins": -10
+      },
+      "coins_spent": 10
+    },
+    {
+      "action": "train",
+      "timestamp": "2025-11-08T14:22:57.197450",
+      "stat_changes": {
+        "happiness": 15,
+        "energy": -20,
+        "coins": -20
+      },
+      "coins_spent": 20
+    },
+    {
+      "action": "clean",
+      "timestamp": "2025-11-08T14:50:57.197450",
+      "stat_changes": {
+        "cleanliness": 30,
+        "health": 3,
+        "coins": -5
+      },
+      "coins_spent": 5
+    },
+    {
+      "action": "bathe",
+      "timestamp": "2025-11-08T15:16:57.197450",
+      "stat_changes": {
+        "cleanliness": 40,
+        "happiness": 10,
+        "coins": -15
+      },
+      "coins_spent": 15
+    },
+    {
+      "action": "feed",
+      "timestamp": "2025-11-08T15:26:57.197450",
+      "stat_changes": {
+        "hunger": 30,
+        "happiness": 5,
+        "coins": -10
+      },
+      "coins_spent": 10
+    }
+  ],
+  "ai_chat_examples": [
+    {
+      "user_message": "How is my pet doing today?",
+      "ai_response": "Your pet is feeling content! Current stats show:\n- Health: 75/100 (Good)\n- Hunger: 60/100 (Moderate)\n- Happiness: 70/100 (Happy)\n\nYour pet is in good shape! Consider playing together to boost happiness.",
+      "context": "status_check"
+    },
+    {
+      "user_message": "/feed",
+      "ai_response": "Great! I've fed your pet. Hunger increased by 30 points. Your pet is now well-fed and happy! \ud83c\udf7d\ufe0f\n\nCurrent coins: 490",
+      "context": "command_action"
+    },
+    {
+      "user_message": "I want to save coins. What should I do?",
+      "ai_response": "Great goal! Here are some tips to save coins:\n\n1. **Focus on free actions:** Play and rest don't cost coins\n2. **Plan purchases:** Buy items when you really need them\n3. **Earn through games:** Mini-games provide coin rewards\n4. **Track spending:** Use analytics to see where coins go\n\nYour current balance is 490 coins. Would you like to set a savings goal?",
+      "context": "financial_advice"
+    },
+    {
+      "user_message": "Tell me about budgeting",
+      "ai_response": "Budgeting is a key financial skill! Here's how it works:\n\n**The Basics:**\n- Track income (coins earned)\n- Track expenses (coins spent)\n- Plan for future purchases\n- Save for emergencies\n\n**In Your Pet World:**\n- Monitor coin balance\n- Plan pet care expenses\n- Save for special items\n- Use analytics to track patterns\n\nWould you like me to analyze your spending patterns?",
+      "context": "educational"
+    }
+  ],
+  "analytics_summary": {
+    "total_coins_earned": 1250.0,
+    "total_coins_spent": 750.0,
+    "current_balance": 500.0,
+    "total_transactions": 45,
+    "top_categories": [
+      {
+        "category": "food",
+        "amount": 450.0,
+        "count": 15
+      },
+      {
+        "category": "shopping",
+        "amount": 200.0,
+        "count": 8
+      },
+      {
+        "category": "entertainment",
+        "amount": 100.0,
+        "count": 5
+      }
+    ],
+    "weekly_summary": {
+      "coins_earned": 150.0,
+      "coins_spent": 120.0,
+      "net_change": 30.0
+    },
+    "trends": {
+      "spending_trend": "increasing",
+      "savings_trend": "stable",
+      "activity_trend": "increasing"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "username": "fbla_demo_user",
+  "email": "fbla-demo@example.com",
+  "coins": 500,
+  "level": 5,
+  "pet": {
+    "name": "Max",
+    "species": "rabbit",
+    "breed": "Golden Retriever",
+    "health": 86,
+    "hunger": 58,
+    "happiness": 85,
+    "cleanliness": 92,
+    "energy": 74
+  },
+  "preferences": {
+    "sound": true,
+    "music": true,
+    "notifications": true,
+    "theme": "light"
+  }
+}

@@ -4,11 +4,24 @@ import { supabase } from '../lib/supabase';
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
+// Simple in-memory cache for profile data (TTL: 30 seconds)
+const profileCache = new Map<string, { data: Profile | null; timestamp: number }>();
+const CACHE_TTL_MS = 30 * 1000; // 30 seconds
+
 export const profileService = {
   /**
-   * Get user profile
+   * Get user profile with caching
    */
-  async getProfile(userId: string): Promise<Profile | null> {
+  async getProfile(userId: string, useCache: boolean = true): Promise<Profile | null> {
+    // Check cache first
+    if (useCache) {
+      const cached = profileCache.get(userId);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+        console.log('📦 Using cached profile for userId:', userId);
+        return cached.data;
+      }
+    }
+    
     console.log('🔵 getProfile called for userId:', userId);
     
     if (!supabase) {
@@ -25,6 +38,7 @@ export const profileService = {
       if (error.code === 'PGRST116') {
         // Profile doesn't exist yet
         console.log('📭 No profile found for user:', userId);
+        profileCache.set(userId, { data: null, timestamp: Date.now() });
         return null;
       }
       console.error('❌ Error fetching profile:', error);
@@ -32,7 +46,31 @@ export const profileService = {
     }
 
     console.log('✅ Profile found:', data);
+    // Cache the result
+    profileCache.set(userId, { data, timestamp: Date.now() });
+    
+    // Clean up old cache entries (keep cache size manageable)
+    if (profileCache.size > 50) {
+      const now = Date.now();
+      for (const [key, value] of profileCache.entries()) {
+        if (now - value.timestamp > CACHE_TTL_MS * 2) {
+          profileCache.delete(key);
+        }
+      }
+    }
+    
     return data;
+  },
+  
+  /**
+   * Clear profile cache for a user (call after updates)
+   */
+  clearCache(userId?: string): void {
+    if (userId) {
+      profileCache.delete(userId);
+    } else {
+      profileCache.clear();
+    }
   },
 
   /**

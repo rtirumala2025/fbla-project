@@ -1,0 +1,33 @@
+{
+  "total_coins_earned": 1250.0,
+  "total_coins_spent": 750.0,
+  "current_balance": 500.0,
+  "total_transactions": 45,
+  "top_categories": [
+    {
+      "category": "food",
+      "amount": 450.0,
+      "count": 15
+    },
+    {
+      "category": "shopping",
+      "amount": 200.0,
+      "count": 8
+    },
+    {
+      "category": "entertainment",
+      "amount": 100.0,
+      "count": 5
+    }
+  ],
+  "weekly_summary": {
+    "coins_earned": 150.0,
+    "coins_spent": 120.0,
+    "net_change": 30.0
+  },
+  "trends": {
+    "spending_trend": "increasing",
+    "savings_trend": "stable",
+    "activity_trend": "increasing"
+  }
+}

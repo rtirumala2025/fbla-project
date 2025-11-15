@@ -12,9 +12,12 @@ Enhanced with:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
+from functools import lru_cache
 from typing import List, Optional
 from uuid import UUID
 
@@ -35,6 +38,10 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s:%(lineno)d] - %(message)s'
 )
+
+# Cache for analysis results (keyed by transaction hash)
+_analysis_cache: dict[str, tuple[BudgetAdvisorAnalysis, datetime]] = {}
+CACHE_TTL_SECONDS = 30
 
 
 class BudgetAdvisorService:
@@ -64,6 +71,7 @@ class BudgetAdvisorService:
     ) -> BudgetAdvisorAnalysis:
         """
         Analyze transaction data and generate budget insights.
+        Uses caching for identical transaction sets to improve response times.
 
         Args:
             request: Budget advisor request containing transactions and optional budget
@@ -85,6 +93,28 @@ class BudgetAdvisorService:
         if not request.transactions:
             LOGGER.warning("Empty transactions list provided - raising ValueError")
             raise ValueError("No transactions provided for analysis")
+
+        # Create cache key from transaction data
+        cache_data = {
+            "transactions": [
+                {"amount": t.amount, "category": t.category, "date": t.date.isoformat()}
+                for t in request.transactions
+            ],
+            "monthly_budget": request.monthly_budget,
+        }
+        cache_key = hashlib.md5(
+            json.dumps(cache_data, sort_keys=True).encode()
+        ).hexdigest()
+        
+        # Check cache
+        now = datetime.now(tz=timezone.utc)
+        if cache_key in _analysis_cache:
+            cached_result, cached_time = _analysis_cache[cache_key]
+            if (now - cached_time).total_seconds() < CACHE_TTL_SECONDS:
+                LOGGER.debug(f"Using cached analysis result for key {cache_key[:8]}")
+                return cached_result
+            else:
+                del _analysis_cache[cache_key]
 
         # Log transaction details for debugging
         LOGGER.debug(f"Transaction details: {[f'{t.category}: ${t.amount}' for t in request.transactions[:5]]}")
@@ -161,6 +191,18 @@ class BudgetAdvisorService:
             analysis_period={"start": start_date.isoformat(), "end": end_date.isoformat()},
         )
         
+        # Cache the result
+        _analysis_cache[cache_key] = (result, now)
+        
+        # Clean up old cache entries
+        if len(_analysis_cache) > 50:
+            expired_keys = [
+                k for k, (_, t) in _analysis_cache.items()
+                if (now - t).total_seconds() > CACHE_TTL_SECONDS * 2
+            ]
+            for k in expired_keys:
+                del _analysis_cache[k]
+        
         LOGGER.debug(f"Returning analysis result with {len(result.top_categories)} top categories")
         return result
 
@@ -170,6 +212,7 @@ class BudgetAdvisorService:
     ) -> dict[str, dict]:
         """
         Group and analyze transactions by category.
+        Optimized with single-pass aggregation.
 
         Args:
             transactions: List of transaction inputs
@@ -179,23 +222,24 @@ class BudgetAdvisorService:
         Returns:
             Dictionary mapping category to analysis data
         """
-        category_data: dict[str, dict] = defaultdict(
-            lambda: {
-                "total": 0.0,
-                "count": 0,
-                "transactions": [],
-                "dates": [],
-            }
-        )
+        category_data: dict[str, dict] = {}
 
+        # Single pass through transactions for better performance
         for transaction in transactions:
             cat = transaction.category
+            if cat not in category_data:
+                category_data[cat] = {
+                    "total": 0.0,
+                    "count": 0,
+                    "transactions": [],
+                    "dates": [],
+                }
             category_data[cat]["total"] += transaction.amount
             category_data[cat]["count"] += 1
             category_data[cat]["transactions"].append(transaction)
             category_data[cat]["dates"].append(transaction.date)
 
-        return dict(category_data)
+        return category_data
 
     @staticmethod
     def _get_top_categories(category_data: dict[str, dict], limit: int = 5) -> List[str]:

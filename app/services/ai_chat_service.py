@@ -5,9 +5,10 @@ Conversational AI orchestration, with graceful fallbacks when API keys are absen
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from types import SimpleNamespace
 
@@ -30,6 +31,10 @@ from app.services.pet_service import (
 )
 
 LOGGER = logging.getLogger(__name__)
+
+# In-memory cache for pet context (TTL: 5 seconds)
+_pet_context_cache: Dict[str, Tuple[Dict[str, Any], datetime]] = {}
+CACHE_TTL_SECONDS = 5
 
 SYSTEM_PROMPT = (
     "You are Scout, an empathetic AI caretaker for a virtual pet experience. "
@@ -221,7 +226,21 @@ class AIChatService:
     ) -> Dict[str, Any]:
         """
         Aggregate the latest pet stats and AI insights used across responses.
+        Uses caching to avoid redundant database queries within a short time window.
         """
+
+        # Check cache first
+        cache_key = f"pet_context_{user_id}"
+        now = datetime.now(timezone.utc)
+        
+        if cache_key in _pet_context_cache:
+            cached_context, cached_time = _pet_context_cache[cache_key]
+            if (now - cached_time).total_seconds() < CACHE_TTL_SECONDS:
+                LOGGER.debug(f"Using cached pet context for user {user_id}")
+                return cached_context
+            else:
+                # Expired cache entry
+                del _pet_context_cache[cache_key]
 
         context: Dict[str, Any] = {
             "pet_exists": False,
@@ -233,10 +252,16 @@ class AIChatService:
         }
 
         try:
-            stats = await get_pet_stats(session, user_id)
-            overview = await get_pet_ai_overview(session, user_id)
+            # Parallel fetch for better performance
+            stats_task = get_pet_stats(session, user_id)
+            overview_task = get_pet_ai_overview(session, user_id)
+            stats, overview = await asyncio.gather(stats_task, overview_task, return_exceptions=True)
+            
+            if isinstance(stats, Exception) or isinstance(overview, Exception):
+                raise PetNotFoundError("Pet not found")
         except PetNotFoundError:
             context["context_blob"] = json.dumps({"pet_exists": False})
+            _pet_context_cache[cache_key] = (context, now)
             return context
 
         pet_state = {
@@ -283,6 +308,18 @@ class AIChatService:
             }
         )
 
+        # Cache the context
+        _pet_context_cache[cache_key] = (context, now)
+        
+        # Clean up old cache entries (keep cache size manageable)
+        if len(_pet_context_cache) > 100:
+            expired_keys = [
+                k for k, (_, t) in _pet_context_cache.items()
+                if (now - t).total_seconds() > CACHE_TTL_SECONDS * 2
+            ]
+            for k in expired_keys:
+                del _pet_context_cache[k]
+
         return context
 
     async def _dispatch_to_llm(
@@ -314,7 +351,7 @@ class AIChatService:
 
     async def _invoke_openrouter(self, messages: List[Dict[str, Any]], model: str) -> str:
         """
-        Call the OpenRouter chat completions API with retries.
+        Call the OpenRouter chat completions API with retries and optimized timeout.
         """
 
         settings = get_settings()
@@ -326,24 +363,29 @@ class AIChatService:
         }
         payload = {"model": model, "messages": messages, "temperature": 0.45, "max_tokens": 320}
 
+        # Use connection pooling and reduced timeout for faster responses
+        timeout = httpx.Timeout(15.0, connect=5.0)  # Reduced from 40s to 15s total, 5s connect
         last_error: Optional[Exception] = None
-        for attempt in range(3):
-            try:
-                async with httpx.AsyncClient(timeout=40.0) as client:
+        
+        # Create a shared client for connection reuse
+        async with httpx.AsyncClient(timeout=timeout, limits=httpx.Limits(max_keepalive_connections=10)) as client:
+            for attempt in range(2):  # Reduced retries from 3 to 2 for faster failure
+                try:
                     response = await client.post(
                         str(settings.openrouter_base_url),
                         json=payload,
                         headers=headers,
                     )
-                if response.status_code < 500:
-                    response.raise_for_status()
-                    data = response.json()
-                    return data["choices"][0]["message"]["content"]
-            except (httpx.HTTPError, KeyError, ValueError) as exc:
-                last_error = exc
-                delay = 0.6 * (2**attempt)
-                await asyncio.sleep(delay)
-                continue
+                    if response.status_code < 500:
+                        response.raise_for_status()
+                        data = response.json()
+                        return data["choices"][0]["message"]["content"]
+                except (httpx.HTTPError, KeyError, ValueError) as exc:
+                    last_error = exc
+                    if attempt < 1:  # Only retry once
+                        delay = 0.3 * (2**attempt)  # Faster retry delays
+                        await asyncio.sleep(delay)
+                        continue
 
         raise RuntimeError("OpenRouter request failed") from last_error
 

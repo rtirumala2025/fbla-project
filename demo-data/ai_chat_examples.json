@@ -1,0 +1,22 @@
+[
+  {
+    "user_message": "How is my pet doing today?",
+    "ai_response": "Your pet is feeling content! Current stats show:\n- Health: 75/100 (Good)\n- Hunger: 60/100 (Moderate)\n- Happiness: 70/100 (Happy)\n\nYour pet is in good shape! Consider playing together to boost happiness.",
+    "context": "status_check"
+  },
+  {
+    "user_message": "/feed",
+    "ai_response": "Great! I've fed your pet. Hunger increased by 30 points. Your pet is now well-fed and happy! \ud83c\udf7d\ufe0f\n\nCurrent coins: 490",
+    "context": "command_action"
+  },
+  {
+    "user_message": "I want to save coins. What should I do?",
+    "ai_response": "Great goal! Here are some tips to save coins:\n\n1. **Focus on free actions:** Play and rest don't cost coins\n2. **Plan purchases:** Buy items when you really need them\n3. **Earn through games:** Mini-games provide coin rewards\n4. **Track spending:** Use analytics to see where coins go\n\nYour current balance is 490 coins. Would you like to set a savings goal?",
+    "context": "financial_advice"
+  },
+  {
+    "user_message": "Tell me about budgeting",
+    "ai_response": "Budgeting is a key financial skill! Here's how it works:\n\n**The Basics:**\n- Track income (coins earned)\n- Track expenses (coins spent)\n- Plan for future purchases\n- Save for emergencies\n\n**In Your Pet World:**\n- Monitor coin balance\n- Plan pet care expenses\n- Save for special items\n- Use analytics to track patterns\n\nWould you like me to analyze your spending patterns?",
+    "context": "educational"
+  }
+]
