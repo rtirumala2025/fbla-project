@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getFinanceSummary } from '../api/finance';
 
 interface User {
   uid: string;
@@ -15,47 +16,16 @@ interface Transaction {
   date: Date;
 }
 
-interface FinancialData {
-  balance: number;
-  transactions: Transaction[];
-}
-
 interface FinancialContextType {
   balance: number;
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => Promise<void>;
+  refreshBalance: () => Promise<void>;
   loading: boolean;
   error: string | null;
 }
 
 const FinancialContext = createContext<FinancialContextType | null>(null);
-
-// Local storage key
-const STORAGE_KEY = 'financial_data';
-
-const getStoredFinancialData = (userId: string): FinancialData => {
-  try {
-    const storedData = localStorage.getItem(STORAGE_KEY);
-    if (!storedData) return { balance: 1000, transactions: [] };
-    
-    const data = JSON.parse(storedData);
-    return data[userId] || { balance: 1000, transactions: [] };
-  } catch (error) {
-    console.error('Error reading financial data:', error);
-    return { balance: 1000, transactions: [] };
-  }
-};
-
-const storeFinancialData = (userId: string, data: FinancialData) => {
-  try {
-    const storedData = localStorage.getItem(STORAGE_KEY);
-    const allData = storedData ? JSON.parse(storedData) : {};
-    allData[userId] = data;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
-  } catch (error) {
-    console.error('Error storing financial data:', error);
-  }
-};
 
 export const useFinancial = () => {
   const context = useContext(FinancialContext);
@@ -73,57 +43,86 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
 
   const loadFinancialData = async () => {
     if (!user) {
+      setBalance(0);
+      setTransactions([]);
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+      setError(null);
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('🔵 FinancialContext: Loading finance data from API...');
+      const response = await getFinanceSummary();
       
-      const data = getStoredFinancialData(user.uid);
-      setBalance(data.balance);
-      setTransactions(data.transactions);
-    } catch (err) {
-      console.error('Error loading financial data:', err);
+      if (response?.summary) {
+        const summary = response.summary;
+        setBalance(summary.balance || 0);
+        
+        // Map backend transactions to our Transaction format
+        const mappedTransactions: Transaction[] = (summary.transactions || []).map((t) => ({
+          id: t.id,
+          type: t.transaction_type === 'income' ? 'income' : 'expense',
+          amount: Math.abs(t.amount),
+          description: t.description || '',
+          category: t.category || 'other',
+          date: new Date(t.created_at),
+        }));
+        
+        setTransactions(mappedTransactions);
+        console.log('✅ FinancialContext: Finance data loaded', { balance: summary.balance, transactionCount: mappedTransactions.length });
+      } else {
+        console.warn('⚠️ FinancialContext: Empty response from API');
+        setBalance(0);
+        setTransactions([]);
+      }
+    } catch (err: any) {
+      console.error('❌ Error loading financial data:', err);
       setError('Failed to load financial data');
+      // Don't throw - allow fallback behavior
+      setBalance(0);
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const refreshBalance = async () => {
+    await loadFinancialData();
+  };
+
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date'>) => {
-    if (!user) return;
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
     
     try {
       setLoading(true);
-      const newTransaction: Transaction = {
+      setError(null);
+      
+      // Optimistic update
+      const newBalance = transaction.type === 'income' 
+        ? balance + transaction.amount 
+        : balance - transaction.amount;
+      
+      const optimisticTransaction: Transaction = {
         ...transaction,
         id: Date.now().toString(),
         date: new Date(),
       };
       
-      // Update local state
-      const newBalance = transaction.type === 'income' 
-        ? balance + transaction.amount 
-        : balance - transaction.amount;
-      
-      const newTransactions = [...transactions, newTransaction];
-      
       setBalance(newBalance);
-      setTransactions(newTransactions);
+      setTransactions(prev => [optimisticTransaction, ...prev]);
       
-      // Persist to localStorage
-      storeFinancialData(user.uid, {
-        balance: newBalance,
-        transactions: newTransactions,
-      });
+      // Refresh from API to get server-confirmed values
+      await loadFinancialData();
       
-    } catch (err) {
-      console.error('Error adding transaction:', err);
+    } catch (err: any) {
+      console.error('❌ Error adding transaction:', err);
       setError('Failed to add transaction');
+      // Revert optimistic update
+      await loadFinancialData();
       throw err;
     } finally {
       setLoading(false);
@@ -139,13 +138,14 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
     balance,
     transactions,
     addTransaction,
+    refreshBalance,
     loading,
     error,
   };
 
   return (
     <FinancialContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </FinancialContext.Provider>
   );
 };

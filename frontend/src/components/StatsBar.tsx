@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { apiRequest } from '../api/httpClient';
 
 interface Stat {
   number: string;
@@ -7,20 +8,82 @@ interface Stat {
   prefix?: string;
 }
 
+interface StatsSummary {
+  active_users?: number;
+  pet_species?: number;
+  unique_breeds?: number;
+  satisfaction_rate?: number;
+}
+
 export const StatsBar = () => {
   const [mounted, setMounted] = useState(false);
+  const [stats, setStats] = useState<Stat[]>([
+    { number: '...', label: 'Active Users' },
+    { number: '...', label: 'Pet Species' },
+    { number: '...', label: 'Unique Breeds' },
+    { number: '...', label: 'Satisfaction', prefix: '%' },
+  ]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Intentionally varied data (not perfectly round numbers)
-  const stats: Stat[] = [
-    { number: '1,247', label: 'Active Users' }, // Specific, not "1000+"
-    { number: '4', label: 'Pet Species' },
-    { number: '23', label: 'Unique Breeds' }, // Not "20+"
-    { number: '97.8', label: 'Satisfaction', prefix: '%' }, // Precise, not "98%"
-  ];
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Try to fetch stats from API
+        // Note: This endpoint may not exist yet, so we'll gracefully fallback
+        const data = await apiRequest<StatsSummary>('/api/stats/summary', {
+          allowedStatuses: [404, 500], // Allow 404/500 without throwing
+        });
+
+        // If data exists and has required fields, use it
+        if (data && (data.active_users || data.pet_species || data.unique_breeds || data.satisfaction_rate)) {
+          setStats([
+            { 
+              number: data.active_users ? data.active_users.toLocaleString() : '1,247', 
+              label: 'Active Users' 
+            },
+            { 
+              number: data.pet_species ? data.pet_species.toString() : '4', 
+              label: 'Pet Species' 
+            },
+            { 
+              number: data.unique_breeds ? data.unique_breeds.toString() : '23', 
+              label: 'Unique Breeds' 
+            },
+            { 
+              number: data.satisfaction_rate ? data.satisfaction_rate.toFixed(1) : '97.8', 
+              label: 'Satisfaction', 
+              prefix: '%' 
+            },
+          ]);
+        } else {
+          // Fallback to placeholder data if API unavailable or incomplete
+          setStats([
+            { number: '1,247', label: 'Active Users' },
+            { number: '4', label: 'Pet Species' },
+            { number: '23', label: 'Unique Breeds' },
+            { number: '97.8', label: 'Satisfaction', prefix: '%' },
+          ]);
+        }
+      } catch (error) {
+        console.warn('Stats API unavailable, using placeholder data', error);
+        // Fallback to placeholder data
+        setStats([
+          { number: '1,247', label: 'Active Users' },
+          { number: '4', label: 'Pet Species' },
+          { number: '23', label: 'Unique Breeds' },
+          { number: '97.8', label: 'Satisfaction', prefix: '%' },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
     <motion.div

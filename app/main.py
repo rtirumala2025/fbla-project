@@ -26,6 +26,7 @@ from app.routers import (
     quests,
     shop,
     social,
+    stats,
     sync,
     users,
 )
@@ -66,6 +67,7 @@ def create_application() -> FastAPI:
     application.include_router(profiles.router)
     application.include_router(shop.router)
     application.include_router(social.router)
+    application.include_router(stats.router)
     application.include_router(quests.router)
     application.include_router(coach.router)
     application.include_router(sync.router)

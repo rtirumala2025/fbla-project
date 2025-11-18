@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePet } from '../context/PetContext';
 
 // Pet Display Component
 const PetDisplay = ({ name, species }: { name: string; species: string }) => {
@@ -25,7 +26,7 @@ const PetDisplay = ({ name, species }: { name: string; species: string }) => {
 };
 
 // Stats Component
-const PetStats = ({ stats }: { stats: { [key: string]: number } }) => {
+const PetStats = ({ stats }: { stats: PetStats }) => {
   const statConfig = {
     health: { color: 'bg-red-400', label: 'Health' },
     hunger: { color: 'bg-yellow-400', label: 'Hunger' },
@@ -34,9 +35,17 @@ const PetStats = ({ stats }: { stats: { [key: string]: number } }) => {
     energy: { color: 'bg-purple-400', label: 'Energy' },
   } as const;
 
+  const statsArray = [
+    { key: 'health', value: stats.health },
+    { key: 'hunger', value: stats.hunger },
+    { key: 'happiness', value: stats.happiness },
+    { key: 'cleanliness', value: stats.cleanliness },
+    { key: 'energy', value: stats.energy },
+  ];
+
   return (
     <div className="space-y-4">
-      {Object.entries(stats).map(([key, value]) => (
+      {statsArray.map(({ key, value }) => (
         <div key={key} className="space-y-1">
           <div className="flex justify-between text-sm">
             <span className="font-medium text-gray-700">
@@ -47,7 +56,7 @@ const PetStats = ({ stats }: { stats: { [key: string]: number } }) => {
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div 
               className={`h-2.5 rounded-full ${statConfig[key as keyof typeof statConfig]?.color || 'bg-gray-400'}`}
-              style={{ width: `${value}%` }}
+              style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
             />
           </div>
         </div>
@@ -99,29 +108,17 @@ interface PetData {
 // Main Dashboard Page
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { currentUser, loading } = useAuth();
-  
-  // All hooks must be called before any conditional returns
-  const [pet, setPet] = useState<PetData>({
-    name: 'Luna',
-    species: 'dog',
-    stats: {
-      health: 100,
-      hunger: 70,
-      happiness: 80,
-      cleanliness: 90,
-      energy: 85,
-    },
-  });
+  const { currentUser, loading: authLoading } = useAuth();
+  const { pet, loading: petLoading, feed, play, bathe, updatePetStats } = usePet();
   
   useEffect(() => {
-    if (!loading && !currentUser) {
+    if (!authLoading && !currentUser) {
       navigate('/login', { state: { from: '/dashboard' } });
     }
-  }, [currentUser, loading, navigate]);
+  }, [currentUser, authLoading, navigate]);
   
   // Conditional returns after all hooks
-  if (loading || !currentUser) {
+  if (authLoading || !currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -132,31 +129,59 @@ export function DashboardPage() {
     );
   }
 
-  const handleAction = (action: string) => {
-    setPet(prev => {
-      const newPet = { ...prev, stats: { ...prev.stats } };
-      
+  if (petLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-2xl font-semibold text-gray-700 mb-4">Loading your pet...</div>
+          <div className="w-16 h-16 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!pet) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-2xl font-semibold text-gray-700 mb-4">No pet found</div>
+          <p className="text-gray-600 mb-4">Create a pet to get started!</p>
+          <button 
+            onClick={() => navigate('/pet/create')}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Create Pet
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleAction = async (action: string) => {
+    try {
       switch (action) {
         case 'feed':
-          newPet.stats.hunger = Math.min(100, prev.stats.hunger + 15);
+          await feed();
           break;
         case 'play':
-          newPet.stats.happiness = Math.min(100, prev.stats.happiness + 10);
-          newPet.stats.energy = Math.max(0, prev.stats.energy - 5);
+          await play();
           break;
         case 'clean':
-          newPet.stats.cleanliness = Math.min(100, prev.stats.cleanliness + 20);
+          await bathe();
           break;
         case 'heal':
-          newPet.stats.health = Math.min(100, prev.stats.health + 10);
+          await updatePetStats({
+            health: Math.min(100, pet.stats.health + 10),
+          });
           break;
       }
-      
-      return newPet;
-    });
+    } catch (error) {
+      console.error('Error performing action:', error);
+    }
   };
 
-  const { name, species } = pet;
+  const name = pet.name;
+  const species = pet.species;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">
@@ -201,7 +226,7 @@ export function DashboardPage() {
           >
             <div className="bg-white p-6 rounded-xl shadow-md">
               <h2 className="text-xl font-semibold mb-4 text-gray-800">Pet Stats</h2>
-<PetStats stats={{ ...pet.stats }} />
+              <PetStats stats={pet.stats} />
             </div>
             
             <div className="bg-white p-6 rounded-xl shadow-md">

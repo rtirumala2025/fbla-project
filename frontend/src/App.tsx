@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { PetProvider } from './context/PetContext';
+import { FinancialProvider } from './context/FinancialContext';
 import Header from './components/Header';
 import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
@@ -94,7 +95,8 @@ function AppContent() {
 
   return (
     <PetProvider userId={currentUser?.uid || null}>
-      <div className="bg-cream text-charcoal">
+      <FinancialProvider user={currentUser}>
+        <div className="bg-cream text-charcoal">
         <Header />
         <main className="bg-cream">
         <AnimatePresence mode="wait">
@@ -167,6 +169,7 @@ function AppContent() {
         </AnimatePresence>
       </main>
     </div>
+      </FinancialProvider>
     </PetProvider>
   );
 }

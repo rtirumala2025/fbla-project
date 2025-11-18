@@ -246,9 +246,9 @@ const Header = () => {
                     >
                       Log in
                     </NavLink>
-                    <NavLink
+                  <NavLink
                       to="/signup"
-                      className="block px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 rounded-lg transition-opacity mx-2 mt-2 text-center truncate"
+                    className="block px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 rounded-lg transition-opacity mx-2 mt-2 text-center truncate"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Get Started

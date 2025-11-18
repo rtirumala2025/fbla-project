@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePet } from '../../context/PetContext';
+import { useFinancial } from '../../context/FinancialContext';
 import { shopService } from '../../services/shopService';
 
 type FoodOption = {
@@ -28,9 +29,16 @@ export const FeedScreen: React.FC = () => {
   const toast = useToast();
   const { currentUser } = useAuth();
   const { pet, updatePetStats } = usePet();
+  const { balance, loading: financeLoading, refreshBalance } = useFinancial();
   const [selected, setSelected] = useState<FoodOption | null>(null);
-  const [balance, setBalance] = useState<number>(100);
   const [loading, setLoading] = useState(false);
+
+  // Refresh balance when component mounts
+  useEffect(() => {
+    if (currentUser) {
+      refreshBalance();
+    }
+  }, [currentUser, refreshBalance]);
 
   const canAfford = (cost: number) => balance >= cost;
   const moneyAfter = useMemo(() => (selected ? balance - selected.cost : balance), [balance, selected]);
@@ -42,7 +50,8 @@ export const FeedScreen: React.FC = () => {
       setLoading(true);
       // Deduct money and create transaction
       await shopService.addCoins(currentUser.uid, -selected.cost, `Fed ${selected.name}`);
-      setBalance(prev => prev - selected.cost);
+      // Refresh balance from API to get updated value
+      await refreshBalance();
       // Update pet stats
       await updatePetStats({
         hunger: Math.min(100, pet.stats.hunger + selected.hungerGain),
@@ -65,7 +74,11 @@ export const FeedScreen: React.FC = () => {
           <button onClick={() => navigate(-1)} className="text-slate-600 hover:text-charcoal" aria-label="Back to dashboard">← Back</button>
           <div className="flex items-center gap-2 bg-secondary/20 border border-secondary/40 rounded-full px-4 py-2" aria-live="polite">
             <span className="text-xl">💰</span>
-            <span className="font-bold text-secondary">${balance}</span>
+            {financeLoading ? (
+              <span className="font-bold text-secondary">Loading...</span>
+            ) : (
+              <span className="font-bold text-secondary">${balance}</span>
+            )}
           </div>
         </div>
         <header className="mb-6">

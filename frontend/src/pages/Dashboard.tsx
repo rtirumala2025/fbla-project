@@ -2,13 +2,39 @@
  * Dashboard Page
  * Main dashboard view for the virtual pet application
  */
+import { usePet } from '../context/PetContext';
+import { useFinancial } from '../context/FinancialContext';
+import { useAuth } from '../contexts/AuthContext';
+
 type DashboardProps = {
   onSignOut?: () => void;
   mode?: 'demo' | 'live';
 };
 
-export const Dashboard = ({ onSignOut, mode = 'demo' }: DashboardProps) => {
+export const Dashboard = ({ onSignOut, mode = 'live' }: DashboardProps) => {
   const isDemo = mode === 'demo';
+  const { currentUser } = useAuth();
+  const { pet, loading: petLoading } = usePet();
+  const { balance, transactions, loading: financeLoading } = useFinancial();
+
+  // Get live data or fallback to demo data
+  const petName = !isDemo && pet ? pet.name : 'Nova the Arctic Fox';
+  const petLevel = !isDemo && pet ? pet.level : 7;
+  const petHappiness = !isDemo && pet ? pet.stats.happiness ?? 92 : 92;
+  const petEnergy = !isDemo && pet ? pet.stats.energy ?? 76 : 76;
+  const walletBalance = !isDemo ? balance : 1250;
+  const lastTransaction = !isDemo && transactions.length > 0
+    ? transactions[0] 
+    : { description: 'Pet spa day', amount: -25 };
+
+  // Safely compute experience progress and hunger-based tip
+  const experiencePercent = !isDemo && pet && typeof pet.experience === 'number'
+    ? (pet.experience % 1000) / 10
+    : 75;
+
+  const isPetHungry = !isDemo && pet && typeof pet.stats.hunger === 'number'
+    ? pet.stats.hunger < 50
+    : false;
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -51,23 +77,47 @@ export const Dashboard = ({ onSignOut, mode = 'demo' }: DashboardProps) => {
         <section className="grid gap-6 md:grid-cols-3">
           <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">Featured Pet</p>
-            <h2 className="mt-2 text-xl font-bold text-slate-900">Nova the Arctic Fox</h2>
-            <p className="mt-3 text-sm text-slate-600">Level 7 • Happiness 92 • Energy 76</p>
-            <div className="mt-4 h-2 rounded-full bg-slate-100">
-              <div className="h-2 w-3/4 rounded-full bg-indigo-500" />
-            </div>
-            <p className="mt-2 text-xs text-slate-500">Tip: feed Nova before the finance practice session.</p>
+            {petLoading && !isDemo ? (
+              <div className="mt-2 text-sm text-slate-500">Loading pet data...</div>
+            ) : (
+              <>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">{petName}</h2>
+                <p className="mt-3 text-sm text-slate-600">
+                  Level {petLevel} • Happiness {petHappiness} • Energy {petEnergy}
+                </p>
+                <div className="mt-4 h-2 rounded-full bg-slate-100">
+                  <div 
+                    className="h-2 rounded-full bg-indigo-500 transition-all"
+                    style={{ width: `${experiencePercent}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  Tip: {isPetHungry && pet
+                    ? `feed ${pet.name} before the finance practice session.`
+                    : 'feed Nova before the finance practice session.'}
+                </p>
+              </>
+            )}
           </article>
 
           <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Wallet Snapshot</p>
-            <h2 className="mt-2 text-xl font-bold text-slate-900">$1,250</h2>
-            <p className="mt-3 text-sm text-slate-600">Savings for virtual pet care and financial literacy goals.</p>
-            <ul className="mt-4 space-y-2 text-sm text-slate-600">
-              <li>• Weekly allowance saved: $80</li>
-              <li>• Emergency fund goal: 65% complete</li>
-              <li>• Last transaction: Pet spa day (-$25)</li>
-            </ul>
+            {financeLoading && !isDemo ? (
+              <div className="mt-2 text-sm text-slate-500">Loading wallet data...</div>
+            ) : (
+              <>
+                <h2 className="mt-2 text-xl font-bold text-slate-900">${walletBalance.toLocaleString()}</h2>
+                <p className="mt-3 text-sm text-slate-600">Savings for virtual pet care and financial literacy goals.</p>
+                <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                  <li>• Weekly allowance saved: ${!isDemo && transactions.length > 0 
+                    ? transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0).toFixed(0)
+                    : '80'}
+                  </li>
+                  <li>• Emergency fund goal: {isDemo ? '65% complete' : 'N/A'}</li>
+                  <li>• Last transaction: {lastTransaction.description} (${Math.abs(lastTransaction.amount)})</li>
+                </ul>
+              </>
+            )}
           </article>
 
           <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
