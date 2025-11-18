@@ -3,8 +3,8 @@ import { getFinanceSummary } from '../api/finance';
 
 interface User {
   uid: string;
-  email: string;
-  displayName: string;
+  email: string | null;
+  displayName: string | null;
 }
 
 interface Transaction {
