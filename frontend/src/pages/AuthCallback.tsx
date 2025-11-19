@@ -6,7 +6,7 @@
  * Flow:
  * 1. User authenticates with Google OAuth
  * 2. Google redirects back to /auth/callback with hash parameters (#access_token=...)
- * 3. This component uses getSessionFromUrl() to retrieve the session from URL hash
+ * 3. This component uses getSession() which automatically processes URL hash when detectSessionInUrl is enabled
  * 4. Session is stored by Supabase automatically
  * 5. User is redirected to dashboard (existing user) or setup-profile (new user)
  * 
@@ -40,16 +40,19 @@ export const AuthCallback = () => {
           return;
         }
 
-        // Use getSessionFromUrl() to retrieve session from OAuth callback hash parameters
-        // This is the recommended method for handling OAuth callbacks in Supabase
-        console.log('🔵 AuthCallback: Retrieving session from URL...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSessionFromUrl({
-          storeSession: true, // Store the session automatically
-        });
+        // With detectSessionInUrl: true configured in Supabase client,
+        // getSession() will automatically detect and process the session from URL hash parameters
+        // Wait a bit for Supabase to process the OAuth callback from the URL
+        console.log('🔵 AuthCallback: Waiting for Supabase to process OAuth callback...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Retrieve session - Supabase automatically extracts it from URL hash if detectSessionInUrl is enabled
+        console.log('🔵 AuthCallback: Retrieving session from Supabase...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
           console.error('❌ AuthCallback: Error retrieving session:', sessionError);
-          setError(sessionError.message);
+          setError(sessionError.message || 'Session retrieval failed');
           setStatus('Authentication failed. Redirecting to login...');
           setTimeout(() => {
             navigate('/login', { 
@@ -61,13 +64,17 @@ export const AuthCallback = () => {
         }
 
         if (!session) {
-          console.warn('⚠️ AuthCallback: No session found in URL');
-          // Fallback: Try getting session from storage (in case it was already stored)
-          const { data: { session: storedSession } } = await supabase.auth.getSession();
+          console.warn('⚠️ AuthCallback: No session found after processing URL');
+          // Wait a bit longer and try again (in case Supabase needs more time)
+          console.log('🔵 AuthCallback: Retrying session retrieval...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { session: retrySession }, error: retryError } = await supabase.auth.getSession();
           
-          if (!storedSession) {
-            console.error('❌ AuthCallback: No session found in URL or storage');
-            setError('No session found');
+          if (retryError || !retrySession) {
+            console.error('❌ AuthCallback: No session found after retry');
+            console.error('  Retry error:', retryError);
+            console.error('  URL hash:', window.location.hash.substring(0, 100));
+            setError('No session found. Please try signing in again.');
             setStatus('Authentication failed. Redirecting to login...');
             setTimeout(() => {
               navigate('/login', { 
@@ -78,8 +85,8 @@ export const AuthCallback = () => {
             return;
           }
           
-          console.log('✅ AuthCallback: Found session in storage');
-          await handleSessionSuccess(storedSession);
+          console.log('✅ AuthCallback: Found session after retry');
+          await handleSessionSuccess(retrySession);
           return;
         }
 

@@ -26,7 +26,7 @@ const createMockClient = (): SupabaseClient => {
  * 2. Supabase redirects to Google OAuth consent screen
  * 3. Google redirects back to /auth/callback with hash parameters (#access_token=...)
  * 4. Supabase detects session in URL automatically (detectSessionInUrl: true)
- * 5. AuthCallback component uses getSessionFromUrl() to retrieve session
+ * 5. AuthCallback component uses getSession() which automatically processes URL hash when detectSessionInUrl is enabled
  * 6. User is redirected to dashboard or setup-profile
  */
 export const supabase = supabaseUrl && supabaseAnonKey
