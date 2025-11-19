@@ -452,6 +452,14 @@ async def submit_game_score(
         payload.metadata,
     )
 
+    # Update pet happiness from game rewards
+    pet_stmt = select(Pet).where(Pet.user_id == user_uuid)
+    pet_result = await session.execute(pet_stmt)
+    pet = pet_result.scalar_one_or_none()
+    if pet:
+        pet.happiness = min(100, max(0, (pet.happiness or 70) + reward.happiness))
+        await session.flush()
+
     earn_payload = EarnRequest(
         amount=reward.coins,
         reason=f"Mini-game reward: {round_entry.game_type}",
