@@ -5,6 +5,8 @@ import { GameLeaderboardPanel } from '../../components/minigames/GameLeaderboard
 import { GameResultOverlay } from '../../components/minigames/GameResultOverlay';
 import { GameRewardsSummary } from '../../components/minigames/GameRewardsSummary';
 import { useToast } from '../../contexts/ToastContext';
+import { usePet } from '../../context/PetContext';
+import { useFinancial } from '../../context/FinancialContext';
 import { useMiniGameRound } from '../../hooks/useMiniGameRound';
 import type { GameDifficulty, GamePlayResponse } from '../../types/game';
 
@@ -36,6 +38,8 @@ type Props = { difficulty?: GameDifficulty };
 
 export const DreamWorld: React.FC<Props> = ({ difficulty: initialDifficulty = 'normal' }) => {
   const toast = useToast();
+  const { refreshPet } = usePet();
+  const { refreshBalance } = useFinancial();
   const [sequence, setSequence] = useState<number[]>([]);
   const [displayIndex, setDisplayIndex] = useState<number>(-1);
   const [inputIndex, setInputIndex] = useState(0);
@@ -160,6 +164,8 @@ export const DreamWorld: React.FC<Props> = ({ difficulty: initialDifficulty = 'n
         setResult(response);
         setScoreHistory((prev) => [...prev, score]);
         toast.success(success ? 'Dream sequence conquered! ✨' : 'Dream sync completed. Rewards unlocked.');
+        // Refresh contexts to reflect updated balance and pet happiness
+        await Promise.all([refreshPet(), refreshBalance()]);
       } catch (error: any) {
         console.error('DreamWorld submission error', error);
         toast.error(error?.message || 'Unable to sync dream rewards.');
@@ -168,7 +174,7 @@ export const DreamWorld: React.FC<Props> = ({ difficulty: initialDifficulty = 'n
         prepareLevel(1);
       }
     },
-    [clearTimers, prepareLevel, sequence.length, submitScore, toast],
+    [clearTimers, prepareLevel, sequence.length, submitScore, toast, refreshPet, refreshBalance],
   );
 
   const handleInput = (index: number) => {

@@ -6,6 +6,8 @@ import { GameLeaderboardPanel } from '../../components/minigames/GameLeaderboard
 import { GameResultOverlay } from '../../components/minigames/GameResultOverlay';
 import { GameRewardsSummary } from '../../components/minigames/GameRewardsSummary';
 import { useToast } from '../../contexts/ToastContext';
+import { usePet } from '../../context/PetContext';
+import { useFinancial } from '../../context/FinancialContext';
 import { useMiniGameRound } from '../../hooks/useMiniGameRound';
 import type { GameDifficulty, GamePlayResponse } from '../../types/game';
 
@@ -15,6 +17,8 @@ const confidenceLabel = (confidence: number) => `${Math.round(confidence * 100)}
 
 export const ReactionGame: React.FC<Props> = ({ difficulty: defaultDifficulty = 'easy' }) => {
   const toast = useToast();
+  const { refreshPet } = usePet();
+  const { refreshBalance } = useFinancial();
   const [waiting, setWaiting] = useState(true);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [reaction, setReaction] = useState<number | null>(null);
@@ -72,6 +76,8 @@ export const ReactionGame: React.FC<Props> = ({ difficulty: defaultDifficulty = 
       setResult(response);
       setScoreHistory((prev) => [...prev, score]);
       toast.success('Lightning reflexes! Rewards incoming.');
+      // Refresh contexts to reflect updated balance and pet happiness
+      await Promise.all([refreshPet(), refreshBalance()]);
     } catch (error: any) {
       console.error('Reaction submission error', error);
       toast.error(error?.message || 'Failed to submit reaction time');

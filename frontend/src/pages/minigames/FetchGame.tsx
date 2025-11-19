@@ -6,6 +6,8 @@ import { DailyChallengeCard } from '../../components/minigames/DailyChallengeCar
 import { GameResultOverlay } from '../../components/minigames/GameResultOverlay';
 import { GameRewardsSummary } from '../../components/minigames/GameRewardsSummary';
 import { useToast } from '../../contexts/ToastContext';
+import { usePet } from '../../context/PetContext';
+import { useFinancial } from '../../context/FinancialContext';
 import { useMiniGameRound } from '../../hooks/useMiniGameRound';
 import type { GameDifficulty, GamePlayResponse } from '../../types/game';
 
@@ -19,6 +21,8 @@ type Props = {
 
 export const FetchGame: React.FC<Props> = ({ difficulty: initialDifficulty = 'easy' }) => {
   const toast = useToast();
+  const { refreshPet } = usePet();
+  const { refreshBalance } = useFinancial();
   const containerRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<number>(performance.now());
 
@@ -86,6 +90,8 @@ export const FetchGame: React.FC<Props> = ({ difficulty: initialDifficulty = 'ea
         setResult(response);
         setScoreHistory((prev) => [...prev, score]);
         toast.success('Rewards delivered! 🎉');
+        // Refresh contexts to reflect updated balance and pet happiness
+        await Promise.all([refreshPet(), refreshBalance()]);
       } catch (error: any) {
         console.error('Failed to submit fetch mini-game result', error);
         toast.error(error?.message || 'Unable to record your score');
@@ -94,7 +100,7 @@ export const FetchGame: React.FC<Props> = ({ difficulty: initialDifficulty = 'ea
         resetGame();
       }
     },
-    [resetGame, submitScore, toast],
+    [resetGame, submitScore, toast, refreshPet, refreshBalance],
   );
 
   const handleCatch = useCallback(() => {

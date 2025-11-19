@@ -5,6 +5,8 @@ import { GameLeaderboardPanel } from '../../components/minigames/GameLeaderboard
 import { GameResultOverlay } from '../../components/minigames/GameResultOverlay';
 import { GameRewardsSummary } from '../../components/minigames/GameRewardsSummary';
 import { useToast } from '../../contexts/ToastContext';
+import { usePet } from '../../context/PetContext';
+import { useFinancial } from '../../context/FinancialContext';
 import { useMiniGameRound } from '../../hooks/useMiniGameRound';
 import type { GameDifficulty, GamePlayResponse } from '../../types/game';
 
@@ -22,6 +24,8 @@ const confidenceLabel = (confidence: number) => `${Math.round(confidence * 100)}
 
 export const MemoryMatchGame: React.FC = () => {
   const toast = useToast();
+  const { refreshPet } = usePet();
+  const { refreshBalance } = useFinancial();
   const startTimeRef = useRef<number>(performance.now());
   const previewTimeoutRef = useRef<number | null>(null);
 
@@ -102,6 +106,8 @@ export const MemoryMatchGame: React.FC = () => {
         setResult(response);
         setScoreHistory((prev) => [...prev, score]);
         toast.success('Pattern remembered! Rewards unlocked.');
+        // Refresh contexts to reflect updated balance and pet happiness
+        await Promise.all([refreshPet(), refreshBalance()]);
       } catch (error: any) {
         console.error('Memory game submission failed', error);
         toast.error(error?.message || 'Could not submit memory game score');
@@ -110,7 +116,7 @@ export const MemoryMatchGame: React.FC = () => {
         resetGame();
       }
     },
-    [mistakes, resetGame, sequence.length, submitScore, toast],
+    [mistakes, resetGame, sequence.length, submitScore, toast, refreshPet, refreshBalance],
   );
 
   const handleGuess = (icon: string) => {

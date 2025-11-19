@@ -5,6 +5,8 @@ import { GameLeaderboardPanel } from '../../components/minigames/GameLeaderboard
 import { GameResultOverlay } from '../../components/minigames/GameResultOverlay';
 import { GameRewardsSummary } from '../../components/minigames/GameRewardsSummary';
 import { useToast } from '../../contexts/ToastContext';
+import { usePet } from '../../context/PetContext';
+import { useFinancial } from '../../context/FinancialContext';
 import { useMiniGameRound } from '../../hooks/useMiniGameRound';
 import type { GameDifficulty, GamePlayResponse } from '../../types/game';
 
@@ -16,6 +18,8 @@ const confidenceLabel = (confidence: number) => `${Math.round(confidence * 100)}
 
 export const PuzzleGame: React.FC<Props> = ({ difficulty: defaultDifficulty = 'easy' }) => {
   const toast = useToast();
+  const { refreshPet } = usePet();
+  const { refreshBalance } = useFinancial();
   const startTimeRef = useRef<number>(performance.now());
 
   const [tiles, setTiles] = useState(() => [...originalTiles].sort(() => Math.random() - 0.5));
@@ -75,6 +79,8 @@ export const PuzzleGame: React.FC<Props> = ({ difficulty: defaultDifficulty = 'e
         setResult(response);
         setScoreHistory((prev) => [...prev, score]);
         toast.success('Puzzle complete! Rewards delivered.');
+        // Refresh contexts to reflect updated balance and pet happiness
+        await Promise.all([refreshPet(), refreshBalance()]);
       } catch (error: any) {
         console.error('Puzzle submission error', error);
         toast.error(error?.message || 'Could not submit puzzle score');
@@ -83,7 +89,7 @@ export const PuzzleGame: React.FC<Props> = ({ difficulty: defaultDifficulty = 'e
         resetBoard();
       }
     },
-    [moves, resetBoard, submitScore, toast],
+    [moves, resetBoard, submitScore, toast, refreshPet, refreshBalance],
   );
 
   const handleSelect = (index: number) => {
