@@ -17,7 +17,7 @@ export const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,12 +51,11 @@ export const Register = () => {
     setIsLoading(true);
     
     try {
-      // Google Sign-In not implemented in mock auth
-      setError('Google Sign-In is not available in this demo version.');
+      await signInWithGoogle();
+      // signInWithGoogle handles navigation internally
     } catch (err: any) {
       console.error('Google Sign Up error:', err);
       setError(err.message || 'Failed to sign up with Google. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
