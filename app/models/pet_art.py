@@ -5,6 +5,7 @@ SQLAlchemy model for cached AI pet art generations.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Union
 from uuid import UUID
 
 from sqlalchemy import DateTime, String, Text, UniqueConstraint, text
@@ -27,8 +28,8 @@ class PetArtCache(Base, TimestampMixin):
     pet_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
     prompt_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
-    style: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    mood: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    style: Mapped[Union[str, None]] = mapped_column(String(64), nullable=True)
+    mood: Mapped[Union[str, None]] = mapped_column(String(32), nullable=True)
     accessory_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
     image_base64: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_json: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, server_default=text("'{}'::jsonb"))

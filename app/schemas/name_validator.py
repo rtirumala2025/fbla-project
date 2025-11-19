@@ -4,7 +4,7 @@ Pydantic schemas for name validation API.
 
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import List, Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -20,7 +20,7 @@ class NameValidationRequest(BaseModel):
         default="pet",
         description="Type of name: 'pet' for pet names, 'account' for usernames",
     )
-    exclude_user_id: UUID | None = Field(
+    exclude_user_id: Optional[UUID] = Field(
         default=None,
         description="Optional user ID to exclude from uniqueness check (for updates)",
     )

@@ -20,7 +20,7 @@ from app.core.config import get_settings
 from app.models.pet_art import PetArtCache
 
 
-@dataclass(slots=True)
+@dataclass
 class PetArtResult:
     user_id: str
     pet_id: str

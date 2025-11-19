@@ -4,7 +4,7 @@ Authentication schemas for Supabase-integrated endpoints.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel, EmailStr, Field, constr, root_validator
 
@@ -14,7 +14,7 @@ class SignupRequest(BaseModel):
 
     email: EmailStr
     password: constr(min_length=8, max_length=128)
-    username: constr(min_length=3, max_length=32) | None = None
+    username: Optional[constr(min_length=3, max_length=32)] = None
 
     @root_validator(pre=True)
     def _default_username(cls, values: dict) -> dict:

@@ -5,6 +5,7 @@ ORM models for mini-game sessions, streaks, and achievements.
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Optional, Union
 from uuid import UUID
 
 from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, JSON, String, text
@@ -34,9 +35,9 @@ class GameRound(Base, TimestampMixin):
     game_type: Mapped[str] = mapped_column(String(50), nullable=False)
     recommended_difficulty: Mapped[str] = mapped_column(String(10), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
-    ai_seed: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    ai_seed: Mapped[Union[dict, None]] = mapped_column(JSON, nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    metadata_json: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
+    metadata_json: Mapped[Union[dict, None]] = mapped_column("metadata", JSON, nullable=True)
 
 
 class GameSession(Base, TimestampMixin):
@@ -56,7 +57,7 @@ class GameSession(Base, TimestampMixin):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    round_id: Mapped[UUID | None] = mapped_column(
+    round_id: Mapped[Union[UUID, None]] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("game_rounds.id", ondelete="SET NULL"),
         nullable=True,
@@ -66,7 +67,7 @@ class GameSession(Base, TimestampMixin):
     score: Mapped[int] = mapped_column(Integer, nullable=False)
     coins_earned: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     happiness_gain: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    metadata_json: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
+    metadata_json: Mapped[Union[dict, None]] = mapped_column("metadata", JSON, nullable=True)
 
 
 class GameLeaderboard(Base, TimestampMixin):
@@ -96,9 +97,9 @@ class GameLeaderboard(Base, TimestampMixin):
     current_streak: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     longest_streak: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     daily_streak: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    last_daily_reset: Mapped[date | None] = mapped_column(Date, nullable=True)
-    last_played_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    metadata_json: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
+    last_daily_reset: Mapped[Union[date, None]] = mapped_column(Date, nullable=True)
+    last_played_at: Mapped[Union[datetime, None]] = mapped_column(DateTime(timezone=True), nullable=True)
+    metadata_json: Mapped[Union[dict, None]] = mapped_column("metadata", JSON, nullable=True)
 
 
 class GameAchievement(Base, TimestampMixin):
@@ -120,6 +121,6 @@ class GameAchievement(Base, TimestampMixin):
     )
     achievement_key: Mapped[str] = mapped_column(String(100), nullable=False)
     streak_days: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    last_played_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    metadata_json: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
+    last_played_at: Mapped[Union[datetime, None]] = mapped_column(DateTime(timezone=True), nullable=True)
+    metadata_json: Mapped[Union[dict, None]] = mapped_column("metadata", JSON, nullable=True)
 

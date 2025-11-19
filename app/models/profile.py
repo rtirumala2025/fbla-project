@@ -4,6 +4,7 @@ Profiles and preference ORM models.
 
 from __future__ import annotations
 
+from typing import Optional, Union
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, text
@@ -30,11 +31,11 @@ class Profile(Base, TimestampMixin):
         unique=True,
     )
     username: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
-    avatar_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    title: Mapped[str | None] = mapped_column(String(80), nullable=True)
-    bio: Mapped[str | None] = mapped_column(Text, nullable=True)
+    avatar_url: Mapped[Union[str, None]] = mapped_column(String(255), nullable=True)
+    title: Mapped[Union[str, None]] = mapped_column(String(80), nullable=True)
+    bio: Mapped[Union[str, None]] = mapped_column(Text, nullable=True)
     coins: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("100"))
-    badges: Mapped[list | None] = mapped_column(JSONB, nullable=True, server_default=text("'[]'::jsonb"))
+    badges: Mapped[Union[list, None]] = mapped_column(JSONB, nullable=True, server_default=text("'[]'::jsonb"))
 
     preferences: Mapped["UserPreferences"] = relationship(
         "UserPreferences",

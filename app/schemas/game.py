@@ -5,7 +5,7 @@ Pydantic schemas for mini-game API interactions.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -47,7 +47,7 @@ class GameScoreSubmission(BaseModel):
     score: int = Field(..., ge=0, le=100)
     duration_seconds: int = Field(..., ge=1)
     difficulty: Optional[str] = Field(default=None, regex=DIFFICULTY_PATTERN)
-    metadata: dict | None = None
+    metadata: Optional[dict] = None
 
 
 class GamePlayRequest(BaseModel):
@@ -59,7 +59,7 @@ class GamePlayRequest(BaseModel):
     difficulty: str = Field(default="normal", regex=DIFFICULTY_PATTERN)
     score: int = Field(..., ge=0, le=100)
     duration_seconds: int = Field(..., ge=1)
-    metadata: dict | None = None
+    metadata: Optional[dict] = None
 
 
 class GameReward(BaseModel):

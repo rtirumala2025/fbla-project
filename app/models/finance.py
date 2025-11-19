@@ -5,7 +5,7 @@ ORM models representing the finance subsystem (wallets, transactions, inventory)
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
 from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, JSON, String, UniqueConstraint, text
@@ -38,12 +38,12 @@ class Wallet(Base, TimestampMixin):
     lifetime_earned: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     lifetime_spent: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     donation_total: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    active_goal_id: Mapped[UUID | None] = mapped_column(
+    active_goal_id: Mapped[Union[UUID, None]] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("finance_goals.id", ondelete="SET NULL"),
         nullable=True,
     )
-    last_allowance_at: Mapped[datetime | None] = mapped_column(
+    last_allowance_at: Mapped[Union[datetime, None]] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
@@ -81,12 +81,12 @@ class Transaction(Base):
     description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     metadata_json: Mapped[Optional[dict]] = mapped_column("metadata", JSON, nullable=True)
     balance_after: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    related_goal_id: Mapped[UUID | None] = mapped_column(
+    related_goal_id: Mapped[Union[UUID, None]] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("finance_goals.id", ondelete="SET NULL"),
         nullable=True,
     )
-    related_shop_item_id: Mapped[UUID | None] = mapped_column(
+    related_shop_item_id: Mapped[Union[UUID, None]] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("finance_shop_items.id", ondelete="SET NULL"),
         nullable=True,
@@ -146,8 +146,8 @@ class Goal(Base, TimestampMixin):
     target_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     current_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
-    deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deadline: Mapped[Union[datetime, None]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Union[datetime, None]] = mapped_column(DateTime(timezone=True), nullable=True)
     notifications: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
 
@@ -178,7 +178,7 @@ class InventoryItem(Base, TimestampMixin):
     item_name: Mapped[str] = mapped_column(String(100), nullable=False)
     category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    shop_item_id: Mapped[UUID | None] = mapped_column(
+    shop_item_id: Mapped[Union[UUID, None]] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("finance_shop_items.id", ondelete="SET NULL"),
         nullable=True,

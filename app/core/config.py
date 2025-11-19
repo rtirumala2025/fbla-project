@@ -8,7 +8,7 @@ feature flags) should be added here.
 
 from functools import lru_cache
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from dotenv import load_dotenv
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
         case_sensitive = False
 
     @validator("allowed_origins", pre=True)
-    def _split_allowed_origins(cls, value: List[str] | str) -> List[str]:
+    def _split_allowed_origins(cls, value: Union[List[str], str]) -> List[str]:
         if isinstance(value, list):
             return value
         return [origin.strip() for origin in value.split(",") if origin.strip()]
