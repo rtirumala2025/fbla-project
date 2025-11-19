@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Sparkles, AlertCircle, HelpCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Sparkles, AlertCircle, HelpCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePet } from '../context/PetContext';
 import { useToast } from '../contexts/ToastContext';
 import { useInteractionLogger } from '../hooks/useInteractionLogger';
+import { useAuth } from '../contexts/AuthContext';
+import apiClient from '../services/apiClient';
 
 const randomNames = {
   dog: ['Max', 'Buddy', 'Charlie', 'Cooper', 'Rocky', 'Duke', 'Bear', 'Zeus', 'Tucker', 'Oliver'],
@@ -16,19 +18,30 @@ const randomNames = {
 const MIN_NAME_LENGTH = 2;
 const MAX_NAME_LENGTH = 20;
 
+interface NameValidationResponse {
+  status: 'success' | 'error';
+  valid: boolean;
+  suggestions: string[];
+  errors: string[];
+}
+
 export const PetNaming = () => {
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
   const [breed, setBreed] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [apiValidation, setApiValidation] = useState<NameValidationResponse | null>(null);
+  const [isValidatingName, setIsValidatingName] = useState(false);
   const [touched, setTouched] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const { createPet } = usePet();
   const toast = useToast();
+  const { currentUser } = useAuth();
   const { logFormSubmit, logFormValidation, logFormError, logUserAction } = useInteractionLogger('PetNaming');
 
   useEffect(() => {
@@ -44,7 +57,59 @@ export const PetNaming = () => {
     setBreed(storedBreed);
   }, [navigate]);
 
-  // Validate name
+  // Validate name with API
+  const validateNameWithAPI = useCallback(async (value: string) => {
+    const trimmed = value.trim();
+    
+    // Basic client-side validation first
+    if (!trimmed || trimmed.length < MIN_NAME_LENGTH) {
+      setApiValidation(null);
+      return;
+    }
+    
+    if (trimmed.length > MAX_NAME_LENGTH) {
+      setApiValidation({
+        status: 'error',
+        valid: false,
+        suggestions: [],
+        errors: [`Name must be no more than ${MAX_NAME_LENGTH} characters`],
+      });
+      return;
+    }
+
+    // Clear previous timeout
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+
+    // Debounce API call
+    validationTimeoutRef.current = setTimeout(async () => {
+      setIsValidatingName(true);
+      try {
+        const response = await apiClient.post<NameValidationResponse>('/api/validate-name', {
+          name: trimmed,
+          name_type: 'pet',
+          ...(currentUser?.uid && { exclude_user_id: currentUser.uid }),
+        });
+        
+        setApiValidation(response.data);
+        
+        if (!response.data.valid && response.data.errors.length > 0) {
+          setValidationError(response.data.errors[0]);
+        } else if (response.data.valid) {
+          setValidationError(null);
+        }
+      } catch (error: any) {
+        console.error('Name validation API error:', error);
+        // Don't block user if API fails - fall back to client-side validation
+        setApiValidation(null);
+      } finally {
+        setIsValidatingName(false);
+      }
+    }, 500);
+  }, [currentUser?.uid]);
+
+  // Client-side validation (fallback)
   const validateName = (value: string): string | null => {
     const trimmed = value.trim();
     if (!trimmed) {
@@ -67,14 +132,24 @@ export const PetNaming = () => {
     setName(value);
     setTouched(true);
     
+    // Clear API validation when user types
+    setApiValidation(null);
+    
+    // Client-side validation for immediate feedback
+    const clientError = validateName(value);
+    setValidationError(clientError);
+    
     if (touched) {
-      const error = validateName(value);
-      setValidationError(error);
-      if (error) {
-        logFormValidation('name', false, error);
+      if (clientError) {
+        logFormValidation('name', false, clientError);
       } else {
         logFormValidation('name', true);
       }
+    }
+    
+    // Trigger API validation for appropriate names
+    if (!clientError && value.trim().length >= MIN_NAME_LENGTH) {
+      validateNameWithAPI(value);
     }
     
     logUserAction('name_input', { length: value.length });
@@ -91,12 +166,14 @@ export const PetNaming = () => {
 
   const handleContinue = async () => {
     setTouched(true);
-    const error = validateName(name);
     
-    if (error) {
-      setValidationError(error);
-      logFormError('name', error);
-      toast.error(error);
+    // Final validation check
+    const clientError = validateName(name);
+    
+    if (clientError) {
+      setValidationError(clientError);
+      logFormError('name', clientError);
+      toast.error(clientError);
       inputRef.current?.focus();
       return;
     }
@@ -107,6 +184,22 @@ export const PetNaming = () => {
       logFormError('name', emptyError);
       toast.error(emptyError);
       inputRef.current?.focus();
+      return;
+    }
+
+    // Check API validation if available
+    if (apiValidation && !apiValidation.valid) {
+      const apiError = apiValidation.errors[0] || 'Name validation failed';
+      setValidationError(apiError);
+      logFormError('name', apiError);
+      toast.error(apiError);
+      inputRef.current?.focus();
+      return;
+    }
+
+    // If API validation is still pending, wait for it
+    if (isValidatingName) {
+      toast.info('Validating name...');
       return;
     }
     
@@ -151,7 +244,16 @@ export const PetNaming = () => {
     }
   };
 
-  const isValid = !validationError && name.trim().length >= MIN_NAME_LENGTH;
+  const isValid = !validationError && name.trim().length >= MIN_NAME_LENGTH && (apiValidation?.valid ?? true);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-900 px-4 sm:px-6 py-8 sm:py-12 flex items-center">
@@ -282,7 +384,16 @@ export const PetNaming = () => {
                 {touched && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     <AnimatePresence mode="wait">
-                      {validationError ? (
+                      {isValidatingName ? (
+                        <motion.div
+                          key="validating"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                        >
+                          <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" aria-hidden="true" />
+                        </motion.div>
+                      ) : validationError ? (
                         <motion.div
                           key="error"
                           initial={{ opacity: 0, scale: 0.8 }}
@@ -291,7 +402,7 @@ export const PetNaming = () => {
                         >
                           <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" />
                         </motion.div>
-                      ) : isValid ? (
+                      ) : isValid && apiValidation?.valid ? (
                         <motion.div
                           key="success"
                           initial={{ opacity: 0, scale: 0.8 }}
@@ -310,7 +421,7 @@ export const PetNaming = () => {
               <div className="mt-2 text-center">
                 <AnimatePresence mode="wait">
                   {touched && validationError ? (
-                    <motion.p
+                    <motion.div
                       key="error"
                       id="name-error"
                       initial={{ opacity: 0, y: -5 }}
@@ -319,9 +430,14 @@ export const PetNaming = () => {
                       className="text-sm text-red-400 font-medium"
                       role="alert"
                     >
-                      {validationError}
-                    </motion.p>
-                  ) : touched && isValid ? (
+                      <p>{validationError}</p>
+                      {apiValidation && apiValidation.suggestions.length > 0 && (
+                        <p className="mt-1 text-xs text-red-300">
+                          Suggestions: {apiValidation.suggestions.slice(0, 3).join(', ')}
+                        </p>
+                      )}
+                    </motion.div>
+                  ) : touched && isValid && apiValidation?.valid ? (
                     <motion.p
                       key="success"
                       id="name-success"

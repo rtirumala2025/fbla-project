@@ -12,18 +12,22 @@ import {
   RefreshCw,
   ShieldCheck,
   Target,
+  TrendingUp,
 } from 'lucide-react';
 import { claimDailyAllowance, contributeGoal, createGoal, donateCoins, getFinanceSummary } from '../../api/finance';
-import type { FinanceSummary } from '../../types/finance';
+import type { FinanceSummary, TransactionRecord } from '../../types/finance';
 import { useToast } from '../../contexts/ToastContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useFinanceRealtime, type FinanceRefreshOptions } from '../../hooks/useFinanceRealtime';
+import { BudgetAdvisorAI, type TransactionInput } from '../../components/budget/BudgetAdvisorAI';
+import { useAuth } from '../../contexts/AuthContext';
 
 const currencyFormat = (amount: number, currency: string) => `${amount} ${currency}`;
 
 export const WalletPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
+  const { currentUser } = useAuth();
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -179,6 +183,22 @@ export const WalletPage: React.FC = () => {
   const totalGoals = summary.goals.length;
   const activeGoals = summary.goals.filter((goal) => goal.status === 'active');
   const completedGoals = summary.goals.filter((goal) => goal.status === 'completed');
+
+  // Convert transactions to BudgetAdvisorAI format
+  const budgetAdvisorTransactions: TransactionInput[] = useMemo(() => {
+    if (!summary?.transactions || summary.transactions.length === 0) {
+      return [];
+    }
+    
+    return summary.transactions
+      .filter((t) => t.transaction_type === 'expense') // Only analyze expenses
+      .map((t: TransactionRecord) => ({
+        amount: Math.abs(t.amount),
+        category: t.category || 'other',
+        date: new Date(t.created_at).toISOString().split('T')[0], // YYYY-MM-DD format
+        description: t.description || undefined,
+      }));
+  }, [summary?.transactions]);
 
   return (
     <div className="min-h-screen bg-cream pb-16">
@@ -421,6 +441,32 @@ export const WalletPage: React.FC = () => {
             </div>
           )}
         </section>
+
+        {/* Budget Advisor AI Section */}
+        {budgetAdvisorTransactions.length > 0 && (
+          <section className="mt-12 rounded-3xl bg-white p-7 shadow-soft">
+            <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold text-charcoal">
+              <TrendingUp className="h-6 w-6 text-indigo-500" />
+              Budget Advisor AI
+            </h2>
+            <p className="mb-6 text-sm text-gray-600">
+              Get AI-powered insights into your spending patterns and receive personalized budget recommendations.
+            </p>
+            <BudgetAdvisorAI
+              transactions={budgetAdvisorTransactions}
+              monthlyBudget={summary.lifetime_earned > 0 ? Math.floor(summary.lifetime_earned / 12) : undefined}
+              userId={currentUser?.uid}
+              onAnalysisComplete={(analysis) => {
+                console.log('Budget analysis completed:', analysis);
+              }}
+              onError={(error) => {
+                console.error('Budget analysis error:', error);
+                toast.error(`Budget analysis failed: ${error}`);
+              }}
+              autoFetch={true}
+            />
+          </section>
+        )}
       </div>
     </div>
   );
