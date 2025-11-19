@@ -19,7 +19,7 @@ import type { FinanceSummary, TransactionRecord } from '../../types/finance';
 import { useToast } from '../../contexts/ToastContext';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useFinanceRealtime, type FinanceRefreshOptions } from '../../hooks/useFinanceRealtime';
-import { BudgetAdvisorAI, type TransactionInput } from '../../components/budget/BudgetAdvisorAI';
+import BudgetAdvisorAI, { type TransactionInput, type BudgetAdvisorAnalysis } from '../../components/budget/BudgetAdvisorAI';
 import { useAuth } from '../../contexts/AuthContext';
 
 const currencyFormat = (amount: number, currency: string) => `${amount} ${currency}`;
@@ -65,6 +65,22 @@ export const WalletPage: React.FC = () => {
   useFinanceRealtime(fetchSummary);
 
   const notifications = useMemo(() => summary?.notifications ?? [], [summary]);
+
+  // Convert transactions to BudgetAdvisorAI format (must be before early returns for hooks rule)
+  const budgetAdvisorTransactions: TransactionInput[] = useMemo(() => {
+    if (!summary?.transactions || summary.transactions.length === 0) {
+      return [];
+    }
+    
+    return summary.transactions
+      .filter((t) => t.transaction_type === 'expense') // Only analyze expenses
+      .map((t: TransactionRecord) => ({
+        amount: Math.abs(t.amount),
+        category: t.category || 'other',
+        date: new Date(t.created_at).toISOString().split('T')[0], // YYYY-MM-DD format
+        description: t.description || undefined,
+      }));
+  }, [summary?.transactions]);
 
   const handleClaimAllowance = async () => {
     if (!summary?.daily_allowance_available) {
@@ -183,22 +199,6 @@ export const WalletPage: React.FC = () => {
   const totalGoals = summary.goals.length;
   const activeGoals = summary.goals.filter((goal) => goal.status === 'active');
   const completedGoals = summary.goals.filter((goal) => goal.status === 'completed');
-
-  // Convert transactions to BudgetAdvisorAI format
-  const budgetAdvisorTransactions: TransactionInput[] = useMemo(() => {
-    if (!summary?.transactions || summary.transactions.length === 0) {
-      return [];
-    }
-    
-    return summary.transactions
-      .filter((t) => t.transaction_type === 'expense') // Only analyze expenses
-      .map((t: TransactionRecord) => ({
-        amount: Math.abs(t.amount),
-        category: t.category || 'other',
-        date: new Date(t.created_at).toISOString().split('T')[0], // YYYY-MM-DD format
-        description: t.description || undefined,
-      }));
-  }, [summary?.transactions]);
 
   return (
     <div className="min-h-screen bg-cream pb-16">
@@ -456,10 +456,10 @@ export const WalletPage: React.FC = () => {
               transactions={budgetAdvisorTransactions}
               monthlyBudget={summary.lifetime_earned > 0 ? Math.floor(summary.lifetime_earned / 12) : undefined}
               userId={currentUser?.uid}
-              onAnalysisComplete={(analysis) => {
+              onAnalysisComplete={(analysis: BudgetAdvisorAnalysis) => {
                 console.log('Budget analysis completed:', analysis);
               }}
-              onError={(error) => {
+              onError={(error: string) => {
                 console.error('Budget analysis error:', error);
                 toast.error(`Budget analysis failed: ${error}`);
               }}

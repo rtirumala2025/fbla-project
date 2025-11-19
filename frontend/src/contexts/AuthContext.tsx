@@ -267,6 +267,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(mapSupabaseUser(data.user));
   };
 
+  /**
+   * Sign in with Google OAuth
+   * 
+   * Flow:
+   * 1. Calls Supabase signInWithOAuth with redirect URL
+   * 2. Supabase returns OAuth URL to redirect to
+   * 3. User authenticates with Google
+   * 4. Google redirects back to /auth/callback
+   * 5. AuthCallback component handles the callback
+   * 
+   * The redirect URL must be configured in:
+   * - Supabase Dashboard → Authentication → URL Configuration
+   * - For dev: http://localhost:3000/auth/callback
+   * - For prod: https://yourdomain.com/auth/callback
+   */
   const signInWithGoogle = async () => {
     console.log('🔵 AuthContext: Google sign-in initiated');
     
@@ -288,27 +303,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      // Construct redirect URL based on current origin
+      // Works for both development (localhost:3000) and production
       const redirectUrl = `${window.location.origin}/auth/callback`;
-      console.log('🔵 AuthContext: Redirecting to Google OAuth');
+      console.log('🔵 AuthContext: Initiating Google OAuth');
+      console.log('  Current origin:', window.location.origin);
       console.log('  Redirect URL:', redirectUrl);
+      console.log('  Supabase URL:', process.env.REACT_APP_SUPABASE_URL || 'Not configured');
+      
+      // Check if Supabase is properly configured
+      if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
+        throw new Error(
+          'Supabase is not configured. Please check your environment variables:\n' +
+          '- REACT_APP_SUPABASE_URL\n' +
+          '- REACT_APP_SUPABASE_ANON_KEY\n' +
+          '\nAlso ensure Google OAuth is enabled in Supabase Dashboard.'
+        );
+      }
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
+          queryParams: {
+            // Optional: You can add additional query parameters here
+            // access_type: 'offline',
+            // prompt: 'consent',
+          },
         },
       });
 
       if (error) {
         console.error('❌ Google sign-in error:', error);
-        throw new Error(error.message);
+        console.error('  Error code:', error.status);
+        console.error('  Error message:', error.message);
+        
+        // Provide helpful error messages
+        if (error.message.includes('redirect')) {
+          throw new Error(
+            'OAuth redirect URL mismatch. Please ensure:\n' +
+            `1. Redirect URL "${redirectUrl}" is added in Supabase Dashboard → Authentication → URL Configuration\n` +
+            '2. Google OAuth provider is enabled in Supabase Dashboard → Authentication → Providers\n' +
+            '3. Google Cloud Console redirect URI matches: https://xhhtkjtcdeewesijxbts.supabase.co/auth/v1/callback'
+          );
+        }
+        
+        throw new Error(error.message || 'Google sign-in failed');
       }
 
       if (data?.url) {
-        console.log('✅ Redirecting to Google OAuth URL');
+        console.log('✅ Received OAuth URL from Supabase');
+        console.log('  OAuth URL preview:', data.url.substring(0, 100) + '...');
+        console.log('  Redirecting to Google OAuth consent screen...');
         window.location.href = data.url;
       } else {
-        throw new Error('No redirect URL received from Supabase');
+        console.error('❌ No redirect URL received from Supabase');
+        console.error('  Response data:', data);
+        console.error('  Supabase client:', supabase ? 'initialized' : 'NOT initialized');
+        
+        throw new Error(
+          'No redirect URL received from Supabase. This usually means:\n' +
+          '1. Google OAuth is not enabled in Supabase Dashboard → Authentication → Providers\n' +
+          '2. Redirect URL is not configured in Supabase Dashboard → Authentication → URL Configuration\n' +
+          `3. Please add "${redirectUrl}" to your allowed redirect URLs in Supabase`
+        );
       }
     } catch (err: any) {
       console.error('❌ Google sign-in failed:', err);
