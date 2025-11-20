@@ -94,6 +94,18 @@ export const SetupProfile = () => {
         });
       }
 
+      // Trigger welcome email as fallback (database trigger should handle it, but this ensures it works)
+      try {
+        const { sendWelcomeEmail } = await import('../services/emailService');
+        // Call in background - don't block navigation
+        sendWelcomeEmail(currentUser.uid).catch((err) => {
+          console.warn('⚠️ Welcome email fallback failed (trigger should handle it):', err);
+        });
+      } catch (err) {
+        // Email service import failed - trigger should still work
+        console.warn('⚠️ Could not import email service (trigger should handle welcome email):', err);
+      }
+
       console.log('✅ SetupProfile: Profile setup complete, navigating to dashboard');
       
       // Mark user as returning and navigate explicitly
