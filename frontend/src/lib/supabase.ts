@@ -32,20 +32,25 @@ const createMockClient = (): SupabaseClient => {
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true, // Required for OAuth callback handling
+        persistSession: true, // Required: Persist session to localStorage
+        autoRefreshToken: true, // Required: Auto-refresh expired tokens
+        detectSessionInUrl: true, // Required: Automatically detect and process OAuth callback from URL hash
       },
     })
   : createMockClient();
 
-// Runtime assertion logging (masked) for debugging
+// Runtime assertion logging for debugging
 if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
   console.warn('⚠️ Supabase env variables missing or not loaded.');
   console.warn('   REACT_APP_SUPABASE_URL exists:', !!process.env.REACT_APP_SUPABASE_URL);
   console.warn('   REACT_APP_SUPABASE_ANON_KEY exists:', !!process.env.REACT_APP_SUPABASE_ANON_KEY);
+  console.warn('   REACT_APP_USE_MOCK:', process.env.REACT_APP_USE_MOCK || 'false');
 } else {
   console.log('✅ Supabase client initialized with env variables');
+  console.log('✅ Session persistence enabled: persistSession=true');
+  console.log('✅ Token refresh enabled: autoRefreshToken=true');
+  console.log('✅ URL hash detection enabled: detectSessionInUrl=true');
+  console.log('✅ OAuth callback will be processed automatically from URL hash');
 }
 
 export const isSupabaseMock = (): boolean => {
