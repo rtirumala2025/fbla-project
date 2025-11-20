@@ -169,16 +169,71 @@ export const AuthCallback = () => {
           return;
         }
 
+        // Strategy 1.5: Manual hash processing if getSession() failed but hash exists
+        // This handles cases where Supabase hasn't processed the hash yet or detectSessionInUrl failed
+        // We manually parse the hash and use setSession() to establish the session
+        if (window.location.hash.includes('access_token') && !initialSession) {
+          logToFile('🔵 AuthCallback: Strategy 1.5 - Manual hash processing...');
+          logToFile('  Hash contains access_token but getSession() returned null');
+          logToFile('  Attempting to manually process hash and set session...');
+          
+          try {
+            // Parse hash parameters
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+            const expiresIn = hashParams.get('expires_in');
+            const tokenType = hashParams.get('token_type') || 'bearer';
+            
+            if (accessToken && refreshToken) {
+              logToFile('  Found access_token and refresh_token in hash');
+              logToFile(`  Token type: ${tokenType}`);
+              logToFile(`  Expires in: ${expiresIn || 'unknown'} seconds`);
+              
+              // Set session manually using setSession()
+              // This will establish the session and trigger auth state changes
+              const { data: setSessionData, error: setSessionError } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+              
+              if (setSessionError) {
+                logToFile(`  ❌ Error setting session manually: ${setSessionError.message}`, 'error');
+                logToFile(`  Error code: ${setSessionError.status || 'unknown'}`, 'error');
+              } else if (setSessionData.session) {
+                logToFile('  ✅ Successfully set session manually via setSession()');
+                logSessionDetails(setSessionData.session);
+                sessionResolved.current = true;
+                
+                // Clean up hash from URL to prevent reprocessing
+                window.history.replaceState(null, '', window.location.pathname);
+                logToFile('  Cleaned hash from URL');
+                
+                await handleSessionSuccess(setSessionData.session);
+                return;
+              } else {
+                logToFile('  ⚠️ setSession() succeeded but no session returned', 'warn');
+              }
+            } else {
+              logToFile(`  ⚠️ Missing tokens in hash - access_token: ${!!accessToken}, refresh_token: ${!!refreshToken}`, 'warn');
+            }
+          } catch (hashError: any) {
+            logToFile(`  ❌ Error during manual hash processing: ${hashError.message}`, 'error');
+            logToFile(`  Stack: ${hashError.stack || 'none'}`, 'error');
+          }
+        }
+
         // Strategy 2: Set up SIGNED_IN auth state listener as fallback
         logToFile('🔵 AuthCallback: Strategy 2 - Setting up SIGNED_IN auth state listener as fallback...');
         
         const sessionPromise = new Promise<any>((resolve, reject) => {
           let resolved = false;
+          // 5 second timeout for SIGNED_IN event
           const timeout = setTimeout(() => {
             if (!resolved) {
               resolved = true;
-              logToFile('⚠️ AuthCallback: Auth state change timeout (5s)', 'warn');
-              reject(new Error('Auth state change timeout'));
+              logToFile('⚠️ AuthCallback: Auth state change timeout (5s) - SIGNED_IN event not received', 'warn');
+              reject(new Error('Auth state change timeout - SIGNED_IN event not received within 5 seconds'));
             }
           }, 5000);
           
