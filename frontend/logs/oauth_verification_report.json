@@ -1,0 +1,195 @@
+{
+  "status": "ok",
+  "checks": {
+    "environment": {
+      "working_directory": "pass",
+      "package_json": "pass",
+      "env_file": {
+        "exists": true,
+        "variables": {
+          "REACT_APP_SUPABASE_URL": "present",
+          "REACT_APP_SUPABASE_ANON_KEY": "present",
+          "REACT_APP_USE_MOCK": "present"
+        }
+      },
+      "key_files": {
+        "supabase_ts": "pass",
+        "auth_callback_tsx": "pass",
+        "auth_context_tsx": "pass",
+        "app_tsx": "pass"
+      }
+    },
+    "static_code": {
+      "supabase_client_config": {
+        "status": "pass",
+        "persistSession": true,
+        "autoRefreshToken": true,
+        "detectSessionInUrl": true,
+        "notes": "All required settings present"
+      },
+      "auth_callback": {
+        "status": "pass",
+        "uses_getSession": true,
+        "has_retry_logic": true,
+        "has_error_logging": true,
+        "notes": "Enhanced with better diagnostics"
+      },
+      "router_config": {
+        "status": "pass",
+        "route": "/auth/callback",
+        "exact_match": true,
+        "notes": "Route correctly configured"
+      },
+      "env_variable_usage": {
+        "status": "pass",
+        "mismatches": [],
+        "notes": "All code uses correct variable names"
+      }
+    },
+    "runtime": {
+      "dev_server": {
+        "status": "pass",
+        "port": 3000,
+        "accessible": true
+      },
+      "initial_logs": {
+        "status": "pass",
+        "supabase_initialized": true,
+        "env_loaded": true,
+        "errors": []
+      },
+      "oauth_flow_test": {
+        "status": "pending",
+        "notes": "Requires manual user interaction with Google OAuth"
+      }
+    }
+  },
+  "fixes_committed": [
+    {
+      "sha": "75c709c",
+      "message": "fix(oauth): improve OAuth callback session extraction",
+      "files": [
+        "frontend/src/lib/supabase.ts",
+        "frontend/src/pages/AuthCallback.tsx",
+        "frontend/scripts/validate-oauth-runtime.js"
+      ],
+      "changes": [
+        "Enhanced error logging in AuthCallback",
+        "Added runtime assertion in supabase.ts",
+        "Created validate-oauth-runtime.js script"
+      ]
+    },
+    {
+      "sha": "4ed88cf",
+      "message": "fix(oauth): remove getSessionFromUrl() - not available in Supabase v2",
+      "files": [
+        "frontend/src/pages/AuthCallback.tsx"
+      ],
+      "changes": [
+        "Removed non-existent getSessionFromUrl() method",
+        "Relies on getSession() with detectSessionInUrl: true"
+      ]
+    }
+  ],
+  "manual_steps": [
+    {
+      "service": "Supabase Dashboard",
+      "steps": [
+        {
+          "section": "Authentication → URL Configuration",
+          "action": "Verify Site URL is set to http://localhost:3000",
+          "required": true
+        },
+        {
+          "section": "Authentication → URL Configuration",
+          "action": "Add redirect URL: http://localhost:3000/auth/callback",
+          "required": true
+        },
+        {
+          "section": "Authentication → Providers → Google",
+          "action": "Verify Google OAuth is enabled",
+          "required": true
+        },
+        {
+          "section": "Authentication → Providers → Google",
+          "action": "Verify Client ID and Client Secret are set correctly",
+          "required": true
+        }
+      ]
+    },
+    {
+      "service": "Google Cloud Console",
+      "steps": [
+        {
+          "section": "OAuth 2.0 Client IDs",
+          "action": "Add Authorized JavaScript origin: http://localhost:3000",
+          "required": true
+        },
+        {
+          "section": "OAuth 2.0 Client IDs",
+          "action": "Add Authorized redirect URI: https://xhhtkjtcdeewesijxbts.supabase.co/auth/v1/callback",
+          "required": true,
+          "note": "Replace with your actual Supabase project URL"
+        }
+      ]
+    }
+  ],
+  "oauth_test_result": {
+    "success": null,
+    "status": "pending_manual_test",
+    "details": {
+      "url_hash_present": null,
+      "getSessionFromUrl_called": false,
+      "getSession_called": true,
+      "console_errors": [],
+      "notes": "Requires manual OAuth flow test with Google authentication"
+    }
+  },
+  "console_logs_excerpt": "See frontend/logs/oauth_console_excerpt.log",
+  "next_actions": [
+    {
+      "priority": "high",
+      "action": "Test OAuth flow manually",
+      "steps": [
+        "1. Navigate to http://localhost:3000/login",
+        "2. Click 'Sign in with Google'",
+        "3. Authenticate with Google",
+        "4. Verify callback redirects to /auth/callback with hash",
+        "5. Check console logs for session retrieval",
+        "6. Verify user is redirected to dashboard or setup-profile"
+      ]
+    },
+    {
+      "priority": "high",
+      "action": "Verify Supabase configuration",
+      "steps": [
+        "1. Check redirect URLs in Supabase Dashboard",
+        "2. Verify Google OAuth provider is enabled",
+        "3. Verify credentials are correct"
+      ]
+    },
+    {
+      "priority": "high",
+      "action": "Verify Google Cloud Console",
+      "steps": [
+        "1. Check authorized redirect URIs",
+        "2. Ensure Supabase callback URL is included"
+      ]
+    },
+    {
+      "priority": "medium",
+      "action": "Run validation scripts",
+      "steps": [
+        "1. Open browser console",
+        "2. Run frontend/scripts/validate-oauth-runtime.js",
+        "3. Review results"
+      ]
+    }
+  ],
+  "recommendations": [
+    "All code fixes have been applied. The implementation should work correctly if Supabase and Google Cloud Console are properly configured.",
+    "Enhanced logging will help diagnose any remaining configuration issues.",
+    "Manual testing is required to verify end-to-end OAuth flow."
+  ]
+}
+
