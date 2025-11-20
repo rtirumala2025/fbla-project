@@ -21,6 +21,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import OAuthDiagnostics from '../utils/oauthDiagnostics';
 
 // Helper to log to both console and file
 const logToFile = (message: string, type: 'log' | 'warn' | 'error' = 'log') => {
@@ -73,6 +74,7 @@ export const AuthCallback = () => {
   const [error, setError] = useState<string | null>(null);
   const hasProcessed = useRef(false);
   const authStateSubscription = useRef<any>(null);
+  const diagnosticsRef = useRef<OAuthDiagnostics | null>(null);
 
   useEffect(() => {
     // Prevent duplicate processing
@@ -82,9 +84,33 @@ export const AuthCallback = () => {
     hasProcessed.current = true;
 
     const handleOAuthCallback = async () => {
-      // Enhanced logging for OAuth callback debugging
+      // Run comprehensive diagnostics
       logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       logToFile('🔵 AuthCallback: Component mounted');
+      logToFile('🔵 AuthCallback: Starting comprehensive OAuth diagnostics...');
+      
+      // Initialize and run diagnostics
+      diagnosticsRef.current = new OAuthDiagnostics();
+      try {
+        const diagnosticReport = await diagnosticsRef.current.runDiagnostics(supabase);
+        
+        // Store report and diagnostics instance in window for access
+        (window as any).__OAUTH_DIAGNOSTIC_REPORT__ = diagnosticReport;
+        (window as any).__OAUTH_DIAGNOSTICS__ = diagnosticsRef.current;
+        
+        // Export report automatically
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📊 Diagnostic report available at window.__OAUTH_DIAGNOSTIC_REPORT__');
+          console.log('💾 To download report, run: window.__OAUTH_DIAGNOSTICS__.downloadReport()');
+        }
+        
+        logToFile('✅ Diagnostics complete - see console for details');
+      } catch (diagnosticError: any) {
+        logToFile(`⚠️ Diagnostic error: ${diagnosticError.message}`, 'warn');
+      }
+      
+      // Enhanced logging for OAuth callback debugging
+      logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       logToFile(`🔵 AuthCallback: Full URL: ${window.location.href}`);
       logToFile(`🔵 AuthCallback: Hash exists: ${!!window.location.hash}`);
       logToFile(`🔵 AuthCallback: Hash length: ${window.location.hash.length}`);
@@ -442,6 +468,10 @@ export const AuthCallback = () => {
       if (authStateSubscription.current) {
         authStateSubscription.current.data.subscription.unsubscribe();
         authStateSubscription.current = null;
+      }
+      if (diagnosticsRef.current) {
+        diagnosticsRef.current.cleanup();
+        diagnosticsRef.current = null;
       }
     };
   }, [navigate]);
