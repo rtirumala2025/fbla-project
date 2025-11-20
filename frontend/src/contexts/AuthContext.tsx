@@ -321,15 +321,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
       }
       
+      // Use redirect flow (not popup) for Google OAuth
+      // Redirect flow is more reliable for session handling and works better across browsers
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
-          queryParams: {
-            // Optional: You can add additional query parameters here
-            // access_type: 'offline',
-            // prompt: 'consent',
-          },
+          skipBrowserRedirect: false, // Explicitly use redirect flow (not popup)
         },
       });
 
