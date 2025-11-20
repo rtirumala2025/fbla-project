@@ -149,7 +149,20 @@ export const AuthCallback = () => {
         logToFile('🔵 AuthCallback: Waiting 750ms for Supabase to process OAuth callback...');
         logToFile('  Note: Supabase v2 automatically processes URL hash when detectSessionInUrl: true');
         logToFile('  Manual hash processing causes 401 errors and must be avoided');
+        
+        // Check localStorage before delay
+        const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+        const storageKey = supabaseUrl 
+          ? `sb-${supabaseUrl.split('//')[1]?.split('.')[0]}-auth-token`
+          : null;
+        const storedBeforeDelay = storageKey ? localStorage.getItem(storageKey) : null;
+        logToFile(`  localStorage before delay: ${!!storedBeforeDelay ? 'Has data' : 'Empty'}`);
+        
         await new Promise(resolve => setTimeout(resolve, 750));
+        
+        // Check localStorage after delay
+        const storedAfterDelay = storageKey ? localStorage.getItem(storageKey) : null;
+        logToFile(`  localStorage after delay: ${!!storedAfterDelay ? 'Has data' : 'Empty'}`);
         
         logToFile('🔵 AuthCallback: Attempting getSession()...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -157,6 +170,26 @@ export const AuthCallback = () => {
         logToFile(`🔵 AuthCallback: getSession() result:`);
         logToFile(`  Session exists: ${!!session}`);
         logToFile(`  Error: ${sessionError?.message || 'none'}`);
+        
+        // Enhanced diagnostics if session is null
+        if (!session && !sessionError) {
+          logToFile('⚠️ AuthCallback: Session is null but no error - possible configuration issue', 'warn');
+          logToFile('  Diagnostic checks:');
+          logToFile(`    - Supabase URL configured: ${!!supabaseUrl}`);
+          logToFile(`    - Storage key: ${storageKey || 'N/A'}`);
+          logToFile(`    - localStorage has data: ${!!storedAfterDelay}`);
+          logToFile(`    - Hash contains access_token: ${window.location.hash.includes('access_token')}`);
+          logToFile(`    - Hash contains refresh_token: ${window.location.hash.includes('refresh_token')}`);
+          
+          if (window.location.hash.includes('access_token') && !storedAfterDelay) {
+            logToFile('  ⚠️  Hash exists but localStorage is empty - Supabase may not be processing hash', 'warn');
+            logToFile('  Possible causes:', 'warn');
+            logToFile('    1. detectSessionInUrl: false in supabase.ts', 'warn');
+            logToFile('    2. Supabase project redirect URL mismatch', 'warn');
+            logToFile('    3. Google OAuth redirect URI mismatch in Google Cloud Console', 'warn');
+            logToFile('    4. Network request to /auth/v1/token failed (check Network tab)', 'warn');
+          }
+        }
         
         if (sessionError) {
           logToFile(`❌ AuthCallback: Error retrieving session: ${sessionError.message}`, 'error');
