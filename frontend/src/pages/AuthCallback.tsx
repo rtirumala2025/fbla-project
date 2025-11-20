@@ -40,36 +40,14 @@ export const AuthCallback = () => {
           return;
         }
 
-        // Try getSessionFromUrl() explicitly for OAuth callbacks (if available)
-        // This explicitly extracts session from URL hash and stores it
-        // With detectSessionInUrl: true, getSession() will also work, but getSessionFromUrl() is more explicit
-        console.log('🔵 AuthCallback: Extracting session from URL hash...');
-        let urlSessionData = null;
-        let urlSessionError = null;
+        // With detectSessionInUrl: true configured in Supabase client,
+        // getSession() will automatically detect and process the session from URL hash parameters
+        // Wait briefly for Supabase to process the OAuth callback from the URL
+        console.log('🔵 AuthCallback: Waiting for Supabase to process OAuth callback...');
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Try getSessionFromUrl() if available (Supabase v2)
-        if (typeof supabase.auth.getSessionFromUrl === 'function') {
-          try {
-            const urlSessionResult = await supabase.auth.getSessionFromUrl({ storeSession: true });
-            urlSessionData = urlSessionResult?.data?.session || null;
-            urlSessionError = urlSessionResult?.error || null;
-            if (urlSessionError) {
-              console.warn('⚠️ AuthCallback: getSessionFromUrl error (non-fatal):', urlSessionError);
-            }
-          } catch (err) {
-            console.warn('⚠️ AuthCallback: getSessionFromUrl not available or failed, using getSession():', err);
-          }
-        } else {
-          console.log('🔵 AuthCallback: getSessionFromUrl not available, relying on detectSessionInUrl + getSession()');
-        }
-        
-        // Wait briefly for Supabase to process the URL hash (if getSessionFromUrl wasn't used)
-        if (!urlSessionData) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-        
-        // Get the stored session after extraction
-        console.log('🔵 AuthCallback: Retrieving stored session...');
+        // Retrieve session - Supabase automatically extracts it from URL hash when detectSessionInUrl is enabled
+        console.log('🔵 AuthCallback: Retrieving session from Supabase...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -86,10 +64,9 @@ export const AuthCallback = () => {
         }
 
         if (!session) {
-          console.warn('⚠️ AuthCallback: No session found after getSessionFromUrl/getSession');
+          console.warn('⚠️ AuthCallback: No session found after getSession()');
           console.warn('  URL hash exists:', !!window.location.hash);
           console.warn('  URL hash preview:', window.location.hash.substring(0, 100) + (window.location.hash.length > 100 ? '...' : ''));
-          console.warn('  getSessionFromUrl result:', urlSessionData ? 'had session' : 'no session');
           
           // Fallback: try getSession() again after brief delay (in case of timing issue)
           console.log('🔵 AuthCallback: Retrying session retrieval with delay...');
