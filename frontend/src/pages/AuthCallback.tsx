@@ -6,9 +6,11 @@
  * Flow:
  * 1. User authenticates with Google OAuth
  * 2. Google redirects back to /auth/callback with hash parameters (#access_token=...)
- * 3. This component uses getSession() which automatically processes URL hash when detectSessionInUrl is enabled
- * 4. Session is stored by Supabase automatically
- * 5. User is redirected to dashboard (existing user) or setup-profile (new user)
+ * 3. This component waits for Supabase to process the URL hash (500-1000ms delay)
+ * 4. Attempts getSession() to retrieve session
+ * 5. Falls back to SIGNED_IN auth state listener if session not immediately available
+ * 6. Only redirects after confirming valid session
+ * 7. New user → /setup-profile, Returning user → /dashboard
  * 
  * Works in both development (localhost) and production (live URL).
  */
@@ -31,12 +33,34 @@ const logToFile = (message: string, type: 'log' | 'warn' | 'error' = 'log') => {
     console.log(logMessage);
   }
   
-  // Store in window for later export (we'll save to file)
+  // Store in window for later export
   if (typeof window !== 'undefined') {
     if (!(window as any).__OAUTH_DEBUG_LOGS__) {
       (window as any).__OAUTH_DEBUG_LOGS__ = [];
     }
     (window as any).__OAUTH_DEBUG_LOGS__.push(logMessage);
+  }
+};
+
+// Helper to export logs to file (downloads as oauth_session_debug.log)
+const exportLogsToFile = () => {
+  if (typeof window !== 'undefined' && (window as any).__OAUTH_DEBUG_LOGS__) {
+    try {
+      const logs = (window as any).__OAUTH_DEBUG_LOGS__.join('');
+      const blob = new Blob([logs], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'oauth_session_debug.log';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      logToFile('📄 Logs exported to oauth_session_debug.log');
+    } catch (err) {
+      console.error('Failed to export logs:', err);
+    }
   }
 };
 
@@ -46,6 +70,7 @@ export const AuthCallback = () => {
   const [error, setError] = useState<string | null>(null);
   const hasProcessed = useRef(false);
   const authStateSubscription = useRef<any>(null);
+  const sessionResolved = useRef(false);
 
   useEffect(() => {
     // Prevent duplicate processing
@@ -53,28 +78,6 @@ export const AuthCallback = () => {
       return;
     }
     hasProcessed.current = true;
-
-    // Export logs to file helper (defined early for use throughout)
-    const exportLogsToFile = () => {
-      if (typeof window !== 'undefined' && (window as any).__OAUTH_DEBUG_LOGS__) {
-        try {
-          const logs = (window as any).__OAUTH_DEBUG_LOGS__.join('');
-          const blob = new Blob([logs], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'oauth_session_debug.log';
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          logToFile('📄 Logs exported to oauth_session_debug.log');
-        } catch (err) {
-          console.error('Failed to export logs:', err);
-        }
-      }
-    };
 
     const handleOAuthCallback = async () => {
       // Enhanced logging for OAuth callback debugging
@@ -84,25 +87,10 @@ export const AuthCallback = () => {
       logToFile(`🔵 AuthCallback: Hash exists: ${!!window.location.hash}`);
       logToFile(`🔵 AuthCallback: Hash length: ${window.location.hash.length}`);
       
-      // Check localStorage for existing session
-      const storedSession = localStorage.getItem('sb-' + process.env.REACT_APP_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token');
-      logToFile(`🔵 AuthCallback: Session in localStorage: ${!!storedSession}`);
-      
-      // Check cookies
-      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {} as Record<string, string>);
-      logToFile(`🔵 AuthCallback: Cookies present: ${Object.keys(cookies).length > 0}`);
-      const supabaseCookie = Object.keys(cookies).find(key => key.includes('supabase') || key.includes('auth'));
-      logToFile(`🔵 AuthCallback: Supabase cookie found: ${!!supabaseCookie}`);
-      
+      // Log hash contents (masked for security in production)
       if (window.location.hash) {
-        // Log hash contents (masked for security)
         const hashPreview = window.location.hash.substring(0, 150);
         logToFile(`🔵 AuthCallback: Hash preview: ${hashPreview}${window.location.hash.length > 150 ? '...' : ''}`);
-        // Check for tokens in hash
         const hasAccessToken = window.location.hash.includes('access_token');
         const hasRefreshToken = window.location.hash.includes('refresh_token');
         const hasError = window.location.hash.includes('error');
@@ -115,12 +103,22 @@ export const AuthCallback = () => {
           logToFile(`🔵 AuthCallback: Full hash: ${window.location.hash}`);
         }
       }
+      
+      // Check localStorage for existing session
+      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+      const storageKey = supabaseUrl 
+        ? `sb-${supabaseUrl.split('//')[1]?.split('.')[0]}-auth-token`
+        : null;
+      const storedSession = storageKey ? localStorage.getItem(storageKey) : null;
+      logToFile(`🔵 AuthCallback: Session in localStorage: ${!!storedSession}`);
+      logToFile(`🔵 AuthCallback: Storage key: ${storageKey || 'N/A'}`);
+      
       logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       
       try {
         // Check if we're in mock mode
         if (process.env.REACT_APP_USE_MOCK === 'true') {
-          console.log('⚠️ AuthCallback: Mock mode enabled, skipping OAuth');
+          logToFile('⚠️ AuthCallback: Mock mode enabled, skipping OAuth', 'warn');
           setStatus('Mock mode: Redirecting to dashboard...');
           setTimeout(() => {
             navigate('/dashboard', { replace: true });
@@ -128,9 +126,51 @@ export const AuthCallback = () => {
           return;
         }
 
-        // Strategy 1: Listen for auth state change event (most reliable for OAuth)
-        // This ensures we catch the SIGNED_IN event when Supabase processes the hash
-        logToFile('🔵 AuthCallback: Setting up auth state change listener...');
+        // Verify environment variables
+        logToFile('🔵 AuthCallback: Verifying environment variables...');
+        const supabaseUrlEnv = process.env.REACT_APP_SUPABASE_URL;
+        const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+        const useMock = process.env.REACT_APP_USE_MOCK;
+        
+        logToFile(`  REACT_APP_SUPABASE_URL: ${supabaseUrlEnv ? '✓ Set' : '✗ Missing'}`);
+        logToFile(`  REACT_APP_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '✓ Set' : '✗ Missing'}`);
+        logToFile(`  REACT_APP_USE_MOCK: ${useMock || 'false'}`);
+        
+        if (!supabaseUrlEnv || !supabaseAnonKey) {
+          const errorMsg = 'Missing Supabase environment variables';
+          logToFile(`❌ AuthCallback: ${errorMsg}`, 'error');
+          setError(errorMsg);
+          setStatus('Configuration error. Redirecting to login...');
+          setTimeout(() => {
+            navigate('/login', { 
+              replace: true, 
+              state: { error: errorMsg } 
+            });
+          }, 2000);
+          return;
+        }
+
+        // Strategy 1: Wait for Supabase to process URL hash, then try getSession()
+        logToFile('🔵 AuthCallback: Strategy 1 - Waiting 750ms for Supabase to process OAuth callback...');
+        await new Promise(resolve => setTimeout(resolve, 750));
+        
+        logToFile('🔵 AuthCallback: Attempting getSession()...');
+        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+        
+        logToFile(`🔵 AuthCallback: getSession() result:`);
+        logToFile(`  Session exists: ${!!initialSession}`);
+        logToFile(`  Error: ${sessionError?.message || 'none'}`);
+        
+        if (initialSession) {
+          logToFile('✅ AuthCallback: Session found via getSession()');
+          logSessionDetails(initialSession);
+          sessionResolved.current = true;
+          await handleSessionSuccess(initialSession);
+          return;
+        }
+
+        // Strategy 2: Set up SIGNED_IN auth state listener as fallback
+        logToFile('🔵 AuthCallback: Strategy 2 - Setting up SIGNED_IN auth state listener as fallback...');
         
         const sessionPromise = new Promise<any>((resolve, reject) => {
           let resolved = false;
@@ -146,185 +186,177 @@ export const AuthCallback = () => {
             logToFile(`🔵 AuthCallback: Auth state change event: ${event}`);
             logToFile(`🔵 AuthCallback: Session in event: ${!!session}`);
             
-            if (event === 'SIGNED_IN' && session) {
-              if (!resolved) {
-                resolved = true;
-                clearTimeout(timeout);
-                logToFile('✅ AuthCallback: SIGNED_IN event received with session');
-                resolve(session);
-              }
-            } else if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
-              if (!resolved) {
-                resolved = true;
-                clearTimeout(timeout);
-                logToFile('❌ AuthCallback: Session not found in auth state change', 'error');
-                reject(new Error('No session in auth state change'));
-              }
+            if (event === 'SIGNED_IN' && session && !resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              logToFile('✅ AuthCallback: SIGNED_IN event received with session');
+              logSessionDetails(session);
+              resolve(session);
+            } else if (event === 'SIGNED_OUT' && !resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              logToFile('❌ AuthCallback: SIGNED_OUT event received', 'error');
+              reject(new Error('User signed out'));
             }
           });
         });
 
-        // Strategy 2: Also try getSession() after waiting
-        logToFile('🔵 AuthCallback: Waiting for Supabase to process OAuth callback...');
-        logToFile('  Strategy 1: Listening for SIGNED_IN event (preferred)');
-        logToFile('  Strategy 2: Will try getSession() after 1000ms delay');
+        // Try getSession() again after another delay
+        logToFile('🔵 AuthCallback: Waiting additional 500ms and retrying getSession()...');
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Wait a bit for Supabase to process the hash
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const { data: { session: retrySession }, error: retryError } = await supabase.auth.getSession();
         
-        // Try getSession() as fallback
-        logToFile('🔵 AuthCallback: Attempting getSession() as fallback...');
-        const { data: { session: directSession }, error: sessionError } = await supabase.auth.getSession();
-        
-        logToFile(`🔵 AuthCallback: Direct getSession() result:`);
-        logToFile(`  Session exists: ${!!directSession}`);
-        logToFile(`  Error: ${sessionError?.message || 'none'}`);
-        
-        let session = directSession;
-        
-        // If direct getSession() found session, use it immediately
-        if (session) {
-          logToFile('✅ AuthCallback: Session found via direct getSession()');
-        } else {
-          // Wait for auth state change event
-          logToFile('🔵 AuthCallback: No session via direct getSession(), waiting for SIGNED_IN event...');
-          try {
-            session = await Promise.race([
-              sessionPromise,
-              new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
-            ]);
-            logToFile('✅ AuthCallback: Session received from auth state change event');
-          } catch (err: any) {
-            logToFile(`⚠️ AuthCallback: Auth state change listener failed: ${err.message}`, 'warn');
-            // Will fall through to retry logic below
+        if (retrySession) {
+          logToFile('✅ AuthCallback: Session found via retry getSession()');
+          logSessionDetails(retrySession);
+          sessionResolved.current = true;
+          
+          // Clean up auth state subscription
+          if (authStateSubscription.current) {
+            authStateSubscription.current.data.subscription.unsubscribe();
+            authStateSubscription.current = null;
           }
-        }
-        
-        // Log session details if found
-        if (session) {
-          logToFile(`  User ID: ${session.user.id}`);
-          logToFile(`  User email: ${session.user.email}`);
-          logToFile(`  Session expires at: ${new Date(session.expires_at! * 1000).toISOString()}`);
-          logToFile(`  Session expires in: ${Math.round((session.expires_at! * 1000 - Date.now()) / 1000)} seconds`);
-          logToFile(`  Access token exists: ${!!session.access_token}`);
-          logToFile(`  Refresh token exists: ${!!session.refresh_token}`);
-        }
-
-        // Clean up auth state subscription
-        if (authStateSubscription.current) {
-          authStateSubscription.current.data.subscription.unsubscribe();
-          authStateSubscription.current = null;
-        }
-
-        if (sessionError) {
-          logToFile(`❌ AuthCallback: Error retrieving session: ${sessionError.message}`, 'error');
-          setError(sessionError.message || 'Session retrieval failed');
-          setStatus('Authentication failed. Redirecting to login...');
-          setTimeout(() => {
-            navigate('/login', { 
-              replace: true, 
-              state: { error: `Authentication failed: ${sessionError.message}` } 
-            });
-          }, 2000);
+          
+          await handleSessionSuccess(retrySession);
           return;
         }
 
-        if (!session) {
-          // Enhanced error logging when session is missing
-          logToFile('⚠️ AuthCallback: No session found after all attempts', 'warn');
+        // Wait for auth state change event
+        logToFile('🔵 AuthCallback: No session via getSession(), waiting for SIGNED_IN event...');
+        try {
+          const sessionFromEvent = await Promise.race([
+            sessionPromise,
+            new Promise<any>((_, reject) => setTimeout(() => reject(new Error('Timeout waiting for SIGNED_IN event')), 3000))
+          ]);
+          
+          logToFile('✅ AuthCallback: Session received from auth state change event');
+          sessionResolved.current = true;
+          
+          // Clean up auth state subscription
+          if (authStateSubscription.current) {
+            authStateSubscription.current.data.subscription.unsubscribe();
+            authStateSubscription.current = null;
+          }
+          
+          await handleSessionSuccess(sessionFromEvent);
+          return;
+        } catch (err: any) {
+          logToFile(`⚠️ AuthCallback: Auth state change listener failed: ${err.message}`, 'warn');
+          
+          // Clean up auth state subscription
+          if (authStateSubscription.current) {
+            authStateSubscription.current.data.subscription.unsubscribe();
+            authStateSubscription.current = null;
+          }
+          
+          // Final retry: try getSession() one more time after longer delay
+          logToFile('🔵 AuthCallback: Final retry - waiting 1000ms and trying getSession() again...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const { data: { session: finalSession }, error: finalError } = await supabase.auth.getSession();
+          
+          if (finalSession) {
+            logToFile('✅ AuthCallback: Found session after final retry');
+            logSessionDetails(finalSession);
+            sessionResolved.current = true;
+            await handleSessionSuccess(finalSession);
+            return;
+          }
+          
+          // All strategies failed
+          logToFile('❌ AuthCallback: No session found after all attempts', 'error');
           logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          logToFile(`  URL hash exists: ${!!window.location.hash}`);
+          logToFile(`  URL hash exists: ${!!window.location.hash}`, 'error');
           if (window.location.hash) {
-            logToFile(`  URL hash length: ${window.location.hash.length}`);
+            logToFile(`  URL hash length: ${window.location.hash.length}`, 'error');
             const hashPreview = window.location.hash.substring(0, 200);
-            logToFile(`  URL hash preview: ${hashPreview}${window.location.hash.length > 200 ? '...' : ''}`);
-            logToFile(`  Hash contains access_token: ${window.location.hash.includes('access_token')}`);
-            logToFile(`  Hash contains refresh_token: ${window.location.hash.includes('refresh_token')}`);
-            logToFile(`  Hash contains error: ${window.location.hash.includes('error')}`);
-            // Log full hash for debugging (in development)
+            logToFile(`  URL hash preview: ${hashPreview}${window.location.hash.length > 200 ? '...' : ''}`, 'error');
+            logToFile(`  Hash contains access_token: ${window.location.hash.includes('access_token')}`, 'error');
+            logToFile(`  Hash contains refresh_token: ${window.location.hash.includes('refresh_token')}`, 'error');
             if (process.env.NODE_ENV === 'development') {
-              logToFile(`  Full hash: ${window.location.hash}`);
+              logToFile(`  Full hash: ${window.location.hash}`, 'error');
             }
           } else {
             logToFile('  ❌ CRITICAL: No hash in URL! OAuth redirect may have failed.', 'error');
-            logToFile('  This usually means:', 'error');
-            logToFile('    1. Redirect URL mismatch in Supabase/Google configuration', 'error');
-            logToFile('    2. OAuth flow was not completed', 'error');
           }
+          logToFile(`  Final retry error: ${finalError?.message || 'none'}`, 'error');
+          logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'error');
           
-          // Check localStorage again
-          const finalStoredSession = localStorage.getItem('sb-' + process.env.REACT_APP_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token');
-          logToFile(`  Final check - Session in localStorage: ${!!finalStoredSession}`);
+          setError('No session found. Please try signing in again.');
+          setStatus('Authentication failed. Redirecting to login...');
           
-          logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          
-          // Final retry: try getSession() one more time after longer delay
-          logToFile('🔵 AuthCallback: Final retry - waiting 2000ms and trying getSession() again...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          const { data: { session: finalSession }, error: finalError } = await supabase.auth.getSession();
-          
-          if (finalError || !finalSession) {
-            logToFile('❌ AuthCallback: No session found after final retry', 'error');
-            logToFile(`  Final retry error: ${finalError?.message || 'none'}`, 'error');
-            logToFile(`  URL hash present: ${!!window.location.hash}`, 'error');
-            if (window.location.hash) {
-              logToFile(`  Hash contains access_token: ${window.location.hash.includes('access_token')}`, 'error');
-              logToFile(`  Hash contains refresh_token: ${window.location.hash.includes('refresh_token')}`, 'error');
-              if (process.env.NODE_ENV === 'development') {
-                logToFile(`  Full hash for debugging: ${window.location.hash}`, 'error');
-              }
-            }
-            logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'error');
-            setError('No session found. Please try signing in again.');
-            setStatus('Authentication failed. Redirecting to login...');
+          // Export logs before redirect
+          setTimeout(() => {
+            exportLogsToFile();
             setTimeout(() => {
               navigate('/login', { 
                 replace: true, 
                 state: { error: 'Authentication failed. Please try again. Check console for details.' } 
               });
-            }, 2000);
-            return;
-          }
-          
-          logToFile('✅ AuthCallback: Found session after final retry');
-          session = finalSession;
+            }, 500);
+          }, 1000);
         }
-
-        logToFile('✅ AuthCallback: Session retrieved successfully');
-        logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        logToFile(`  User ID: ${session.user.id}`);
-        logToFile(`  User email: ${session.user.email}`);
-        logToFile(`  Session expires at: ${new Date(session.expires_at! * 1000).toISOString()}`);
-        logToFile(`  Session expires in: ${Math.round((session.expires_at! * 1000 - Date.now()) / 1000)} seconds`);
-        logToFile(`  Session access token exists: ${!!session.access_token}`);
-        logToFile(`  Session refresh token exists: ${!!session.refresh_token}`);
-        
-        // Verify session is persisted
-        const persistedSession = localStorage.getItem('sb-' + process.env.REACT_APP_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token');
-        logToFile(`  Session persisted to localStorage: ${!!persistedSession}`);
-        logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        
-        await handleSessionSuccess(session);
       } catch (err: any) {
         logToFile(`❌ AuthCallback: Unexpected error: ${err.message || err}`, 'error');
         logToFile(`  Stack: ${err.stack || 'none'}`, 'error');
         setError(err.message || 'An unexpected error occurred');
         setStatus('Authentication failed. Redirecting to login...');
         
+        // Clean up auth state subscription
+        if (authStateSubscription.current) {
+          authStateSubscription.current.data.subscription.unsubscribe();
+          authStateSubscription.current = null;
+        }
+        
         setTimeout(() => {
-          // Export logs to file before navigating (will be defined above)
-          if (typeof exportLogsToFile === 'function') {
-            exportLogsToFile();
-          }
-          navigate('/login', { 
-            replace: true, 
-            state: { error: 'Authentication failed. Please try again.' } 
-          });
-        }, 2000);
+          exportLogsToFile();
+          setTimeout(() => {
+            navigate('/login', { 
+              replace: true, 
+              state: { error: 'Authentication failed. Please try again.' } 
+            });
+          }, 500);
+        }, 1000);
       }
     };
 
+    // Helper function to log session details
+    const logSessionDetails = (session: any) => {
+      if (!session) return;
+      
+      logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      logToFile('✅ AuthCallback: Session details');
+      logToFile(`  User ID: ${session.user.id}`);
+      logToFile(`  User email: ${session.user.email}`);
+      logToFile(`  Session expires at: ${new Date(session.expires_at! * 1000).toISOString()}`);
+      logToFile(`  Session expires in: ${Math.round((session.expires_at! * 1000 - Date.now()) / 1000)} seconds`);
+      logToFile(`  Access token exists: ${!!session.access_token}`);
+      logToFile(`  Refresh token exists: ${!!session.refresh_token}`);
+      
+      // Verify session is persisted
+      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+      const storageKey = supabaseUrl 
+        ? `sb-${supabaseUrl.split('//')[1]?.split('.')[0]}-auth-token`
+        : null;
+      const persistedSession = storageKey ? localStorage.getItem(storageKey) : null;
+      logToFile(`  Session persisted to localStorage: ${!!persistedSession}`);
+      logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    };
+
     const handleSessionSuccess = async (session: any) => {
+      if (!session || !session.user) {
+        logToFile('❌ AuthCallback: Invalid session object', 'error');
+        setError('Invalid session');
+        setStatus('Authentication failed. Redirecting to login...');
+        setTimeout(() => {
+          exportLogsToFile();
+          setTimeout(() => {
+            navigate('/login', { replace: true });
+          }, 500);
+        }, 1000);
+        return;
+      }
+
       const userId = session.user.id;
       const userEmail = session.user.email;
       
@@ -353,10 +385,13 @@ export const AuthCallback = () => {
         logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
         // Route decision: new users to setup-profile, returning users to dashboard
+        // Only redirect after confirming valid session
         if (isNewUser) {
           logToFile('🆕 AuthCallback: New user detected → redirecting to /setup-profile');
+          logToFile('  Redirect decision: New user → /setup-profile');
           setStatus('Welcome! Setting up your profile...');
-          // Export logs before redirect (delay slightly to capture all logs)
+          
+          // Export logs before redirect
           setTimeout(() => {
             exportLogsToFile();
             setTimeout(() => {
@@ -365,8 +400,10 @@ export const AuthCallback = () => {
           }, 1000);
         } else {
           logToFile('👋 AuthCallback: Returning user → redirecting to /dashboard');
+          logToFile('  Redirect decision: Returning user → /dashboard');
           setStatus('Welcome back! Redirecting to dashboard...');
-          // Export logs before redirect (delay slightly to capture all logs)
+          
+          // Export logs before redirect
           setTimeout(() => {
             exportLogsToFile();
             setTimeout(() => {
@@ -377,6 +414,7 @@ export const AuthCallback = () => {
       } catch (profileCheckError: any) {
         logToFile(`❌ AuthCallback: Error in profile check: ${profileCheckError?.message || profileCheckError}`, 'error');
         // Default to dashboard if profile check fails
+        logToFile('  Redirect decision: Profile check failed → defaulting to /dashboard');
         setStatus('Welcome! Redirecting to dashboard...');
         setTimeout(() => {
           exportLogsToFile();
