@@ -37,20 +37,20 @@ export const BudgetDashboard: React.FC = () => {
   const [txns, setTxns] = useState<any[]>([]);
   const [filter, setFilter] = useState<Filter>({ range: 'week', category: 'all', type: 'all' });
   
-  // Wallet state
+  // Finance state
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
-  const [walletLoading, setWalletLoading] = useState(true);
+  const [financeLoading, setFinanceLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [goalForm, setGoalForm] = useState({ name: '', target: '' });
   const [donationForm, setDonationForm] = useState({ recipientId: '', amount: '', message: '' });
   const [contributionInputs, setContributionInputs] = useState<Record<string, string>>({});
 
-  // Fetch finance summary for wallet functionality
+  // Fetch finance summary
   const fetchSummary = useCallback(
     async (options?: FinanceRefreshOptions) => {
       const silent = options?.silent ?? false;
       if (!silent) {
-        setWalletLoading(true);
+        setFinanceLoading(true);
       }
       try {
         console.log('📊 BudgetDashboard: Fetching finance summary...');
@@ -68,7 +68,7 @@ export const BudgetDashboard: React.FC = () => {
         // The API will fallback to mock data automatically
       } finally {
         if (!silent) {
-          setWalletLoading(false);
+          setFinanceLoading(false);
         }
       }
     },
@@ -138,7 +138,7 @@ export const BudgetDashboard: React.FC = () => {
     return Object.entries(byDay).map(([name, v]) => ({ name, ...v }));
   }, [filtered]);
 
-  // Wallet handlers with logging
+  // Finance handlers with logging
   const handleClaimAllowance = async () => {
     if (!summary?.daily_allowance_available) {
       toast.info('Daily allowance already claimed.');
@@ -284,7 +284,7 @@ export const BudgetDashboard: React.FC = () => {
   // Log balance on summary change
   useEffect(() => {
     if (summary) {
-      console.log('💰 BudgetDashboard: Wallet balance updated', {
+      console.log('💰 BudgetDashboard: Finance balance updated', {
         balance: summary.balance,
         currency: summary.currency,
         lifetimeEarned: summary.lifetime_earned,
@@ -300,7 +300,7 @@ export const BudgetDashboard: React.FC = () => {
         <header className="flex items-center justify-between mb-10">
           <div>
             <h1 className="text-5xl font-black text-charcoal mb-3">Budget Dashboard</h1>
-            <p className="text-xl text-gray-600">Track your pet's spending, income, savings, and wallet</p>
+            <p className="text-xl text-gray-600">Track your pet's spending, income, savings, and financial goals</p>
           </div>
           <div className="flex gap-3" role="group" aria-label="Date range selector">
             {(['today','week','month','all'] as DateRange[]).map(r => (
@@ -319,12 +319,12 @@ export const BudgetDashboard: React.FC = () => {
           </div>
         </header>
 
-        {/* Wallet Overview Section */}
+        {/* Financial Overview Section */}
         {summary && (
           <section className="mb-12 rounded-3xl bg-white p-8 shadow-soft">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-6">
               <div>
-                <h2 className="text-3xl font-black text-charcoal mb-2">Wallet Overview</h2>
+                <h2 className="text-3xl font-black text-charcoal mb-2">Financial Overview</h2>
                 <p className="text-lg text-gray-600">
                   Manage your balance, allowance, donations, and savings goals
                 </p>
@@ -582,8 +582,8 @@ export const BudgetDashboard: React.FC = () => {
           <SummaryCard title="Net Savings" amount={Math.round(totals.net)} icon={<span>📈</span>} />
         </div>
 
-        {/* Loading state for wallet */}
-        {walletLoading && (
+        {/* Loading state for finance data */}
+        {financeLoading && (
           <div className="mb-10 flex justify-center">
             <LoadingSpinner size="md" />
           </div>
