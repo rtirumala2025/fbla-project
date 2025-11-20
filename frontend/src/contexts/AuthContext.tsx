@@ -322,17 +322,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // Use redirect flow (not popup) for Google OAuth
-      // Redirect flow is more reliable for session handling and works better across browsers
-      // Ensure skipBrowserRedirect is false to use redirect flow (not popup)
-      // Verify Supabase client configuration is correct:
-      // - persistSession: true (required for session persistence)
-      // - autoRefreshToken: true (required for token refresh)
-      // - detectSessionInUrl: true (required for OAuth callback)
+      // Supabase v2 best practice: Use redirect flow for OAuth
+      // - skipBrowserRedirect: false (default) uses redirect flow
+      // - Supabase automatically handles URL hash processing with detectSessionInUrl: true
+      // - Manual hash processing or setSession() causes 401 errors and must be avoided
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
-          skipBrowserRedirect: false, // Explicitly use redirect flow (not popup)
+          // skipBrowserRedirect defaults to false (redirect flow)
+          // Explicitly set to false to ensure redirect flow (not popup)
+          skipBrowserRedirect: false,
         },
       });
 
