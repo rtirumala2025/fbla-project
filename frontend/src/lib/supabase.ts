@@ -39,6 +39,15 @@ export const supabase = supabaseUrl && supabaseAnonKey
     })
   : createMockClient();
 
+// Runtime assertion logging (masked) for debugging
+if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
+  console.warn('⚠️ Supabase env variables missing or not loaded.');
+  console.warn('   REACT_APP_SUPABASE_URL exists:', !!process.env.REACT_APP_SUPABASE_URL);
+  console.warn('   REACT_APP_SUPABASE_ANON_KEY exists:', !!process.env.REACT_APP_SUPABASE_ANON_KEY);
+} else {
+  console.log('✅ Supabase client initialized with env variables');
+}
+
 export const isSupabaseMock = (): boolean => {
   return !supabaseUrl || !supabaseAnonKey;
 };
