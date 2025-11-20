@@ -4,6 +4,52 @@
 
 BEGIN;
 
+-- Ensure set_timestamps() function exists (in case 000_core_schema.sql hasn't been run)
+CREATE OR REPLACE FUNCTION public.set_timestamps()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at := timezone('utc', now());
+  IF NEW.created_at IS NULL THEN
+    NEW.created_at := timezone('utc', now());
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ensure public.users table exists (in case 000_core_schema.sql hasn't been run)
+CREATE TABLE IF NOT EXISTS public.users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  auth_user_id UUID UNIQUE,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+
+-- Ensure public.pets table exists (in case 002_pets.sql hasn't been run)
+-- Create minimal structure if it doesn't exist (just enough for foreign keys)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'pets') THEN
+    -- Create minimal pets table structure for foreign key references
+    -- Full structure should be created by 002_pets.sql migration
+    CREATE TABLE public.pets (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      species TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+    );
+    
+    -- Add timestamp trigger
+    DROP TRIGGER IF EXISTS trg_pets_timestamps ON public.pets;
+    CREATE TRIGGER trg_pets_timestamps
+    BEFORE INSERT OR UPDATE ON public.pets
+    FOR EACH ROW EXECUTE FUNCTION public.set_timestamps();
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS public.accessories (
   accessory_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
