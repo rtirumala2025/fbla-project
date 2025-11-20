@@ -15,7 +15,7 @@ import { SetupProfile } from './pages/SetupProfile';
 import { SpeciesSelection } from './pages/SpeciesSelection';
 import { BreedSelection } from './pages/BreedSelection';
 import { PetNaming } from './pages/PetNaming';
-import { Dashboard } from './pages/Dashboard';
+import { DashboardPage } from './pages/DashboardPage';
 import { Shop } from './pages/Shop';
 import BudgetDashboard from './pages/budget/BudgetDashboard';
 import FeedScreen from './pages/feed/FeedScreen';
@@ -34,8 +34,6 @@ import MemoryMatchGame from './pages/minigames/MemoryMatchGame';
 import { ProfilePage } from './pages/ProfilePage';
 import { AnalyticsDashboard } from './pages/analytics/AnalyticsDashboard';
 import { EventCalendarPage } from './pages/events/EventCalendarPage';
-import { WalletPage } from './pages/finance/WalletPage';
-import { SocialHub } from './pages/social/SocialHub';
 import { QuestDashboard } from './pages/quests/QuestDashboard';
 import { NextGenHub } from './pages/nextgen/NextGenHub';
 import { AvatarStudio } from './pages/pets/AvatarStudio';
@@ -58,7 +56,7 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { loading } = useAuth();
+  const { currentUser, loading } = useAuth();
 
   if (loading) {
     return (
@@ -66,6 +64,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
@@ -93,6 +95,13 @@ function AppContent() {
     };
   }, []);
 
+  // Log removed Social route in development
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Route Removal] Social route (/social) has been removed from the application');
+    }
+  }, []);
+
   return (
     <PetProvider userId={currentUser?.uid || null}>
       <FinancialProvider user={currentUser}>
@@ -112,7 +121,7 @@ function AppContent() {
             <Route path="/setup-profile" element={<ProtectedRoute><PageTransition><SetupProfile /></PageTransition></ProtectedRoute>} />
             
             {/* Protected routes - require authentication */}
-            <Route path="/dashboard" element={<ProtectedRoute><PageTransition><Dashboard /></PageTransition></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><PageTransition><DashboardPage /></PageTransition></ProtectedRoute>} />
             <Route path="/shop" element={<ProtectedRoute><PageTransition><Shop /></PageTransition></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><PageTransition><ProfilePage /></PageTransition></ProtectedRoute>} />
             <Route path="/budget" element={<ProtectedRoute><PageTransition><BudgetDashboard /></PageTransition></ProtectedRoute>} />
@@ -127,8 +136,8 @@ function AppContent() {
             <Route path="/help" element={<ProtectedRoute><PageTransition><HelpScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><PageTransition><AnalyticsDashboard /></PageTransition></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><PageTransition><EventCalendarPage /></PageTransition></ProtectedRoute>} />
-            <Route path="/wallet" element={<ProtectedRoute><PageTransition><WalletPage /></PageTransition></ProtectedRoute>} />
-            <Route path="/social" element={<ProtectedRoute><PageTransition><SocialHub /></PageTransition></ProtectedRoute>} />
+            {/* Wallet route removed - functionality integrated into Budget page */}
+            {/* Social route removed */}
             <Route path="/quests" element={<ProtectedRoute><PageTransition><QuestDashboard /></PageTransition></ProtectedRoute>} />
             <Route
               path="/nextgen"
