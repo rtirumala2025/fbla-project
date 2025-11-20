@@ -324,28 +324,6 @@ export const AuthCallback = () => {
       }
     };
 
-    // Export logs to file helper
-    const exportLogsToFile = () => {
-      if (typeof window !== 'undefined' && (window as any).__OAUTH_DEBUG_LOGS__) {
-        try {
-          const logs = (window as any).__OAUTH_DEBUG_LOGS__.join('');
-          const blob = new Blob([logs], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'oauth_session_debug.log';
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          logToFile('📄 Logs exported to oauth_session_debug.log');
-        } catch (err) {
-          console.error('Failed to export logs:', err);
-        }
-      }
-    };
-    
     const handleSessionSuccess = async (session: any) => {
       const userId = session.user.id;
       const userEmail = session.user.email;
