@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { profileService } from '../services/profileService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -50,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const initialSessionLoadedRef = useRef(false);
 
   // Helper function to check if user has a profile
   const checkUserProfile = async (userId: string): Promise<boolean> => {
@@ -119,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }, 10000); // 10 second timeout
     
-    // Get initial session
+    // Get initial session - this restores the session from localStorage
     supabase.auth.getSession().then(async ({ data: { session }, error }: { data: { session: any }, error: any }) => {
       console.log('🔵 AuthContext: Initial session check');
       console.log('  Session exists:', !!session);
@@ -146,12 +147,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setCurrentUser(mappedUser);
       setLoading(false);
+      initialSessionLoadedRef.current = true; // Mark initial session as loaded
       clearTimeout(fallbackTimeout); // Clear timeout since we completed successfully
     }).catch((err: any) => {
       console.error('❌ Error getting session:', err);
       setCurrentUser(null);
       setIsNewUser(false);
       setLoading(false);
+      initialSessionLoadedRef.current = true; // Mark as loaded even on error
       clearTimeout(fallbackTimeout); // Clear timeout since we completed (with error)
     });
 
@@ -162,6 +165,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('  Has session:', !!session);
       console.log('  User email:', session?.user?.email || 'none');
       console.log('  Session expires at:', session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A');
+      
+      // Ignore INITIAL_SESSION event - we handle initial session via getSession() above
+      // This prevents race conditions where onAuthStateChange fires before getSession() completes
+      if (event === 'INITIAL_SESSION') {
+        console.log('  ⏭️ Skipping INITIAL_SESSION event - handled by getSession()');
+        return;
+      }
+      
+      // Only process auth state changes after initial session is loaded
+      // This prevents clearing the user state before getSession() completes
+      if (!initialSessionLoadedRef.current) {
+        console.log('  ⏭️ Skipping auth state change - initial session not yet loaded');
+        return;
+      }
       
       const mappedUser = mapSupabaseUser(session?.user || null);
       console.log('  Setting user:', mappedUser?.email || 'null');

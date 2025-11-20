@@ -18,12 +18,9 @@ import { PetNaming } from './pages/PetNaming';
 import { DashboardPage } from './pages/DashboardPage';
 import { Shop } from './pages/Shop';
 import BudgetDashboard from './pages/budget/BudgetDashboard';
-import FeedScreen from './pages/feed/FeedScreen';
 import CleanScreen from './pages/clean/CleanScreen';
-import PlayScreen from './pages/play/PlayScreen';
 import RestScreen from './pages/rest/RestScreen';
 import HealthCheckScreen from './pages/health/HealthCheckScreen';
-import EarnMoneyScreen from './pages/earn/EarnMoneyScreen';
 import SettingsScreen from './pages/settings/SettingsScreen';
 import HelpScreen from './pages/help/HelpScreen';
 import FetchGame from './pages/minigames/FetchGame';
@@ -32,9 +29,7 @@ import ReactionGame from './pages/minigames/ReactionGame';
 import DreamWorld from './pages/minigames/DreamWorld';
 import MemoryMatchGame from './pages/minigames/MemoryMatchGame';
 import { ProfilePage } from './pages/ProfilePage';
-import { AnalyticsDashboard } from './pages/analytics/AnalyticsDashboard';
 import { EventCalendarPage } from './pages/events/EventCalendarPage';
-import { QuestDashboard } from './pages/quests/QuestDashboard';
 import { NextGenHub } from './pages/nextgen/NextGenHub';
 import { AvatarStudio } from './pages/pets/AvatarStudio';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
@@ -95,13 +90,6 @@ function AppContent() {
     };
   }, []);
 
-  // Log removed Social route in development
-  React.useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Route Removal] Social route (/social) has been removed from the application');
-    }
-  }, []);
-
   return (
     <PetProvider userId={currentUser?.uid || null}>
       <FinancialProvider user={currentUser}>
@@ -125,20 +113,16 @@ function AppContent() {
             <Route path="/shop" element={<ProtectedRoute><PageTransition><Shop /></PageTransition></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><PageTransition><ProfilePage /></PageTransition></ProtectedRoute>} />
             <Route path="/budget" element={<ProtectedRoute><PageTransition><BudgetDashboard /></PageTransition></ProtectedRoute>} />
-            <Route path="/feed" element={<ProtectedRoute><PageTransition><FeedScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/clean" element={<ProtectedRoute><PageTransition><CleanScreen /></PageTransition></ProtectedRoute>} />
-            <Route path="/play" element={<ProtectedRoute><PageTransition><PlayScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/rest" element={<ProtectedRoute><PageTransition><RestScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/health" element={<ProtectedRoute><PageTransition><HealthCheckScreen /></PageTransition></ProtectedRoute>} />
-            <Route path="/earn" element={<ProtectedRoute><PageTransition><EarnMoneyScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><PageTransition><SettingsScreen /></PageTransition></ProtectedRoute>} />
             {/* eslint-disable-next-line */}
             <Route path="/help" element={<ProtectedRoute><PageTransition><HelpScreen /></PageTransition></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><PageTransition><AnalyticsDashboard /></PageTransition></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><PageTransition><EventCalendarPage /></PageTransition></ProtectedRoute>} />
             {/* Wallet route removed - functionality integrated into Budget page */}
             {/* Social route removed */}
-            <Route path="/quests" element={<ProtectedRoute><PageTransition><QuestDashboard /></PageTransition></ProtectedRoute>} />
+            {/* Quests route removed - functionality integrated into Dashboard page */}
             <Route
               path="/nextgen"
               element={

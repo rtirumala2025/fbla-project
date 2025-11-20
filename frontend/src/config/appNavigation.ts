@@ -35,20 +35,7 @@ export const primaryNav: AppNavLink[] = [
     ariaLabel: 'Dashboard overview',
     category: 'core',
   },
-  {
-    to: '/feed',
-    label: 'Feed',
-    icon: UtensilsCrossed,
-    ariaLabel: 'Feed pet',
-    category: 'care',
-  },
-  {
-    to: '/play',
-    label: 'Play',
-    icon: Gamepad2,
-    ariaLabel: 'Play with pet',
-    category: 'care',
-  },
+  // Feed and Play removed - integrated into Dashboard
   {
     to: '/clean',
     label: 'Clean',
@@ -94,20 +81,7 @@ export const secondaryNav: AppNavLink[] = [
     ariaLabel: 'Track health',
     category: 'insights',
   },
-  {
-    to: '/earn',
-    label: 'Earn',
-    icon: CircleDollarSign,
-    ariaLabel: 'Earn coins',
-    category: 'extras',
-  },
-  {
-    to: '/analytics',
-    label: 'Analytics',
-    icon: Sparkles,
-    ariaLabel: 'View analytics',
-    category: 'insights',
-  },
+  // Earn removed - integrated into Dashboard
   {
     to: '/profile',
     label: 'Profile',

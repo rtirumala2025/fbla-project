@@ -179,38 +179,48 @@ export const AvatarStudio: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
-        {/* Closet Panel */}
-        <section className="rounded-2xl bg-white p-6 shadow-md">
-          <div className="mb-4 flex items-center gap-2">
-            <Box size={20} className="text-indigo-600" />
-            <h2 className="text-lg font-semibold text-slate-900">Closet</h2>
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_1.8fr]">
+        {/* Closet Panel - Enhanced */}
+        <section className="rounded-2xl bg-gradient-to-br from-white to-indigo-50/30 p-6 shadow-lg border border-indigo-100">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Box size={20} className="text-indigo-600" />
+              <h2 className="text-lg font-semibold text-slate-900">Accessories & Customizations</h2>
+            </div>
+            <div className="text-xs text-slate-500">
+              {equippedAccessories.length} equipped
+            </div>
           </div>
           {pet && (
-            <Closet pet={pet} onAccessoriesChange={handleAccessoriesChange} className="h-[600px]" />
+            <Closet pet={pet} onAccessoriesChange={handleAccessoriesChange} className="h-[650px]" />
           )}
         </section>
 
-        {/* 3D Pet View */}
-        <section className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-md">
+        {/* 3D Pet View & AI Art */}
+        <section className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-white to-purple-50/30 p-6 shadow-lg border border-purple-100">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">3D Pet View</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Pet Preview</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                See your customizations in real-time
+              </p>
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setActiveTab('closet')}
                 className={`rounded-lg px-3 py-1 text-sm font-medium transition ${
                   activeTab === 'closet'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-indigo-600 text-white shadow-md'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                Closet
+                3D View
               </button>
               <button
                 onClick={() => setActiveTab('art')}
                 className={`rounded-lg px-3 py-1 text-sm font-medium transition ${
                   activeTab === 'art'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-indigo-600 text-white shadow-md'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -220,24 +230,44 @@ export const AvatarStudio: React.FC = () => {
           </div>
 
           {activeTab === 'closet' ? (
-            <div className="h-[600px] rounded-xl border border-slate-200 bg-slate-50">
+            <div className="relative h-[600px] rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-sky-50 to-indigo-50 shadow-inner overflow-hidden">
               {pet && (
                 <Pet3D pet={pet} accessories={equippedAccessories} className="h-full w-full" />
               )}
+              {equippedAccessories.length > 0 && (
+                <div className="absolute bottom-4 left-4 right-4 z-10 rounded-lg bg-white/90 backdrop-blur-sm border border-indigo-200 p-3 shadow-md">
+                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <Sparkles size={14} className="text-indigo-500" />
+                    <span className="font-medium">
+                      {equippedAccessories.length} {equippedAccessories.length === 1 ? 'accessory' : 'accessories'} equipped
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex min-h-[600px] flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex min-h-[600px] flex-col gap-4 rounded-xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 p-4 shadow-inner">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900">AI Portrait</h3>
-                  <p className="text-sm text-slate-500">
-                    {generatedArt?.cached ? 'Served from cache for instant load.' : 'Generate to see the latest look.'}
+                  <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <Sparkles size={18} className="text-purple-500" />
+                    AI-Generated Portrait
+                  </h3>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {generatedArt?.cached 
+                      ? '✨ Served from cache for instant load.' 
+                      : '🎨 Generate to see your pet with all customizations!'}
                   </p>
                 </div>
                 {generatedArt && (
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    {new Date(generatedArt.created_at).toLocaleTimeString()}
-                  </span>
+                  <div className="text-right">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 block">
+                      {new Date(generatedArt.created_at).toLocaleTimeString()}
+                    </span>
+                    {generatedArt.cached && (
+                      <span className="text-xs text-indigo-600 font-medium">Cached</span>
+                    )}
+                  </div>
                 )}
               </div>
 

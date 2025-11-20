@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, Home, ShoppingCart, User, PawPrint, Heart, Gamepad2, DollarSign, BarChart3, Sparkles, Calendar, Target, Zap, Palette, Settings } from 'lucide-react';
+import { Menu, X, LogOut, Home, ShoppingCart, User, PawPrint, Heart, Gamepad2, DollarSign, BarChart3, Sparkles, Calendar, Zap, Palette, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
@@ -64,23 +64,19 @@ const Header = () => {
     }
   };
 
-  // Navigation links for all users - for testing purposes
-  const allNavLinks = [
+  // Navigation links for authenticated users only (Profile link removed - shown as welcome message)
+  const authenticatedNavLinks = [
     { name: 'Dashboard', to: '/dashboard', icon: <Home size={20} /> },
-    { name: 'Feed', to: '/feed', icon: <Heart size={20} /> },
-    { name: 'Play', to: '/play', icon: <Gamepad2 size={20} /> },
-    { name: 'Earn', to: '/earn', icon: <DollarSign size={20} /> },
     { name: 'Budget', to: '/budget', icon: <BarChart3 size={20} /> },
     { name: 'Shop', to: '/shop', icon: <ShoppingCart size={20} /> },
     { name: 'Analytics', to: '/analytics', icon: <Sparkles size={20} /> },
     { name: 'Events', to: '/events', icon: <Calendar size={20} /> },
     // Wallet menu item removed - functionality integrated into Budget page
     // Social menu item removed
-    { name: 'Quests', to: '/quests', icon: <Target size={20} /> },
+    // Quests menu item removed - functionality integrated into Dashboard page
     { name: 'NextGen', to: '/nextgen', icon: <Zap size={20} /> },
     { name: 'Avatar', to: '/customize/avatar', icon: <Palette size={20} /> },
     { name: 'Settings', to: '/settings', icon: <Settings size={20} /> },
-    { name: 'Profile', to: '/profile', icon: <User size={20} /> },
   ];
 
   // Navigation links for public users (anchor links to landing page sections)
@@ -111,24 +107,26 @@ const Header = () => {
           </NavLink>
 
           {/* Center Section - Navigation (hidden on smaller screens, visible on xl+) */}
-          <nav className="hidden xl:flex items-center justify-center flex-1 mx-4 lg:mx-8 min-w-0">
-            <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 flex-wrap justify-center max-w-full">
-              {allNavLinks.map((link) => (
-                <NavLink 
-                  key={link.to}
-                  to={link.to} 
-                  className={({ isActive }) => `flex items-center gap-1 lg:gap-2 px-2 lg:px-3 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
-                    isActive 
-                      ? 'text-white bg-indigo-600 shadow-md' 
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-black'
-                  }`}
-                >
-                  <span className="flex-shrink-0">{link.icon}</span>
-                  <span className="truncate max-w-[80px] lg:max-w-[100px] xl:max-w-none">{link.name}</span>
-                </NavLink>
-              ))}
-            </div>
-          </nav>
+          {!loading && currentUser && (
+            <nav className="hidden xl:flex items-center justify-center flex-1 mx-4 lg:mx-8 min-w-0">
+              <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 flex-wrap justify-center max-w-full">
+                {authenticatedNavLinks.map((link) => (
+                  <NavLink 
+                    key={link.to}
+                    to={link.to} 
+                    className={({ isActive }) => `flex items-center gap-1 lg:gap-2 px-2 lg:px-3 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
+                      isActive 
+                        ? 'text-white bg-indigo-600 shadow-md' 
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-black'
+                    }`}
+                  >
+                    <span className="flex-shrink-0">{link.icon}</span>
+                    <span className="truncate max-w-[80px] lg:max-w-[100px] xl:max-w-none">{link.name}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </nav>
+          )}
 
           {/* Right Section - Profile Button / Auth Buttons */}
           <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 flex-shrink-0 min-w-0">
@@ -150,15 +148,18 @@ const Header = () => {
               </div>
             ) : null}
             
-            {/* Profile Button: Only show when logged in */}
+            {/* Welcome message with profile link: Only show when logged in */}
             {!loading && currentUser ? (
               <>
-                {/* Welcome message for logged-in users - visible on all screens, positioned in corner */}
-                <div className="flex items-center text-xs sm:text-sm md:text-base text-gray-600 min-w-0">
+                {/* Welcome message for logged-in users - clickable to go to profile, visible on all screens, positioned in corner */}
+                <NavLink
+                  to="/profile"
+                  className="flex items-center text-xs sm:text-sm md:text-base text-gray-600 hover:text-indigo-600 min-w-0 transition-colors cursor-pointer"
+                >
                   <span className="font-medium truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px] lg:max-w-[250px] xl:max-w-none">
                     Welcome, {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}!
                   </span>
-                </div>
+                </NavLink>
                 <button
                   onClick={handleLogout}
                   className="hidden xl:flex items-center gap-1 lg:gap-2 px-3 lg:px-4 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors group whitespace-nowrap flex-shrink-0"
@@ -199,8 +200,8 @@ const Header = () => {
             className="xl:hidden overflow-hidden bg-white border-t border-gray-200 shadow-lg max-h-[calc(100vh-5rem)] overflow-y-auto"
           >
             <div className="px-2 sm:px-4 pt-2 pb-4 space-y-1 max-w-full overflow-x-hidden">
-              {/* Show page navigation for mobile users */}
-              {allNavLinks.map((link) => (
+              {/* Show page navigation for authenticated mobile users */}
+              {currentUser && authenticatedNavLinks.map((link) => (
                 <NavLink
                   key={link.to}
                   to={link.to}
