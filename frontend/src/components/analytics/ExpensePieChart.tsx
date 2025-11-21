@@ -12,17 +12,20 @@ type Props = {
 
 const COLORS = ['#38bdf8', '#6366f1', '#f59e0b', '#10b981', '#fcd34d', '#ec4899'];
 
-export const ExpensePieChart: React.FC<Props> = ({ expenses }) => {
-  const data = expenses.map((expense) => ({
+const ExpensePieChartComponent: React.FC<Props> = ({ expenses }) => {
+  const data = React.useMemo(() => 
+    expenses.map((expense) => ({
     name: expense.category,
     value: expense.total,
-  }));
+    })),
+    [expenses]
+  );
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft" style={{ contain: 'layout style paint', willChange: 'auto' }}>
       <h3 className="text-sm font-semibold text-slate-700">Expense Breakdown</h3>
-      <div className="mt-4 h-56">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="mt-4 h-56" style={{ minHeight: '224px', position: 'relative' }}>
+        <ResponsiveContainer width="100%" height="100%" debounce={200}>
           <PieChart>
             <Pie
               data={data}
@@ -43,6 +46,10 @@ export const ExpensePieChart: React.FC<Props> = ({ expenses }) => {
     </div>
   );
 };
+
+ExpensePieChartComponent.displayName = 'ExpensePieChart';
+
+export const ExpensePieChart = React.memo(ExpensePieChartComponent);
 
 export default ExpensePieChart;
 

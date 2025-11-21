@@ -19,19 +19,23 @@ type Props = {
   color?: string;
 };
 
-export const TrendChart: React.FC<Props> = ({ series, color = '#6366F1' }) => {
-  const data = series.points.map((point) => ({
+const TrendChartComponent: React.FC<Props> = ({ series, color = '#6366F1' }) => {
+  const data = React.useMemo(() => 
+    series.points.map((point) => ({
     name: new Date(point.timestamp).toLocaleDateString(),
     value: point.value,
-  }));
+    })),
+    [series.points]
+  );
+  
   const gradientId = React.useMemo(() => `trend-${series.label.replace(/\s+/g, '-').toLowerCase()}`, [series.label]);
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft" style={{ contain: 'layout style paint', willChange: 'auto' }}>
       <h3 className="text-sm font-semibold text-slate-700 capitalize">{series.label}</h3>
-      <div className="mt-4 h-56">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
+      <div className="mt-4 h-56" style={{ minHeight: '224px', position: 'relative' }}>
+        <ResponsiveContainer width="100%" height="100%" debounce={200}>
+          <AreaChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="10%" stopColor={color} stopOpacity={0.9} />
@@ -49,6 +53,10 @@ export const TrendChart: React.FC<Props> = ({ series, color = '#6366F1' }) => {
     </div>
   );
 };
+
+TrendChartComponent.displayName = 'TrendChart';
+
+export const TrendChart = React.memo(TrendChartComponent);
 
 export default TrendChart;
 

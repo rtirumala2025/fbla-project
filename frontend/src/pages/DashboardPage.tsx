@@ -20,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePet } from '../context/PetContext';
 import { useToast } from '../contexts/ToastContext';
 import { useFinancial } from '../context/FinancialContext';
+import type { Pet } from '../types/pet';
 import { Pet3DVisualization } from '../components/pets/Pet3DVisualization';
 import { PetStatsDisplay } from '../components/dashboard/PetStatsDisplay';
 import { QuestBoard } from '../components/quests/QuestBoard';
@@ -114,6 +115,32 @@ export function DashboardPage() {
   const [processingQuestId, setProcessingQuestId] = useState<string | null>(null);
   const isLoadingAnalyticsRef = useRef(false);
 
+  // Mock pet for testing when no real pet exists
+  const mockPet: Pet = useMemo(() => ({
+    id: 'mock-pet-id',
+    name: 'Buddy',
+    species: 'dog',
+    breed: 'Golden Retriever',
+    age: 30,
+    level: 5,
+    experience: 250,
+    ownerId: currentUser?.uid || 'mock-user',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    stats: {
+      health: 85,
+      hunger: 70,
+      happiness: 80,
+      cleanliness: 75,
+      energy: 65,
+      lastUpdated: new Date(),
+      mood: 'happy',
+    },
+  }), [currentUser?.uid]);
+
+  // Use mock pet if no real pet exists (for testing)
+  const displayPet = useMemo(() => pet || mockPet, [pet, mockPet]);
+
   // Load data
   const loadQuests = useCallback(async () => {
     if (!currentUser) return;
@@ -146,7 +173,7 @@ export function DashboardPage() {
   }, [currentUser, logger]);
 
   const loadAccessories = useCallback(async () => {
-    if (!currentUser || !pet) return;
+    if (!currentUser || !displayPet) return;
     setLoadingAccessories(true);
     try {
       const data = await fetchAccessories();
@@ -158,7 +185,7 @@ export function DashboardPage() {
         const { data: equippedData, error: equippedError } = await supabase
           .from('user_accessories')
           .select('*')
-          .eq('pet_id', pet.id)
+          .eq('pet_id', displayPet.id)
           .eq('equipped', true);
 
         if (equippedError) {
@@ -192,7 +219,7 @@ export function DashboardPage() {
     } finally {
       setLoadingAccessories(false);
     }
-  }, [currentUser, pet, logger]);
+  }, [currentUser, displayPet, logger]);
 
   const loadAnalytics = useCallback(async () => {
     if (!currentUser || isLoadingAnalyticsRef.current) return;
@@ -266,7 +293,7 @@ export function DashboardPage() {
     };
   }, [analytics]);
 
-  const notificationStyles = (notification: SnapshotNotification) => {
+  const notificationStyles = useCallback((notification: SnapshotNotification) => {
     const base = 'rounded-2xl px-3 py-2 text-sm shadow-soft';
     switch (notification.severity) {
       case 'critical':
@@ -278,7 +305,7 @@ export function DashboardPage() {
       default:
         return `${base} border border-slate-200 bg-slate-50 text-slate-600`;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -287,7 +314,7 @@ export function DashboardPage() {
   }, [currentUser, authLoading, navigate]);
 
   useEffect(() => {
-    if (currentUser && pet) {
+    if (currentUser && displayPet) {
       loadQuests();
       loadCoachAdvice();
       loadAccessories();
@@ -295,17 +322,17 @@ export function DashboardPage() {
       refreshBalance();
       earnService.listChores().then(setChores);
     }
-  }, [currentUser, pet, loadQuests, loadCoachAdvice, loadAccessories, loadAnalytics, refreshBalance]);
+  }, [currentUser, displayPet, loadQuests, loadCoachAdvice, loadAccessories, loadAnalytics, refreshBalance]);
 
   // Subscribe to real-time accessory updates
-  useAccessoriesRealtime(pet?.id || null, (updatedAccessories) => {
+  useAccessoriesRealtime(displayPet?.id || null, (updatedAccessories) => {
     console.log('🔄 DashboardPage: Real-time accessory update received', updatedAccessories);
     setEquippedAccessories(updatedAccessories.filter((acc) => acc.equipped));
   });
 
   // Feed with food selection
   const handleFeedWithFood = useCallback(async () => {
-    if (!selectedFood || !pet || !currentUser || feedLoading) return;
+    if (!selectedFood || !displayPet || !currentUser || feedLoading) return;
     if (balance < selectedFood.cost) {
       toastError('Insufficient funds');
       return;
@@ -317,16 +344,16 @@ export function DashboardPage() {
       await refreshBalance();
       
       await updatePetStats({
-        hunger: Math.min(100, pet.stats.hunger + selectedFood.hungerGain),
-        happiness: Math.min(100, pet.stats.happiness + (selectedFood.happinessGain || 0)),
-        health: Math.min(100, pet.stats.health + (selectedFood.healthGain || 0)),
+        hunger: Math.min(100, displayPet.stats.hunger + selectedFood.hungerGain),
+        happiness: Math.min(100, displayPet.stats.happiness + (selectedFood.happinessGain || 0)),
+        health: Math.min(100, displayPet.stats.health + (selectedFood.healthGain || 0)),
       });
       await refreshPet();
       
-      if (currentUser && pet) {
+      if (currentUser && displayPet && displayPet.id !== 'mock-pet-id') {
         await logPetInteraction({
           user_id: currentUser.uid,
-          pet_id: pet.id,
+          pet_id: displayPet.id,
           action_type: 'feed',
           stat_changes: {
             hunger: selectedFood.hungerGain,
@@ -337,7 +364,7 @@ export function DashboardPage() {
         });
       }
       
-      success(`Yum! ${pet.name} loved the ${selectedFood.name}!`);
+      success(`Yum! ${displayPet.name} loved the ${selectedFood.name}!`);
       setSelectedFood(null);
       setShowFeed(false);
     } catch (err: any) {
@@ -346,7 +373,7 @@ export function DashboardPage() {
     } finally {
       setFeedLoading(false);
     }
-  }, [selectedFood, pet, currentUser, balance, feedLoading, refreshBalance, updatePetStats, refreshPet, success, toastError]);
+  }, [selectedFood, displayPet, currentUser, balance, feedLoading, refreshBalance, updatePetStats, refreshPet, success, toastError]);
 
   // Pet actions with logging (simplified feed - keeping for backwards compatibility)
   const handleFeed = useCallback(async () => {
@@ -364,13 +391,15 @@ export function DashboardPage() {
   }, [navigate]);
 
   const handleBathe = useCallback(async () => {
-    if (!pet || !currentUser || processingAction) return;
+    if (!displayPet || !currentUser || processingAction) return;
     
     setProcessingAction('bathe');
     try {
-      const oldCleanliness = pet.stats.cleanliness;
+      const oldCleanliness = displayPet.stats.cleanliness;
+      if (displayPet.id !== 'mock-pet-id') {
       await bathe();
       await refreshPet();
+      }
       
       // bathe() sets cleanliness to 100 and increases happiness by 10
       const statChanges = {
@@ -378,10 +407,10 @@ export function DashboardPage() {
         happiness: 10,
       };
 
-      if (currentUser && pet) {
+      if (currentUser && displayPet && displayPet.id !== 'mock-pet-id') {
         await logPetInteraction({
           user_id: currentUser.uid,
-          pet_id: pet.id,
+          pet_id: displayPet.id,
           action_type: 'bathe',
           stat_changes: statChanges,
         });
@@ -396,7 +425,7 @@ export function DashboardPage() {
     } finally {
       setProcessingAction(null);
     }
-  }, [pet, currentUser, bathe, refreshPet, processingAction, success, toastError, logger]);
+  }, [displayPet, currentUser, bathe, refreshPet, processingAction, success, toastError, logger]);
 
   const handleEarn = useCallback(async () => {
     setShowEarn(true);
@@ -441,10 +470,10 @@ export function DashboardPage() {
         };
       });
 
-      if (currentUser && pet) {
+      if (currentUser && displayPet && displayPet.id !== 'mock-pet-id') {
         await logPetInteraction({
           user_id: currentUser.uid,
-          pet_id: pet.id,
+          pet_id: displayPet.id,
           action_type: 'quest_complete',
           coins_earned: response.result.coins_awarded,
           xp_gained: response.result.xp_awarded,
@@ -469,7 +498,7 @@ export function DashboardPage() {
     } finally {
       setProcessingQuestId(null);
     }
-  }, [currentUser, pet, processingQuestId, success, toastError, logger, loadCoachAdvice]);
+  }, [currentUser, displayPet, processingQuestId, success, toastError, logger, loadCoachAdvice]);
 
   // Loading states
   if (authLoading || !currentUser) {
@@ -491,34 +520,20 @@ export function DashboardPage() {
     );
   }
 
-  if (!pet) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 text-2xl font-semibold text-gray-700">No pet found</div>
-          <p className="mb-4 text-gray-600">Create a pet to get started!</p>
-          <button
-            onClick={() => navigate('/pet/create')}
-            className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-          >
-            Create Pet
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const questsData = quests || { daily: [], weekly: [], event: [], refreshed_at: new Date().toISOString() };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" style={{ willChange: 'scroll-position' }}>
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        {/* Mock Pet Indicator */}
+        {!pet && (
+          <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+            <strong>🧪 Testing Mode:</strong> Displaying mock pet data. Create a real pet to save your progress.
+          </div>
+        )}
+
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-        >
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Pet Dashboard</h1>
             <p className="text-sm text-gray-600">Manage your pet and track progress</p>
@@ -540,49 +555,34 @@ export function DashboardPage() {
               <span>Refresh</span>
             </button>
           </div>
-        </motion.header>
+        </header>
 
         {/* Main Grid */}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left Column - 3D Pet & Stats */}
           <div className="lg:col-span-2 space-y-6">
             {/* 3D Pet Visualization */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-2xl bg-white p-6 shadow-lg"
-            >
+            <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
               <h2 className="mb-4 text-xl font-semibold text-gray-800">3D Pet View</h2>
               <Pet3DVisualization
-                pet={pet}
+                pet={displayPet}
                 accessories={equippedAccessories}
                 size="lg"
               />
-            </motion.div>
+            </div>
 
             {/* Pet Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="rounded-2xl bg-white p-6 shadow-lg"
-            >
+            <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
               <h2 className="mb-4 text-xl font-semibold text-gray-800">Pet Statistics</h2>
               <PetStatsDisplay
-                stats={pet.stats}
-                level={pet.level}
-                xp={pet.experience}
+                stats={displayPet.stats}
+                level={displayPet.level}
+                xp={displayPet.experience}
               />
-            </motion.div>
+            </div>
 
             {/* Quests Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="space-y-6"
-            >
+            <div className="space-y-6">
               <div className="rounded-2xl bg-white p-6 shadow-lg">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
@@ -614,18 +614,13 @@ export function DashboardPage() {
                 isLoading={loadingCoach} 
                 onRefresh={loadCoachAdvice} 
               />
-            </motion.div>
+            </div>
           </div>
 
           {/* Right Column - Actions & Analytics */}
           <div className="space-y-6">
             {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-2xl bg-white p-6 shadow-lg"
-            >
+            <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
               <h2 className="mb-4 text-xl font-semibold text-gray-800">Quick Actions</h2>
               <div className="grid grid-cols-2 gap-3">
                 <motion.button
@@ -673,17 +668,13 @@ export function DashboardPage() {
                   <span className="text-sm font-medium">Earn</span>
                 </motion.button>
               </div>
-            </motion.div>
+            </div>
 
             {/* Feed Section */}
             {showFeed && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-white p-6 shadow-lg"
-              >
+              <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Feed {pet?.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">Feed {displayPet?.name}</h3>
                   <button
                     onClick={() => {
                       setShowFeed(false);
@@ -741,16 +732,12 @@ export function DashboardPage() {
                     {feedLoading ? 'Feeding…' : 'Feed Pet'}
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Play Section */}
             {showPlay && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-white p-6 shadow-lg"
-              >
+              <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-800">Play with your pet</h3>
                   <button
@@ -760,9 +747,9 @@ export function DashboardPage() {
                     <ChevronUp className="h-5 w-5" />
                   </button>
                 </div>
-                {pet && (
+                {displayPet && (
                   <div className="mb-4 p-2 bg-gray-50 rounded-lg text-sm">
-                    Mood: <span className="capitalize font-semibold">{pet.stats?.mood?.toLowerCase() || 'neutral'}</span>
+                    Mood: <span className="capitalize font-semibold">{displayPet.stats?.mood?.toLowerCase() || 'neutral'}</span>
                   </div>
                 )}
                 <div className="grid md:grid-cols-2 gap-3">
@@ -785,16 +772,12 @@ export function DashboardPage() {
                     </button>
                   ))}
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Earn Section */}
             {showEarn && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl bg-white p-6 shadow-lg"
-              >
+              <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-800">Earn Money</h3>
                   <button
@@ -882,18 +865,13 @@ export function DashboardPage() {
                     </ul>
                   </div>
                 )}
-              </motion.div>
+              </div>
             )}
 
 
             {/* Accessories Preview */}
             {accessories.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-                className="rounded-2xl bg-white p-6 shadow-lg"
-              >
+              <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
                 <h2 className="mb-4 text-xl font-semibold text-gray-800">Accessories</h2>
                 <div className="space-y-2">
                   {accessories.slice(0, 3).map(accessory => (
@@ -920,19 +898,14 @@ export function DashboardPage() {
                     View All Accessories
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )}
           </div>
         </div>
 
         {/* Analytics Section - Full Width */}
         {analytics && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-6 space-y-6"
-          >
+          <div className="mt-6 space-y-6" style={{ contain: 'layout style paint' }}>
             {/* Analytics Header */}
             <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg md:flex-row md:items-center md:justify-between">
               <div>
@@ -1000,7 +973,7 @@ export function DashboardPage() {
             )}
 
             {/* Charts */}
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2" style={{ contain: 'layout style paint' }}>
               {formattedSeries.weekly && <TrendChart series={formattedSeries.weekly} color="#6366f1" />}
               {formattedSeries.health && <TrendChart series={formattedSeries.health} color="#10b981" />}
               {formattedSeries.monthly && <TrendChart series={formattedSeries.monthly} color="#f97316" />}
@@ -1054,7 +1027,7 @@ export function DashboardPage() {
                 </div>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
       </div>
     </div>
