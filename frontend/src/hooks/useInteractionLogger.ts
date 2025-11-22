@@ -40,18 +40,8 @@ class InteractionLogger {
       logMethod(`[${component}] ${action}`, details || '', error || '');
     }
 
-    // Store in localStorage for persistence
-    try {
-      const stored = localStorage.getItem('interaction_logs');
-      const existing = stored ? JSON.parse(stored) : [];
-      existing.push(logEntry);
-      
-      // Keep only last 50 in localStorage
-      const trimmed = existing.slice(-50);
-      localStorage.setItem('interaction_logs', JSON.stringify(trimmed));
-    } catch (e) {
-      // Silently fail if localStorage is unavailable
-    }
+    // Removed localStorage persistence - logs are now in-memory only
+    // Future: Could send to Supabase analytics_events table if needed
   }
 
   getLogs(component?: string): InteractionLog[] {
@@ -63,11 +53,7 @@ class InteractionLogger {
 
   clearLogs(): void {
     this.logs = [];
-    try {
-      localStorage.removeItem('interaction_logs');
-    } catch (e) {
-      // Silently fail
-    }
+    // Removed localStorage cleanup - logs are now in-memory only
   }
 }
 
