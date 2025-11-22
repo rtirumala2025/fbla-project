@@ -1,4 +1,5 @@
 import { shopService } from './shopService';
+import { supabase, isSupabaseMock } from '../lib/supabase';
 
 export type Chore = {
   id: string;
@@ -14,23 +15,75 @@ export type ChoreResult = {
   completedAt: Date;
 };
 
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
-
 export const defaultChores: Chore[] = [
   { id: 'wash-dishes', name: 'Wash Dishes', reward: 15, timeSeconds: 30, difficulty: 'easy', cooldownSeconds: 60 },
   { id: 'mow-lawn', name: 'Mow Lawn', reward: 25, timeSeconds: 45, difficulty: 'medium', cooldownSeconds: 120 },
   { id: 'clean-room', name: 'Clean Room', reward: 20, timeSeconds: 40, difficulty: 'easy', cooldownSeconds: 90 },
 ];
 
-const COOLDOWN_KEY = 'vp_chores_cooldowns';
+// Get cooldowns from Supabase
+async function getCooldowns(userId: string | undefined): Promise<Record<string, number>> {
+  if (!userId || isSupabaseMock()) {
+    return {};
+  }
 
-function getCooldowns(userId: string | undefined) {
-  const raw = localStorage.getItem(`${COOLDOWN_KEY}_${userId || 'anon'}`);
-  return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+  try {
+    const { data, error } = await supabase
+      .from('user_cooldowns')
+      .select('cooldowns')
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Failed to load cooldowns from Supabase:', error);
+      return {};
+    }
+
+    if (data?.cooldowns) {
+      // Parse and filter expired cooldowns
+      const cooldowns = data.cooldowns as Record<string, number>;
+      const now = Date.now();
+      const validCooldowns: Record<string, number> = {};
+      
+      for (const [key, value] of Object.entries(cooldowns)) {
+        if (typeof value === 'number' && value > now) {
+          validCooldowns[key] = value;
+        }
+      }
+      
+      return validCooldowns;
+    }
+
+    return {};
+  } catch (error) {
+    console.error('Error loading cooldowns:', error);
+    return {};
+  }
 }
 
-function setCooldowns(userId: string | undefined, data: Record<string, number>) {
-  localStorage.setItem(`${COOLDOWN_KEY}_${userId || 'anon'}`, JSON.stringify(data));
+// Save cooldowns to Supabase
+async function setCooldowns(userId: string | undefined, data: Record<string, number>): Promise<void> {
+  if (!userId || isSupabaseMock()) {
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('user_cooldowns')
+      .upsert({
+        user_id: userId,
+        cooldowns: data,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id',
+      });
+
+    if (error) {
+      console.error('Failed to save cooldowns to Supabase:', error);
+    }
+  } catch (error) {
+    console.error('Error saving cooldowns:', error);
+  }
 }
 
 export const earnService = {
@@ -39,8 +92,8 @@ export const earnService = {
     return defaultChores;
   },
 
-  getChoreCooldown(userId: string | undefined, choreId: string): number {
-    const cooldowns = getCooldowns(userId);
+  async getChoreCooldown(userId: string | undefined, choreId: string): Promise<number> {
+    const cooldowns = await getCooldowns(userId);
     const until = cooldowns[choreId];
     const now = Date.now();
     return until && until > now ? Math.ceil((until - now) / 1000) : 0;
@@ -50,19 +103,14 @@ export const earnService = {
     const chore = defaultChores.find(c => c.id === choreId);
     if (!chore) throw new Error('Invalid chore');
 
-    // Save cooldown
-    const cooldowns = getCooldowns(userId);
+    // Save cooldown to Supabase
+    const cooldowns = await getCooldowns(userId);
     cooldowns[choreId] = Date.now() + chore.cooldownSeconds * 1000;
-    setCooldowns(userId, cooldowns);
+    await setCooldowns(userId, cooldowns);
 
     const reward = chore.reward;
 
-    if (useMock) {
-      // Mock: just return and pretend we inserted a transaction
-      return { reward, completedAt: new Date() };
-    }
-
-    // Real: add coins and insert transaction via shopService
+    // Add coins and insert transaction via shopService
     await shopService.addCoins(userId, reward, `Completed Chore: ${chore.name}`);
     return { reward, completedAt: new Date() };
   },

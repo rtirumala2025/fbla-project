@@ -99,6 +99,7 @@ export function DashboardPage() {
   const [earnTab, setEarnTab] = useState<EarnTab>('chores');
   const [chores, setChores] = useState<Chore[]>([]);
   const [showEarn, setShowEarn] = useState(false);
+  const [choreCooldowns, setChoreCooldowns] = useState<Record<string, number>>({});
 
   // State
   const [quests, setQuests] = useState<ActiveQuestsResponse | null>(null);
@@ -114,32 +115,6 @@ export function DashboardPage() {
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [processingQuestId, setProcessingQuestId] = useState<string | null>(null);
   const isLoadingAnalyticsRef = useRef(false);
-
-  // Mock pet for testing when no real pet exists
-  const mockPet: Pet = useMemo(() => ({
-    id: 'mock-pet-id',
-    name: 'Buddy',
-    species: 'dog',
-    breed: 'Golden Retriever',
-    age: 30,
-    level: 5,
-    experience: 250,
-    ownerId: currentUser?.uid || 'mock-user',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    stats: {
-      health: 85,
-      hunger: 70,
-      happiness: 80,
-      cleanliness: 75,
-      energy: 65,
-      lastUpdated: new Date(),
-      mood: 'happy',
-    },
-  }), [currentUser?.uid]);
-
-  // Use mock pet if no real pet exists (for testing)
-  const displayPet = useMemo(() => pet || mockPet, [pet, mockPet]);
 
   // Load data
   const loadQuests = useCallback(async () => {
@@ -173,7 +148,7 @@ export function DashboardPage() {
   }, [currentUser, logger]);
 
   const loadAccessories = useCallback(async () => {
-    if (!currentUser || !displayPet) return;
+    if (!currentUser || !pet) return;
     setLoadingAccessories(true);
     try {
       const data = await fetchAccessories();
@@ -185,7 +160,7 @@ export function DashboardPage() {
         const { data: equippedData, error: equippedError } = await supabase
           .from('user_accessories')
           .select('*')
-          .eq('pet_id', displayPet.id)
+          .eq('pet_id', pet.id)
           .eq('equipped', true);
 
         if (equippedError) {
@@ -219,7 +194,7 @@ export function DashboardPage() {
     } finally {
       setLoadingAccessories(false);
     }
-  }, [currentUser, displayPet, logger]);
+  }, [currentUser, pet, logger]);
 
   const loadAnalytics = useCallback(async () => {
     if (!currentUser || isLoadingAnalyticsRef.current) return;
@@ -314,25 +289,47 @@ export function DashboardPage() {
   }, [currentUser, authLoading, navigate]);
 
   useEffect(() => {
-    if (currentUser && displayPet) {
+    if (currentUser && pet) {
       loadQuests();
       loadCoachAdvice();
       loadAccessories();
       loadAnalytics();
       refreshBalance();
       earnService.listChores().then(setChores);
+      
+      // Load chore cooldowns
+      if (currentUser?.uid) {
+        Promise.all(
+          earnService.listChores().then(choresList =>
+            Promise.all(
+              choresList.map(async (chore) => {
+                const cd = await earnService.getChoreCooldown(currentUser.uid, chore.id);
+                return [chore.id, cd] as [string, number];
+              })
+            )
+          )
+        ).then(cooldownPairs => {
+          const cooldowns: Record<string, number> = {};
+          cooldownPairs.forEach(([choreId, cd]) => {
+            cooldowns[choreId] = cd;
+          });
+          setChoreCooldowns(cooldowns);
+        }).catch(err => {
+          console.error('Failed to load chore cooldowns:', err);
+        });
+      }
     }
-  }, [currentUser, displayPet, loadQuests, loadCoachAdvice, loadAccessories, loadAnalytics, refreshBalance]);
+  }, [currentUser, pet, loadQuests, loadCoachAdvice, loadAccessories, loadAnalytics, refreshBalance]);
 
   // Subscribe to real-time accessory updates
-  useAccessoriesRealtime(displayPet?.id || null, (updatedAccessories) => {
+  useAccessoriesRealtime(pet?.id || null, (updatedAccessories) => {
     console.log('🔄 DashboardPage: Real-time accessory update received', updatedAccessories);
     setEquippedAccessories(updatedAccessories.filter((acc) => acc.equipped));
   });
 
   // Feed with food selection
   const handleFeedWithFood = useCallback(async () => {
-    if (!selectedFood || !displayPet || !currentUser || feedLoading) return;
+    if (!selectedFood || !pet || !currentUser || feedLoading) return;
     if (balance < selectedFood.cost) {
       toastError('Insufficient funds');
       return;
@@ -344,16 +341,16 @@ export function DashboardPage() {
       await refreshBalance();
       
       await updatePetStats({
-        hunger: Math.min(100, displayPet.stats.hunger + selectedFood.hungerGain),
-        happiness: Math.min(100, displayPet.stats.happiness + (selectedFood.happinessGain || 0)),
-        health: Math.min(100, displayPet.stats.health + (selectedFood.healthGain || 0)),
+        hunger: Math.min(100, pet.stats.hunger + selectedFood.hungerGain),
+        happiness: Math.min(100, pet.stats.happiness + (selectedFood.happinessGain || 0)),
+        health: Math.min(100, pet.stats.health + (selectedFood.healthGain || 0)),
       });
       await refreshPet();
       
-      if (currentUser && displayPet && displayPet.id !== 'mock-pet-id') {
+      if (currentUser && pet) {
         await logPetInteraction({
           user_id: currentUser.uid,
-          pet_id: displayPet.id,
+          pet_id: pet.id,
           action_type: 'feed',
           stat_changes: {
             hunger: selectedFood.hungerGain,
@@ -364,7 +361,7 @@ export function DashboardPage() {
         });
       }
       
-      success(`Yum! ${displayPet.name} loved the ${selectedFood.name}!`);
+      success(`Yum! ${pet.name} loved the ${selectedFood.name}!`);
       setSelectedFood(null);
       setShowFeed(false);
     } catch (err: any) {
@@ -373,7 +370,7 @@ export function DashboardPage() {
     } finally {
       setFeedLoading(false);
     }
-  }, [selectedFood, displayPet, currentUser, balance, feedLoading, refreshBalance, updatePetStats, refreshPet, success, toastError]);
+  }, [selectedFood, pet, currentUser, balance, feedLoading, refreshBalance, updatePetStats, refreshPet, success, toastError]);
 
   // Pet actions with logging (simplified feed - keeping for backwards compatibility)
   const handleFeed = useCallback(async () => {
@@ -391,15 +388,13 @@ export function DashboardPage() {
   }, [navigate]);
 
   const handleBathe = useCallback(async () => {
-    if (!displayPet || !currentUser || processingAction) return;
+    if (!pet || !currentUser || processingAction) return;
     
     setProcessingAction('bathe');
     try {
-      const oldCleanliness = displayPet.stats.cleanliness;
-      if (displayPet.id !== 'mock-pet-id') {
+      const oldCleanliness = pet.stats.cleanliness;
       await bathe();
       await refreshPet();
-      }
       
       // bathe() sets cleanliness to 100 and increases happiness by 10
       const statChanges = {
@@ -407,10 +402,10 @@ export function DashboardPage() {
         happiness: 10,
       };
 
-      if (currentUser && displayPet && displayPet.id !== 'mock-pet-id') {
+      if (currentUser && pet) {
         await logPetInteraction({
           user_id: currentUser.uid,
-          pet_id: displayPet.id,
+          pet_id: pet.id,
           action_type: 'bathe',
           stat_changes: statChanges,
         });
@@ -425,7 +420,7 @@ export function DashboardPage() {
     } finally {
       setProcessingAction(null);
     }
-  }, [displayPet, currentUser, bathe, refreshPet, processingAction, success, toastError, logger]);
+  }, [pet, currentUser, bathe, refreshPet, processingAction, success, toastError, logger]);
 
   const handleEarn = useCallback(async () => {
     setShowEarn(true);
@@ -433,19 +428,29 @@ export function DashboardPage() {
   
   const handleChore = useCallback(async (choreId: string) => {
     if (!currentUser) return;
-    const cd = earnService.getChoreCooldown(currentUser.uid, choreId);
+    const cd = await earnService.getChoreCooldown(currentUser.uid, choreId);
     if (cd > 0) {
       toastError(`Chore on cooldown: ${cd}s remaining`);
+      // Update cooldowns state
+      setChoreCooldowns(prev => ({ ...prev, [choreId]: cd }));
       return;
     }
     try {
       const res = await earnService.completeChore(currentUser.uid, choreId);
       await refreshBalance();
+      
+      // Update cooldowns state after completing chore
+      const chore = chores.find(c => c.id === choreId);
+      if (chore) {
+        const newCooldown = await earnService.getChoreCooldown(currentUser.uid, choreId);
+        setChoreCooldowns(prev => ({ ...prev, [choreId]: newCooldown }));
+      }
+      
       success(`Great job! You earned $${res.reward}!`);
     } catch (err: any) {
       toastError(err.message || 'Failed to complete chore');
     }
-  }, [currentUser, success, toastError, refreshBalance]);
+  }, [currentUser, success, toastError, refreshBalance, chores]);
   
   const canAffordFood = useCallback((cost: number) => balance >= cost, [balance]);
   const moneyAfterFood = useMemo(() => (selectedFood ? balance - selectedFood.cost : balance), [balance, selectedFood]);
@@ -470,10 +475,10 @@ export function DashboardPage() {
         };
       });
 
-      if (currentUser && displayPet && displayPet.id !== 'mock-pet-id') {
+      if (currentUser && pet) {
         await logPetInteraction({
           user_id: currentUser.uid,
-          pet_id: displayPet.id,
+          pet_id: pet.id,
           action_type: 'quest_complete',
           coins_earned: response.result.coins_awarded,
           xp_gained: response.result.xp_awarded,
@@ -498,7 +503,7 @@ export function DashboardPage() {
     } finally {
       setProcessingQuestId(null);
     }
-  }, [currentUser, displayPet, processingQuestId, success, toastError, logger, loadCoachAdvice]);
+  }, [currentUser, pet, processingQuestId, success, toastError, logger, loadCoachAdvice]);
 
   // Loading states
   if (authLoading || !currentUser) {
@@ -520,17 +525,28 @@ export function DashboardPage() {
     );
   }
 
+  if (!pet) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 text-2xl font-semibold text-gray-700">No pet found</div>
+          <p className="mb-4 text-gray-600">Create a pet to get started!</p>
+          <button
+            onClick={() => navigate('/pet/create')}
+            className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          >
+            Create Pet
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const questsData = quests || { daily: [], weekly: [], event: [], refreshed_at: new Date().toISOString() };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" style={{ willChange: 'scroll-position' }}>
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Mock Pet Indicator */}
-        {!pet && (
-          <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800">
-            <strong>🧪 Testing Mode:</strong> Displaying mock pet data. Create a real pet to save your progress.
-          </div>
-        )}
 
         {/* Header */}
         <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -565,7 +581,7 @@ export function DashboardPage() {
             <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
               <h2 className="mb-4 text-xl font-semibold text-gray-800">3D Pet View</h2>
               <Pet3DVisualization
-                pet={displayPet}
+                pet={pet}
                 accessories={equippedAccessories}
                 size="lg"
               />
@@ -575,9 +591,9 @@ export function DashboardPage() {
             <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
               <h2 className="mb-4 text-xl font-semibold text-gray-800">Pet Statistics</h2>
               <PetStatsDisplay
-                stats={displayPet.stats}
-                level={displayPet.level}
-                xp={displayPet.experience}
+                stats={pet.stats}
+                level={pet.level}
+                xp={pet.experience}
               />
             </div>
 
@@ -674,7 +690,7 @@ export function DashboardPage() {
             {showFeed && (
               <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Feed {displayPet?.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">Feed {pet?.name}</h3>
                   <button
                     onClick={() => {
                       setShowFeed(false);
@@ -747,9 +763,9 @@ export function DashboardPage() {
                     <ChevronUp className="h-5 w-5" />
                   </button>
                 </div>
-                {displayPet && (
+                {pet && (
                   <div className="mb-4 p-2 bg-gray-50 rounded-lg text-sm">
-                    Mood: <span className="capitalize font-semibold">{displayPet.stats?.mood?.toLowerCase() || 'neutral'}</span>
+                    Mood: <span className="capitalize font-semibold">{pet.stats?.mood?.toLowerCase() || 'neutral'}</span>
                   </div>
                 )}
                 <div className="grid md:grid-cols-2 gap-3">
@@ -806,7 +822,7 @@ export function DashboardPage() {
                 {earnTab === 'chores' && (
                   <div className="grid md:grid-cols-2 gap-3">
                     {chores.map(c => {
-                      const cd = currentUser ? earnService.getChoreCooldown(currentUser.uid, c.id) : 0;
+                      const cd = choreCooldowns[c.id] || 0;
                       return (
                         <div key={c.id} className="p-3 border border-gray-200 rounded-lg">
                           <div className="font-semibold text-sm mb-1">{c.name}</div>
