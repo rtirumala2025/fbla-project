@@ -1,108 +1,118 @@
 /**
  * API client for quest system and coach features
  * Handles fetching active quests, completing quests, and getting coach advice
+ * Uses Supabase directly for all quest data
  */
 import { apiRequest } from './httpClient';
+import { supabase, isSupabaseMock } from '../lib/supabase';
 import type { ActiveQuestsResponse, CoachAdviceResponse, QuestCompletionResponse, Quest } from '../types/quests';
 
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
+async function fetchActiveQuestsFromSupabase(): Promise<ActiveQuestsResponse> {
+  if (isSupabaseMock()) {
+    throw new Error('Supabase is not configured');
+  }
 
-// Generate mock active quests
-function generateMockActiveQuests(): ActiveQuestsResponse {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session?.user?.id) {
+    throw new Error('User not authenticated');
+  }
+
+  const userId = session.user.id;
   const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  
-  return {
-    daily: [
-      {
-        id: 'daily-1',
-        quest_key: 'feed_pet_3_times',
-        description: 'Feed your pet 3 times today',
-        quest_type: 'daily',
-        difficulty: 'easy',
-        rewards: { coins: 25, xp: 50, items: [] },
-        target_value: 3,
-        icon: '🍖',
-        start_at: now.toISOString(),
-        end_at: tomorrow.toISOString(),
-        progress: 1,
-        status: 'in_progress',
-      },
-      {
-        id: 'daily-2',
-        quest_key: 'play_minigame',
-        description: 'Play any mini-game once',
-        quest_type: 'daily',
-        difficulty: 'easy',
-        rewards: { coins: 30, xp: 40, items: [] },
-        target_value: 1,
-        icon: '🎮',
-        start_at: now.toISOString(),
-        end_at: tomorrow.toISOString(),
-        progress: 0,
-        status: 'pending',
-      },
-    ],
-    weekly: [
-      {
-        id: 'weekly-1',
-        quest_key: 'complete_10_quests',
-        description: 'Complete 10 quests this week',
-        quest_type: 'weekly',
-        difficulty: 'normal',
-        rewards: { coins: 150, xp: 300, items: ['premium_food'] },
-        target_value: 10,
-        icon: '⭐',
-        start_at: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        end_at: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-        progress: 4,
-        status: 'in_progress',
-      },
-    ],
-    event: [],
-    refreshed_at: now.toISOString(),
-  };
-}
 
-// Generate mock coach advice
-function generateMockCoachAdvice(): CoachAdviceResponse {
+  // Fetch all quests of type daily, weekly, or event
+  const { data: allQuests, error: questsError } = await supabase
+    .from('quests')
+    .select('*')
+    .in('quest_type', ['daily', 'weekly', 'event']);
+
+  if (questsError) {
+    throw questsError;
+  }
+
+  // Filter quests that are currently active (no start/end date OR within date range)
+  const activeQuests = (allQuests || []).filter((quest) => {
+    const startAt = quest.start_at ? new Date(quest.start_at) : null;
+    const endAt = quest.end_at ? new Date(quest.end_at) : null;
+    
+    // Quest is active if:
+    // - No start date OR start date is in the past
+    // - AND no end date OR end date is in the future
+    const isStarted = !startAt || startAt <= now;
+    const isNotEnded = !endAt || endAt >= now;
+    
+    return isStarted && isNotEnded;
+  });
+
+  // Fetch user progress for all quests
+  const { data: userQuests, error: userQuestsError } = await supabase
+    .from('user_quests')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (userQuestsError) {
+    throw userQuestsError;
+  }
+
+  // Build map of quest_id -> user quest progress
+  const userQuestMap = new Map<string, any>();
+  (userQuests || []).forEach((uq: any) => {
+    userQuestMap.set(uq.quest_id, {
+      progress: uq.progress,
+      status: uq.status,
+      target_value: uq.target_value,
+    });
+  });
+
+  // Convert to Quest format
+  const quests: Quest[] = activeQuests.map((quest) => {
+    const userQuest = userQuestMap.get(quest.id);
+    const rewards = typeof quest.rewards === 'object' ? quest.rewards : { coins: 0, xp: 0, items: [] };
+    
+    return {
+      id: quest.id,
+      quest_key: quest.quest_key,
+      description: quest.description,
+      quest_type: quest.quest_type as 'daily' | 'weekly' | 'event',
+      difficulty: quest.difficulty as 'easy' | 'normal' | 'hard' | 'heroic',
+      rewards: {
+        coins: rewards.coins || 0,
+        xp: rewards.xp || 0,
+        items: rewards.items || [],
+      },
+      target_value: quest.target_value,
+      icon: quest.icon,
+      start_at: quest.start_at,
+      end_at: quest.end_at,
+      progress: userQuest?.progress || 0,
+      status: userQuest?.status || 'pending',
+    };
+  });
+
+  // Group by quest type
+  const daily = quests.filter(q => q.quest_type === 'daily');
+  const weekly = quests.filter(q => q.quest_type === 'weekly');
+  const event = quests.filter(q => q.quest_type === 'event');
+
   return {
-    mood: 'encouraging',
-    difficulty_hint: 'normal',
-    summary: 'You\'re making great progress! Keep up the consistent care routine.',
-    suggestions: [
-      {
-        category: 'care',
-        recommendation: 'Your pet\'s happiness is improving. Try playing a mini-game to boost it even more!',
-      },
-      {
-        category: 'quest',
-        recommendation: 'Focus on completing daily quests first - they give great rewards and reset every day.',
-      },
-      {
-        category: 'activity',
-        recommendation: 'Remember to feed your pet regularly to maintain good health stats.',
-      },
-    ],
-    generated_at: new Date().toISOString(),
-    source: 'heuristic',
+    daily,
+    weekly,
+    event,
+    refreshed_at: new Date().toISOString(),
   };
 }
 
 export async function fetchActiveQuests(): Promise<ActiveQuestsResponse> {
-  // Use mock data if in mock mode or if API fails
-  if (useMock) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return generateMockActiveQuests();
-  }
-
   try {
-    return await apiRequest<ActiveQuestsResponse>('/api/quests');
+    return await fetchActiveQuestsFromSupabase();
   } catch (error) {
-    // Fallback to mock data if API fails
-    console.warn('Quests API unavailable, using mock data', error);
-    return generateMockActiveQuests();
+    // Try backend API as fallback
+    try {
+      return await apiRequest<ActiveQuestsResponse>('/api/quests');
+    } catch (apiError) {
+      console.error('Failed to fetch active quests from Supabase and API', error, apiError);
+      throw new Error('Failed to load quests. Please ensure you are logged in and try again.');
+    }
   }
 }
 
@@ -114,18 +124,13 @@ export async function completeQuest(questId: string): Promise<QuestCompletionRes
 }
 
 export async function fetchCoachAdvice(): Promise<CoachAdviceResponse> {
-  // Use mock data if in mock mode or if API fails
-  if (useMock) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return generateMockCoachAdvice();
-  }
-
+  // Coach advice is generated by backend AI service
+  // No mock fallback - must use backend API
   try {
     return await apiRequest<CoachAdviceResponse>('/api/coach');
   } catch (error) {
-    // Fallback to mock data if API fails
-    console.warn('Coach API unavailable, using mock data', error);
-    return generateMockCoachAdvice();
+    console.error('Coach API unavailable', error);
+    throw new Error('Failed to load coach advice. Please ensure the backend server is running and try again.');
   }
 }
 
