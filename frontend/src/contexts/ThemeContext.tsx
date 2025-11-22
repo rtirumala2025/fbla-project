@@ -1,6 +1,8 @@
 /**
  * Theme Context
  * Manages light/dark theme and color blind mode preferences
+ * Removed localStorage - preferences stored in component state
+ * Future: Will sync to Supabase user_preferences table when table is extended with theme/color_blind_mode columns
  */
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
@@ -16,9 +18,6 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const THEME_STORAGE_KEY = 'virtual-pet-theme';
-const COLOR_BLIND_STORAGE_KEY = 'virtual-pet-colorblind';
-
 const getSystemPreference = (): Theme => {
   if (typeof window === 'undefined' || !window.matchMedia) {
     return 'light';
@@ -27,23 +26,12 @@ const getSystemPreference = (): Theme => {
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    try {
-      const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-      return storedTheme ?? getSystemPreference();
-    } catch {
-      return 'light';
-    }
-  });
-  const [colorBlindMode, setColorBlindMode] = useState<boolean>(() => {
-    try {
-      const stored = window.localStorage.getItem(COLOR_BLIND_STORAGE_KEY);
-      return stored === 'true';
-    } catch {
-      return false;
-    }
-  });
+  // Removed localStorage - using component state only
+  // Preferences are ephemeral per session until Supabase table is extended
+  const [theme, setThemeState] = useState<Theme>(getSystemPreference());
+  const [colorBlindMode, setColorBlindModeState] = useState<boolean>(false);
 
+  // Apply theme to DOM
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme;
@@ -53,9 +41,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       root.classList.remove('dark');
     }
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
+  // Apply color blind mode to DOM
   useEffect(() => {
     const root = document.documentElement;
     if (colorBlindMode) {
@@ -63,8 +51,31 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       root.classList.remove('color-blind');
     }
-    window.localStorage.setItem(COLOR_BLIND_STORAGE_KEY, colorBlindMode.toString());
   }, [colorBlindMode]);
+
+  // Listen to system theme changes
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const handler = (event: MediaQueryListEvent) => {
+      // Only auto-switch if user hasn't manually set a preference
+      // For now, just listen - user can manually toggle
+    };
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    // TODO: Sync to Supabase user_preferences table when table is extended with theme column
+  };
+
+  const setColorBlindMode = (newMode: boolean) => {
+    setColorBlindModeState(newMode);
+    // TODO: Sync to Supabase user_preferences table when table is extended with color_blind_mode column
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -82,8 +93,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     () => ({
       theme,
       colorBlindMode,
-      toggleTheme: () => setTheme((current) => (current === 'light' ? 'dark' : 'light')),
-      toggleColorBlindMode: () => setColorBlindMode((current) => !current),
+      toggleTheme: () => setTheme(theme === 'light' ? 'dark' : 'light'),
+      toggleColorBlindMode: () => setColorBlindMode(!colorBlindMode),
       setTheme,
     }),
     [theme, colorBlindMode],
