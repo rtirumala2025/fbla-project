@@ -1,15 +1,14 @@
 /**
  * useSyncManager Hook
  * Manages cloud sync state, conflict resolution, and offline queue
+ * Uses Supabase cloud_sync_snapshots table instead of localStorage
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchCloudState, pushCloudState } from '../api/sync';
+import { supabase, isSupabaseMock } from '../lib/supabase';
 import type { CloudSyncState, SyncPushRequest } from '../types/sync';
 
 export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'conflict';
-
-const LOCAL_QUEUE_KEY = 'virtual-pet.sync.queue';
-const DEVICE_ID_KEY = 'virtual-pet.sync.device';
 
 interface ChangeRecord {
   snapshot: CloudSyncState['snapshot'];
@@ -17,32 +16,70 @@ interface ChangeRecord {
   enqueued_at: number;
 }
 
-function loadQueue(): ChangeRecord[] {
+// Device ID stored in component state (no localStorage)
+// Future: Could store in Supabase user_preferences or device table
+function generateDeviceId(): string {
+  if (typeof window === 'undefined') return 'server';
+  return `device-${crypto.randomUUID()}`;
+}
+
+// Load queue from Supabase cloud_sync_snapshots (no localStorage)
+async function loadQueueFromSupabase(userId: string | null): Promise<ChangeRecord[]> {
+  if (!userId || isSupabaseMock()) {
+    return [];
+  }
+
   try {
-    const raw = window.localStorage.getItem(LOCAL_QUEUE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as ChangeRecord[];
+    const { data, error } = await supabase
+      .from('cloud_sync_snapshots')
+      .select('snapshot, last_modified')
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.warn('Failed to load sync queue from Supabase:', error);
+      return [];
+    }
+
+    if (data && data.snapshot) {
+      // Convert Supabase snapshot to ChangeRecord format
+      return [{
+        snapshot: data.snapshot as CloudSyncState['snapshot'],
+        last_modified: data.last_modified || new Date().toISOString(),
+        enqueued_at: Date.now(),
+      }];
+    }
+
+    return [];
   } catch (error) {
-    console.warn('Failed to read sync queue', error);
+    console.warn('Error loading sync queue:', error);
     return [];
   }
 }
 
-function saveQueue(queue: ChangeRecord[]) {
-  try {
-    window.localStorage.setItem(LOCAL_QUEUE_KEY, JSON.stringify(queue));
-  } catch (error) {
-    console.warn('Failed to write sync queue', error);
+// Save queue to Supabase (no localStorage)
+async function saveQueueToSupabase(userId: string | null, queue: ChangeRecord[], deviceId: string): Promise<void> {
+  if (!userId || isSupabaseMock() || !queue.length) {
+    return;
   }
-}
 
-function getDeviceId(): string {
-  if (typeof window === 'undefined') return 'server';
-  const existing = window.localStorage.getItem(DEVICE_ID_KEY);
-  if (existing) return existing;
-  const generated = `device-${crypto.randomUUID()}`;
-  window.localStorage.setItem(DEVICE_ID_KEY, generated);
-  return generated;
+  try {
+    // Use the latest change in the queue
+    const latestChange = queue[queue.length - 1];
+    
+    await supabase
+      .from('cloud_sync_snapshots')
+      .upsert({
+        user_id: userId,
+        snapshot: latestChange.snapshot,
+        last_modified: latestChange.last_modified,
+        last_device_id: deviceId,
+      }, {
+        onConflict: 'user_id',
+      });
+  } catch (error) {
+    console.warn('Failed to save sync queue to Supabase:', error);
+  }
 }
 
 export function useSyncManager() {
@@ -50,14 +87,32 @@ export function useSyncManager() {
   const [status, setStatus] = useState<SyncStatus>('idle');
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
   const queueRef = useRef<ChangeRecord[]>([]);
-  const deviceId = useMemo(() => (typeof window !== 'undefined' ? getDeviceId() : 'server'), []);
+  const [userId, setUserId] = useState<string | null>(null);
+  const deviceId = useMemo(() => (typeof window !== 'undefined' ? generateDeviceId() : 'server'), []);
 
-  const enqueueChange = useCallback((snapshot: CloudSyncState['snapshot'], lastModified: string) => {
+  // Get user ID from Supabase session
+  useEffect(() => {
+    const getUserId = async () => {
+      if (isSupabaseMock()) {
+        return;
+      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUserId(session?.user?.id || null);
+      } catch (error) {
+        console.warn('Failed to get user ID:', error);
+      }
+    };
+    getUserId();
+  }, []);
+
+  const enqueueChange = useCallback(async (snapshot: CloudSyncState['snapshot'], lastModified: string) => {
     const queue = [...queueRef.current, { snapshot, last_modified: lastModified, enqueued_at: Date.now() }];
     queueRef.current = queue;
-    saveQueue(queue);
+    // Save to Supabase instead of localStorage
+    await saveQueueToSupabase(userId, queue, deviceId);
     setStatus((prev) => (prev === 'offline' ? prev : 'syncing'));
-  }, []);
+  }, [userId, deviceId]);
 
   const flushQueue = useCallback(async () => {
     if (!queueRef.current.length || !cloudState) return;
@@ -78,7 +133,8 @@ export function useSyncManager() {
           setStatus('conflict');
         }
         queueRef.current = queueRef.current.filter((item) => item !== change);
-        saveQueue(queueRef.current);
+        // Save to Supabase instead of localStorage
+        await saveQueueToSupabase(userId, queueRef.current, deviceId);
       } catch (error) {
         console.warn('Sync flush failed', error);
         setStatus('offline');
@@ -88,7 +144,7 @@ export function useSyncManager() {
     if (!queueRef.current.length && status !== 'conflict') {
       setStatus('idle');
     }
-  }, [cloudState, deviceId, status]);
+  }, [cloudState, deviceId, status, userId]);
 
   const pullCloudState = useCallback(async () => {
     setStatus('syncing');
@@ -96,18 +152,25 @@ export function useSyncManager() {
       const response = await fetchCloudState();
       setCloudState(response.state);
       setConflicts(response.conflicts ?? []);
-      queueRef.current = loadQueue();
+      // Load from Supabase instead of localStorage
+      queueRef.current = await loadQueueFromSupabase(userId);
       setStatus(queueRef.current.length ? 'syncing' : 'idle');
     } catch (error) {
       console.warn('Failed to fetch cloud state', error);
-      queueRef.current = loadQueue();
+      // Load from Supabase even on error
+      queueRef.current = await loadQueueFromSupabase(userId);
       setStatus('offline');
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    queueRef.current = loadQueue();
+    
+    // Load queue from Supabase on mount
+    loadQueueFromSupabase(userId).then((queue) => {
+      queueRef.current = queue;
+    });
+    
     void pullCloudState();
 
     const onOnline = () => {
@@ -125,7 +188,7 @@ export function useSyncManager() {
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
     };
-  }, [flushQueue, pullCloudState]);
+  }, [flushQueue, pullCloudState, userId]);
 
   useEffect(() => {
     if (status === 'syncing') {
