@@ -1,8 +1,11 @@
 /**
  * HTTP Client for API requests
  * Provides authentication, token management, and request handling
+ * Uses Supabase session tokens instead of localStorage
  * Adapted for react-scripts (uses process.env instead of import.meta.env)
  */
+import { supabase, isSupabaseMock } from '../lib/supabase';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export type AuthTokens = {
@@ -22,67 +25,55 @@ export class ApiError extends Error {
   }
 }
 
-const STORAGE_KEY = 'virtual-pet.auth.tokens';
+async function getSupabaseSessionToken(): Promise<string | null> {
+  if (isSupabaseMock()) {
+    return null;
+  }
 
-let tokens: AuthTokens | null = loadTokensFromStorage();
-
-function loadTokensFromStorage(): AuthTokens | null {
   try {
-    if (typeof window === 'undefined') {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session?.access_token) {
       return null;
     }
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as AuthTokens;
+    return session.access_token;
   } catch (error) {
-    console.warn('Failed to parse auth tokens from storage', error);
+    console.warn('Failed to get Supabase session token', error);
     return null;
   }
 }
 
+// Legacy functions for backwards compatibility - now use Supabase session
 export function getTokens(): AuthTokens | null {
-  return tokens;
+  // Return null since we're using Supabase session directly
+  // This function is kept for backwards compatibility
+  return null;
 }
 
 export function setAuthTokens(newTokens: AuthTokens | null): void {
-  tokens = newTokens;
-  if (typeof window === 'undefined') {
-    return;
-  }
-  if (!newTokens) {
-    window.localStorage.removeItem(STORAGE_KEY);
-    return;
-  }
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(newTokens));
+  // No-op since we're using Supabase session directly
+  // This function is kept for backwards compatibility
+  console.warn('setAuthTokens is deprecated. Use Supabase auth session instead.');
 }
 
 export function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
-async function refreshTokens(): Promise<void> {
-  if (!tokens?.refreshToken) {
-    throw new ApiError(401, 'Missing refresh token', null);
-  }
-  const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ refresh_token: tokens.refreshToken }),
-  });
-
-  if (!response.ok) {
-    setAuthTokens(null);
-    throw new ApiError(response.status, 'Failed to refresh session', await safeParse(response));
+async function refreshSupabaseSession(): Promise<void> {
+  if (isSupabaseMock()) {
+    throw new ApiError(401, 'Supabase is not configured', null);
   }
 
-  const data = await response.json();
-  setAuthTokens({
-    accessToken: data.access_token,
-    refreshToken: data.refresh_token,
-    expiresIn: data.expires_in,
-  });
+  try {
+    // Supabase handles token refresh automatically
+    // This just ensures we have a valid session
+    const { data: { session }, error } = await supabase.auth.refreshSession();
+    if (error || !session) {
+      throw new ApiError(401, 'Failed to refresh session', error);
+    }
+  } catch (error: any) {
+    throw new ApiError(401, 'Failed to refresh session', error);
+  }
 }
 
 async function safeParse(response: Response): Promise<unknown> {
@@ -104,26 +95,49 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
   const { skipAuth = false, retry = true, allowedStatuses = [] } = options;
   const headers = new Headers(options.headers ?? {});
 
-  if (!skipAuth && tokens?.accessToken) {
-    headers.set('Authorization', `Bearer ${tokens.accessToken}`);
+  // Get Supabase session token if auth is needed
+  if (!skipAuth) {
+    const token = await getSupabaseSessionToken();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
   }
 
   if (options.body && !(options.body instanceof FormData)) {
     headers.set('Content-Type', headers.get('Content-Type') || 'application/json');
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch (error: any) {
+    // Handle network errors (connection refused, timeout, etc.)
+    if (error.message === 'Failed to fetch' || 
+        error.code === 'ECONNREFUSED' || 
+        error.message?.includes('ERR_CONNECTION_REFUSED') ||
+        error.message?.includes('NetworkError')) {
+      throw new ApiError(0, 'Network error: Backend server is not available', { networkError: true });
+    }
+    // Re-throw other errors
+    throw error;
+  }
 
   if (allowedStatuses.includes(response.status)) {
     return (await safeParse(response)) as T;
   }
 
-  if (response.status === 401 && !skipAuth && retry && tokens?.refreshToken) {
-    await refreshTokens();
-    return apiRequest(path, { ...options, retry: false });
+  // Try to refresh Supabase session on 401
+  if (response.status === 401 && !skipAuth && retry && !isSupabaseMock()) {
+    try {
+      await refreshSupabaseSession();
+      // Retry request with new token
+      return apiRequest(path, { ...options, retry: false });
+    } catch (refreshError) {
+      // Refresh failed, throw the original 401 error
+    }
   }
 
   if (!response.ok) {
@@ -142,6 +156,8 @@ export async function unauthenticatedRequest<T = unknown>(path: string, options:
 }
 
 export function clearAuthTokens(): void {
-  setAuthTokens(null);
+  // No-op since we're using Supabase session directly
+  // To sign out, use supabase.auth.signOut() instead
+  console.warn('clearAuthTokens is deprecated. Use supabase.auth.signOut() instead.');
 }
 
