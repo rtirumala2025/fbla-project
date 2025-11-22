@@ -1,8 +1,10 @@
 /**
  * Sound Context
  * Manages sound effects and ambient sound preferences
+ * Uses Supabase user_preferences table instead of localStorage
  */
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { supabase, isSupabaseMock } from '../lib/supabase';
 
 type SoundContextValue = {
   effectsEnabled: boolean;
@@ -13,60 +15,116 @@ type SoundContextValue = {
   setAmbientEnabled: (enabled: boolean) => void;
 };
 
-const effectsStorageKey = 'virtual-pet-sound-effects';
-const ambientStorageKey = 'virtual-pet-ambient';
-
 const SoundContext = createContext<SoundContextValue | undefined>(undefined);
 
-const readStoredBoolean = (key: string, fallback: boolean): boolean => {
-  if (typeof window === 'undefined') {
-    return fallback;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (raw === null) {
-      return fallback;
-    }
-    return raw === 'true';
-  } catch (error) {
-    console.warn(`[SoundContext] Failed to read ${key} from storage`, error);
-    return fallback;
-  }
-};
-
-const persistBoolean = (key: string, value: boolean) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(key, value.toString());
-  } catch (error) {
-    console.warn(`[SoundContext] Failed to persist ${key}`, error);
-  }
-};
-
 export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [effectsEnabled, setEffectsEnabledState] = useState<boolean>(() => readStoredBoolean(effectsStorageKey, true));
-  const [ambientEnabled, setAmbientEnabledState] = useState<boolean>(() => readStoredBoolean(ambientStorageKey, true));
+  const [effectsEnabled, setEffectsEnabledState] = useState<boolean>(true);
+  const [ambientEnabled, setAmbientEnabledState] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Load sound preferences from Supabase user_preferences table
   useEffect(() => {
-    persistBoolean(effectsStorageKey, effectsEnabled);
-  }, [effectsEnabled]);
+    const loadSoundPreferences = async () => {
+      if (isSupabaseMock()) {
+        setIsLoading(false);
+        return;
+      }
 
-  useEffect(() => {
-    persistBoolean(ambientStorageKey, ambientEnabled);
-  }, [ambientEnabled]);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) {
+          // No user logged in - use defaults
+          setIsLoading(false);
+          return;
+        }
+
+        const userId = session.user.id;
+
+        const { data: prefs, error } = await supabase
+          .from('user_preferences')
+          .select('sound, music')
+          .eq('user_id', userId)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Failed to load sound preferences:', error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (prefs) {
+          // user_preferences has 'sound' and 'music' columns
+          // Map 'sound' to effectsEnabled and 'music' to ambientEnabled
+          setEffectsEnabledState(prefs.sound ?? true);
+          setAmbientEnabledState(prefs.music ?? true);
+        }
+      } catch (error) {
+        console.error('Error loading sound preferences:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSoundPreferences();
+  }, []);
+
+  // Sync sound preferences to Supabase when they change
+  const setEffectsEnabled = async (enabled: boolean) => {
+    setEffectsEnabledState(enabled);
+    
+    if (!isSupabaseMock() && !isLoading) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const userId = session.user.id;
+          
+          await supabase
+            .from('user_preferences')
+            .upsert({
+              user_id: userId,
+              sound: enabled,
+            }, {
+              onConflict: 'user_id',
+            });
+        }
+      } catch (error) {
+        console.error('Failed to save sound preferences:', error);
+      }
+    }
+  };
+
+  const setAmbientEnabled = async (enabled: boolean) => {
+    setAmbientEnabledState(enabled);
+    
+    if (!isSupabaseMock() && !isLoading) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const userId = session.user.id;
+          
+          await supabase
+            .from('user_preferences')
+            .upsert({
+              user_id: userId,
+              music: enabled,
+            }, {
+              onConflict: 'user_id',
+            });
+        }
+      } catch (error) {
+        console.error('Failed to save ambient sound preferences:', error);
+      }
+    }
+  };
 
   const value = useMemo<SoundContextValue>(
     () => ({
       effectsEnabled,
       ambientEnabled,
-      toggleEffects: () => setEffectsEnabledState((previous) => !previous),
-      toggleAmbient: () => setAmbientEnabledState((previous) => !previous),
-      setEffectsEnabled: setEffectsEnabledState,
-      setAmbientEnabled: setAmbientEnabledState,
+      toggleEffects: () => setEffectsEnabled(!effectsEnabled),
+      toggleAmbient: () => setAmbientEnabled(!ambientEnabled),
+      setEffectsEnabled,
+      setAmbientEnabled,
     }),
     [effectsEnabled, ambientEnabled],
   );
