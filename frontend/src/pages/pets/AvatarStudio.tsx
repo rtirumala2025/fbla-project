@@ -13,8 +13,6 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Pet3D } from '../../components/pets/Pet3D';
 import { Closet } from '../../components/pets/Closet';
 
-const CACHE_PREFIX = 'pet-art-cache:';
-
 export const AvatarStudio: React.FC = () => {
   const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,21 +33,8 @@ export const AvatarStudio: React.FC = () => {
     setEquippedAccessories(accessories);
   }, []);
 
-  const cacheKey = pet ? `${CACHE_PREFIX}${pet.id}` : null;
-
-  const loadCachedArt = useCallback(() => {
-    if (!cacheKey) return null;
-    try {
-      const raw = window.localStorage.getItem(cacheKey);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as ArtGenerationResponse;
-      setGeneratedArt(parsed);
-      return parsed;
-    } catch (error) {
-      console.warn('Failed to parse cached art', error);
-      return null;
-    }
-  }, [cacheKey]);
+  // Removed localStorage caching - art is now in component state only
+  // Future: Could use Supabase Storage for persistent art cache
 
   useEffect(() => {
     const loadData = async () => {
@@ -76,31 +61,19 @@ export const AvatarStudio: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (offline.offline) {
-      loadCachedArt();
-    }
-  }, [offline.offline, loadCachedArt]);
-
-  useEffect(() => {
-    if (cacheKey) {
-      loadCachedArt();
-    }
-  }, [cacheKey, loadCachedArt]);
-
+  // Removed localStorage cache loading - art is now in component state only
 
   const handleGenerateArt = async (forceRefresh = false) => {
     if (!pet) {
       toast.error('Create a pet to generate art.');
       return;
     }
-    if (offline.offline && !cacheKey) {
-      toast.error('Offline and no cached art available.');
-      return;
-    }
     if (offline.offline) {
-      toast.info('Offline mode: displaying cached avatar.');
-      loadCachedArt();
+      if (generatedArt) {
+        toast.info('Offline mode: displaying current avatar.');
+        return;
+      }
+      toast.error('Offline and no avatar available.');
       return;
     }
 
@@ -113,9 +86,8 @@ export const AvatarStudio: React.FC = () => {
         force_refresh: forceRefresh,
       });
       setGeneratedArt(art);
-      if (cacheKey) {
-        window.localStorage.setItem(cacheKey, JSON.stringify(art));
-      }
+      // Removed localStorage.setItem - art now stored in component state only
+      // Future: Could cache in Supabase Storage for persistence across sessions
       toast.success(art.cached ? 'Loaded avatar from cache.' : 'Generated a fresh avatar!');
     } catch (error) {
       console.error('Failed to generate art', error);
