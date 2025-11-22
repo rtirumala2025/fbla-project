@@ -1,8 +1,10 @@
 /**
  * API client for pet management and AI features
  * Handles pet CRUD, actions, diary, and AI insights/notifications
+ * Uses Supabase directly for pet data
  */
 import { apiRequest } from './httpClient';
+import { supabase, isSupabaseMock } from '../lib/supabase';
 import type { Pet, PetStats } from '../types/pet';
 
 // Pet types - using existing pet.ts types and extending as needed
@@ -81,46 +83,83 @@ interface PetCommandResponse {
 }
 
 const BASE_PATH = '/api/pets';
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
 
-// Generate mock pet
-function generateMockPet(): Pet {
-  return {
-    id: 'mock-pet-1',
-    name: 'Luna',
-    species: 'dog',
-    breed: 'Golden Retriever',
-    age: 30,
-    level: 5,
-    experience: 1250,
+async function fetchPetFromSupabase(): Promise<Pet> {
+  if (isSupabaseMock()) {
+    throw new Error('Supabase is not configured');
+  }
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session?.user?.id) {
+    throw new Error('User not authenticated');
+  }
+
+  const userId = session.user.id;
+
+  // Fetch pet from Supabase
+  const { data: petData, error: petError } = await supabase
+    .from('pets')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (petError) {
+    if (petError.code === 'PGRST116') {
+      // No pet found
+      throw new Error('No pet found. Please create a pet first.');
+    }
+    throw petError;
+  }
+
+  if (!petData) {
+    throw new Error('No pet found. Please create a pet first.');
+  }
+
+  // Calculate age in days from birthday
+  const birthday = petData.birthday ? new Date(petData.birthday) : new Date(petData.created_at);
+  const now = new Date();
+  const ageInDays = Math.floor((now.getTime() - birthday.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Map Supabase pet to Pet type
+  const pet: Pet = {
+    id: petData.id,
+    name: petData.name,
+    species: petData.species as Pet['species'],
+    breed: petData.breed,
+    age: ageInDays,
+    level: 1, // Default level if not stored separately
+    experience: 0, // Default XP if not stored separately
+    color_pattern: petData.color_pattern || null,
+    birthday: petData.birthday || null,
     stats: {
-      health: 88,
-      hunger: 75,
-      happiness: 82,
-      cleanliness: 90,
-      energy: 70,
-      mood: 'happy',
-      level: 5,
-      xp: 1250,
+      health: petData.health || 80,
+      hunger: petData.hunger || 70,
+      happiness: petData.happiness || 70,
+      cleanliness: petData.cleanliness || 70,
+      energy: petData.energy || 70,
+      hygiene: petData.cleanliness || 70, // Map cleanliness to hygiene for compatibility
+      mood: petData.mood || 'happy',
+      level: 1, // Default level
+      xp: 0, // Default XP
     },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date(petData.created_at),
+    updatedAt: new Date(petData.updated_at || petData.created_at),
   };
+
+  return pet;
 }
 
 export async function fetchPet(): Promise<Pet> {
-  // Use mock data if in mock mode or if API fails
-  if (useMock) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return generateMockPet();
-  }
-
   try {
-    return await apiRequest<Pet>(BASE_PATH);
+    return await fetchPetFromSupabase();
   } catch (error) {
-    // Fallback to mock data if API fails
-    console.warn('Pet API unavailable, using mock data', error);
-    return generateMockPet();
+    // Try backend API as fallback
+    try {
+      return await apiRequest<Pet>(BASE_PATH);
+    } catch (apiError) {
+      console.error('Failed to fetch pet from Supabase and API', error, apiError);
+      throw new Error('Failed to load pet. Please ensure you are logged in and have created a pet.');
+    }
   }
 }
 
@@ -183,97 +222,49 @@ export async function addDiaryEntry(payload: PetDiaryCreateRequest): Promise<Pet
 }
 
 export async function getPetAIInsights(): Promise<PetAIInsights> {
+  // AI insights require backend AI service
+  // No mock fallback - must use backend API
   try {
     return await apiRequest<PetAIInsights>(`${BASE_PATH}/ai/insights`);
   } catch (error) {
-    console.warn('AI insights endpoint unavailable, returning fallback data.', error);
-    return {
-      mood_label: 'Playful',
-      mood_score: 0.82,
-      recommended_actions: ['Play a quick game of fetch', 'Serve a protein-rich snack', 'Schedule a rest break'],
-      personality_traits: ['Curious', 'Loyal', 'Energetic'],
-      personality_summary: 'Your companion thrives on interactive challenges and collaborative tasks.',
-      predicted_health: 'Stable with positive outlook',
-      health_risk_level: 'low',
-      health_factors: ['Balanced nutrition', 'Consistent exercise', 'Healthy sleep routine'],
-      recommended_difficulty: 'Intermediate',
-      care_style: 'Coach',
-      help_suggestions: [
-        'Plan a mini training session to reinforce commands',
-        'Introduce a new puzzle toy to keep boredom away',
-        'Schedule a calming activity before bedtime',
-      ],
-    };
+    console.error('AI insights endpoint unavailable', error);
+    throw new Error('Failed to load AI insights. Please ensure the backend server is running and try again.');
   }
 }
 
 export async function getPetAINotifications(): Promise<PetNotification[]> {
+  // AI notifications require backend AI service
+  // No mock fallback - must use backend API
   try {
     return await apiRequest<PetNotification[]>(`${BASE_PATH}/ai/notifications`);
   } catch (error) {
-    console.warn('AI notifications endpoint unavailable, returning fallback notifications.', error);
-    return [
-      {
-        message: 'Energy dipping after extended play. Consider a short rest.',
-        severity: 'info',
-        urgency: 'medium',
-        stat: 'energy',
-      },
-      {
-        message: 'Happiness spikes when you mix training with games. Keep up the variety!',
-        severity: 'info',
-        urgency: 'low',
-        stat: 'happiness',
-      },
-      {
-        message: 'Plan hydration and a light meal before the next minigame streak.',
-        severity: 'warning',
-        urgency: 'medium',
-        stat: 'health',
-      },
-    ];
+    console.error('AI notifications endpoint unavailable', error);
+    throw new Error('Failed to load AI notifications. Please ensure the backend server is running and try again.');
   }
 }
 
 export async function getPetAIHelp(): Promise<PetHelpResponse> {
+  // AI help requires backend AI service
+  // No mock fallback - must use backend API
   try {
     return await apiRequest<PetHelpResponse>(`${BASE_PATH}/ai/help`);
   } catch (error) {
-    console.warn('AI help endpoint unavailable, returning fallback guidance.', error);
-    return {
-      summary: 'Focus on a balanced rhythm: nourishment, play, cleanup, rest.',
-      suggestions: [
-        'Queue up a calming soundtrack during rest mode to boost recovery.',
-        'Alternate cognitive and physical challenges to keep engagement high.',
-        'Tag memorable moments in the diary to enhance AI personalization.',
-      ],
-    };
+    console.error('AI help endpoint unavailable', error);
+    throw new Error('Failed to load AI help. Please ensure the backend server is running and try again.');
   }
 }
 
 export async function parsePetAICommand(payload: { command_text: string }): Promise<PetCommandResponse> {
+  // AI command parsing requires backend AI service
+  // No mock fallback - must use backend API
   try {
     return await apiRequest<PetCommandResponse>(`${BASE_PATH}/ai/parse`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   } catch (error) {
-    console.warn('AI command parsing unavailable, returning heuristic fallback.', error);
-    const normalized = payload.command_text.toLowerCase();
-    let action: string | null = null;
-    if (normalized.includes('feed')) action = 'feed';
-    else if (normalized.includes('play')) action = 'play';
-    else if (normalized.includes('clean') || normalized.includes('bath')) action = 'bathe';
-    else if (normalized.includes('rest') || normalized.includes('sleep')) action = 'rest';
-
-    return {
-      action,
-      confidence: action ? 0.75 : 0.4,
-      parameters: action ? { command: payload.command_text } : {},
-      note: action
-        ? 'Executed locally while AI command parser is offline.'
-        : 'Unable to confidently classify command; try rephrasing.',
-    };
+    console.error('AI command parsing unavailable', error);
+    throw new Error('Failed to parse command. Please ensure the backend server is running and try again.');
   }
 }
 
