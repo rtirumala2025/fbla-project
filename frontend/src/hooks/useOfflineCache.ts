@@ -1,6 +1,9 @@
 /**
  * useOfflineCache Hook
- * Provides offline caching functionality for data
+ * Provides offline status detection (localStorage caching removed)
+ * 
+ * Note: Caching removed - data should be fetched from Supabase or API directly
+ * This hook now only provides offline status detection
  */
 import { useEffect, useState } from 'react';
 
@@ -10,19 +13,11 @@ interface OfflineOptions<T> {
 }
 
 export function useOfflineCache<T>({ key, data }: OfflineOptions<T>) {
+  // Removed localStorage caching - cached now just mirrors current data
   const [cached, setCached] = useState<T | null>(null);
   const [offline, setOffline] = useState(false);
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem(key);
-    if (stored) {
-      try {
-        setCached(JSON.parse(stored));
-      } catch (error) {
-        console.warn('Failed to parse cached data', error);
-      }
-    }
-  }, [key]);
+  // Removed localStorage.getItem for cached data
 
   useEffect(() => {
     const updateStatus = () => setOffline(!navigator.onLine);
@@ -36,16 +31,14 @@ export function useOfflineCache<T>({ key, data }: OfflineOptions<T>) {
   }, []);
 
   useEffect(() => {
+    // Removed localStorage.setItem - just store in component state
     if (data) {
-      try {
-        window.localStorage.setItem(key, JSON.stringify(data));
-        setCached(data);
-      } catch (error) {
-        console.warn('Unable to cache data', error);
-      }
+      setCached(data);
     }
   }, [data, key]);
 
+  // Note: cached now just mirrors current data prop (no persistence)
+  // Future: Components should fetch from Supabase directly instead of using cache
   return { cached, offline };
 }
 
