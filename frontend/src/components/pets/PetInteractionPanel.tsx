@@ -233,16 +233,13 @@ export const PetInteractionPanel: React.FC<PetInteractionPanelProps> = ({
   
   /**
    * Initialize session ID on mount
+   * Removed localStorage - session ID generated in component state
+   * Backend manages session history via session_id
    */
   useEffect(() => {
-    const storedSessionId = localStorage.getItem('petCommandSessionId');
-    if (storedSessionId) {
-      setSessionId(storedSessionId);
-    } else {
-      const newSessionId = `pet_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('petCommandSessionId', newSessionId);
-      setSessionId(newSessionId);
-    }
+    // Generate session ID in component state (no localStorage)
+    const newSessionId = `pet_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    setSessionId(newSessionId);
   }, []);
 
   /**
