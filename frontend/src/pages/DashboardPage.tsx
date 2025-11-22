@@ -295,27 +295,30 @@ export function DashboardPage() {
       loadAccessories();
       loadAnalytics();
       refreshBalance();
-      earnService.listChores().then(setChores);
       
-      // Load chore cooldowns
+      // Load chores and their cooldowns
       if (currentUser?.uid) {
-        Promise.all(
-          earnService.listChores().then(choresList =>
-            Promise.all(
-              choresList.map(async (chore) => {
-                const cd = await earnService.getChoreCooldown(currentUser.uid, chore.id);
-                return [chore.id, cd] as [string, number];
-              })
-            )
-          )
-        ).then(cooldownPairs => {
-          const cooldowns: Record<string, number> = {};
-          cooldownPairs.forEach(([choreId, cd]) => {
-            cooldowns[choreId] = cd;
-          });
-          setChoreCooldowns(cooldowns);
+        earnService.listChores().then(async (choresList) => {
+          setChores(choresList);
+          
+          // Load cooldowns for all chores
+          try {
+            const cooldownPromises = choresList.map(async (chore) => {
+              const cd = await earnService.getChoreCooldown(currentUser.uid, chore.id);
+              return [chore.id, cd] as [string, number];
+            });
+            
+            const cooldownPairs = await Promise.all(cooldownPromises);
+            const cooldowns: Record<string, number> = {};
+            cooldownPairs.forEach(([choreId, cd]) => {
+              cooldowns[choreId] = cd;
+            });
+            setChoreCooldowns(cooldowns);
+          } catch (err) {
+            console.error('Failed to load chore cooldowns:', err);
+          }
         }).catch(err => {
-          console.error('Failed to load chore cooldowns:', err);
+          console.error('Failed to load chores:', err);
         });
       }
     }
