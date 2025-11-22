@@ -53,9 +53,8 @@ export const SpeciesSelection = () => {
 
   const handleContinue = () => {
     if (selected) {
-      // Store selection and move to breed selection
-      localStorage.setItem('selectedSpecies', selected);
-      navigate('/onboarding/breed');
+      // Pass selection via React Router state (no localStorage)
+      navigate('/onboarding/breed', { state: { selectedSpecies: selected } });
     }
   };
 

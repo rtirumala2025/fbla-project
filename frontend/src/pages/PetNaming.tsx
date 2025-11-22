@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Sparkles, AlertCircle, HelpCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { usePet } from '../context/PetContext';
 import { useToast } from '../contexts/ToastContext';
 import { useInteractionLogger } from '../hooks/useInteractionLogger';
@@ -44,18 +44,21 @@ export const PetNaming = () => {
   const { currentUser } = useAuth();
   const { logFormSubmit, logFormValidation, logFormError, logUserAction } = useInteractionLogger('PetNaming');
 
+  const location = useLocation();
+
   useEffect(() => {
-    const storedSpecies = localStorage.getItem('selectedSpecies');
-    const storedBreed = localStorage.getItem('selectedBreed');
+    // Get species and breed from React Router state (no localStorage)
+    const routeSpecies = location.state?.selectedSpecies;
+    const routeBreed = location.state?.selectedBreed;
     
-    if (!storedSpecies || !storedBreed) {
+    if (!routeSpecies || !routeBreed) {
       navigate('/onboarding/species');
       return;
     }
     
-    setSpecies(storedSpecies);
-    setBreed(storedBreed);
-  }, [navigate]);
+    setSpecies(routeSpecies);
+    setBreed(routeBreed);
+  }, [navigate, location.state]);
 
   // Validate name with API
   const validateNameWithAPI = useCallback(async (value: string) => {
@@ -210,9 +213,7 @@ export const PetNaming = () => {
       // Create pet in database via PetContext
       await createPet(name.trim(), species);
       
-      // Clean up temporary localStorage data
-      localStorage.removeItem('selectedSpecies');
-      localStorage.removeItem('selectedBreed');
+      // Note: No localStorage cleanup needed - using React Router state instead
       
       logFormSubmit({ name: name.trim(), species, breed }, true);
       toast.success(`Welcome, ${name}! 🎉`);

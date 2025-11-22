@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface Breed {
   id: string;
@@ -41,21 +41,28 @@ export const BreedSelection = () => {
   const [selectedBreed, setSelectedBreed] = useState<string | null>(null);
   const [breeds, setBreeds] = useState<Breed[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    const species = localStorage.getItem('selectedSpecies');
+    // Get species from React Router state (no localStorage)
+    const species = location.state?.selectedSpecies;
     if (!species) {
       navigate('/onboarding/species');
       return;
     }
     setSelectedSpecies(species);
     setBreeds(breedData[species] || []);
-  }, [navigate]);
+  }, [navigate, location.state]);
 
   const handleContinue = () => {
     if (selectedBreed) {
-      localStorage.setItem('selectedBreed', selectedBreed);
-      navigate('/onboarding/naming');
+      // Pass both species and breed via React Router state
+      navigate('/onboarding/naming', { 
+        state: { 
+          selectedSpecies,
+          selectedBreed 
+        } 
+      });
     }
   };
 
