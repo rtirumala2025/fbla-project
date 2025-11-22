@@ -64,48 +64,28 @@ export const AIChat: React.FC = () => {
     }
   }, []);
 
-  // Generate a unique session ID if not exists
+  // Initialize session ID - backend will manage session persistence
+  // Removed localStorage - session state managed by backend AI service
   useEffect(() => {
-    const storedSessionId = localStorage.getItem('petSessionId');
-    if (storedSessionId) {
-      setSessionId(storedSessionId);
-      // Load chat history from localStorage
-      const savedChat = localStorage.getItem(`chat_${storedSessionId}`);
-      if (savedChat) {
-        try {
-          const parsed = JSON.parse(savedChat);
-          setMessages(parsed.messages || []);
-          setPetState(parsed.petState || null);
-        } catch (e) {
-          console.error('Failed to load chat history', e);
-        }
-      }
-    } else {
-      const newSessionId = `pet_${Date.now()}`;
-      localStorage.setItem('petSessionId', newSessionId);
-      setSessionId(newSessionId);
+    if (!currentUser?.uid) {
+      // No user logged in - create temporary session ID (will be replaced when backend responds)
+      setSessionId(`temp_${Date.now()}`);
+      return;
     }
-  }, []);
 
-  // Save chat history when messages or pet state changes (debounced)
-  useEffect(() => {
-    if (!sessionId || (messages.length === 0 && !petState)) return;
+    // Generate a unique session ID for this chat session
+    // The backend AI service will manage session history and context
+    const newSessionId = `pet_${Date.now()}_${currentUser.uid.substring(0, 8)}`;
+    setSessionId(newSessionId);
     
-    const timeoutId = setTimeout(() => {
-      try {
-        const chatData = {
-          messages,
-          petState,
-          lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem(`chat_${sessionId}`, JSON.stringify(chatData));
-      } catch (e) {
-        console.error('Failed to save chat history', e);
-      }
-    }, 500); // Debounce by 500ms to avoid excessive writes
-    
-    return () => clearTimeout(timeoutId);
-  }, [messages, petState, sessionId]);
+    // Note: Chat history is managed by backend AI service via session_id
+    // Messages are stored in component state and sent with each request
+    // Backend maintains conversation context in its memory store
+  }, [currentUser?.uid]);
+
+  // Note: We no longer persist chat history to localStorage
+  // Backend AI service manages session history and context
+  // On reload, user can start a new session or backend can restore from session_id if supported
 
   // Focus input on load
   useEffect(() => {
