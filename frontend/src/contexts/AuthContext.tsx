@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { profileService } from '../services/profileService';
 import { petService } from '../services/petService';
@@ -142,9 +142,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Method to directly mark user as not new (after successful profile creation)
-  const markUserAsReturning = () => {
-    console.log('✅ AuthContext: Marking user as returning (profile exists)');
+  const markUserAsReturning = (hasPetValue?: boolean) => {
+    console.log('✅ AuthContext: Marking user as returning (profile exists)', { hasPetValue });
     setIsNewUser(false);
+    if (hasPetValue !== undefined) {
+      setHasPet(hasPetValue);
+    }
     setIsTransitioning(true);
   };
 
@@ -194,10 +197,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setHasPet(false);
       }
       
-      setCurrentUser(mappedUser);
-      setLoading(false);
-      initialSessionLoadedRef.current = true; // Mark initial session as loaded
-      clearTimeout(fallbackTimeout); // Clear timeout since we completed successfully
+        setCurrentUser(mappedUser);
+        initialSessionLoadedRef.current = true; // Mark initial session as loaded
+        setLoading(false);
+        if (fallbackTimeoutRef.current) {
+          clearTimeout(fallbackTimeoutRef.current);
+          fallbackTimeoutRef.current = null;
+        }
       
       // Set up pet subscription if user exists
       if (mappedUser?.uid && !petSubscriptionRef.current) {
@@ -231,7 +237,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setHasPet(false);
       setLoading(false);
       initialSessionLoadedRef.current = true; // Mark as loaded even on error
-      clearTimeout(fallbackTimeout); // Clear timeout since we completed (with error)
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current);
+        fallbackTimeoutRef.current = null;
+      }
     });
 
     // Listen for auth changes - this will fire for all auth events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
@@ -321,7 +330,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       onboardingLogger.authInit('Cleaning up subscriptions');
-      clearTimeout(fallbackTimeout);
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current);
+        fallbackTimeoutRef.current = null;
+      }
       subscription.unsubscribe();
       if (petSubscriptionRef.current) {
         petSubscriptionRef.current.unsubscribe();
