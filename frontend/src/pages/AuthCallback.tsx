@@ -415,25 +415,24 @@ export const AuthCallback = () => {
 
         const hasProfile = !!profile;
 
-        // Check for pet existence
+        // Check for pet existence (always check, regardless of profile status)
         let hasPet = false;
-        if (hasProfile) {
-          try {
-            const { data: pet, error: petError } = await supabase
-              .from('pets')
-              .select('id')
-              .eq('user_id', userId)
-              .single();
+        try {
+          const { data: pet, error: petError } = await supabase
+            .from('pets')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
 
-            if (petError && petError.code !== 'PGRST116') {
-              logToFile(`❌ AuthCallback: Error checking pet: ${petError.message}`, 'error');
-            } else {
-              hasPet = !!pet;
-            }
-          } catch (petCheckError: any) {
-            logToFile(`⚠️ AuthCallback: Error checking pet: ${petCheckError?.message || petCheckError}`, 'warn');
+          if (petError && petError.code !== 'PGRST116') {
+            logToFile(`❌ AuthCallback: Error checking pet: ${petError.message}`, 'error');
             hasPet = false;
+          } else {
+            hasPet = !!pet;
           }
+        } catch (petCheckError: any) {
+          logToFile(`⚠️ AuthCallback: Error checking pet: ${petCheckError?.message || petCheckError}`, 'warn');
+          hasPet = false;
         }
 
         logToFile('🔍 AuthCallback: Profile and pet check result');

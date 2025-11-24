@@ -20,7 +20,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-  checkUserProfile: (userId: string) => Promise<boolean>;
+  checkUserProfile: (userId: string) => Promise<{ isNew: boolean; hasPet: boolean }>;
   refreshUserState: () => Promise<void>;
   markUserAsReturning: () => void;
   endTransition: () => void;
@@ -54,6 +54,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasPet, setHasPet] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const initialSessionLoadedRef = useRef(false);
+  const petSubscriptionRef = useRef<any>(null);
+
+  // Helper function to retry pet check with exponential backoff
+  const checkPetWithRetry = async (userId: string, maxRetries = 3): Promise<boolean> => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const pet = await petService.getPet(userId);
+        return pet !== null;
+      } catch (error: any) {
+        if (error?.code === 'PGRST116') {
+          // No pet found - not an error
+          return false;
+        }
+        
+        if (attempt === maxRetries) {
+          console.error(`❌ Pet check failed after ${maxRetries} attempts:`, error);
+          return false; // Default to no pet on final failure
+        }
+        
+        // Exponential backoff: 100ms, 200ms, 400ms
+        const delay = 100 * Math.pow(2, attempt - 1);
+        console.warn(`⚠️ Pet check attempt ${attempt} failed, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    return false;
+  };
 
   // Helper function to check if user has a profile and pet
   const checkUserProfile = async (userId: string): Promise<{ isNew: boolean; hasPet: boolean }> => {
@@ -66,18 +93,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profile = await profileService.getProfile(userId);
       const isNew = profile === null; // true if no profile exists (new user)
       
-      // Check for pet existence
+      // Check for pet existence (always check, regardless of profile status)
       let petExists = false;
-      if (!isNew) {
-        // Only check for pet if user has a profile
-        try {
-          const pet = await petService.getPet(userId);
-          petExists = pet !== null;
-        } catch (petError) {
-          console.error('Error checking pet:', petError);
-          petExists = false; // Assume no pet if check fails
-        }
-      }
+      petExists = await checkPetWithRetry(userId);
       
       return { isNew, hasPet: petExists };
     } catch (error) {
@@ -104,17 +122,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         const isNew = profile === null;
         
-        // Check for pet existence
+        // Check for pet existence (always check, regardless of profile status)
         let petExists = false;
-        if (!isNew) {
-          try {
-            const pet = await petService.getPet(session.user.id);
-            petExists = pet !== null;
-          } catch (petError) {
-            console.error('Error checking pet during refresh:', petError);
-            petExists = false;
-          }
-        }
+        petExists = await checkPetWithRetry(session.user.id);
         
         console.log('🔄 AuthContext: Refreshed - isNewUser:', isNew, 'hasPet:', petExists);
         console.log('🔄 AuthContext: Updated displayName from profile:', updatedUser.displayName);
@@ -185,6 +195,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       initialSessionLoadedRef.current = true; // Mark initial session as loaded
       clearTimeout(fallbackTimeout); // Clear timeout since we completed successfully
+      
+      // Set up pet subscription if user exists
+      if (mappedUser?.uid && !petSubscriptionRef.current) {
+        console.log('🔵 AuthContext: Setting up pet subscription for user:', mappedUser.uid);
+        petSubscriptionRef.current = supabase
+          .channel(`pet-changes-${mappedUser.uid}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // INSERT, UPDATE, DELETE
+              schema: 'public',
+              table: 'pets',
+              filter: `user_id=eq.${mappedUser.uid}`,
+            },
+            async (payload) => {
+              console.log('🔵 AuthContext: Pet change detected:', payload.eventType);
+              // Refresh user state when pet changes
+              try {
+                await refreshUserState();
+              } catch (error) {
+                console.error('❌ Error refreshing state after pet change:', error);
+              }
+            }
+          )
+          .subscribe();
+      }
     }).catch((err: any) => {
       console.error('❌ Error getting session:', err);
       setCurrentUser(null);
@@ -240,12 +276,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setCurrentUser(mappedUser);
       setLoading(false);
+      
+      // Set up or update pet subscription if user exists
+      if (mappedUser?.uid) {
+        // Clean up existing subscription if user changed
+        if (petSubscriptionRef.current) {
+          petSubscriptionRef.current.unsubscribe();
+          petSubscriptionRef.current = null;
+        }
+        
+        console.log('🔵 AuthContext: Setting up pet subscription for user:', mappedUser.uid);
+        petSubscriptionRef.current = supabase
+          .channel(`pet-changes-${mappedUser.uid}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // INSERT, UPDATE, DELETE
+              schema: 'public',
+              table: 'pets',
+              filter: `user_id=eq.${mappedUser.uid}`,
+            },
+            async (payload) => {
+              console.log('🔵 AuthContext: Pet change detected:', payload.eventType);
+              // Refresh user state when pet changes
+              try {
+                await refreshUserState();
+              } catch (error) {
+                console.error('❌ Error refreshing state after pet change:', error);
+              }
+            }
+          )
+          .subscribe();
+      } else {
+        // Clean up subscription if user logged out
+        if (petSubscriptionRef.current) {
+          petSubscriptionRef.current.unsubscribe();
+          petSubscriptionRef.current = null;
+        }
+      }
     });
 
     return () => {
-      console.log('🔵 AuthContext: Cleaning up subscription');
+      console.log('🔵 AuthContext: Cleaning up subscriptions');
       clearTimeout(fallbackTimeout);
       subscription.unsubscribe();
+      if (petSubscriptionRef.current) {
+        petSubscriptionRef.current.unsubscribe();
+        petSubscriptionRef.current = null;
+      }
     };
   }, []);
 
