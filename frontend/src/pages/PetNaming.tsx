@@ -41,7 +41,7 @@ export const PetNaming = () => {
   const navigate = useNavigate();
   const { createPet } = usePet();
   const toast = useToast();
-  const { currentUser } = useAuth();
+  const { currentUser, hasPet, refreshUserState } = useAuth();
   const { logFormSubmit, logFormValidation, logFormError, logUserAction } = useInteractionLogger('PetNaming');
 
   const location = useLocation();
@@ -221,11 +221,21 @@ export const PetNaming = () => {
       toast.success(`Welcome, ${name}! 🎉`);
       
       // CRITICAL: Wait for state to propagate before navigating
-      // PetContext.createPet() calls refreshUserState() which updates hasPet
-      // Give it a moment to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // PetContext.createPet() already calls refreshUserState() which updates hasPet
+      // Ensure the state update has time to propagate through React's state system
+      // Use a small delay to allow React to process the state update
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Double-check by refreshing state one more time to ensure it's up to date
+      try {
+        await refreshUserState();
+      } catch (refreshError) {
+        console.warn('State refresh warning (non-critical):', refreshError);
+        // Continue anyway - the route guard will handle it
+      }
       
       // Redirect to dashboard with smooth transition
+      // The ProtectedRoute will verify hasPet, and if not true yet, will redirect appropriately
       navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Failed to create pet:', error);

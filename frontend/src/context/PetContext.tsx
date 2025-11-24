@@ -342,7 +342,28 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       
       if (error) {
         logger.error('Error creating pet', { userId, name, type, errorCode: error.code }, error);
-        throw new Error(getErrorMessage(error, error.message || 'Failed to create pet'));
+        
+        // Provide more specific error messages based on error type
+        let errorMessage = 'Failed to create pet';
+        
+        if (error.code === '23505') {
+          // Unique constraint violation - pet already exists for this user
+          errorMessage = 'You already have a pet. Each user can only have one pet.';
+        } else if (error.code === '23503') {
+          // Foreign key constraint violation
+          errorMessage = 'Invalid user account. Please log in again.';
+        } else if (error.code === 'PGRST116') {
+          // No rows returned
+          errorMessage = 'Pet creation failed: No data returned from database.';
+        } else if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
+          errorMessage = 'Request timed out. Please check your connection and try again.';
+        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(getErrorMessage(error, errorMessage));
       }
       
       if (!data) {
@@ -396,7 +417,28 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       }
     } catch (err: any) {
       console.error('❌ Error creating pet:', err);
-      throw new Error(err.message || 'Failed to create pet');
+      
+      // If error is already a well-formed Error with a message, use it
+      if (err instanceof Error && err.message && err.message !== 'Failed to create pet') {
+        throw err;
+      }
+      
+      // Otherwise, provide a more specific error message
+      let errorMessage = 'Failed to create pet';
+      
+      if (err?.code === '23505') {
+        errorMessage = 'You already have a pet. Each user can only have one pet.';
+      } else if (err?.code === '23503') {
+        errorMessage = 'Invalid user account. Please log in again.';
+      } else if (err?.message?.includes('timeout')) {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (err?.message?.includes('network') || err?.message?.includes('fetch')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      
+      throw new Error(errorMessage);
     }
   }, [userId, refreshUserState]);
   
