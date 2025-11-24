@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Pet, PetStats } from '@/types/pet';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseMock, withTimeout } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/networkUtils';
 
 interface PetContextType {
   pet: Pet | null;
@@ -12,6 +14,7 @@ interface PetContextType {
   rest: () => Promise<void>;
   loading: boolean;
   error: string | null;
+  updating: boolean;
   createPet: (name: string, type: string, breed?: string) => Promise<void>;
   refreshPet: () => Promise<void>;
 }
@@ -33,6 +36,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
   const { refreshUserState } = useAuth();
 
   // Load pet data from Supabase when userId changes
@@ -47,48 +51,136 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         return;
       }
       
-      console.log('🔵 Loading pet for user:', userId);
-      const { data, error } = await supabase
+      logger.debug('Loading pet for user', { userId });
+      
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+      
+      const query = supabase
         .from('pets')
         .select('*')
         .eq('user_id', userId)
         .single();
       
+      const { data, error } = await withTimeout(
+        query,
+        10000,
+        'Load pet'
+      ) as any;
+      
       if (error && error.code !== 'PGRST116') {
         // PGRST116 = no rows found (user has no pet yet)
-        console.error('❌ Error loading pet:', error);
-        setError('Failed to load pet data');
+        logger.error('Error loading pet', { userId, errorCode: error.code }, error);
+        setError(getErrorMessage(error, 'Failed to load pet data'));
       } else if (data) {
-        console.log('✅ Pet loaded:', data.name);
-        // Map DB fields to Pet type
+        // Validate required fields
+        if (!data.id || !data.name || !data.species) {
+          logger.error('Invalid pet data from database', { userId, data });
+          setError('Invalid pet data received');
+          setLoading(false);
+          return;
+        }
+        
+        logger.debug('Pet loaded', { userId, petId: data.id, petName: data.name });
+        // Map DB fields to Pet type with null safety
         const loadedPet: Pet = {
           id: data.id,
           name: data.name,
           species: data.species as 'dog' | 'cat' | 'bird' | 'rabbit',
           breed: data.breed || 'Mixed',
-          age: data.age || 0,
-          level: data.level || 1,
-          experience: data.xp || 0,
+          age: data.age ?? 0,
+          level: data.level ?? 1,
+          experience: data.xp ?? 0,
           ownerId: data.user_id,
           createdAt: new Date(data.created_at),
           updatedAt: new Date(data.updated_at),
           stats: {
-            health: data.health || 100,
-            hunger: data.hunger || 50,
-            happiness: data.happiness || 50,
-            cleanliness: data.cleanliness || 50,
-            energy: data.energy || 50,
+            health: data.health ?? 100,
+            hunger: data.hunger ?? 50,
+            happiness: data.happiness ?? 50,
+            cleanliness: data.cleanliness ?? 50,
+            energy: data.energy ?? 50,
             lastUpdated: new Date(data.updated_at),
           },
         };
         setPet(loadedPet);
       } else {
-        console.log('📝 No pet found for user');
+        logger.debug('No pet found for user', { userId });
         setPet(null);
       }
     } catch (err) {
       console.error('❌ Error loading pet:', err);
-      setError('Failed to load pet data');
+      
+      // Retry logic for transient errors
+      const maxRetries = 3;
+      let retries = 0;
+      let lastError = err;
+      
+      while (retries < maxRetries) {
+        retries++;
+        const delay = 100 * Math.pow(2, retries - 1); // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        try {
+          if (!userId) {
+            setPet(null);
+            setLoading(false);
+            return;
+          }
+          
+          // Retry fetch
+          const { data, error } = await supabase
+            .from('pets')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+          
+          if (!error && data) {
+            // Success - map and set pet
+            const loadedPet: Pet = {
+              id: data.id,
+              name: data.name,
+              species: data.species as 'dog' | 'cat' | 'bird' | 'rabbit',
+              breed: data.breed || 'Mixed',
+              age: data.age ?? 0,
+              level: data.level ?? 1,
+              experience: data.xp ?? 0,
+              ownerId: data.user_id,
+              createdAt: new Date(data.created_at),
+              updatedAt: new Date(data.updated_at),
+              stats: {
+                health: data.health ?? 100,
+                hunger: data.hunger ?? 50,
+                happiness: data.happiness ?? 50,
+                cleanliness: data.cleanliness ?? 50,
+                energy: data.energy ?? 50,
+                lastUpdated: new Date(data.updated_at),
+              },
+            };
+            setPet(loadedPet);
+            setError(null);
+            setLoading(false);
+            return; // Success, exit
+          }
+          
+          if (error && error.code !== 'PGRST116') {
+            lastError = error;
+          } else {
+            // No pet found - not an error
+            setPet(null);
+            setError(null);
+            setLoading(false);
+            return;
+          }
+        } catch (retryErr) {
+          lastError = retryErr;
+        }
+      }
+      
+      // All retries failed
+      setError('Failed to load pet data after retries');
+      console.error('❌ PetContext: All retry attempts failed', lastError);
     } finally {
       setLoading(false);
     }
@@ -96,10 +188,49 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
   useEffect(() => {
     loadPet();
-  }, [loadPet]);
+  }, [userId]); // Direct dependency on userId, not loadPet
+
+  // Realtime subscription for pet changes
+  useEffect(() => {
+    if (!userId || isSupabaseMock()) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`pet-realtime-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pets',
+          filter: `user_id=eq.${userId}`,
+        },
+        async (payload) => {
+          console.log('🔄 PetContext: Pet change detected, refreshing...', payload.eventType);
+          // Reload pet data from Supabase
+          await loadPet();
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ PetContext: Realtime subscription active');
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+      supabase.removeChannel(channel);
+    };
+  }, [userId, loadPet]);
 
   const updatePetStats = useCallback(async (updates: Partial<PetStats>) => {
     if (!pet || !userId) return;
+    
+    setUpdating(true);
+    
+    // Store previous state for rollback
+    const previousPet = pet;
     
     try {
       const now = new Date();
@@ -125,31 +256,46 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       setPet(updatedPet);
       
       // Persist to database
-      console.log('🔵 Updating pet stats in DB:', updates);
-      const { error } = await supabase
-        .from('pets')
-        .update({
-          health: updatedStats.health,
-          hunger: updatedStats.hunger,
-          happiness: updatedStats.happiness,
-          cleanliness: updatedStats.cleanliness,
-          energy: updatedStats.energy,
-          updated_at: now.toISOString(),
-        })
-        .eq('id', pet.id)
-        .eq('user_id', userId);
+      logger.debug('Updating pet stats in DB', { petId: pet.id, updates });
+      
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+      
+      const { error } = await withTimeout(
+        supabase
+          .from('pets')
+          .update({
+            health: updatedStats.health,
+            hunger: updatedStats.hunger,
+            happiness: updatedStats.happiness,
+            cleanliness: updatedStats.cleanliness,
+            energy: updatedStats.energy,
+            updated_at: now.toISOString(),
+          })
+          .eq('id', pet.id)
+          .eq('user_id', userId),
+        10000,
+        'Update pet stats'
+      ) as any;
       
       if (error) {
-        console.error('❌ Error updating pet stats:', error);
-        throw new Error('Failed to update pet stats');
+        logger.error('Error updating pet stats', { petId: pet.id, errorCode: error.code }, error);
+        // Immediate rollback
+        setPet(previousPet);
+        throw new Error(getErrorMessage(error, 'Failed to update pet stats'));
       } else {
-        console.log('✅ Pet stats updated in DB');
+        logger.debug('Pet stats updated in DB', { petId: pet.id });
       }
     } catch (err) {
       console.error('❌ Error updating pet stats:', err);
-      // Reload pet to revert optimistic update
+      // Rollback on any error
+      setPet(previousPet);
+      // Also reload to ensure consistency
       await loadPet();
       throw new Error('Failed to update pet stats');
+    } finally {
+      setUpdating(false);
     }
   }, [pet, userId, loadPet]);
   
@@ -157,36 +303,50 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     if (!userId) throw new Error('User not authenticated');
     
     try {
-      console.log('🔵 Creating pet in DB:', { name, type, breed, userId });
-      const now = new Date();
+      logger.info('Creating pet in DB', { name, type, breed, userId });
       
-      const { data, error } = await supabase
-        .from('pets')
-        .insert({
-          user_id: userId,
-          name,
-          species: type,
-          breed: breed,
-          age: 0,
-          level: 1,
-          health: 100,
-          hunger: 75,
-          happiness: 80,
-          cleanliness: 90,
-          energy: 85,
-          xp: 0,
-          created_at: now.toISOString(),
-          updated_at: now.toISOString(),
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('❌ Error creating pet:', error);
-        throw new Error(error.message || 'Failed to create pet');
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
       }
       
-      console.log('✅ Pet created in DB:', data);
+      const now = new Date();
+      
+      const { data, error } = await withTimeout(
+        supabase
+          .from('pets')
+          .insert({
+            user_id: userId,
+            name,
+            species: type,
+            breed: breed,
+            age: 0,
+            level: 1,
+            health: 100,
+            hunger: 75,
+            happiness: 80,
+            cleanliness: 90,
+            energy: 85,
+            xp: 0,
+            created_at: now.toISOString(),
+            updated_at: now.toISOString(),
+          })
+          .select()
+          .single(),
+        15000,
+        'Create pet'
+      ) as any;
+      
+      if (error) {
+        logger.error('Error creating pet', { userId, name, type, errorCode: error.code }, error);
+        throw new Error(getErrorMessage(error, error.message || 'Failed to create pet'));
+      }
+      
+      if (!data) {
+        logger.error('Pet creation returned no data', { userId, name, type });
+        throw new Error('Pet created but no data returned from database');
+      }
+      
+      logger.info('Pet created in DB', { petId: data.id, userId, name });
       
       // Map created pet to Pet type
       const newPet: Pet = {
@@ -216,17 +376,34 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       // This ensures route guards recognize the user has completed onboarding
       console.log('🔄 Refreshing auth state after pet creation...');
       try {
-        await refreshUserState();
-        console.log('✅ Auth state refreshed successfully');
+        const success = await refreshUserState();
+        if (success) {
+          console.log('✅ Auth state refreshed successfully');
+        } else {
+          console.warn('⚠️ Auth state refresh returned false - pet may not be detected immediately');
+          // Retry once after a short delay
+          await new Promise(resolve => setTimeout(resolve, 300));
+          const retrySuccess = await refreshUserState();
+          if (retrySuccess) {
+            console.log('✅ Auth state refreshed on retry');
+          } else {
+            console.warn('⚠️ Auth state refresh failed on retry - state may be stale');
+            // Pet exists in DB, real-time subscription will eventually update state
+            // Route guards will check Supabase directly if needed
+          }
+        }
       } catch (refreshError) {
         console.error('❌ Error refreshing auth state:', refreshError);
-        // Even if refresh fails, pet exists in DB, so manually update hasPet
-        // This prevents redirect loops
-        // Note: This is a fallback - the proper fix is to ensure refreshUserState() works
-        // But this prevents the user from being stuck in a redirect loop
-        console.warn('⚠️ Using fallback: Pet exists in DB, but refreshUserState() failed');
-        // The next page load will correctly detect the pet
-        // For now, we'll let the navigation proceed - the route guard will check Supabase directly
+        // Retry once after error
+        try {
+          await new Promise(resolve => setTimeout(resolve, 300));
+          const retrySuccess = await refreshUserState();
+          if (!retrySuccess) {
+            console.warn('⚠️ Auth state refresh failed after error - state may be stale');
+          }
+        } catch (retryError) {
+          console.error('❌ Auth state refresh retry also failed:', retryError);
+        }
       }
     } catch (err: any) {
       console.error('❌ Error creating pet:', err);
@@ -275,6 +452,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     pet,
     loading,
     error,
+    updating,
     updatePetStats,
     feed,
     play,
