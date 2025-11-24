@@ -11,11 +11,9 @@ import { useFinanceRealtime, type FinanceRefreshOptions } from '../../hooks/useF
 import BudgetAdvisorAI, { type TransactionInput, type BudgetAdvisorAnalysis } from '../../components/budget/BudgetAdvisorAI';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import {
-  ArrowLeft,
   Bell,
   Gift,
   PiggyBank,
-  RefreshCw,
   ShieldCheck,
   Target,
   TrendingUp,
@@ -308,6 +306,7 @@ export const BudgetDashboard: React.FC = () => {
         donationTotal: summary.donation_total,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summary?.balance, summary?.currency, summary?.lifetime_earned, summary?.lifetime_spent, summary?.donation_total]);
 
   return (

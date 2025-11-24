@@ -108,7 +108,8 @@ function PetModel({
   );
 }
 
-// Loading fallback
+// Loading fallback (available for future use)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function LoadingFallback() {
   return (
     <div className="flex h-full w-full items-center justify-center">

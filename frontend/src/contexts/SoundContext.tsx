@@ -126,6 +126,7 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setEffectsEnabled,
       setAmbientEnabled,
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [effectsEnabled, ambientEnabled],
   );
 

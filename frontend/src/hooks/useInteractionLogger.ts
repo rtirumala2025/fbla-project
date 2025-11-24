@@ -4,7 +4,7 @@
  * FBLA Competition-Level Feature
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 
 export interface InteractionLog {
   timestamp: number;

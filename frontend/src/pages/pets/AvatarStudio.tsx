@@ -16,6 +16,7 @@ import { Closet } from '../../components/pets/Closet';
 export const AvatarStudio: React.FC = () => {
   const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [equippedAccessories, setEquippedAccessories] = useState<AccessoryEquipResponse[]>([]);
   const [generatedArt, setGeneratedArt] = useState<ArtGenerationResponse | null>(null);

@@ -5,7 +5,7 @@
  */
 import React, { useMemo, useRef, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Text } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import type { AccessoryEquipResponse } from '../../types/accessories';
 import type { Pet } from '../../types/pet';
