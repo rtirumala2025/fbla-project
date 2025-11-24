@@ -32,6 +32,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { EventCalendarPage } from './pages/events/EventCalendarPage';
 import { NextGenHub } from './pages/nextgen/NextGenHub';
 import { AvatarStudio } from './pages/pets/AvatarStudio';
+import { PetSelectionPage } from './pages/PetSelectionPage';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import './styles/globals.css';
 
@@ -155,6 +156,9 @@ function AppContent() {
             <Route path="/onboarding/species" element={<ProtectedRoute><PageTransition><SpeciesSelection /></PageTransition></ProtectedRoute>} />
             <Route path="/onboarding/breed" element={<ProtectedRoute><PageTransition><BreedSelection /></PageTransition></ProtectedRoute>} />
             <Route path="/onboarding/naming" element={<ProtectedRoute><PageTransition><PetNaming /></PageTransition></ProtectedRoute>} />
+            
+            {/* Pet selection menu */}
+            <Route path="/select-pet" element={<ProtectedRoute><PageTransition><PetSelectionPage /></PageTransition></ProtectedRoute>} />
             
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />

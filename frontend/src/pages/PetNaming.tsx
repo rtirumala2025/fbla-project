@@ -48,16 +48,18 @@ export const PetNaming = () => {
 
   useEffect(() => {
     // Get species and breed from React Router state (no localStorage)
+    // Can come from either /onboarding/breed or /select-pet
     const routeSpecies = location.state?.selectedSpecies;
     const routeBreed = location.state?.selectedBreed;
     
-    if (!routeSpecies || !routeBreed) {
-      navigate('/onboarding/species');
+    if (!routeSpecies) {
+      // If no species, redirect to selection
+      navigate('/select-pet');
       return;
     }
     
     setSpecies(routeSpecies);
-    setBreed(routeBreed);
+    setBreed(routeBreed || 'Mixed'); // Default to 'Mixed' if no breed provided
   }, [navigate, location.state]);
 
   // Validate name with API
@@ -210,8 +212,8 @@ export const PetNaming = () => {
     logFormSubmit({ name: name.trim(), species, breed }, false);
     
     try {
-      // Create pet in database via PetContext
-      await createPet(name.trim(), species);
+      // Create pet in database via PetContext (with breed from selection)
+      await createPet(name.trim(), species, breed || 'Mixed');
       
       // Note: No localStorage cleanup needed - using React Router state instead
       

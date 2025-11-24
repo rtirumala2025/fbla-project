@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   TrendingUp,
@@ -98,6 +98,19 @@ const BudgetAdvisorAI: React.FC<BudgetAdvisorAIProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<BudgetAdvisorAnalysis | null>(null);
 
+  // Use refs to store callbacks to prevent infinite loops
+  const onAnalysisCompleteRef = useRef(onAnalysisComplete);
+  const onErrorRef = useRef(onError);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onAnalysisCompleteRef.current = onAnalysisComplete;
+  }, [onAnalysisComplete]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
   const fetchAnalysis = useCallback(async () => {
     if (!transactions || transactions.length === 0) {
       setError('No transactions provided for analysis');
@@ -121,29 +134,54 @@ const BudgetAdvisorAI: React.FC<BudgetAdvisorAIProps> = ({
 
       if (response.data.status === 'success' && response.data.data) {
         setAnalysis(response.data.data);
-        onAnalysisComplete?.(response.data.data);
+        onAnalysisCompleteRef.current?.(response.data.data);
       } else {
         const errorMessage = response.data.message || 'Failed to analyze budget';
         setError(errorMessage);
-        onError?.(errorMessage);
+        onErrorRef.current?.(errorMessage);
       }
     } catch (err: any) {
+      // Handle network errors gracefully (backend might not be running)
+      if (err.code === 'ECONNREFUSED' || err.message === 'Network Error' || err.message?.includes('ERR_CONNECTION_REFUSED')) {
+        // Backend is not available - this is expected in some environments
+        setError(null); // Don't show error for connection refused
+        setLoading(false);
+        return; // Silently fail - budget advisor is optional
+      }
+      
       const errorMessage =
         err.response?.data?.message ||
         err.message ||
         'Failed to fetch budget analysis. Please try again.';
       setError(errorMessage);
-      onError?.(errorMessage);
+      onErrorRef.current?.(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [transactions, monthlyBudget, userId, onAnalysisComplete, onError]);
+  }, [transactions, monthlyBudget, userId]); // Removed callbacks from dependencies
+
+  // Track last transactions to prevent unnecessary re-fetches
+  const lastTransactionsRef = useRef<string>('');
 
   useEffect(() => {
-    if (autoFetch && transactions && transactions.length > 0) {
+    if (!autoFetch || !transactions || transactions.length === 0) {
+      return;
+    }
+
+    // Create a stable key from transactions to detect actual changes
+    const transactionsKey = JSON.stringify(
+      transactions.map(t => ({ 
+        amount: t.amount, 
+        category: t.category, 
+        date: t.date 
+      }))
+    );
+
+    // Only fetch if transactions actually changed
+    if (lastTransactionsRef.current !== transactionsKey) {
+      lastTransactionsRef.current = transactionsKey;
       fetchAnalysis();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoFetch, fetchAnalysis, transactions]);
 
   // Animation variants

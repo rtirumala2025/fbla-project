@@ -91,7 +91,8 @@ export const BudgetDashboard: React.FC = () => {
       }
     };
     load();
-  }, [currentUser, filter.range, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, filter.range]); // toast is stable from context, no need to include in deps
 
   // Fetch finance summary on mount
   useEffect(() => {
@@ -275,6 +276,21 @@ export const BudgetDashboard: React.FC = () => {
         description: t.description || undefined,
       }));
   }, [summary?.transactions]);
+
+  // Memoize callbacks to prevent infinite loops in BudgetAdvisorAI
+  const handleAnalysisComplete = useCallback((analysis: BudgetAdvisorAnalysis) => {
+    console.log('✅ BudgetDashboard: Budget analysis completed', analysis);
+  }, []);
+
+  const handleAnalysisError = useCallback((error: string) => {
+    // Don't show error toast for network/connection errors (backend might not be running)
+    if (error.includes('Network Error') || error.includes('ERR_CONNECTION_REFUSED') || error.includes('ECONNREFUSED')) {
+      console.warn('⚠️ BudgetDashboard: Budget advisor backend not available (this is expected if backend is not running)');
+      return; // Silently ignore connection errors
+    }
+    console.error('❌ BudgetDashboard: Budget analysis error', error);
+    toast.error(`Budget analysis failed: ${error}`);
+  }, [toast]);
 
   const notifications = useMemo(() => summary?.notifications ?? [], [summary]);
   const totalGoals = summary?.goals.length ?? 0;
@@ -563,13 +579,8 @@ export const BudgetDashboard: React.FC = () => {
               transactions={budgetAdvisorTransactions}
               monthlyBudget={summary.lifetime_earned > 0 ? Math.floor(summary.lifetime_earned / 12) : undefined}
               userId={currentUser?.uid}
-              onAnalysisComplete={(analysis: BudgetAdvisorAnalysis) => {
-                console.log('✅ BudgetDashboard: Budget analysis completed', analysis);
-              }}
-              onError={(error: string) => {
-                console.error('❌ BudgetDashboard: Budget analysis error', error);
-                toast.error(`Budget analysis failed: ${error}`);
-              }}
+              onAnalysisComplete={handleAnalysisComplete}
+              onError={handleAnalysisError}
               autoFetch={true}
             />
           </section>

@@ -11,7 +11,7 @@ interface PetContextType {
   rest: () => Promise<void>;
   loading: boolean;
   error: string | null;
-  createPet: (name: string, type: string) => Promise<void>;
+  createPet: (name: string, type: string, breed?: string) => Promise<void>;
   refreshPet: () => Promise<void>;
 }
 
@@ -151,11 +151,11 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     }
   }, [pet, userId, loadPet]);
   
-  const createPet = useCallback(async (name: string, type: string) => {
+  const createPet = useCallback(async (name: string, type: string, breed: string = 'Mixed') => {
     if (!userId) throw new Error('User not authenticated');
     
     try {
-      console.log('🔵 Creating pet in DB:', { name, type, userId });
+      console.log('🔵 Creating pet in DB:', { name, type, breed, userId });
       const now = new Date();
       
       const { data, error } = await supabase
@@ -164,7 +164,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           user_id: userId,
           name,
           species: type,
-          breed: 'Mixed',
+          breed: breed,
           age: 0,
           level: 1,
           health: 100,

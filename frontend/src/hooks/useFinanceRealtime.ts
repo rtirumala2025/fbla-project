@@ -2,7 +2,7 @@
  * useFinanceRealtime Hook
  * Subscribes to Supabase realtime changes for finance tables
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { isSupabaseMock, supabase } from '../lib/supabase';
 
@@ -18,6 +18,14 @@ export type FinanceRefreshFn = (options?: FinanceRefreshOptions) => Promise<void
  * so callers can update UI without triggering loading spinners.
  */
 export const useFinanceRealtime = (refresh: FinanceRefreshFn): void => {
+  // Use ref to store the latest refresh function without causing re-subscriptions
+  const refreshRef = useRef<FinanceRefreshFn>(refresh);
+  
+  // Update ref when refresh changes
+  useEffect(() => {
+    refreshRef.current = refresh;
+  }, [refresh]);
+
   useEffect(() => {
     let channel: RealtimeChannel | null = null;
     let isActive = true;
@@ -26,7 +34,8 @@ export const useFinanceRealtime = (refresh: FinanceRefreshFn): void => {
       if (!isActive) {
         return;
       }
-      void refresh({ silent: true });
+      // Use the ref to get the latest refresh function
+      void refreshRef.current({ silent: true });
     };
 
     const setupRealtime = async () => {
@@ -79,9 +88,10 @@ export const useFinanceRealtime = (refresh: FinanceRefreshFn): void => {
     return () => {
       isActive = false;
       if (channel) {
+        channel.unsubscribe();
         supabase.removeChannel(channel);
       }
     };
-  }, [refresh]);
+  }, []); // Empty dependency array - only set up subscription once
 };
 
