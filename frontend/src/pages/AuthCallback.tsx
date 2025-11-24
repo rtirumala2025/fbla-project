@@ -435,20 +435,37 @@ export const AuthCallback = () => {
           hasPet = false;
         }
 
+        // Route decision based on profile and pet existence
+        // Priority: profile existence → pet existence
+        const needsProfile = !hasProfile;
+        const needsPet = !hasPet;
+
         logToFile('🔍 AuthCallback: Profile and pet check result');
         logToFile(`  Has profile: ${hasProfile}`);
         logToFile(`  Has pet: ${hasPet}`);
+        logToFile(`  Needs profile: ${needsProfile}`);
+        logToFile(`  Needs pet: ${needsPet}`);
         logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-        // Route decision based on pet existence (not just profile)
-        // Priority: pet existence determines onboarding state
-        if (!hasPet) {
-          // User needs to select a pet (new user or existing user without pet)
+        // CRITICAL: Check profile first, then pet
+        if (needsProfile) {
+          // User needs to create profile first
+          logToFile('🆕 AuthCallback: User needs profile setup → redirecting to /setup-profile');
+          logToFile('  Redirect decision: No profile → /setup-profile');
+          setStatus('Welcome! Let\'s set up your profile...');
+          
+          setTimeout(() => {
+            exportLogsToFile();
+            setTimeout(() => {
+              navigate('/setup-profile', { replace: true });
+            }, 500);
+          }, 1000);
+        } else if (needsPet) {
+          // User has profile but needs to select a pet
           logToFile('🆕 AuthCallback: User needs pet selection → redirecting to /pet-selection');
-          logToFile('  Redirect decision: No pet → /pet-selection');
+          logToFile('  Redirect decision: Has profile, no pet → /pet-selection');
           setStatus('Welcome! Let\'s select your pet...');
           
-          // Export logs before redirect
           setTimeout(() => {
             exportLogsToFile();
             setTimeout(() => {
@@ -456,12 +473,11 @@ export const AuthCallback = () => {
             }, 500);
           }, 1000);
         } else {
-          // User has a pet, go to dashboard
-          logToFile('👋 AuthCallback: User has pet → redirecting to /dashboard');
-          logToFile('  Redirect decision: Has pet → /dashboard');
+          // User has profile and pet, go to dashboard
+          logToFile('👋 AuthCallback: User has profile and pet → redirecting to /dashboard');
+          logToFile('  Redirect decision: Has profile and pet → /dashboard');
           setStatus('Welcome back! Redirecting to dashboard...');
           
-          // Export logs before redirect
           setTimeout(() => {
             exportLogsToFile();
             setTimeout(() => {

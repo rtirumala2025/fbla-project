@@ -22,46 +22,18 @@ export const PetSelectionPage: React.FC = () => {
 
   const handleContinue = () => {
     if (selectedType && selectedBreed) {
-      // Get breed name from the breed ID
-      const breedData: Record<PetType, { id: string; name: string }[]> = {
-        dog: [
-          { id: 'breed1', name: 'Breed1' },
-          { id: 'breed2', name: 'Breed2' },
-          { id: 'breed3', name: 'Breed3' },
-        ],
-        cat: [
-          { id: 'breed1', name: 'Breed1' },
-          { id: 'breed2', name: 'Breed2' },
-          { id: 'breed3', name: 'Breed3' },
-        ],
-        panda: [
-          { id: 'breed1', name: 'Breed1' },
-          { id: 'breed2', name: 'Breed2' },
-          { id: 'breed3', name: 'Breed3' },
-        ],
-      };
-      
-      const breedName = breedData[selectedType].find(b => b.id === selectedBreed)?.name || selectedBreed;
-      
+      // Use the actual breed data from BreedSelector component
+      // The breed ID is already the breed name/identifier we need
       // Navigate to naming page with selection data
       navigate('/onboarding/naming', {
         state: {
           selectedSpecies: selectedType,
-          selectedBreed: breedName, // Pass breed name instead of ID
+          selectedBreed: selectedBreed, // Pass breed ID/name directly
         },
       });
     }
   };
 
-  // Log selection state for debugging (can be removed later)
-  React.useEffect(() => {
-    if (selectedType && selectedBreed) {
-      console.log('Pet Selection:', {
-        type: selectedType,
-        breed: selectedBreed,
-      });
-    }
-  }, [selectedType, selectedBreed]);
 
   return (
     <div className="min-h-screen bg-cream py-12 px-4">
@@ -133,7 +105,7 @@ export const PetSelectionPage: React.FC = () => {
                 <strong>Selected:</strong> {selectedType} - {selectedBreed}
               </p>
               <p className="text-xs text-indigo-600 text-center">
-                ⚠️ Selection is in memory only (not saved to database yet)
+                Ready to name your pet!
               </p>
             </div>
             <button

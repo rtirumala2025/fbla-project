@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { logger } from '../utils/logger';
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -41,20 +42,86 @@ export const supabase = supabaseUrl && supabaseAnonKey
 
 // Runtime assertion logging for debugging
 if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
-  console.warn('⚠️ Supabase env variables missing or not loaded.');
-  console.warn('   REACT_APP_SUPABASE_URL exists:', !!process.env.REACT_APP_SUPABASE_URL);
-  console.warn('   REACT_APP_SUPABASE_ANON_KEY exists:', !!process.env.REACT_APP_SUPABASE_ANON_KEY);
-  console.warn('   REACT_APP_USE_MOCK:', process.env.REACT_APP_USE_MOCK || 'false');
+  logger.warn('Supabase env variables missing or not loaded.', {
+    hasUrl: !!process.env.REACT_APP_SUPABASE_URL,
+    hasKey: !!process.env.REACT_APP_SUPABASE_ANON_KEY,
+    useMock: process.env.REACT_APP_USE_MOCK || 'false',
+  });
 } else {
-  console.log('✅ Supabase client initialized with env variables');
-  console.log('✅ Session persistence enabled: persistSession=true');
-  console.log('✅ Token refresh enabled: autoRefreshToken=true');
-  console.log('✅ URL hash detection enabled: detectSessionInUrl=true');
-  console.log('✅ OAuth callback will be processed automatically from URL hash');
+  logger.info('Supabase client initialized', {
+    sessionPersistence: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  });
 }
 
 export const isSupabaseMock = (): boolean => {
   return !supabaseUrl || !supabaseAnonKey;
 };
+
+/**
+ * Helper function to add timeout to Supabase queries
+ */
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number = 10000,
+  operation: string = 'Supabase operation'
+): Promise<T> {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`${operation} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('timed out')) {
+      logger.error(`Supabase operation timed out: ${operation}`, { timeoutMs });
+    }
+    throw error;
+  }
+}
+
+/**
+ * Helper function to retry Supabase operations
+ */
+export async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 1000,
+  operationName: string = 'Supabase operation'
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Don't retry on certain errors
+      if (lastError.message.includes('PGRST116') || // Not found
+          lastError.message.includes('permission') ||
+          lastError.message.includes('unauthorized') ||
+          lastError.message.includes('duplicate') ||
+          lastError.message.includes('unique')) {
+        throw lastError;
+      }
+      
+      if (attempt < maxRetries) {
+        logger.warn(`Retrying ${operationName} (attempt ${attempt}/${maxRetries})`, { 
+          error: lastError.message,
+          attempt,
+          maxRetries,
+        });
+        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+      }
+    }
+  }
+  
+  logger.error(`${operationName} failed after ${maxRetries} attempts`, {}, lastError!);
+  throw new Error(lastError!.message || `${operationName} failed after ${maxRetries} attempts`);
+}
 
 export default supabase;

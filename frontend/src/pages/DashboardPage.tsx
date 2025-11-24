@@ -13,23 +13,21 @@ import {
   Coins,
   RefreshCw,
   ShoppingBag,
-  ChevronDown,
   ChevronUp
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePet } from '../context/PetContext';
 import { useToast } from '../contexts/ToastContext';
 import { useFinancial } from '../context/FinancialContext';
-import type { Pet } from '../types/pet';
 import { Pet3DVisualization } from '../components/pets/Pet3DVisualization';
 import { PetStatsDisplay } from '../components/dashboard/PetStatsDisplay';
 import { QuestBoard } from '../components/quests/QuestBoard';
 import { CoachPanel } from '../components/coach/CoachPanel';
 import { fetchActiveQuests, completeQuest, fetchCoachAdvice } from '../api/quests';
 import type { CoachAdviceResponse } from '../types/quests';
-import { fetchAccessories, equipAccessory } from '../api/accessories';
+import { fetchAccessories } from '../api/accessories';
 import { fetchSnapshot, exportReports } from '../api/analytics';
-import { logPetInteraction, logUserAction } from '../utils/petInteractionLogger';
+import { logPetInteraction } from '../utils/petInteractionLogger';
 import { useInteractionLogger } from '../hooks/useInteractionLogger';
 import type { ActiveQuestsResponse, Quest } from '../types/quests';
 import type { Accessory, AccessoryEquipResponse } from '../types/accessories';
@@ -82,7 +80,7 @@ const ACTIVITIES: Activity[] = [
 export function DashboardPage() {
   const navigate = useNavigate();
   const { currentUser, loading: authLoading } = useAuth();
-  const { pet, loading: petLoading, feed, play, bathe, updatePetStats, refreshPet } = usePet();
+  const { pet, loading: petLoading, bathe, updatePetStats, refreshPet } = usePet();
   const { success, error: toastError } = useToast();
   const { balance, refreshBalance } = useFinancial();
   const logger = useInteractionLogger('DashboardPage');
@@ -109,7 +107,7 @@ export function DashboardPage() {
   const [analytics, setAnalytics] = useState<AnalyticsSnapshot | null>(null);
   const [loadingQuests, setLoadingQuests] = useState(false);
   const [loadingCoach, setLoadingCoach] = useState(false);
-  const [loadingAccessories, setLoadingAccessories] = useState(false);
+  const [, setLoadingAccessories] = useState(false);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);

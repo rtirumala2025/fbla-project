@@ -1,5 +1,7 @@
 import type { Database } from '../types/database.types';
-import { supabase } from '../lib/supabase';
+import { supabase, withTimeout, withRetry } from '../lib/supabase';
+import { logger } from '../utils/logger';
+import { getErrorMessage } from '../utils/networkUtils';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
@@ -22,44 +24,67 @@ export const profileService = {
       }
     }
     
-    console.log('🔵 getProfile called for userId:', userId);
+    logger.debug('getProfile called', { userId });
     
     if (!supabase) {
       throw new Error('Supabase client not initialized');
     }
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    try {
+      const getProfileOperation = async () => {
+        const query = supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+        
+        const { data, error } = await withTimeout(
+          query as unknown as Promise<any>,
+          10000,
+          'Get profile'
+        ) as any;
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // Profile doesn't exist yet
-        console.log('📭 No profile found for user:', userId);
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // Profile doesn't exist yet
+            logger.debug('No profile found for user', { userId });
+            profileCache.set(userId, { data: null, timestamp: Date.now() });
+            return null;
+          }
+          logger.error('Error fetching profile', { userId, errorCode: error.code }, error);
+          throw error;
+        }
+
+        logger.debug('Profile found', { userId, profileId: data?.id });
+        return data;
+      };
+
+      const data = await withRetry(getProfileOperation, 3, 1000, 'Get profile');
+      // Cache the result
+      if (data) {
+        profileCache.set(userId, { data, timestamp: Date.now() });
+      } else {
         profileCache.set(userId, { data: null, timestamp: Date.now() });
-        return null;
       }
-      console.error('❌ Error fetching profile:', error);
-      throw error;
-    }
-
-    console.log('✅ Profile found:', data);
-    // Cache the result
-    profileCache.set(userId, { data, timestamp: Date.now() });
-    
-    // Clean up old cache entries (keep cache size manageable)
-    if (profileCache.size > 50) {
-      const now = Date.now();
-      for (const [key, value] of profileCache.entries()) {
-        if (now - value.timestamp > CACHE_TTL_MS * 2) {
-          profileCache.delete(key);
+      
+      // Clean up old cache entries (keep cache size manageable)
+      if (profileCache.size > 50) {
+        const now = Date.now();
+        for (const [key, value] of profileCache.entries()) {
+          if (now - value.timestamp > CACHE_TTL_MS * 2) {
+            profileCache.delete(key);
+          }
         }
       }
+      
+      return data;
+    } catch (err: any) {
+      if (err.message?.includes('timed out')) {
+        logger.error('Get profile request timed out', { userId }, err);
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+      throw err;
     }
-    
-    return data;
   },
   
   /**
@@ -79,10 +104,7 @@ export const profileService = {
    * Includes retry logic to wait for session to be ready after OAuth
    */
   async createProfile(username: string): Promise<Profile> {
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔵 createProfile called');
-    console.log('Username:', username);
-    console.log('═══════════════════════════════════════════════════════');
+    logger.info('createProfile called', { username });
     
     if (!supabase) {
       throw new Error('Supabase client not initialized. Check environment variables.');
@@ -93,7 +115,7 @@ export const profileService = {
     }
 
     // Wait for authenticated user with retry logic (for OAuth callback timing)
-    console.log('🔵 Waiting for authenticated Supabase session...');
+    logger.debug('Waiting for authenticated Supabase session');
     let user = null;
     let attempts = 0;
     const maxAttempts = 3;
@@ -101,35 +123,49 @@ export const profileService = {
 
     while (attempts < maxAttempts && !user) {
       attempts++;
-      console.log(`🔄 Attempt ${attempts}/${maxAttempts} to get authenticated user...`);
+      logger.debug(`Attempt ${attempts}/${maxAttempts} to get authenticated user`);
       
-      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) {
-        console.error('❌ Error getting user:', userError);
-        if (attempts >= maxAttempts) {
-          throw new Error(`Authentication error: ${userError.message}`);
+      try {
+        const getUserPromise = supabase.auth.getUser();
+        const { data: { user: currentUser }, error: userError } = await withTimeout(
+          getUserPromise,
+          5000,
+          'Get authenticated user'
+        ) as any;
+        
+        if (userError) {
+          logger.error('Error getting user', { attempt: attempts, maxAttempts, errorCode: userError.code }, userError);
+          if (attempts >= maxAttempts) {
+            throw new Error(`Authentication error: ${userError.message}`);
+          }
+        } else if (currentUser) {
+          user = currentUser;
+          logger.debug('Authenticated user found', { userId: currentUser.id });
+          break;
+        } else {
+          logger.debug('No user yet, waiting', { attempt: attempts });
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          }
         }
-      } else if (currentUser) {
-        user = currentUser;
-        console.log('✅ Authenticated user found!');
-        break;
-      } else {
-        console.log('⏳ No user yet, waiting...');
-        if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
+      } catch (err: any) {
+        if (err.message?.includes('timed out')) {
+          logger.error('Get user request timed out', { attempt: attempts }, err);
+          if (attempts >= maxAttempts) {
+            throw new Error('Authentication request timed out. Please try again.');
+          }
+        } else {
+          throw err;
         }
       }
     }
     
     if (!user) {
-      console.error('❌ No authenticated user found after', maxAttempts, 'attempts');
+      logger.error('No authenticated user found after max attempts', { maxAttempts });
       throw new Error('User not authenticated. Please log in again.');
     }
 
-    console.log('✅ Authenticated user ID from Supabase:', user.id);
-    console.log('📝 User email:', user.email);
-    console.log('📝 User metadata:', user.user_metadata);
+    logger.debug('Authenticated user found', { userId: user.id, email: user.email });
 
     // Use the authenticated user's ID for the insert
     const profileData = {
@@ -138,105 +174,148 @@ export const profileService = {
       coins: 100,
     };
 
-    console.log('🔵 Inserting profile into Supabase profiles table...');
-    console.log('Profile data:', profileData);
+    logger.debug('Inserting profile into Supabase', { profileData });
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert([profileData])
-      .select()
-      .single();
+    try {
+      const query = supabase
+        .from('profiles')
+        .insert([profileData])
+        .select()
+        .single();
+      
+      const { data, error } = await withTimeout(
+        query as unknown as Promise<any>,
+        15000,
+        'Create profile'
+      ) as any;
 
-    if (error) {
-      console.error('═══════════════════════════════════════════════════════');
-      console.error('❌❌❌ PROFILE INSERT FAILED');
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      console.error('Error details:', error.details);
-      console.error('Error hint:', error.hint);
-      console.error('═══════════════════════════════════════════════════════');
-      throw new Error(`Failed to create profile: ${error.message}`);
+      if (error) {
+        logger.error('Profile insert failed', {
+          userId: user.id,
+          errorCode: error.code,
+          errorMessage: error.message,
+          errorDetails: error.details,
+          errorHint: error.hint,
+        }, error);
+        throw new Error(getErrorMessage(error, `Failed to create profile: ${error.message}`));
+      }
+
+      if (!data) {
+        logger.error('Profile insert succeeded but no data returned', { userId: user.id });
+        throw new Error('Profile created but no data returned from database');
+      }
+
+      logger.info('Profile successfully saved to database', {
+        profileId: data.id,
+        userId: data.user_id,
+        username: data.username,
+      });
+      
+      // Clear cache for this user
+      profileCache.delete(user.id);
+      
+      return data;
+    } catch (err: any) {
+      if (err.message?.includes('timed out')) {
+        logger.error('Create profile request timed out', { userId: user.id }, err);
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+      throw err;
     }
-
-    if (!data) {
-      console.error('❌ Profile insert succeeded but no data returned');
-      throw new Error('Profile created but no data returned from database');
-    }
-
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('✅✅✅ PROFILE SUCCESSFULLY SAVED TO DATABASE!');
-    console.log('Profile ID:', data.id);
-    console.log('Profile user_id:', data.user_id);
-    console.log('Profile username:', data.username);
-    console.log('Profile coins:', data.coins);
-    console.log('Profile created_at:', data.created_at);
-    console.log('═══════════════════════════════════════════════════════');
-    
-    return data;
   },
 
   /**
    * Update user profile
    */
   async updateProfile(userId: string, updates: ProfileUpdate): Promise<Profile> {
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🔵 updateProfile called');
-    console.log('  User ID:', userId);
-    console.log('  Updates:', updates);
-    console.log('  Timestamp:', new Date().toISOString());
+    logger.debug('updateProfile called', { userId, updates });
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('═══════════════════════════════════════════════════════');
-      console.error('❌ Profile update FAILED');
-      console.error('  Error code:', error.code);
-      console.error('  Error message:', error.message);
-      console.error('  Error details:', error.details);
-      console.error('═══════════════════════════════════════════════════════');
-      throw error;
+    if (!supabase) {
+      throw new Error('Supabase client not initialized');
     }
 
-    console.log('✅ Profile updated successfully');
-    console.log('  Updated data:', data);
-    console.log('═══════════════════════════════════════════════════════');
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
     
-    return data;
+    try {
+      const query = supabase
+        .from('profiles')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+      
+      const { data, error } = await withTimeout(
+        query as unknown as Promise<any>,
+        10000,
+        'Update profile'
+      ) as any;
+
+      if (error) {
+        logger.error('Profile update failed', {
+          userId,
+          errorCode: error.code,
+          errorMessage: error.message,
+          errorDetails: error.details,
+        }, error);
+        throw new Error(getErrorMessage(error, error.message || 'Failed to update profile'));
+      }
+
+      if (!data) {
+        logger.error('Profile update succeeded but no data returned', { userId });
+        throw new Error('Profile update succeeded but no data returned');
+      }
+
+      logger.info('Profile updated successfully', { userId, profileId: data.id });
+      
+      // Clear cache for this user
+      profileCache.delete(userId);
+      
+      return data;
+    } catch (err: any) {
+      if (err.message?.includes('timed out')) {
+        logger.error('Update profile request timed out', { userId }, err);
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+      throw err;
+    }
   },
 
   /**
    * Update username (updates both profile and auth metadata)
    */
   async updateUsername(userId: string, username: string): Promise<Profile> {
-    console.log('🔵 updateUsername called for userId:', userId, 'new username:', username);
+    logger.debug('updateUsername called', { userId, username });
     
     // Update the profile in the database
     const updatedProfile = await this.updateProfile(userId, { username });
     
     // Also update the user metadata in Supabase Auth
     try {
-      const { error: authError } = await supabase.auth.updateUser({
+      const updateUserPromise = supabase.auth.updateUser({
         data: {
           display_name: username,
         },
       });
       
+      const { error: authError } = await withTimeout(
+        updateUserPromise as Promise<any>,
+        10000,
+        'Update auth metadata'
+      ) as any;
+      
       if (authError) {
-        console.warn('⚠️ Failed to update auth metadata:', authError);
+        logger.error('Failed to update auth metadata', { userId, errorCode: authError.code }, authError instanceof Error ? authError : new Error(String(authError)));
         // Don't throw - profile update succeeded, auth metadata update is secondary
       } else {
-        console.log('✅ Auth metadata updated successfully');
+        logger.debug('Auth metadata updated successfully', { userId });
       }
     } catch (error) {
-      console.warn('⚠️ Error updating auth metadata:', error);
+      logger.error('Error updating auth metadata', { userId }, error instanceof Error ? error : new Error(String(error)));
       // Don't throw - profile update succeeded
     }
     

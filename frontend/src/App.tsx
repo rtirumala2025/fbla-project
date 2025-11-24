@@ -53,7 +53,7 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
 // Protected route component - requires authentication
 // Redirects new users (without pets) to pet selection
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, loading, hasPet } = useAuth();
+  const { currentUser, loading, hasPet, isTransitioning } = useAuth();
 
   if (loading) {
     return (
@@ -65,6 +65,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!currentUser) {
     return <Navigate to="/login" replace />;
+  }
+
+  // CRITICAL: During transition state, allow access to prevent redirect loops
+  // This allows navigation to complete before route guards re-evaluate
+  if (isTransitioning) {
+    return <>{children}</>;
   }
 
   // If user is authenticated but doesn't have a pet, redirect to pet selection
@@ -79,7 +85,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 // Public route component - only accessible to unauthenticated users
 // Redirects authenticated users to dashboard (or pet-selection if new)
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, loading, hasPet } = useAuth();
+  const { currentUser, loading, hasPet, isNewUser } = useAuth();
 
   if (loading) {
     return (
@@ -91,11 +97,15 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
   // If user is authenticated, redirect them away from public pages
   if (currentUser) {
-    // New users (without pets) go to pet selection
+    // CRITICAL: New users without profiles should go to profile setup first
+    if (isNewUser) {
+      return <Navigate to="/setup-profile" replace />;
+    }
+    // Users without pets go to pet selection
     if (!hasPet) {
       return <Navigate to="/pet-selection" replace />;
     }
-    // Existing users go to dashboard
+    // Existing users with pets go to dashboard
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -122,6 +132,39 @@ const OnboardingRoute = ({ children }: { children: React.ReactNode }) => {
 
   // If user already has a pet, redirect to dashboard (prevent re-onboarding)
   if (hasPet) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Setup profile route component - accessible to authenticated users WITHOUT profiles
+// Allows users to complete profile setup before pet selection
+const SetupProfileRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser, loading, isNewUser, isTransitioning } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Must be authenticated
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // CRITICAL: During transition, allow access
+  if (isTransitioning) {
+    return <>{children}</>;
+  }
+
+  // If user already has a profile (not new), redirect to appropriate page
+  if (!isNewUser) {
+    // User has profile - check if they need pet or can go to dashboard
+    // Will be handled by ProtectedRoute or OnboardingRoute
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -161,7 +204,7 @@ function AppContent() {
             <Route path="/auth/callback" element={<AuthCallback />} />
             
             {/* Setup profile route - accessible to authenticated users */}
-            <Route path="/setup-profile" element={<ProtectedRoute><PageTransition><SetupProfile /></PageTransition></ProtectedRoute>} />
+            <Route path="/setup-profile" element={<SetupProfileRoute><PageTransition><SetupProfile /></PageTransition></SetupProfileRoute>} />
             
             {/* Protected routes - require authentication */}
             <Route path="/dashboard" element={<ProtectedRoute><PageTransition><DashboardPage /></PageTransition></ProtectedRoute>} />

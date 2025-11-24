@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, withTimeout } from '../lib/supabase';
 import { profileService } from '../services/profileService';
 import { petService } from '../services/petService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { onboardingLogger } from '../utils/onboardingLogger';
+import { logger } from '../utils/logger';
 
 interface User {
   uid: string;
@@ -23,7 +24,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   checkUserProfile: (userId: string) => Promise<{ isNew: boolean; hasPet: boolean }>;
   refreshUserState: () => Promise<void>;
-  markUserAsReturning: () => void;
+  markUserAsReturning: (hasPetValue?: boolean) => void;
   endTransition: () => void;
 };
 
@@ -84,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Helper function to check if user has a profile and pet
-  const checkUserProfile = async (userId: string): Promise<{ isNew: boolean; hasPet: boolean }> => {
+  const checkUserProfile = useCallback(async (userId: string): Promise<{ isNew: boolean; hasPet: boolean }> => {
     try {
       onboardingLogger.petCheck('Starting user profile check', { userId });
       if (process.env.REACT_APP_USE_MOCK === 'true') {
@@ -107,10 +108,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       onboardingLogger.error('Error checking user profile', error, { userId });
       return { isNew: true, hasPet: false }; // Assume new user if error occurs
     }
-  };
+  }, []); // checkPetWithRetry is defined above and doesn't need to be in deps
 
   // Method to refresh user state after profile creation or update
-  const refreshUserState = async () => {
+  const refreshUserState = useCallback(async () => {
     onboardingLogger.authInit('Refreshing user state');
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -139,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       onboardingLogger.error('Error refreshing user state', error);
     }
-  };
+  }, []); // checkPetWithRetry is defined above and doesn't need to be in deps
 
   // Method to directly mark user as not new (after successful profile creation)
   const markUserAsReturning = (hasPetValue?: boolean) => {
@@ -169,79 +170,100 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 10000); // 10 second timeout
     
     // Get initial session - this restores the session from localStorage
-    supabase.auth.getSession().then(async ({ data: { session }, error }: { data: { session: any }, error: any }) => {
-      onboardingLogger.authInit('Initial session check', {
-        hasSession: !!session,
-        userEmail: session?.user?.email || undefined,
-        error: error?.message || undefined,
-        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined,
-      });
-      
-      const mappedUser = mapSupabaseUser(session?.user || null);
-      onboardingLogger.authInit('Mapped user', { userId: mappedUser?.uid || undefined, email: mappedUser?.email || undefined });
-      
+    (async () => {
       try {
-        if (mappedUser) {
-          // Check if user has a profile and pet
-          const { isNew, hasPet: petExists } = await checkUserProfile(mappedUser.uid);
-          onboardingLogger.authInit('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
-          setIsNewUser(isNew);
-          setHasPet(petExists);
-        } else {
-          setIsNewUser(false);
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session }, error } = await withTimeout(
+          sessionPromise,
+          10000,
+          'Get initial session'
+        ) as any;
+
+        onboardingLogger.authInit('Initial session check', {
+          hasSession: !!session,
+          userEmail: session?.user?.email || undefined,
+          error: error?.message || undefined,
+          expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined,
+        });
+        
+        if (error) {
+          logger.error('Error getting session', { error: error.message }, error);
+          throw error;
+        }
+        
+        const mappedUser = mapSupabaseUser(session?.user || null);
+        onboardingLogger.authInit('Mapped user', { userId: mappedUser?.uid || undefined, email: mappedUser?.email || undefined });
+        
+        try {
+          if (mappedUser) {
+            // Check if user has a profile and pet
+            const { isNew, hasPet: petExists } = await checkUserProfile(mappedUser.uid);
+            onboardingLogger.authInit('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
+            setIsNewUser(isNew);
+            setHasPet(petExists);
+          } else {
+            setIsNewUser(false);
+            setHasPet(false);
+          }
+        } catch (profileError) {
+          logger.error('Error checking user profile during initialization', { userId: mappedUser?.uid }, profileError instanceof Error ? profileError : new Error(String(profileError)));
+          onboardingLogger.error('Error checking user profile during initialization', profileError);
+          setIsNewUser(false); // Default to not new user if check fails
           setHasPet(false);
         }
-      } catch (profileError) {
-        onboardingLogger.error('Error checking user profile during initialization', profileError);
-        setIsNewUser(false); // Default to not new user if check fails
-        setHasPet(false);
-      }
-      
+        
         setCurrentUser(mappedUser);
-        initialSessionLoadedRef.current = true; // Mark initial session as loaded
         setLoading(false);
-        if (fallbackTimeoutRef.current) {
-          clearTimeout(fallbackTimeoutRef.current);
-          fallbackTimeoutRef.current = null;
+        initialSessionLoadedRef.current = true; // Mark initial session as loaded
+        clearTimeout(fallbackTimeout); // Clear timeout since we completed successfully
+        
+        // Set up pet subscription if user exists
+        if (mappedUser?.uid && !petSubscriptionRef.current) {
+          try {
+            onboardingLogger.realtimeEvent('Setting up pet subscription', { userId: mappedUser.uid });
+            petSubscriptionRef.current = supabase
+              .channel(`pet-changes-${mappedUser.uid}`)
+              .on(
+                'postgres_changes',
+                {
+                  event: '*', // INSERT, UPDATE, DELETE
+                  schema: 'public',
+                  table: 'pets',
+                  filter: `user_id=eq.${mappedUser.uid}`,
+                },
+                async (payload) => {
+                  try {
+                    onboardingLogger.realtimeEvent('Pet change detected', { eventType: payload.eventType, userId: mappedUser.uid });
+                    // Refresh user state when pet changes
+                    await refreshUserState();
+                  } catch (error) {
+                    logger.error('Error refreshing state after pet change', { userId: mappedUser.uid }, error instanceof Error ? error : new Error(String(error)));
+                    onboardingLogger.error('Error refreshing state after pet change', error, { userId: mappedUser.uid });
+                  }
+                }
+              )
+              .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                  logger.info('Pet subscription active', { userId: mappedUser.uid });
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                  logger.error('Pet subscription error', { userId: mappedUser.uid, status });
+                }
+              });
+          } catch (subscriptionError) {
+            logger.error('Error setting up pet subscription', { userId: mappedUser.uid }, subscriptionError instanceof Error ? subscriptionError : new Error(String(subscriptionError)));
+          }
         }
-      
-      // Set up pet subscription if user exists
-      if (mappedUser?.uid && !petSubscriptionRef.current) {
-        onboardingLogger.realtimeEvent('Setting up pet subscription', { userId: mappedUser.uid });
-        petSubscriptionRef.current = supabase
-          .channel(`pet-changes-${mappedUser.uid}`)
-          .on(
-            'postgres_changes',
-            {
-              event: '*', // INSERT, UPDATE, DELETE
-              schema: 'public',
-              table: 'pets',
-              filter: `user_id=eq.${mappedUser.uid}`,
-            },
-            async (payload) => {
-              onboardingLogger.realtimeEvent('Pet change detected', { eventType: payload.eventType, userId: mappedUser.uid });
-              // Refresh user state when pet changes
-              try {
-                await refreshUserState();
-              } catch (error) {
-                onboardingLogger.error('Error refreshing state after pet change', error, { userId: mappedUser.uid });
-              }
-            }
-          )
-          .subscribe();
+      } catch (err: any) {
+        logger.error('Error in auth initialization', {}, err instanceof Error ? err : new Error(String(err)));
+        onboardingLogger.error('Error getting session', err);
+        setCurrentUser(null);
+        setIsNewUser(false);
+        setHasPet(false);
+        setLoading(false);
+        initialSessionLoadedRef.current = true; // Mark as loaded even on error
+        clearTimeout(fallbackTimeout);
       }
-    }).catch((err: any) => {
-      onboardingLogger.error('Error getting session', err);
-      setCurrentUser(null);
-      setIsNewUser(false);
-      setHasPet(false);
-      setLoading(false);
-      initialSessionLoadedRef.current = true; // Mark as loaded even on error
-      if (fallbackTimeoutRef.current) {
-        clearTimeout(fallbackTimeoutRef.current);
-        fallbackTimeoutRef.current = null;
-      }
-    });
+    })();
 
     // Listen for auth changes - this will fire for all auth events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
@@ -330,17 +352,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       onboardingLogger.authInit('Cleaning up subscriptions');
-      if (fallbackTimeoutRef.current) {
-        clearTimeout(fallbackTimeoutRef.current);
-        fallbackTimeoutRef.current = null;
-      }
       subscription.unsubscribe();
       if (petSubscriptionRef.current) {
         petSubscriptionRef.current.unsubscribe();
         petSubscriptionRef.current = null;
       }
     };
-  }, []);
+  }, [checkUserProfile, refreshUserState]);
 
   const signIn = async (email: string, password: string) => {
     // Mock authentication for development

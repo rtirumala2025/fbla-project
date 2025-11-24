@@ -64,7 +64,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         .single();
       
       const { data, error } = await withTimeout(
-        query,
+        query as unknown as Promise<any>,
         10000,
         'Load pet'
       ) as any;
@@ -188,7 +188,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
   useEffect(() => {
     loadPet();
-  }, [userId]); // Direct dependency on userId, not loadPet
+  }, [userId, loadPet]); // Include loadPet to ensure latest version is used
 
   // Realtime subscription for pet changes
   useEffect(() => {
@@ -262,19 +262,21 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         throw new Error('Supabase client not initialized');
       }
       
+      const query = supabase
+        .from('pets')
+        .update({
+          health: updatedStats.health,
+          hunger: updatedStats.hunger,
+          happiness: updatedStats.happiness,
+          cleanliness: updatedStats.cleanliness,
+          energy: updatedStats.energy,
+          updated_at: now.toISOString(),
+        })
+        .eq('id', pet.id)
+        .eq('user_id', userId);
+      
       const { error } = await withTimeout(
-        supabase
-          .from('pets')
-          .update({
-            health: updatedStats.health,
-            hunger: updatedStats.hunger,
-            happiness: updatedStats.happiness,
-            cleanliness: updatedStats.cleanliness,
-            energy: updatedStats.energy,
-            updated_at: now.toISOString(),
-          })
-          .eq('id', pet.id)
-          .eq('user_id', userId),
+        query as unknown as Promise<any>,
         10000,
         'Update pet stats'
       ) as any;
@@ -311,27 +313,29 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       
       const now = new Date();
       
+      const query = supabase
+        .from('pets')
+        .insert({
+          user_id: userId,
+          name,
+          species: type,
+          breed: breed,
+          age: 0,
+          level: 1,
+          health: 100,
+          hunger: 75,
+          happiness: 80,
+          cleanliness: 90,
+          energy: 85,
+          xp: 0,
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+        })
+        .select()
+        .single();
+      
       const { data, error } = await withTimeout(
-        supabase
-          .from('pets')
-          .insert({
-            user_id: userId,
-            name,
-            species: type,
-            breed: breed,
-            age: 0,
-            level: 1,
-            health: 100,
-            hunger: 75,
-            happiness: 80,
-            cleanliness: 90,
-            energy: 85,
-            xp: 0,
-            created_at: now.toISOString(),
-            updated_at: now.toISOString(),
-          })
-          .select()
-          .single(),
+        query as unknown as Promise<any>,
         15000,
         'Create pet'
       ) as any;
@@ -376,33 +380,18 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       // This ensures route guards recognize the user has completed onboarding
       console.log('🔄 Refreshing auth state after pet creation...');
       try {
-        const success = await refreshUserState();
-        if (success) {
-          console.log('✅ Auth state refreshed successfully');
-        } else {
-          console.warn('⚠️ Auth state refresh returned false - pet may not be detected immediately');
-          // Retry once after a short delay
-          await new Promise(resolve => setTimeout(resolve, 300));
-          const retrySuccess = await refreshUserState();
-          if (retrySuccess) {
-            console.log('✅ Auth state refreshed on retry');
-          } else {
-            console.warn('⚠️ Auth state refresh failed on retry - state may be stale');
-            // Pet exists in DB, real-time subscription will eventually update state
-            // Route guards will check Supabase directly if needed
-          }
-        }
+        await refreshUserState();
+        console.log('✅ Auth state refreshed successfully');
       } catch (refreshError) {
         console.error('❌ Error refreshing auth state:', refreshError);
         // Retry once after error
         try {
           await new Promise(resolve => setTimeout(resolve, 300));
-          const retrySuccess = await refreshUserState();
-          if (!retrySuccess) {
-            console.warn('⚠️ Auth state refresh failed after error - state may be stale');
-          }
+          await refreshUserState();
+          console.log('✅ Auth state refreshed on retry');
         } catch (retryError) {
           console.error('❌ Auth state refresh retry also failed:', retryError);
+          console.warn('⚠️ Auth state refresh failed - state may be stale');
         }
       }
     } catch (err: any) {

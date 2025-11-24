@@ -220,10 +220,13 @@ export const PetNaming = () => {
       logFormSubmit({ name: name.trim(), species, breed }, true);
       toast.success(`Welcome, ${name}! 🎉`);
       
+      // CRITICAL: Wait for state to propagate before navigating
+      // PetContext.createPet() calls refreshUserState() which updates hasPet
+      // Give it a moment to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Redirect to dashboard with smooth transition
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 300);
+      navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Failed to create pet:', error);
       const errorMessage = error.message || 'Failed to create pet';

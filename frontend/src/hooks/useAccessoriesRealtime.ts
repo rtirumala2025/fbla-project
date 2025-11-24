@@ -6,6 +6,7 @@
 import { useEffect, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { isSupabaseMock, supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 import type { AccessoryEquipResponse } from '../types/accessories';
 
 export type AccessoriesRefreshFn = (accessories: AccessoryEquipResponse[]) => void;
@@ -80,48 +81,59 @@ export const useAccessoriesRealtime = (
             async (payload) => {
               if (!isActive) return;
 
-              console.log('🔄 useAccessoriesRealtime: Change detected', {
-                event: payload.eventType,
-                payload: payload.new || payload.old,
-              });
-
-              // Fetch updated accessories
-              const { data, error } = await supabase
-                .from('user_accessories')
-                .select('*')
-                .eq('pet_id', petId);
-
-              if (error) {
-                console.error('❌ useAccessoriesRealtime: Failed to fetch updated accessories', error);
-                return;
-              }
-
-              if (data && isActive) {
-                const accessories: AccessoryEquipResponse[] = data.map((item) => ({
-                  accessory_id: item.accessory_id,
-                  pet_id: item.pet_id,
-                  equipped: item.equipped,
-                  equipped_color: item.equipped_color,
-                  equipped_slot: item.equipped_slot,
-                  applied_mood: item.applied_mood || 'happy',
-                  updated_at: item.updated_at,
-                }));
-                callbackRef.current(accessories);
-                console.log('✅ useAccessoriesRealtime: Accessories updated via realtime', {
+              try {
+                logger.debug('Accessories realtime change detected', {
                   petId,
-                  count: accessories.length,
+                  event: payload.eventType,
                 });
+
+                // Fetch updated accessories
+                const { data, error } = await supabase
+                  .from('user_accessories')
+                  .select('*')
+                  .eq('pet_id', petId);
+
+                if (error) {
+                  logger.error('Failed to fetch updated accessories', { petId, errorCode: error.code }, error);
+                  return;
+                }
+
+                if (data && isActive) {
+                  const accessories: AccessoryEquipResponse[] = data.map((item) => ({
+                    accessory_id: item.accessory_id,
+                    pet_id: item.pet_id,
+                    equipped: item.equipped,
+                    equipped_color: item.equipped_color,
+                    equipped_slot: item.equipped_slot,
+                    applied_mood: item.applied_mood || 'happy',
+                    updated_at: item.updated_at,
+                  }));
+                  callbackRef.current(accessories);
+                  logger.debug('Accessories updated via realtime', {
+                    petId,
+                    count: accessories.length,
+                  });
+                }
+              } catch (error) {
+                logger.error('Error in accessories realtime callback', { petId }, error instanceof Error ? error : new Error(String(error)));
               }
             }
           )
           .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-              console.log('✅ useAccessoriesRealtime: Subscribed to realtime channel', {
+              logger.info('Subscribed to accessories realtime channel', {
                 petId,
                 channel: `accessories-realtime-${petId}`,
               });
-            } else if (status === 'CHANNEL_ERROR') {
-              console.error('❌ useAccessoriesRealtime: Channel error');
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              logger.error('Accessories realtime channel error', { petId, status });
+              // Attempt to resubscribe after delay
+              setTimeout(() => {
+                if (isActive && channelRef.current) {
+                  logger.info('Attempting to resubscribe to accessories realtime', { petId });
+                  setupRealtime();
+                }
+              }, 5000);
             }
           });
 

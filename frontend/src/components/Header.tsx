@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, Home, ShoppingCart, User, PawPrint, Heart, Gamepad2, DollarSign, BarChart3, Sparkles, Calendar, Zap, Palette, Settings } from 'lucide-react';
+import { Menu, X, LogOut, Home, ShoppingCart, PawPrint, BarChart3, Sparkles, Calendar, Zap, Palette, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {

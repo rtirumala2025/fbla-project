@@ -23,7 +23,7 @@ export const StatsBar = () => {
     { number: '...', label: 'Unique Breeds' },
     { number: '...', label: 'Satisfaction', prefix: '%' },
   ]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);

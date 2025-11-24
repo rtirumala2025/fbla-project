@@ -3,9 +3,11 @@
  * Catches React errors and displays a user-friendly error message
  */
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { logger } from '../utils/logger';
 
 type ErrorBoundaryProps = {
   children: ReactNode;
+  fallback?: ReactNode;
 };
 
 type ErrorBoundaryState = {
@@ -27,7 +29,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[ErrorBoundary]', error, info);
+    logger.error('[ErrorBoundary] Component error caught', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack,
+    }, error);
   }
 
   handleReload = () => {
@@ -37,6 +43,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   render() {
     if (!this.state.hasError) {
       return this.props.children;
+    }
+
+    if (this.props.fallback) {
+      return this.props.fallback;
     }
 
     return (

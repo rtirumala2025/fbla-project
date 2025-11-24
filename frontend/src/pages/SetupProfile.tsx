@@ -106,13 +106,35 @@ export const SetupProfile = () => {
         console.warn('⚠️ Could not import email service (trigger should handle welcome email):', err);
       }
 
-      console.log('✅ SetupProfile: Profile setup complete, navigating to dashboard');
+      console.log('✅ SetupProfile: Profile setup complete');
       
-      // Mark user as returning and navigate explicitly
-      markUserAsReturning();
-      navigate('/dashboard', { replace: true });
-      // End transition next tick so ProtectedRoute can re-enable normal checks
-      setTimeout(() => endTransition(), 0);
+      // Check if user has a pet before deciding where to navigate
+      try {
+        const { petService } = await import('../services/petService');
+        const pet = await petService.getPet(currentUser.uid);
+        const hasPet = pet !== null;
+        
+        console.log('✅ SetupProfile: Pet check complete', { hasPet });
+        
+        // Mark user as returning (profile now exists)
+        markUserAsReturning(hasPet);
+        
+        // Navigate based on pet existence
+        if (hasPet) {
+          navigate('/dashboard', { replace: true });
+        } else {
+          navigate('/pet-selection', { replace: true });
+        }
+        
+        // End transition next tick so ProtectedRoute can re-enable normal checks
+        setTimeout(() => endTransition(), 0);
+      } catch (petCheckError) {
+        console.error('⚠️ SetupProfile: Error checking pet, defaulting to pet selection', petCheckError);
+        // On error, assume no pet and go to pet selection
+        markUserAsReturning(false);
+        navigate('/pet-selection', { replace: true });
+        setTimeout(() => endTransition(), 0);
+      }
     } catch (err: any) {
       console.error('═══════════════════════════════════════════════════════');
       console.error('❌❌❌ SetupProfile: PROFILE CREATION FAILED');
