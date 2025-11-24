@@ -1,3 +1,5 @@
+import type { Database } from '../types/database.types';
+
 const useMock = process.env.REACT_APP_USE_MOCK === 'true';
 
 // Import supabase only when not in mock mode
@@ -9,7 +11,6 @@ if (!useMock) {
     console.warn('Failed to import supabase, using mock mode');
   }
 }
-import type { Database } from '../types/database.types';
 
 type Pet = Database['public']['Tables']['pets']['Row'];
 type PetInsert = Database['public']['Tables']['pets']['Insert'];
