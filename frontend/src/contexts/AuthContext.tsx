@@ -169,13 +169,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(async ({ data: { session }, error }: { data: { session: any }, error: any }) => {
       onboardingLogger.authInit('Initial session check', {
         hasSession: !!session,
-        userEmail: session?.user?.email || null,
-        error: error?.message || null,
-        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+        userEmail: session?.user?.email || undefined,
+        error: error?.message || undefined,
+        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined,
       });
       
       const mappedUser = mapSupabaseUser(session?.user || null);
-      onboardingLogger.authInit('Mapped user', { userId: mappedUser?.uid || null, email: mappedUser?.email || null });
+      onboardingLogger.authInit('Mapped user', { userId: mappedUser?.uid || undefined, email: mappedUser?.email || undefined });
       
       try {
         if (mappedUser) {
@@ -238,8 +238,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       onboardingLogger.authStateChange(event, {
         hasSession: !!session,
-        userEmail: session?.user?.email || null,
-        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+        userEmail: session?.user?.email || undefined,
+        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined,
       });
       
       // Ignore INITIAL_SESSION event - we handle initial session via getSession() above
@@ -257,7 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       const mappedUser = mapSupabaseUser(session?.user || null);
-      onboardingLogger.authStateChange('Processing auth state change', { userId: mappedUser?.uid || null, email: mappedUser?.email || null });
+      onboardingLogger.authStateChange('Processing auth state change', { userId: mappedUser?.uid || undefined, email: mappedUser?.email || undefined });
       
       try {
         if (mappedUser) {
