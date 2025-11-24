@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { profileService } from '../services/profileService';
 import { petService } from '../services/petService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { onboardingLogger } from '../utils/onboardingLogger';
 
 interface User {
   uid: string;
@@ -69,13 +70,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         if (attempt === maxRetries) {
-          console.error(`❌ Pet check failed after ${maxRetries} attempts:`, error);
+          onboardingLogger.error(`Pet check failed after ${maxRetries} attempts`, error, { userId, maxRetries });
           return false; // Default to no pet on final failure
         }
         
         // Exponential backoff: 100ms, 200ms, 400ms
         const delay = 100 * Math.pow(2, attempt - 1);
-        console.warn(`⚠️ Pet check attempt ${attempt} failed, retrying in ${delay}ms...`);
+        onboardingLogger.petRetry(attempt, maxRetries, { userId, delay, error: error?.message });
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -85,28 +86,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Helper function to check if user has a profile and pet
   const checkUserProfile = async (userId: string): Promise<{ isNew: boolean; hasPet: boolean }> => {
     try {
+      onboardingLogger.petCheck('Starting user profile check', { userId });
       if (process.env.REACT_APP_USE_MOCK === 'true') {
         // In mock mode, assume user has profile and pet
+        onboardingLogger.petCheck('Mock mode: returning default values', { userId });
         return { isNew: false, hasPet: true };
       }
       
       const profile = await profileService.getProfile(userId);
       const isNew = profile === null; // true if no profile exists (new user)
+      onboardingLogger.petCheck('Profile check complete', { userId, isNew });
       
       // Check for pet existence (always check, regardless of profile status)
       let petExists = false;
       petExists = await checkPetWithRetry(userId);
+      onboardingLogger.petCheck('Pet check complete', { userId, hasPet: petExists });
       
       return { isNew, hasPet: petExists };
     } catch (error) {
-      console.error('Error checking user profile:', error);
+      onboardingLogger.error('Error checking user profile', error, { userId });
       return { isNew: true, hasPet: false }; // Assume new user if error occurs
     }
   };
 
   // Method to refresh user state after profile creation or update
   const refreshUserState = async () => {
-    console.log('🔄 AuthContext: Refreshing user state...');
+    onboardingLogger.authInit('Refreshing user state');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -126,14 +131,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let petExists = false;
         petExists = await checkPetWithRetry(session.user.id);
         
-        console.log('🔄 AuthContext: Refreshed - isNewUser:', isNew, 'hasPet:', petExists);
-        console.log('🔄 AuthContext: Updated displayName from profile:', updatedUser.displayName);
+        onboardingLogger.authInit('User state refreshed', { userId: session.user.id, isNew, hasPet: petExists, displayName: updatedUser.displayName });
         setIsNewUser(isNew);
         setHasPet(petExists);
         setCurrentUser(updatedUser);
       }
     } catch (error) {
-      console.error('Error refreshing user state:', error);
+      onboardingLogger.error('Error refreshing user state', error);
     }
   };
 
@@ -153,8 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    console.log('🔵 AuthContext: Initializing...');
-    console.log('🔵 AuthContext: Supabase client:', supabase ? 'initialized' : 'NOT initialized');
+    onboardingLogger.authInit('Initializing AuthContext', { supabaseInitialized: !!supabase });
     
     // Fallback timeout to ensure loading never gets stuck
     const fallbackTimeout = setTimeout(() => {
@@ -164,21 +167,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Get initial session - this restores the session from localStorage
     supabase.auth.getSession().then(async ({ data: { session }, error }: { data: { session: any }, error: any }) => {
-      console.log('🔵 AuthContext: Initial session check');
-      console.log('  Session exists:', !!session);
-      console.log('  User email:', session?.user?.email || 'No user');
-      console.log('  Session error:', error?.message || 'none');
-      console.log('  Session expires at:', session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A');
+      onboardingLogger.authInit('Initial session check', {
+        hasSession: !!session,
+        userEmail: session?.user?.email || null,
+        error: error?.message || null,
+        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+      });
       
       const mappedUser = mapSupabaseUser(session?.user || null);
-      console.log('  Mapped user:', mappedUser?.email || 'null');
+      onboardingLogger.authInit('Mapped user', { userId: mappedUser?.uid || null, email: mappedUser?.email || null });
       
       try {
         if (mappedUser) {
           // Check if user has a profile and pet
           const { isNew, hasPet: petExists } = await checkUserProfile(mappedUser.uid);
-          console.log('  Is new user:', isNew);
-          console.log('  Has pet:', petExists);
+          onboardingLogger.authInit('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
           setIsNewUser(isNew);
           setHasPet(petExists);
         } else {
@@ -186,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setHasPet(false);
         }
       } catch (profileError) {
-        console.error('❌ Error checking user profile:', profileError);
+        onboardingLogger.error('Error checking user profile during initialization', profileError);
         setIsNewUser(false); // Default to not new user if check fails
         setHasPet(false);
       }
@@ -198,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Set up pet subscription if user exists
       if (mappedUser?.uid && !petSubscriptionRef.current) {
-        console.log('🔵 AuthContext: Setting up pet subscription for user:', mappedUser.uid);
+        onboardingLogger.realtimeEvent('Setting up pet subscription', { userId: mappedUser.uid });
         petSubscriptionRef.current = supabase
           .channel(`pet-changes-${mappedUser.uid}`)
           .on(
@@ -210,19 +213,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               filter: `user_id=eq.${mappedUser.uid}`,
             },
             async (payload) => {
-              console.log('🔵 AuthContext: Pet change detected:', payload.eventType);
+              onboardingLogger.realtimeEvent('Pet change detected', { eventType: payload.eventType, userId: mappedUser.uid });
               // Refresh user state when pet changes
               try {
                 await refreshUserState();
               } catch (error) {
-                console.error('❌ Error refreshing state after pet change:', error);
+                onboardingLogger.error('Error refreshing state after pet change', error, { userId: mappedUser.uid });
               }
             }
           )
           .subscribe();
       }
     }).catch((err: any) => {
-      console.error('❌ Error getting session:', err);
+      onboardingLogger.error('Error getting session', err);
       setCurrentUser(null);
       setIsNewUser(false);
       setHasPet(false);
@@ -233,35 +236,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth changes - this will fire for all auth events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
-      console.log('🔵 AuthContext: Auth state change detected');
-      console.log('  Event type:', event);
-      console.log('  Has session:', !!session);
-      console.log('  User email:', session?.user?.email || 'none');
-      console.log('  Session expires at:', session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A');
+      onboardingLogger.authStateChange(event, {
+        hasSession: !!session,
+        userEmail: session?.user?.email || null,
+        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+      });
       
       // Ignore INITIAL_SESSION event - we handle initial session via getSession() above
       // This prevents race conditions where onAuthStateChange fires before getSession() completes
       if (event === 'INITIAL_SESSION') {
-        console.log('  ⏭️ Skipping INITIAL_SESSION event - handled by getSession()');
+        onboardingLogger.authStateChange('Skipping INITIAL_SESSION - handled by getSession()');
         return;
       }
       
       // Only process auth state changes after initial session is loaded
       // This prevents clearing the user state before getSession() completes
       if (!initialSessionLoadedRef.current) {
-        console.log('  ⏭️ Skipping auth state change - initial session not yet loaded');
+        onboardingLogger.authStateChange('Skipping - initial session not yet loaded');
         return;
       }
       
       const mappedUser = mapSupabaseUser(session?.user || null);
-      console.log('  Setting user:', mappedUser?.email || 'null');
+      onboardingLogger.authStateChange('Processing auth state change', { userId: mappedUser?.uid || null, email: mappedUser?.email || null });
       
       try {
         if (mappedUser) {
           // Check if user has a profile and pet
           const { isNew, hasPet: petExists } = await checkUserProfile(mappedUser.uid);
-          console.log('  Is new user:', isNew);
-          console.log('  Has pet:', petExists);
+          onboardingLogger.authStateChange('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
           setIsNewUser(isNew);
           setHasPet(petExists);
         } else {
@@ -269,7 +271,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setHasPet(false);
         }
       } catch (profileError) {
-        console.error('❌ Error checking user profile in auth change:', profileError);
+        onboardingLogger.error('Error checking user profile in auth change', profileError);
         setIsNewUser(false); // Default to not new user if check fails
         setHasPet(false);
       }
@@ -285,7 +287,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           petSubscriptionRef.current = null;
         }
         
-        console.log('🔵 AuthContext: Setting up pet subscription for user:', mappedUser.uid);
+        onboardingLogger.realtimeEvent('Setting up pet subscription', { userId: mappedUser.uid });
         petSubscriptionRef.current = supabase
           .channel(`pet-changes-${mappedUser.uid}`)
           .on(
@@ -297,12 +299,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               filter: `user_id=eq.${mappedUser.uid}`,
             },
             async (payload) => {
-              console.log('🔵 AuthContext: Pet change detected:', payload.eventType);
+              onboardingLogger.realtimeEvent('Pet change detected', { eventType: payload.eventType, userId: mappedUser.uid });
               // Refresh user state when pet changes
               try {
                 await refreshUserState();
               } catch (error) {
-                console.error('❌ Error refreshing state after pet change:', error);
+                onboardingLogger.error('Error refreshing state after pet change', error, { userId: mappedUser.uid });
               }
             }
           )
@@ -310,6 +312,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         // Clean up subscription if user logged out
         if (petSubscriptionRef.current) {
+          onboardingLogger.realtimeEvent('Cleaning up pet subscription - user logged out');
           petSubscriptionRef.current.unsubscribe();
           petSubscriptionRef.current = null;
         }
@@ -317,7 +320,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
-      console.log('🔵 AuthContext: Cleaning up subscriptions');
+      onboardingLogger.authInit('Cleaning up subscriptions');
       clearTimeout(fallbackTimeout);
       subscription.unsubscribe();
       if (petSubscriptionRef.current) {
