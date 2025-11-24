@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { profileService } from '../services/profileService';
+import { petService } from '../services/petService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
@@ -13,6 +14,7 @@ type AuthContextType = {
   currentUser: User | null;
   loading: boolean;
   isNewUser: boolean;
+  hasPet: boolean;
   isTransitioning: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
@@ -49,22 +51,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [hasPet, setHasPet] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const initialSessionLoadedRef = useRef(false);
 
-  // Helper function to check if user has a profile
-  const checkUserProfile = async (userId: string): Promise<boolean> => {
+  // Helper function to check if user has a profile and pet
+  const checkUserProfile = async (userId: string): Promise<{ isNew: boolean; hasPet: boolean }> => {
     try {
       if (process.env.REACT_APP_USE_MOCK === 'true') {
-        // In mock mode, assume user has profile
-        return false;
+        // In mock mode, assume user has profile and pet
+        return { isNew: false, hasPet: true };
       }
       
       const profile = await profileService.getProfile(userId);
-      return profile === null; // true if no profile exists (new user)
+      const isNew = profile === null; // true if no profile exists (new user)
+      
+      // Check for pet existence
+      let petExists = false;
+      if (!isNew) {
+        // Only check for pet if user has a profile
+        try {
+          const pet = await petService.getPet(userId);
+          petExists = pet !== null;
+        } catch (petError) {
+          console.error('Error checking pet:', petError);
+          petExists = false; // Assume no pet if check fails
+        }
+      }
+      
+      return { isNew, hasPet: petExists };
     } catch (error) {
       console.error('Error checking user profile:', error);
-      return true; // Assume new user if error occurs
+      return { isNew: true, hasPet: false }; // Assume new user if error occurs
     }
   };
 
@@ -85,9 +103,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         const isNew = profile === null;
-        console.log('🔄 AuthContext: Refreshed - isNewUser:', isNew);
+        
+        // Check for pet existence
+        let petExists = false;
+        if (!isNew) {
+          try {
+            const pet = await petService.getPet(session.user.id);
+            petExists = pet !== null;
+          } catch (petError) {
+            console.error('Error checking pet during refresh:', petError);
+            petExists = false;
+          }
+        }
+        
+        console.log('🔄 AuthContext: Refreshed - isNewUser:', isNew, 'hasPet:', petExists);
         console.log('🔄 AuthContext: Updated displayName from profile:', updatedUser.displayName);
         setIsNewUser(isNew);
+        setHasPet(petExists);
         setCurrentUser(updatedUser);
       }
     } catch (error) {
@@ -133,16 +165,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       try {
         if (mappedUser) {
-          // Check if user has a profile
-          const isNew = await checkUserProfile(mappedUser.uid);
+          // Check if user has a profile and pet
+          const { isNew, hasPet: petExists } = await checkUserProfile(mappedUser.uid);
           console.log('  Is new user:', isNew);
+          console.log('  Has pet:', petExists);
           setIsNewUser(isNew);
+          setHasPet(petExists);
         } else {
           setIsNewUser(false);
+          setHasPet(false);
         }
       } catch (profileError) {
         console.error('❌ Error checking user profile:', profileError);
         setIsNewUser(false); // Default to not new user if check fails
+        setHasPet(false);
       }
       
       setCurrentUser(mappedUser);
@@ -153,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('❌ Error getting session:', err);
       setCurrentUser(null);
       setIsNewUser(false);
+      setHasPet(false);
       setLoading(false);
       initialSessionLoadedRef.current = true; // Mark as loaded even on error
       clearTimeout(fallbackTimeout); // Clear timeout since we completed (with error)
@@ -185,16 +222,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       try {
         if (mappedUser) {
-          // Check if user has a profile
-          const isNew = await checkUserProfile(mappedUser.uid);
+          // Check if user has a profile and pet
+          const { isNew, hasPet: petExists } = await checkUserProfile(mappedUser.uid);
           console.log('  Is new user:', isNew);
+          console.log('  Has pet:', petExists);
           setIsNewUser(isNew);
+          setHasPet(petExists);
         } else {
           setIsNewUser(false);
+          setHasPet(false);
         }
       } catch (profileError) {
         console.error('❌ Error checking user profile in auth change:', profileError);
         setIsNewUser(false); // Default to not new user if check fails
+        setHasPet(false);
       }
       
       setCurrentUser(mappedUser);
@@ -398,6 +439,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Mock sign out for development
     if (process.env.REACT_APP_USE_MOCK === 'true') {
       setCurrentUser(null);
+      setIsNewUser(false);
+      setHasPet(false);
       return;
     }
 
@@ -406,12 +449,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(error.message);
     }
     setCurrentUser(null);
+    setIsNewUser(false);
+    setHasPet(false);
   };
 
   const value = {
     currentUser,
     loading,
     isNewUser,
+    hasPet,
     isTransitioning,
     signIn,
     signUp,

@@ -50,9 +50,10 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Protected route component
+// Protected route component - requires authentication
+// Redirects new users (without pets) to pet selection
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, hasPet } = useAuth();
 
   if (loading) {
     return (
@@ -66,11 +67,64 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />;
   }
 
+  // If user is authenticated but doesn't have a pet, redirect to pet selection
+  // This ensures users complete onboarding before accessing protected routes
+  if (!hasPet) {
+    return <Navigate to="/pet-selection" replace />;
+  }
+
   return <>{children}</>;
 };
 
-// Public route component
+// Public route component - only accessible to unauthenticated users
+// Redirects authenticated users to dashboard (or pet-selection if new)
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser, loading, hasPet } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // If user is authenticated, redirect them away from public pages
+  if (currentUser) {
+    // New users (without pets) go to pet selection
+    if (!hasPet) {
+      return <Navigate to="/pet-selection" replace />;
+    }
+    // Existing users go to dashboard
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Onboarding route component - only accessible to authenticated users WITHOUT pets
+// Prevents existing users from accessing pet selection
+const OnboardingRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser, loading, hasPet } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Must be authenticated
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // If user already has a pet, redirect to dashboard (prevent re-onboarding)
+  if (hasPet) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -152,13 +206,15 @@ function AppContent() {
             <Route path="/minigames/dream" element={<ProtectedRoute><PageTransition><DreamWorld /></PageTransition></ProtectedRoute>} />
             <Route path="/minigames/memory" element={<ProtectedRoute><PageTransition><MemoryMatchGame /></PageTransition></ProtectedRoute>} />
             
-            {/* Protected onboarding flow */}
-            <Route path="/onboarding/species" element={<ProtectedRoute><PageTransition><SpeciesSelection /></PageTransition></ProtectedRoute>} />
-            <Route path="/onboarding/breed" element={<ProtectedRoute><PageTransition><BreedSelection /></PageTransition></ProtectedRoute>} />
-            <Route path="/onboarding/naming" element={<ProtectedRoute><PageTransition><PetNaming /></PageTransition></ProtectedRoute>} />
+            {/* Protected onboarding flow - only for users without pets */}
+            <Route path="/onboarding/species" element={<OnboardingRoute><PageTransition><SpeciesSelection /></PageTransition></OnboardingRoute>} />
+            <Route path="/onboarding/breed" element={<OnboardingRoute><PageTransition><BreedSelection /></PageTransition></OnboardingRoute>} />
+            <Route path="/onboarding/naming" element={<OnboardingRoute><PageTransition><PetNaming /></PageTransition></OnboardingRoute>} />
             
-            {/* Pet selection menu */}
-            <Route path="/select-pet" element={<ProtectedRoute><PageTransition><PetSelectionPage /></PageTransition></ProtectedRoute>} />
+            {/* Pet selection page - only for users without pets */}
+            <Route path="/pet-selection" element={<OnboardingRoute><PageTransition><PetSelectionPage /></PageTransition></OnboardingRoute>} />
+            {/* Legacy route redirect */}
+            <Route path="/select-pet" element={<Navigate to="/pet-selection" replace />} />
             
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />

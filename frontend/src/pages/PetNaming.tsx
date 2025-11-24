@@ -48,13 +48,13 @@ export const PetNaming = () => {
 
   useEffect(() => {
     // Get species and breed from React Router state (no localStorage)
-    // Can come from either /onboarding/breed or /select-pet
+    // Can come from either /onboarding/breed or /pet-selection
     const routeSpecies = location.state?.selectedSpecies;
     const routeBreed = location.state?.selectedBreed;
     
     if (!routeSpecies) {
       // If no species, redirect to selection
-      navigate('/select-pet');
+      navigate('/pet-selection');
       return;
     }
     

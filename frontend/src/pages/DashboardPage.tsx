@@ -535,7 +535,7 @@ export function DashboardPage() {
           <div className="mb-4 text-2xl font-semibold text-gray-700">No pet found</div>
           <p className="mb-4 text-gray-600">Create a pet to get started!</p>
           <button
-            onClick={() => navigate('/select-pet')}
+            onClick={() => navigate('/pet-selection')}
             className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
           >
             Create Pet

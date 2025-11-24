@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Pet, PetStats } from '@/types/pet';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PetContextType {
   pet: Pet | null;
@@ -32,6 +33,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { refreshUserState } = useAuth();
 
   // Load pet data from Supabase when userId changes
   const loadPet = useCallback(async () => {
@@ -209,11 +211,16 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       };
       
       setPet(newPet);
+      
+      // Refresh auth state to update hasPet flag
+      // This ensures route guards recognize the user has completed onboarding
+      console.log('🔄 Refreshing auth state after pet creation...');
+      await refreshUserState();
     } catch (err: any) {
       console.error('❌ Error creating pet:', err);
       throw new Error(err.message || 'Failed to create pet');
     }
-  }, [userId]);
+  }, [userId, refreshUserState]);
   
   const feed = useCallback(async () => {
     if (!pet) return;

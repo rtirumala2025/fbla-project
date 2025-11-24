@@ -401,7 +401,7 @@ export const AuthCallback = () => {
       logToFile(`  User email: ${userEmail}`);
       logSessionDetails(session);
 
-      // Check if user has a profile to determine if they're new
+      // Check if user has a profile and pet to determine redirect
       try {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -413,30 +413,53 @@ export const AuthCallback = () => {
           logToFile(`❌ AuthCallback: Error checking profile: ${profileError.message}`, 'error');
         }
 
-        const isNewUser = !profile;
+        const hasProfile = !!profile;
 
-        logToFile('🔍 AuthCallback: Profile check result');
-        logToFile(`  Has profile: ${!!profile}`);
-        logToFile(`  Is new user: ${isNewUser}`);
+        // Check for pet existence
+        let hasPet = false;
+        if (hasProfile) {
+          try {
+            const { data: pet, error: petError } = await supabase
+              .from('pets')
+              .select('id')
+              .eq('user_id', userId)
+              .single();
+
+            if (petError && petError.code !== 'PGRST116') {
+              logToFile(`❌ AuthCallback: Error checking pet: ${petError.message}`, 'error');
+            } else {
+              hasPet = !!pet;
+            }
+          } catch (petCheckError: any) {
+            logToFile(`⚠️ AuthCallback: Error checking pet: ${petCheckError?.message || petCheckError}`, 'warn');
+            hasPet = false;
+          }
+        }
+
+        logToFile('🔍 AuthCallback: Profile and pet check result');
+        logToFile(`  Has profile: ${hasProfile}`);
+        logToFile(`  Has pet: ${hasPet}`);
         logToFile('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-        // Route decision: new users to setup-profile, returning users to dashboard
-        // Only redirect after confirming valid session
-        if (isNewUser) {
-          logToFile('🆕 AuthCallback: New user detected → redirecting to /setup-profile');
-          logToFile('  Redirect decision: New user → /setup-profile');
-          setStatus('Welcome! Setting up your profile...');
+        // Route decision based on pet existence (not just profile)
+        // Priority: pet existence determines onboarding state
+        if (!hasPet) {
+          // User needs to select a pet (new user or existing user without pet)
+          logToFile('🆕 AuthCallback: User needs pet selection → redirecting to /pet-selection');
+          logToFile('  Redirect decision: No pet → /pet-selection');
+          setStatus('Welcome! Let\'s select your pet...');
           
           // Export logs before redirect
           setTimeout(() => {
             exportLogsToFile();
             setTimeout(() => {
-              navigate('/setup-profile', { replace: true });
+              navigate('/pet-selection', { replace: true });
             }, 500);
           }, 1000);
         } else {
-          logToFile('👋 AuthCallback: Returning user → redirecting to /dashboard');
-          logToFile('  Redirect decision: Returning user → /dashboard');
+          // User has a pet, go to dashboard
+          logToFile('👋 AuthCallback: User has pet → redirecting to /dashboard');
+          logToFile('  Redirect decision: Has pet → /dashboard');
           setStatus('Welcome back! Redirecting to dashboard...');
           
           // Export logs before redirect
@@ -447,15 +470,15 @@ export const AuthCallback = () => {
             }, 500);
           }, 1000);
         }
-      } catch (profileCheckError: any) {
-        logToFile(`❌ AuthCallback: Error in profile check: ${profileCheckError?.message || profileCheckError}`, 'error');
-        // Default to dashboard if profile check fails
-        logToFile('  Redirect decision: Profile check failed → defaulting to /dashboard');
-        setStatus('Welcome! Redirecting to dashboard...');
+      } catch (checkError: any) {
+        logToFile(`❌ AuthCallback: Error in profile/pet check: ${checkError?.message || checkError}`, 'error');
+        // Default to pet selection if check fails (safer for onboarding)
+        logToFile('  Redirect decision: Check failed → defaulting to /pet-selection');
+        setStatus('Welcome! Setting up your account...');
         setTimeout(() => {
           exportLogsToFile();
           setTimeout(() => {
-            navigate('/dashboard', { replace: true });
+            navigate('/pet-selection', { replace: true });
           }, 500);
         }, 1000);
       }
