@@ -57,6 +57,13 @@ const SPRITE_EMOJI: Record<string, Record<PetMood, string>> = {
     playful: '🐲🎮',
     concerned: '🐲💧',
   },
+  panda: {
+    joyful: '🐼✨',
+    calm: '🐼',
+    sleepy: '🐼💤',
+    playful: '🐼🎋',
+    concerned: '🐼😟',
+  },
 };
 
 const sizeClasses: Record<NonNullable<AnimatedPetSpriteProps['size']>, string> = {
@@ -67,8 +74,15 @@ const sizeClasses: Record<NonNullable<AnimatedPetSpriteProps['size']>, string> =
 
 export const AnimatedPetSprite: React.FC<AnimatedPetSpriteProps> = ({ species, mood, size = 'md', level }) => {
   const sprite = useMemo(() => {
-    const palette = SPRITE_EMOJI[species?.toLowerCase() || ''] ?? SPRITE_EMOJI.dog;
-    return palette[mood] ?? palette.joyful;
+    const normalizedSpecies = species?.toLowerCase()?.trim() || '';
+    const palette = SPRITE_EMOJI[normalizedSpecies];
+    
+    // Fallback to dog if species not found, with warning in development
+    if (!palette && normalizedSpecies) {
+      console.warn(`AnimatedPetSprite: Species "${normalizedSpecies}" not found, falling back to dog`);
+    }
+    
+    return (palette ?? SPRITE_EMOJI.dog)[mood] ?? (palette ?? SPRITE_EMOJI.dog).joyful;
   }, [species, mood]);
 
   return (

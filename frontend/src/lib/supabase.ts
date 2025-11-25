@@ -58,14 +58,14 @@ if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_
     hasKey: !!process.env.REACT_APP_SUPABASE_ANON_KEY,
     useMock: process.env.REACT_APP_USE_MOCK || 'false',
   });
-} else {
-  // Decode anon key to verify project match
-  try {
-    const anonKeyParts = process.env.REACT_APP_SUPABASE_ANON_KEY.split('.');
-    if (anonKeyParts.length === 3) {
-      const anonPayload = JSON.parse(atob(anonKeyParts[1]));
-      const urlProjectRef = supabaseUrl.split('//')[1]?.split('.')[0];
-      const anonProjectRef = anonPayload.ref;
+  } else {
+    // Decode anon key to verify project match
+    try {
+      const anonKeyParts = process.env.REACT_APP_SUPABASE_ANON_KEY.split('.');
+      if (anonKeyParts.length === 3) {
+        const anonPayload = JSON.parse(atob(anonKeyParts[1]));
+        const urlProjectRef = process.env.REACT_APP_SUPABASE_URL?.split('//')[1]?.split('.')[0];
+        const anonProjectRef = anonPayload.ref;
       
       logger.info('Supabase client initialized', {
         sessionPersistence: true,

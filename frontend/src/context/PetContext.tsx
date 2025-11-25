@@ -339,13 +339,30 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         throw new Error('Supabase client not initialized');
       }
       
+      // Normalize species to valid database values
+      // Valid species: dog, cat, bird, rabbit, fox, dragon, panda
+      const normalizeSpecies = (species: string): string => {
+        const normalized = species.toLowerCase().trim();
+        const validSpecies = ['dog', 'cat', 'bird', 'rabbit', 'fox', 'dragon', 'panda'];
+        
+        if (validSpecies.includes(normalized)) {
+          return normalized;
+        }
+        
+        // Fallback to dog if unknown species
+        logger.warn(`Unknown species "${species}", defaulting to "dog"`);
+        return 'dog';
+      };
+      
+      const normalizedSpecies = normalizeSpecies(type);
+      
       // Build pet data with only fields that definitely exist in the schema
       // Based on the error, birthday doesn't exist in the actual schema
       // Only include fields that are confirmed to exist
       const petData: any = {
         user_id: userId,
         name,
-        species: type,
+        species: normalizedSpecies,
         breed: breed,
         health: 100,
         hunger: 75,

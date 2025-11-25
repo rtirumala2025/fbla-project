@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Sparkles, AlertCircle, HelpCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -7,6 +7,8 @@ import { useToast } from '../contexts/ToastContext';
 import { useInteractionLogger } from '../hooks/useInteractionLogger';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../services/apiClient';
+import { AnimatedPetSprite } from '../components/pets/AnimatedPetSprite';
+import type { PetMood } from '../components/pets/AnimatedPetSprite';
 
 const randomNames = {
   dog: ['Max', 'Buddy', 'Charlie', 'Cooper', 'Rocky', 'Duke', 'Bear', 'Zeus', 'Tucker', 'Oliver'],
@@ -39,12 +41,28 @@ export const PetNaming = () => {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
-  const { createPet } = usePet();
+  const { createPet, pet: existingPet } = usePet();
   const toast = useToast();
   const { currentUser, hasPet, refreshUserState } = useAuth();
   const { logFormSubmit, logFormValidation, logFormError, logUserAction } = useInteractionLogger('PetNaming');
 
   const location = useLocation();
+
+  // Calculate mood dynamically based on pet stats (if pet exists) or use default
+  const petMood = useMemo<PetMood>(() => {
+    // If pet exists and has stats, calculate mood from stats
+    if (existingPet?.stats) {
+      const stats = existingPet.stats;
+      // Similar logic to Pet3DVisualization
+      if (stats.happiness >= 80 && stats.health >= 80) return 'joyful';
+      if (stats.energy < 30) return 'sleepy';
+      if (stats.happiness >= 60) return 'playful';
+      if (stats.health < 50) return 'concerned';
+      return 'calm';
+    }
+    // Default mood for new pets during naming (they're happy to be created!)
+    return 'joyful';
+  }, [existingPet?.stats]);
 
   useEffect(() => {
     // Get species and breed from React Router state (no localStorage)
@@ -58,8 +76,17 @@ export const PetNaming = () => {
       return;
     }
     
-    setSpecies(routeSpecies);
+    // Normalize species to lowercase for consistency
+    const normalizedSpecies = routeSpecies.toLowerCase().trim();
+    setSpecies(normalizedSpecies);
     setBreed(routeBreed || 'Mixed'); // Default to 'Mixed' if no breed provided
+    
+    // Debug logging to verify species is correctly passed
+    console.log('PetNaming: Setting species and breed', { 
+      originalSpecies: routeSpecies, 
+      normalizedSpecies, 
+      breed: routeBreed || 'Mixed' 
+    });
   }, [navigate, location.state]);
 
   // Validate name with API
@@ -299,11 +326,15 @@ export const PetNaming = () => {
   return (
     <div className="min-h-screen bg-slate-900 px-4 sm:px-6 py-8 sm:py-12 flex items-center">
       <div className="max-w-2xl mx-auto w-full">
-        {/* Progress indicator */}
-        <div className="flex items-center justify-center gap-2 mb-12">
-          <div className="w-8 h-2 bg-indigo-600 rounded-full" />
-          <div className="w-8 h-2 bg-indigo-600 rounded-full" />
-          <div className="w-8 h-2 bg-indigo-600 rounded-full" />
+        {/* Pet Image Preview */}
+        <div className="flex items-center justify-center mb-12">
+          {species && (
+            <AnimatedPetSprite 
+              species={species} 
+              mood={petMood} 
+              size="lg" 
+            />
+          )}
         </div>
 
         {/* Main card */}
@@ -313,29 +344,11 @@ export const PetNaming = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          {/* Pet preview */}
+          {/* Breed badge */}
           <div className="text-center mb-8">
-            <motion.div
-              className="inline-block text-8xl mb-6"
-              animate={{
-                y: [0, -10, 0],
-                rotate: [-5, 5, -5],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              {species === 'dog' && '🐕'}
-              {species === 'cat' && '🐱'}
-              {species === 'bird' && '🐦'}
-              {species === 'rabbit' && '🐰'}
-            </motion.div>
-            
-            <div className="inline-block bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-2 mb-4">
+            <div className="inline-block bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-2">
               <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider capitalize">
-                {breed?.replace('-', ' ')}
+                {breed?.replace('-', ' ') || species || 'Pet'}
               </span>
             </div>
           </div>
