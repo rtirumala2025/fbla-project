@@ -234,13 +234,38 @@ export const PetNaming = () => {
         // Continue anyway - the route guard will handle it
       }
       
-      // Redirect to dashboard with smooth transition
+      // Redirect to game UI with smooth transition
       // The ProtectedRoute will verify hasPet, and if not true yet, will redirect appropriately
-      navigate('/dashboard', { replace: true });
+      navigate('/game', { replace: true });
     } catch (error: any) {
       console.error('Failed to create pet:', error);
-      const errorMessage = error.message || 'Failed to create pet';
-      logFormError('pet_creation', errorMessage, { name: name.trim(), species, breed });
+      
+      // Extract error message properly
+      let errorMessage = 'Failed to create pet';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.details) {
+        errorMessage = error.details;
+      } else if (error?.hint) {
+        errorMessage = error.hint;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (typeof error === 'object' && error !== null) {
+        // Try to extract meaningful information from error object
+        try {
+          const errorStr = JSON.stringify(error);
+          if (errorStr !== '{}') {
+            errorMessage = `Error: ${errorStr}`;
+          }
+        } catch (e) {
+          errorMessage = 'An unexpected error occurred. Please try again.';
+        }
+      }
+      
+      logFormError('pet_creation', errorMessage, { name: name.trim(), species, breed, error });
       toast.error(errorMessage);
       setIsCreating(false);
     }

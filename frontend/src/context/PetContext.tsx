@@ -84,14 +84,28 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         
         logger.debug('Pet loaded', { userId, petId: data.id, petName: data.name });
         // Map DB fields to Pet type with null safety
+        // Note: age, level, and xp are computed fields (not in DB schema)
+        // birthday may not exist in the actual schema
+        let age = 0;
+        if (data.birthday) {
+          try {
+            const birthday = new Date(data.birthday);
+            const today = new Date();
+            age = Math.max(0, today.getFullYear() - birthday.getFullYear());
+          } catch (e) {
+            // birthday field doesn't exist or is invalid
+            age = 0;
+          }
+        }
+        
         const loadedPet: Pet = {
           id: data.id,
           name: data.name,
           species: data.species as 'dog' | 'cat' | 'bird' | 'rabbit',
           breed: data.breed || 'Mixed',
-          age: data.age ?? 0,
-          level: data.level ?? 1,
-          experience: data.xp ?? 0,
+          age: age, // Default to 0 if birthday doesn't exist
+          level: 1, // Default level (not stored in DB)
+          experience: 0, // Default XP (not stored in DB)
           ownerId: data.user_id,
           createdAt: new Date(data.created_at),
           updatedAt: new Date(data.updated_at),
@@ -138,14 +152,28 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           
           if (!error && data) {
             // Success - map and set pet
+            // Note: age, level, and xp are computed fields (not in DB schema)
+            // birthday may not exist in the actual schema
+            let age = 0;
+            if (data.birthday) {
+              try {
+                const birthday = new Date(data.birthday);
+                const today = new Date();
+                age = Math.max(0, today.getFullYear() - birthday.getFullYear());
+              } catch (e) {
+                // birthday field doesn't exist or is invalid
+                age = 0;
+              }
+            }
+            
             const loadedPet: Pet = {
               id: data.id,
               name: data.name,
               species: data.species as 'dog' | 'cat' | 'bird' | 'rabbit',
               breed: data.breed || 'Mixed',
-              age: data.age ?? 0,
-              level: data.level ?? 1,
-              experience: data.xp ?? 0,
+              age: age, // Default to 0 if birthday doesn't exist
+              level: 1, // Default level (not stored in DB)
+              experience: 0, // Default XP (not stored in DB)
               ownerId: data.user_id,
               createdAt: new Date(data.created_at),
               updatedAt: new Date(data.updated_at),
@@ -311,26 +339,29 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         throw new Error('Supabase client not initialized');
       }
       
-      const now = new Date();
+      // Build pet data with only fields that definitely exist in the schema
+      // Based on the error, birthday doesn't exist in the actual schema
+      // Only include fields that are confirmed to exist
+      const petData: any = {
+        user_id: userId,
+        name,
+        species: type,
+        breed: breed,
+        health: 100,
+        hunger: 75,
+        happiness: 80,
+        cleanliness: 90,
+        energy: 85,
+      };
+      
+      // Don't include birthday or color_pattern - they may not exist in the actual schema
+      // The schema cache error confirms birthday doesn't exist
+      
+      logger.debug('Pet data to insert', petData);
       
       const query = supabase
         .from('pets')
-        .insert({
-          user_id: userId,
-          name,
-          species: type,
-          breed: breed,
-          age: 0,
-          level: 1,
-          health: 100,
-          hunger: 75,
-          happiness: 80,
-          cleanliness: 90,
-          energy: 85,
-          xp: 0,
-          created_at: now.toISOString(),
-          updated_at: now.toISOString(),
-        })
+        .insert(petData)
         .select()
         .single();
       
@@ -341,24 +372,33 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       ) as any;
       
       if (error) {
-        logger.error('Error creating pet', { userId, name, type, errorCode: error.code }, error);
+        logger.error('Error creating pet', { userId, name, type, errorCode: error.code, errorDetails: error }, error);
         
         // Provide more specific error messages based on error type
         let errorMessage = 'Failed to create pet';
         
-        if (error.code === '23505') {
+        // Extract error message from Supabase error object
+        const errorDetails = error.details || error.hint || error.message || '';
+        const errorCode = error.code;
+        
+        if (errorCode === '23505') {
           // Unique constraint violation - pet already exists for this user
           errorMessage = 'You already have a pet. Each user can only have one pet.';
-        } else if (error.code === '23503') {
+        } else if (errorCode === '23503') {
           // Foreign key constraint violation
           errorMessage = 'Invalid user account. Please log in again.';
-        } else if (error.code === 'PGRST116') {
+        } else if (errorCode === 'PGRST116') {
           // No rows returned
           errorMessage = 'Pet creation failed: No data returned from database.';
-        } else if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
+        } else if (errorCode === '42501') {
+          // Insufficient privileges (RLS policy violation)
+          errorMessage = 'Permission denied. Please ensure you are logged in and try again.';
+        } else if (errorDetails.includes('timeout') || errorDetails.includes('timed out')) {
           errorMessage = 'Request timed out. Please check your connection and try again.';
-        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        } else if (errorDetails.includes('network') || errorDetails.includes('fetch')) {
           errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (errorDetails) {
+          errorMessage = errorDetails;
         } else if (error.message) {
           errorMessage = error.message;
         }
@@ -374,23 +414,37 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       logger.info('Pet created in DB', { petId: data.id, userId, name });
       
       // Map created pet to Pet type
+      // Note: age, level, and xp are computed fields (not in DB schema)
+      // birthday may not exist in the actual schema
+      let age = 0;
+      if (data.birthday) {
+        try {
+          const birthday = new Date(data.birthday);
+          const today = new Date();
+          age = Math.max(0, today.getFullYear() - birthday.getFullYear());
+        } catch (e) {
+          // birthday field doesn't exist or is invalid
+          age = 0;
+        }
+      }
+      
       const newPet: Pet = {
         id: data.id,
         name: data.name,
         species: data.species as 'dog' | 'cat' | 'bird' | 'rabbit',
         breed: data.breed,
-        age: data.age,
-        level: data.level,
-        experience: data.xp,
+        age: age, // Default to 0 if birthday doesn't exist
+        level: 1, // Default level (not stored in DB)
+        experience: 0, // Default XP (not stored in DB)
         ownerId: data.user_id,
         createdAt: new Date(data.created_at),
         updatedAt: new Date(data.updated_at),
         stats: {
-          health: data.health,
-          hunger: data.hunger,
-          happiness: data.happiness,
-          cleanliness: data.cleanliness,
-          energy: data.energy,
+          health: data.health ?? 100,
+          hunger: data.hunger ?? 75,
+          happiness: data.happiness ?? 80,
+          cleanliness: data.cleanliness ?? 90,
+          energy: data.energy ?? 85,
           lastUpdated: new Date(data.updated_at),
         },
       };

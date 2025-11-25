@@ -33,6 +33,7 @@ import { EventCalendarPage } from './pages/events/EventCalendarPage';
 import { NextGenHub } from './pages/nextgen/NextGenHub';
 import { AvatarStudio } from './pages/pets/AvatarStudio';
 import { PetSelectionPage } from './pages/PetSelectionPage';
+import { GameUI } from './pages/GameUI';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import './styles/globals.css';
 
@@ -208,6 +209,7 @@ function AppContent() {
             
             {/* Protected routes - require authentication */}
             <Route path="/dashboard" element={<ProtectedRoute><PageTransition><DashboardPage /></PageTransition></ProtectedRoute>} />
+            <Route path="/game" element={<ProtectedRoute><PageTransition><GameUI /></PageTransition></ProtectedRoute>} />
             <Route path="/shop" element={<ProtectedRoute><PageTransition><Shop /></PageTransition></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><PageTransition><ProfilePage /></PageTransition></ProtectedRoute>} />
             <Route path="/budget" element={<ProtectedRoute><PageTransition><BudgetDashboard /></PageTransition></ProtectedRoute>} />
