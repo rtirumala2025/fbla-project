@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -6,48 +6,62 @@ import { ToastProvider } from './contexts/ToastContext';
 import { PetProvider } from './context/PetContext';
 import { FinancialProvider } from './context/FinancialContext';
 import Header from './components/Header';
-import { LandingPage } from './pages/LandingPage';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { SignUp } from './pages/Signup';
-import { AuthCallback } from './pages/AuthCallback';
-import { SetupProfile } from './pages/SetupProfile';
-import { SpeciesSelection } from './pages/SpeciesSelection';
-import { BreedSelection } from './pages/BreedSelection';
-import { PetNaming } from './pages/PetNaming';
-import { DashboardPage } from './pages/DashboardPage';
-import { Shop } from './pages/Shop';
-import BudgetDashboard from './pages/budget/BudgetDashboard';
-import CleanScreen from './pages/clean/CleanScreen';
-import RestScreen from './pages/rest/RestScreen';
-import HealthCheckScreen from './pages/health/HealthCheckScreen';
-import SettingsScreen from './pages/settings/SettingsScreen';
-import HelpScreen from './pages/help/HelpScreen';
-import FetchGame from './pages/minigames/FetchGame';
-import PuzzleGame from './pages/minigames/PuzzleGame';
-import ReactionGame from './pages/minigames/ReactionGame';
-import DreamWorld from './pages/minigames/DreamWorld';
-import MemoryMatchGame from './pages/minigames/MemoryMatchGame';
-import { ProfilePage } from './pages/ProfilePage';
-import { EventCalendarPage } from './pages/events/EventCalendarPage';
-import { NextGenHub } from './pages/nextgen/NextGenHub';
-import { AvatarStudio } from './pages/pets/AvatarStudio';
-import { PetSelectionPage } from './pages/PetSelectionPage';
-import { GameUI } from './pages/GameUI';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import './styles/globals.css';
 
-// Page transition wrapper component
+// Lazy load all pages for code splitting
+const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Register = lazy(() => import('./pages/Register').then(m => ({ default: m.Register })));
+const SignUp = lazy(() => import('./pages/Signup').then(m => ({ default: m.SignUp })));
+const AuthCallback = lazy(() => import('./pages/AuthCallback').then(m => ({ default: m.AuthCallback })));
+const SetupProfile = lazy(() => import('./pages/SetupProfile').then(m => ({ default: m.SetupProfile })));
+const SpeciesSelection = lazy(() => import('./pages/SpeciesSelection').then(m => ({ default: m.SpeciesSelection })));
+const BreedSelection = lazy(() => import('./pages/BreedSelection').then(m => ({ default: m.BreedSelection })));
+const PetNaming = lazy(() => import('./pages/PetNaming').then(m => ({ default: m.PetNaming })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
+const BudgetDashboard = lazy(() => import('./pages/budget/BudgetDashboard'));
+const CleanScreen = lazy(() => import('./pages/clean/CleanScreen'));
+const RestScreen = lazy(() => import('./pages/rest/RestScreen'));
+const HealthCheckScreen = lazy(() => import('./pages/health/HealthCheckScreen'));
+const SettingsScreen = lazy(() => import('./pages/settings/SettingsScreen'));
+const HelpScreen = lazy(() => import('./pages/help/HelpScreen'));
+const FetchGame = lazy(() => import('./pages/minigames/FetchGame'));
+const PuzzleGame = lazy(() => import('./pages/minigames/PuzzleGame'));
+const ReactionGame = lazy(() => import('./pages/minigames/ReactionGame'));
+const DreamWorld = lazy(() => import('./pages/minigames/DreamWorld'));
+const MemoryMatchGame = lazy(() => import('./pages/minigames/MemoryMatchGame'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const EventCalendarPage = lazy(() => import('./pages/events/EventCalendarPage').then(m => ({ default: m.EventCalendarPage })));
+const NextGenHub = lazy(() => import('./pages/nextgen/NextGenHub').then(m => ({ default: m.NextGenHub })));
+const AvatarStudio = lazy(() => import('./pages/pets/AvatarStudio').then(m => ({ default: m.AvatarStudio })));
+const PetSelectionPage = lazy(() => import('./pages/PetSelectionPage').then(m => ({ default: m.PetSelectionPage })));
+const GameUI = lazy(() => import('./pages/GameUI').then(m => ({ default: m.GameUI })));
+
+// Page transition wrapper component with Suspense for lazy loading
 const PageTransition = ({ children }: { children: React.ReactNode }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <LoadingSpinner size="lg" />
+        </div>
+      }
     >
-      {children}
-    </motion.div>
+      {process.env.NODE_ENV === 'development' ? (
+        <>{children}</>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.1, ease: 'easeInOut' }}
+        >
+          {children}
+        </motion.div>
+      )}
+    </Suspense>
   );
 };
 
@@ -217,7 +231,6 @@ function AppContent() {
             <Route path="/rest" element={<ProtectedRoute><PageTransition><RestScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/health" element={<ProtectedRoute><PageTransition><HealthCheckScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><PageTransition><SettingsScreen /></PageTransition></ProtectedRoute>} />
-            {/* eslint-disable-next-line */}
             <Route path="/help" element={<ProtectedRoute><PageTransition><HelpScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><PageTransition><EventCalendarPage /></PageTransition></ProtectedRoute>} />
             {/* Wallet route removed - functionality integrated into Budget page */}

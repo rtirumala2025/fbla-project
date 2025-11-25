@@ -6,9 +6,9 @@ import { getErrorMessage } from '../utils/networkUtils';
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
-// Simple in-memory cache for profile data (TTL: 30 seconds)
+// Simple in-memory cache for profile data (TTL: 5 minutes)
 const profileCache = new Map<string, { data: Profile | null; timestamp: number }>();
-const CACHE_TTL_MS = 30 * 1000; // 30 seconds
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes (increased from 30 seconds for better performance)
 
 export const profileService = {
   /**
@@ -19,7 +19,6 @@ export const profileService = {
     if (useCache) {
       const cached = profileCache.get(userId);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-        console.log('📦 Using cached profile for userId:', userId);
         return cached.data;
       }
     }

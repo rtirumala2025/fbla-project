@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { getFinanceSummary } from '../api/finance';
 
 interface User {
@@ -41,7 +41,7 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadFinancialData = async () => {
+  const loadFinancialData = useCallback(async () => {
     if (!user) {
       setBalance(0);
       setTransactions([]);
@@ -53,7 +53,6 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
       setLoading(true);
       setError(null);
       
-      console.log('🔵 FinancialContext: Loading finance data from API...');
       const response = await getFinanceSummary();
       
       if (response?.summary) {
@@ -71,14 +70,11 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
         }));
         
         setTransactions(mappedTransactions);
-        console.log('✅ FinancialContext: Finance data loaded', { balance: summary.balance, transactionCount: mappedTransactions.length });
       } else {
-        console.warn('⚠️ FinancialContext: Empty response from API');
         setBalance(0);
         setTransactions([]);
       }
     } catch (err: any) {
-      console.error('❌ Error loading financial data:', err);
       setError('Failed to load financial data');
       // Don't throw - allow fallback behavior
       setBalance(0);
@@ -86,13 +82,13 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const refreshBalance = async () => {
+  const refreshBalance = useCallback(async () => {
     await loadFinancialData();
-  };
+  }, [loadFinancialData]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'date'>) => {
+  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'date'>) => {
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -102,9 +98,9 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
       setError(null);
       
       // Optimistic update
-      const newBalance = transaction.type === 'income' 
-        ? balance + transaction.amount 
-        : balance - transaction.amount;
+      setBalance(prev => transaction.type === 'income' 
+        ? prev + transaction.amount 
+        : prev - transaction.amount);
       
       const optimisticTransaction: Transaction = {
         ...transaction,
@@ -112,14 +108,12 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
         date: new Date(),
       };
       
-      setBalance(newBalance);
       setTransactions(prev => [optimisticTransaction, ...prev]);
       
       // Refresh from API to get server-confirmed values
       await loadFinancialData();
       
     } catch (err: any) {
-      console.error('❌ Error adding transaction:', err);
       setError('Failed to add transaction');
       // Revert optimistic update
       await loadFinancialData();
@@ -127,21 +121,20 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, loadFinancialData]);
 
   useEffect(() => {
     loadFinancialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [loadFinancialData]);
 
-  const value = {
+  const value = useMemo(() => ({
     balance,
     transactions,
     addTransaction,
     refreshBalance,
     loading,
     error,
-  };
+  }), [balance, transactions, addTransaction, refreshBalance, loading, error]);
 
   return (
     <FinancialContext.Provider value={value}>

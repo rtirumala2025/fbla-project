@@ -2,12 +2,9 @@
  * DashboardPage - Comprehensive Dashboard
  * Integrates 3D pet visualization, stats, quests, actions, analytics, and accessories
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  UtensilsCrossed, 
-  Gamepad2, 
   Sparkles, 
   TrendingUp, 
   Coins,
@@ -19,7 +16,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePet } from '../context/PetContext';
 import { useToast } from '../contexts/ToastContext';
 import { useFinancial } from '../context/FinancialContext';
-import { Pet3DVisualization } from '../components/pets/Pet3DVisualization';
 import { PetStatsDisplay } from '../components/dashboard/PetStatsDisplay';
 import { QuestBoard } from '../components/quests/QuestBoard';
 import { CoachPanel } from '../components/coach/CoachPanel';
@@ -33,12 +29,17 @@ import type { ActiveQuestsResponse, Quest } from '../types/quests';
 import type { Accessory, AccessoryEquipResponse } from '../types/accessories';
 import type { AnalyticsSnapshot, SnapshotNotification, SnapshotSummary, TrendSeries } from '../types/analytics';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import ExpensePieChart from '../components/analytics/ExpensePieChart';
-import TrendChart from '../components/analytics/TrendChart';
 import { DailyChallengeCard } from '../components/minigames/DailyChallengeCard';
 import { useAccessoriesRealtime } from '../hooks/useAccessoriesRealtime';
 import { shopService } from '../services/shopService';
 import { earnService, type Chore } from '../services/earnService';
+
+// Lazy load heavy components
+const Pet3DVisualization = lazy(() => 
+  import('../components/pets/Pet3DVisualization').then(m => ({ default: m.Pet3DVisualization }))
+);
+const ExpensePieChart = lazy(() => import('../components/analytics/ExpensePieChart'));
+const TrendChart = lazy(() => import('../components/analytics/TrendChart'));
 
 type FoodOption = {
   id: string;
@@ -115,6 +116,7 @@ export function DashboardPage() {
   const isLoadingAnalyticsRef = useRef(false);
 
   // Load data
+  // Individual load functions for manual refresh (keep for refresh buttons)
   const loadQuests = useCallback(async () => {
     if (!currentUser) return;
     setLoadingQuests(true);
@@ -203,7 +205,6 @@ export function DashboardPage() {
       setAnalytics(data);
       logger.logUserAction('analytics_loaded');
     } catch (err) {
-      console.error('Failed to load analytics:', err);
       logger.logInteraction('analytics_load_error', { error: err });
     } finally {
       setLoadingAnalytics(false);
@@ -288,20 +289,82 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (currentUser && pet) {
-      loadQuests();
-      loadCoachAdvice();
-      loadAccessories();
-      loadAnalytics();
-      refreshBalance();
-      
-      // Load chores and their cooldowns
-      if (currentUser?.uid) {
-        earnService.listChores().then(async (choresList) => {
-          setChores(choresList);
+      // Batch all API calls in parallel for faster loading
+      // Priority: Critical data first, then secondary data
+      const loadAllData = async () => {
+        try {
+          // Critical data - load in parallel
+          const [questsData, coachData, accessoriesData, balanceData, choresList] = await Promise.allSettled([
+            fetchActiveQuests().catch(err => {
+              logger.logInteraction('quests_load_error', { error: err });
+              return { daily: [], weekly: [], event: [], refreshed_at: new Date().toISOString() };
+            }),
+            fetchCoachAdvice().catch(err => {
+              logger.logInteraction('coach_advice_error', { error: err });
+              return null;
+            }),
+            fetchAccessories().catch(err => {
+              logger.logInteraction('accessories_load_error', { error: err });
+              return [];
+            }),
+            refreshBalance().catch(() => {
+              // Balance refresh failed - continue without update
+            }),
+            currentUser?.uid ? earnService.listChores().catch(() => {
+              return [];
+            }) : Promise.resolve([]),
+          ]);
+
+          // Update state from settled promises
+          if (questsData.status === 'fulfilled') {
+            setQuests(questsData.value);
+            logger.logUserAction('quests_loaded', { 
+              count: questsData.value.daily.length + questsData.value.weekly.length 
+            });
+          }
+          if (coachData.status === 'fulfilled') {
+            setCoachAdvice(coachData.value);
+            logger.logUserAction('coach_advice_loaded');
+          }
+          if (accessoriesData.status === 'fulfilled') {
+            setAccessories(accessoriesData.value);
+            
+            // Load equipped accessories from Supabase
+            if (pet) {
+              try {
+                const { supabase } = await import('../lib/supabase');
+                const { data: equippedData, error: equippedError } = await supabase
+                  .from('user_accessories')
+                  .select('*')
+                  .eq('pet_id', pet.id)
+                  .eq('equipped', true);
+
+                if (equippedError) {
+                  // Failed to load equipped accessories - continue without them
+                } else if (equippedData) {
+                  const equipped: AccessoryEquipResponse[] = equippedData.map((item) => ({
+                    accessory_id: item.accessory_id,
+                    pet_id: item.pet_id,
+                    equipped: item.equipped,
+                    equipped_color: item.equipped_color,
+                    equipped_slot: item.equipped_slot,
+                    applied_mood: item.applied_mood || 'happy',
+                    updated_at: item.updated_at,
+                  }));
+                  setEquippedAccessories(equipped);
+                }
+              } catch (error) {
+                setEquippedAccessories([]);
+              }
+            }
+            logger.logUserAction('accessories_loaded', { count: accessoriesData.value.length });
+          }
+          if (choresList.status === 'fulfilled' && choresList.value.length > 0 && currentUser?.uid) {
+            setChores(choresList.value);
           
-          // Load cooldowns for all chores
+            // Batch load all cooldowns in parallel (fixes N+1 query pattern)
           try {
-            const cooldownPromises = choresList.map(async (chore) => {
+              const cooldownPromises = choresList.value.map(async (chore) => {
               const cd = await earnService.getChoreCooldown(currentUser.uid, chore.id);
               return [chore.id, cd] as [string, number];
             });
@@ -313,18 +376,29 @@ export function DashboardPage() {
             });
             setChoreCooldowns(cooldowns);
           } catch (err) {
-            console.error('Failed to load chore cooldowns:', err);
+              // Failed to load cooldowns - continue without them
+            }
           }
-        }).catch(err => {
-          console.error('Failed to load chores:', err);
-        });
-      }
+
+          // Secondary data - load analytics after critical data (can be slower)
+          // Analytics is heavy, so load it separately to not block critical UI
+          // Delay analytics load slightly to prioritize critical UI rendering
+          setTimeout(() => {
+            loadAnalytics().catch(() => {
+              // Analytics failed - continue without it
+            });
+          }, 500); // 500ms delay to let critical UI render first
+        } catch (err) {
+          // Error loading dashboard data - continue with partial data
+        }
+      };
+
+      loadAllData();
     }
-  }, [currentUser, pet, loadQuests, loadCoachAdvice, loadAccessories, loadAnalytics, refreshBalance]);
+  }, [currentUser, pet, loadAnalytics, logger]);
 
   // Subscribe to real-time accessory updates
   useAccessoriesRealtime(pet?.id || null, (updatedAccessories) => {
-    console.log('🔄 DashboardPage: Real-time accessory update received', updatedAccessories);
     setEquippedAccessories(updatedAccessories.filter((acc) => acc.equipped));
   });
 
@@ -574,18 +648,24 @@ export function DashboardPage() {
           </div>
         </header>
 
-        {/* Main Grid */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left Column - 3D Pet & Stats */}
-          <div className="lg:col-span-2 space-y-6">
+        {/* Main Grid - Optimized for horizontal space */}
+        <div className="space-y-6">
+          {/* Top Row - Pet View and Stats Side by Side */}
+          <div className="grid gap-6 lg:grid-cols-2">
             {/* 3D Pet Visualization */}
             <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
               <h2 className="mb-4 text-xl font-semibold text-gray-800">3D Pet View</h2>
-              <Pet3DVisualization
-                pet={pet}
-                accessories={equippedAccessories}
-                size="lg"
-              />
+              <React.Suspense fallback={
+                <div className="flex h-[500px] items-center justify-center">
+                  <LoadingSpinner />
+                </div>
+              }>
+                <Pet3DVisualization
+                  pet={pet}
+                  accessories={equippedAccessories}
+                  size="lg"
+                />
+              </React.Suspense>
             </div>
 
             {/* Pet Stats */}
@@ -597,9 +677,11 @@ export function DashboardPage() {
                 xp={pet.experience}
               />
             </div>
+            </div>
 
+          {/* Second Row - Quests and Coach Side by Side */}
+          <div className="grid gap-6 lg:grid-cols-2">
             {/* Quests Section */}
-            <div className="space-y-6">
               <div className="rounded-2xl bg-white p-6 shadow-lg">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
@@ -631,61 +713,10 @@ export function DashboardPage() {
                 isLoading={loadingCoach} 
                 onRefresh={loadCoachAdvice} 
               />
-            </div>
           </div>
 
-          {/* Right Column - Actions & Analytics */}
+          {/* Actions Column - Feed, Play, Earn sections */}
           <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
-              <h2 className="mb-4 text-xl font-semibold text-gray-800">Quick Actions</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleFeed}
-                  disabled={processingAction !== null}
-                  className="flex flex-col items-center gap-2 rounded-xl bg-orange-100 p-4 text-orange-700 transition hover:bg-orange-200 disabled:opacity-50"
-                >
-                  <UtensilsCrossed className="h-6 w-6" />
-                  <span className="text-sm font-medium">Feed</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handlePlay}
-                  disabled={processingAction !== null}
-                  className="flex flex-col items-center gap-2 rounded-xl bg-blue-100 p-4 text-blue-700 transition hover:bg-blue-200 disabled:opacity-50"
-                >
-                  <Gamepad2 className="h-6 w-6" />
-                  <span className="text-sm font-medium">Play</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleBathe}
-                  disabled={processingAction !== null}
-                  className="flex flex-col items-center gap-2 rounded-xl bg-green-100 p-4 text-green-700 transition hover:bg-green-200 disabled:opacity-50"
-                >
-                  <Sparkles className="h-6 w-6" />
-                  <span className="text-sm font-medium">Clean</span>
-                  {processingAction === 'bathe' && <LoadingSpinner size="sm" />}
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleEarn}
-                  disabled={processingAction !== null}
-                  className="flex flex-col items-center gap-2 rounded-xl bg-purple-100 p-4 text-purple-700 transition hover:bg-purple-200 disabled:opacity-50"
-                >
-                  <Coins className="h-6 w-6" />
-                  <span className="text-sm font-medium">Earn</span>
-                </motion.button>
-              </div>
-            </div>
 
             {/* Feed Section */}
             {showFeed && (
@@ -890,31 +921,31 @@ export function DashboardPage() {
             {accessories.length > 0 && (
               <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
                 <h2 className="mb-4 text-xl font-semibold text-gray-800">Accessories</h2>
-                <div className="space-y-2">
+                <div className="grid gap-3 md:grid-cols-3">
                   {accessories.slice(0, 3).map(accessory => (
                     <div
                       key={accessory.accessory_id}
-                      className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
+                      className="flex flex-col items-center justify-between rounded-lg border border-gray-200 p-4 text-center"
                     >
-                      <div>
+                      <div className="mb-2">
                         <div className="text-sm font-medium text-gray-800">{accessory.name}</div>
                         <div className="text-xs text-gray-500">{accessory.type}</div>
                       </div>
                       <button
                         onClick={() => navigate('/avatar')}
-                        className="text-xs text-indigo-600 hover:text-indigo-800"
+                        className="w-full rounded-lg bg-indigo-100 px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-200"
                       >
                         Equip
                       </button>
                     </div>
                   ))}
+                </div>
                   <button
                     onClick={() => navigate('/avatar')}
-                    className="w-full rounded-lg bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-200"
+                  className="mt-4 w-full rounded-lg bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-200"
                   >
                     View All Accessories
                   </button>
-                </div>
               </div>
             )}
           </div>
@@ -991,10 +1022,18 @@ export function DashboardPage() {
 
             {/* Charts */}
             <div className="grid gap-6 lg:grid-cols-2" style={{ contain: 'layout style paint' }}>
-              {formattedSeries.weekly && <TrendChart series={formattedSeries.weekly} color="#6366f1" />}
-              {formattedSeries.health && <TrendChart series={formattedSeries.health} color="#10b981" />}
-              {formattedSeries.monthly && <TrendChart series={formattedSeries.monthly} color="#f97316" />}
-              {analytics.expenses && <ExpensePieChart expenses={analytics.expenses} />}
+              <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200" />}>
+                {formattedSeries.weekly && <TrendChart series={formattedSeries.weekly} color="#6366f1" />}
+              </Suspense>
+              <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200" />}>
+                {formattedSeries.health && <TrendChart series={formattedSeries.health} color="#10b981" />}
+              </Suspense>
+              <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200" />}>
+                {formattedSeries.monthly && <TrendChart series={formattedSeries.monthly} color="#f97316" />}
+              </Suspense>
+              <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200" />}>
+                {analytics.expenses && <ExpensePieChart expenses={analytics.expenses} />}
+              </Suspense>
             </div>
 
             {/* Daily Challenge Card */}

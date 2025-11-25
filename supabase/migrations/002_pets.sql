@@ -37,13 +37,96 @@ CREATE TABLE IF NOT EXISTS public.pets (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 
+-- Add missing columns if table already exists (from migration 004)
+DO $$
+BEGIN
+  -- Add breed if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'breed') THEN
+    ALTER TABLE public.pets ADD COLUMN breed TEXT NOT NULL DEFAULT 'Mixed';
+  END IF;
+  
+  -- Add color_pattern if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'color_pattern') THEN
+    ALTER TABLE public.pets ADD COLUMN color_pattern TEXT NOT NULL DEFAULT 'solid';
+  END IF;
+  
+  -- Add birthday if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'birthday') THEN
+    ALTER TABLE public.pets ADD COLUMN birthday DATE NOT NULL DEFAULT CURRENT_DATE;
+  END IF;
+  
+  -- Add stat columns if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'hunger') THEN
+    ALTER TABLE public.pets ADD COLUMN hunger INTEGER NOT NULL DEFAULT 70 CHECK (hunger BETWEEN 0 AND 100);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'happiness') THEN
+    ALTER TABLE public.pets ADD COLUMN happiness INTEGER NOT NULL DEFAULT 70 CHECK (happiness BETWEEN 0 AND 100);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'cleanliness') THEN
+    ALTER TABLE public.pets ADD COLUMN cleanliness INTEGER NOT NULL DEFAULT 70 CHECK (cleanliness BETWEEN 0 AND 100);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'energy') THEN
+    ALTER TABLE public.pets ADD COLUMN energy INTEGER NOT NULL DEFAULT 70 CHECK (energy BETWEEN 0 AND 100);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'health') THEN
+    ALTER TABLE public.pets ADD COLUMN health INTEGER NOT NULL DEFAULT 80 CHECK (health BETWEEN 0 AND 100);
+  END IF;
+  
+  -- Add timestamp columns if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'last_fed') THEN
+    ALTER TABLE public.pets ADD COLUMN last_fed TIMESTAMPTZ;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'last_played') THEN
+    ALTER TABLE public.pets ADD COLUMN last_played TIMESTAMPTZ;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'last_bathed') THEN
+    ALTER TABLE public.pets ADD COLUMN last_bathed TIMESTAMPTZ;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'last_slept') THEN
+    ALTER TABLE public.pets ADD COLUMN last_slept TIMESTAMPTZ;
+  END IF;
+  
+  -- Add mood column if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'mood') THEN
+    ALTER TABLE public.pets ADD COLUMN mood public.pet_mood NOT NULL DEFAULT 'happy';
+  END IF;
+  
+  -- Add JSONB columns if missing
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'diary') THEN
+    ALTER TABLE public.pets ADD COLUMN diary JSONB NOT NULL DEFAULT '[]'::jsonb;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pets' AND column_name = 'traits') THEN
+    ALTER TABLE public.pets ADD COLUMN traits JSONB NOT NULL DEFAULT '{}'::jsonb;
+  END IF;
+END $$;
+
 DROP TRIGGER IF EXISTS trg_pets_timestamps ON public.pets;
 CREATE TRIGGER trg_pets_timestamps
 BEFORE INSERT OR UPDATE ON public.pets
 FOR EACH ROW EXECUTE FUNCTION public.set_timestamps();
 
 CREATE INDEX IF NOT EXISTS idx_pets_user_id ON public.pets(user_id);
-CREATE INDEX IF NOT EXISTS idx_pets_mood ON public.pets(mood);
+
+-- Only create mood index if mood column exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'pets' 
+    AND column_name = 'mood'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS idx_pets_mood ON public.pets(mood);
+  END IF;
+END $$;
 
 ALTER TABLE public.pets ENABLE ROW LEVEL SECURITY;
 

@@ -25,19 +25,34 @@ export class ApiError extends Error {
   }
 }
 
+// Cache session token to avoid repeated calls
+let cachedToken: string | null = null;
+let tokenExpiry: number = 0;
+const TOKEN_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 async function getSupabaseSessionToken(): Promise<string | null> {
   if (isSupabaseMock()) {
     return null;
   }
 
+  // Return cached token if still valid
+  if (cachedToken && Date.now() < tokenExpiry) {
+    return cachedToken;
+  }
+
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session?.access_token) {
+      cachedToken = null;
+      tokenExpiry = 0;
       return null;
     }
-    return session.access_token;
+    cachedToken = session.access_token;
+    tokenExpiry = Date.now() + TOKEN_CACHE_TTL;
+    return cachedToken;
   } catch (error) {
-    console.warn('Failed to get Supabase session token', error);
+    cachedToken = null;
+    tokenExpiry = 0;
     return null;
   }
 }
@@ -52,7 +67,9 @@ export function getTokens(): AuthTokens | null {
 export function setAuthTokens(newTokens: AuthTokens | null): void {
   // No-op since we're using Supabase session directly
   // This function is kept for backwards compatibility
-  console.warn('setAuthTokens is deprecated. Use Supabase auth session instead.');
+  // Clear token cache when tokens are set
+  cachedToken = null;
+  tokenExpiry = 0;
 }
 
 export function getApiBaseUrl(): string {
@@ -91,64 +108,93 @@ export type RequestOptions = RequestInit & {
   allowedStatuses?: number[];
 };
 
+// Request deduplication: prevent multiple identical requests
+const pendingRequests = new Map<string, Promise<unknown>>();
+
 export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { skipAuth = false, retry = true, allowedStatuses = [] } = options;
-  const headers = new Headers(options.headers ?? {});
+  // Create a unique key for this request
+  const requestKey = `${options.method || 'GET'}:${path}:${JSON.stringify(options.body || {})}`;
+  
+  // If the same request is already pending, return that promise
+  const pendingRequest = pendingRequests.get(requestKey);
+  if (pendingRequest) {
+    return pendingRequest as Promise<T>;
+  }
+  // Create the request promise
+  const requestPromise: Promise<T> = (async () => {
+    const { skipAuth = false, retry = true, allowedStatuses = [] } = options;
+    const headers = new Headers(options.headers ?? {});
 
-  // Get Supabase session token if auth is needed
-  if (!skipAuth) {
-    const token = await getSupabaseSessionToken();
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
+    // Get Supabase session token if auth is needed
+    if (!skipAuth) {
+      const token = await getSupabaseSessionToken();
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
     }
-  }
 
-  if (options.body && !(options.body instanceof FormData)) {
-    headers.set('Content-Type', headers.get('Content-Type') || 'application/json');
-  }
-
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      ...options,
-      headers,
-    });
-  } catch (error: any) {
-    // Handle network errors (connection refused, timeout, etc.)
-    if (error.message === 'Failed to fetch' || 
-        error.code === 'ECONNREFUSED' || 
-        error.message?.includes('ERR_CONNECTION_REFUSED') ||
-        error.message?.includes('NetworkError')) {
-      throw new ApiError(0, 'Network error: Backend server is not available', { networkError: true });
+    if (options.body && !(options.body instanceof FormData)) {
+      headers.set('Content-Type', headers.get('Content-Type') || 'application/json');
     }
-    // Re-throw other errors
-    throw error;
-  }
 
-  if (allowedStatuses.includes(response.status)) {
-    return (await safeParse(response)) as T;
-  }
-
-  // Try to refresh Supabase session on 401
-  if (response.status === 401 && !skipAuth && retry && !isSupabaseMock()) {
+    let response: Response;
     try {
-      await refreshSupabaseSession();
-      // Retry request with new token
-      return apiRequest(path, { ...options, retry: false });
-    } catch (refreshError) {
-      // Refresh failed, throw the original 401 error
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+        headers,
+      });
+    } catch (error: any) {
+      // Handle network errors (connection refused, timeout, etc.)
+      if (error.message === 'Failed to fetch' || 
+          error.code === 'ECONNREFUSED' || 
+          error.message?.includes('ERR_CONNECTION_REFUSED') ||
+          error.message?.includes('NetworkError')) {
+        throw new ApiError(0, 'Network error: Backend server is not available', { networkError: true });
+      }
+      // Re-throw other errors
+      throw error;
     }
-  }
 
-  if (!response.ok) {
-    throw new ApiError(response.status, 'API request failed', await safeParse(response));
-  }
+    if (allowedStatuses.includes(response.status)) {
+      return (await safeParse(response)) as T;
+    }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+    // Try to refresh Supabase session on 401
+    if (response.status === 401 && !skipAuth && retry && !isSupabaseMock()) {
+      try {
+        await refreshSupabaseSession();
+        // Retry request with new token
+        return apiRequest(path, { ...options, retry: false });
+      } catch (refreshError) {
+        // Refresh failed, throw the original 401 error
+      }
+    }
 
-  return (await safeParse(response)) as T;
+    if (!response.ok) {
+      throw new ApiError(response.status, 'API request failed', await safeParse(response));
+    }
+
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    return (await safeParse(response)) as T;
+  })();
+
+  // Store the pending request
+  pendingRequests.set(requestKey, requestPromise);
+
+  // Clean up after request completes
+  requestPromise
+    .finally(() => {
+      pendingRequests.delete(requestKey);
+    })
+    .catch(() => {
+      // Error already handled, just clean up
+      pendingRequests.delete(requestKey);
+    });
+
+  return requestPromise;
 }
 
 export async function unauthenticatedRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -156,8 +202,9 @@ export async function unauthenticatedRequest<T = unknown>(path: string, options:
 }
 
 export function clearAuthTokens(): void {
-  // No-op since we're using Supabase session directly
+  // Clear cached token
+  cachedToken = null;
+  tokenExpiry = 0;
   // To sign out, use supabase.auth.signOut() instead
-  console.warn('clearAuthTokens is deprecated. Use supabase.auth.signOut() instead.');
 }
 

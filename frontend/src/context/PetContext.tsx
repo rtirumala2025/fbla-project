@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Pet, PetStats } from '@/types/pet';
 import { supabase, isSupabaseMock, withTimeout } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -208,7 +208,6 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       
       // All retries failed
       setError('Failed to load pet data after retries');
-      console.error('❌ PetContext: All retry attempts failed', lastError);
     } finally {
       setLoading(false);
     }
@@ -235,16 +234,11 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           filter: `user_id=eq.${userId}`,
         },
         async (payload) => {
-          console.log('🔄 PetContext: Pet change detected, refreshing...', payload.eventType);
           // Reload pet data from Supabase
           await loadPet();
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ PetContext: Realtime subscription active');
-        }
-      });
+      .subscribe();
 
     return () => {
       channel.unsubscribe();
@@ -550,7 +544,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     });
   }, [pet, updatePetStats]);
 
-  const value = {
+  const value = useMemo(() => ({
     pet,
     loading,
     error,
@@ -562,7 +556,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     rest,
     createPet,
     refreshPet: loadPet,
-  };
+  }), [pet, loading, error, updating, updatePetStats, feed, play, bathe, rest, createPet, loadPet]);
 
   return (
     <PetContext.Provider value={value}>

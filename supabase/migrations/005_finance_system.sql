@@ -38,9 +38,19 @@ CREATE TABLE IF NOT EXISTS public.finance_goals (
 ALTER TABLE public.finance_wallets
   DROP CONSTRAINT IF EXISTS fk_finance_wallet_active_goal;
 
-ALTER TABLE public.finance_wallets
-  ADD CONSTRAINT fk_finance_wallet_active_goal
-    FOREIGN KEY (active_goal_id) REFERENCES public.finance_goals(id) ON DELETE SET NULL;
+-- Use DO block to check if constraint exists before adding it
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'fk_finance_wallet_active_goal' 
+    AND conrelid = 'public.finance_wallets'::regclass
+  ) THEN
+    ALTER TABLE public.finance_wallets
+      ADD CONSTRAINT fk_finance_wallet_active_goal
+        FOREIGN KEY (active_goal_id) REFERENCES public.finance_goals(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
 DROP TRIGGER IF EXISTS trg_finance_wallets_timestamps ON public.finance_wallets;
 CREATE TRIGGER trg_finance_wallets_timestamps
@@ -211,6 +221,25 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Backward compatibility views for Supabase client code.
+-- Drop existing tables if they exist (from old schema) before creating views
+DO $$
+BEGIN
+  -- Drop shop_items table if it exists (will be replaced with view)
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'shop_items' AND table_type = 'BASE TABLE') THEN
+    DROP TABLE public.shop_items CASCADE;
+  END IF;
+  
+  -- Drop pet_inventory table if it exists (will be replaced with view)
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'pet_inventory' AND table_type = 'BASE TABLE') THEN
+    DROP TABLE public.pet_inventory CASCADE;
+  END IF;
+  
+  -- Drop transactions table if it exists (will be replaced with view)
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'transactions' AND table_type = 'BASE TABLE') THEN
+    DROP TABLE public.transactions CASCADE;
+  END IF;
+END $$;
+
 CREATE OR REPLACE VIEW public.shop_items AS
 SELECT
   id,

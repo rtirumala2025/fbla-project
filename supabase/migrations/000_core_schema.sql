@@ -65,12 +65,22 @@ BEFORE INSERT ON public.users
 FOR EACH ROW EXECUTE FUNCTION public.ensure_auth_link();
 
 -- Foreign key to Supabase auth (deferrable to allow transaction ordering).
-ALTER TABLE public.users
-  ADD CONSTRAINT IF NOT EXISTS fk_users_auth_user
-  FOREIGN KEY (auth_user_id)
-  REFERENCES auth.users(id)
-  ON DELETE CASCADE
-  DEFERRABLE INITIALLY DEFERRED;
+-- Use DO block to check if constraint exists before adding it
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'fk_users_auth_user' 
+    AND conrelid = 'public.users'::regclass
+  ) THEN
+    ALTER TABLE public.users
+      ADD CONSTRAINT fk_users_auth_user
+      FOREIGN KEY (auth_user_id)
+      REFERENCES auth.users(id)
+      ON DELETE CASCADE
+      DEFERRABLE INITIALLY DEFERRED;
+  END IF;
+END $$;
 
 -- Keep application table in sync when Supabase auth.users changes.
 CREATE OR REPLACE FUNCTION public.sync_from_auth_users()
