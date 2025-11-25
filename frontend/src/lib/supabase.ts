@@ -36,9 +36,20 @@ export const supabase = supabaseUrl && supabaseAnonKey
         persistSession: true, // Required: Persist session to localStorage
         autoRefreshToken: true, // Required: Auto-refresh expired tokens
         detectSessionInUrl: true, // Required: Automatically detect and process OAuth callback from URL hash
+        storage: window.localStorage, // Explicit storage
       },
     })
   : createMockClient();
+
+// Log the actual anon key being used (first 50 chars for security)
+if (supabaseUrl && supabaseAnonKey) {
+  const anonPreview = supabaseAnonKey.substring(0, 50) + '...';
+  logger.info('Supabase client using anon key', { 
+    url: supabaseUrl, 
+    anonKeyPreview: anonPreview,
+    anonKeyLength: supabaseAnonKey.length 
+  });
+}
 
 // Runtime assertion logging for debugging
 if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
@@ -48,11 +59,38 @@ if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_
     useMock: process.env.REACT_APP_USE_MOCK || 'false',
   });
 } else {
-  logger.info('Supabase client initialized', {
-    sessionPersistence: true,
+  // Decode anon key to verify project match
+  try {
+    const anonKeyParts = process.env.REACT_APP_SUPABASE_ANON_KEY.split('.');
+    if (anonKeyParts.length === 3) {
+      const anonPayload = JSON.parse(atob(anonKeyParts[1]));
+      const urlProjectRef = supabaseUrl.split('//')[1]?.split('.')[0];
+      const anonProjectRef = anonPayload.ref;
+      
+      logger.info('Supabase client initialized', {
+        sessionPersistence: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
-  });
+        detectSessionInUrl: true,
+        urlProjectRef,
+        anonKeyProjectRef: anonProjectRef,
+        projectMatch: urlProjectRef === anonProjectRef,
+      });
+      
+      if (urlProjectRef !== anonProjectRef) {
+        console.error('⚠️ WARNING: Supabase URL project does not match anon key project!', {
+          urlProject: urlProjectRef,
+          anonKeyProject: anonProjectRef,
+        });
+      }
+    }
+  } catch (e) {
+    // Couldn't decode, but continue anyway
+    logger.info('Supabase client initialized', {
+      sessionPersistence: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    });
+  }
 }
 
 export const isSupabaseMock = (): boolean => {

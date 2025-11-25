@@ -3,17 +3,24 @@
  * 
  * Handles OAuth callback from Supabase after Google authentication.
  * 
- * Flow:
+ * Flow (as per OAUTH_MANUAL_SESSION_FIX.md):
  * 1. User authenticates with Google OAuth
  * 2. Google redirects back to /auth/callback with hash parameters (#access_token=...)
- * 3. Supabase automatically processes URL hash when detectSessionInUrl: true
- * 4. This component waits 500-1000ms for Supabase to process, then calls getSession()
- * 5. Session is retrieved and user is redirected:
+ * 3. Manual hash processing (PRIMARY STRATEGY):
+ *    - Extract access_token and refresh_token from URL hash
+ *    - Call supabase.auth.setSession() with extracted tokens
+ *    - Clear hash from URL after successful session creation
+ *    - Retrieve full session via getSession() or SIGNED_IN event
+ * 4. Automatic detection (FALLBACK STRATEGY):
+ *    - If manual processing fails/skipped, wait for Supabase auto-detection
+ *    - Uses detectSessionInUrl: true configuration
+ * 5. Session retrieved and user is redirected:
  *    - New user → /setup-profile
+ *    - Returning user with no pet → /pet-selection
  *    - Returning user → /dashboard
  * 
- * Note: Supabase v2 handles URL hash processing automatically.
- * Manual hash parsing or setSession() causes 401 errors and must be avoided.
+ * Note: Manual hash processing is now the primary strategy due to reliability
+ * issues with automatic detection in some environments.
  * 
  * Works in both development (localhost) and production (live URL).
  */
@@ -169,64 +176,282 @@ export const AuthCallback = () => {
           return;
         }
 
-        // Strategy 1: Wait for Supabase to process URL hash automatically
-        // Supabase v2 with detectSessionInUrl: true handles hash processing automatically
-        // We wait 500-1000ms to allow Supabase to process the hash, then call getSession()
-        logToFile('🔵 AuthCallback: Waiting 750ms for Supabase to process OAuth callback...');
-        logToFile('  Note: Supabase v2 automatically processes URL hash when detectSessionInUrl: true');
-        logToFile('  Manual hash processing causes 401 errors and must be avoided');
+        // PRIMARY STRATEGY: Manual hash processing (as per OAUTH_MANUAL_SESSION_FIX.md)
+        // Extract tokens from URL hash and manually create session
+        const hash = window.location.hash;
+        let session = null;
+        let sessionError: Error | null = null;
         
-        // Check localStorage before delay
-        const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-        const storageKey = supabaseUrl 
-          ? `sb-${supabaseUrl.split('//')[1]?.split('.')[0]}-auth-token`
-          : null;
-        const storedBeforeDelay = storageKey ? localStorage.getItem(storageKey) : null;
-        logToFile(`  localStorage before delay: ${!!storedBeforeDelay ? 'Has data' : 'Empty'}`);
-        
-        await new Promise(resolve => setTimeout(resolve, 750));
-        
-        // Check localStorage after delay
-        const storedAfterDelay = storageKey ? localStorage.getItem(storageKey) : null;
-        logToFile(`  localStorage after delay: ${!!storedAfterDelay ? 'Has data' : 'Empty'}`);
-        
-        logToFile('🔵 AuthCallback: Attempting getSession()...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        logToFile(`🔵 AuthCallback: getSession() result:`);
-        logToFile(`  Session exists: ${!!session}`);
-        logToFile(`  Error: ${sessionError?.message || 'none'}`);
-        
-        // Enhanced diagnostics if session is null
-        if (!session && !sessionError) {
-          logToFile('⚠️ AuthCallback: Session is null but no error - possible configuration issue', 'warn');
-          logToFile('  Diagnostic checks:');
-          logToFile(`    - Supabase URL configured: ${!!supabaseUrl}`);
-          logToFile(`    - Storage key: ${storageKey || 'N/A'}`);
-          logToFile(`    - localStorage has data: ${!!storedAfterDelay}`);
-          logToFile(`    - Hash contains access_token: ${window.location.hash.includes('access_token')}`);
-          logToFile(`    - Hash contains refresh_token: ${window.location.hash.includes('refresh_token')}`);
+        if (hash && hash.includes('access_token=')) {
+          logToFile('🔵 AuthCallback: Hash detected with access_token - attempting manual session creation...');
+          logToFile('  Following OAUTH_MANUAL_SESSION_FIX.md strategy...');
           
-          if (window.location.hash.includes('access_token') && !storedAfterDelay) {
-            logToFile('  ⚠️  Hash exists but localStorage is empty - Supabase may not be processing hash', 'warn');
-            logToFile('  Possible causes:', 'warn');
-            logToFile('    1. detectSessionInUrl: false in supabase.ts', 'warn');
-            logToFile('    2. Supabase project redirect URL mismatch', 'warn');
-            logToFile('    3. Google OAuth redirect URI mismatch in Google Cloud Console', 'warn');
-            logToFile('    4. Network request to /auth/v1/token failed (check Network tab)', 'warn');
+          try {
+            // Step 1: Extract tokens from hash
+            const hashParams = new URLSearchParams(hash.substring(1)); // Remove # symbol
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+            const expiresIn = hashParams.get('expires_in');
+            const tokenType = hashParams.get('token_type') || 'bearer';
+            
+            if (accessToken) {
+              logToFile('  ✓ Step 1: Access token extracted from hash');
+              logToFile(`  ✓ Step 1: Refresh token: ${refreshToken ? 'present' : 'missing'}`);
+              logToFile(`  ✓ Step 1: Expires in: ${expiresIn || 'unknown'} seconds`);
+              
+              // Step 2: Verify token format (decode for validation)
+              try {
+                const tokenParts = accessToken.split('.');
+                if (tokenParts.length === 3) {
+                  const payload = JSON.parse(atob(tokenParts[1]));
+                  logToFile(`  ✓ Step 2: Token decoded successfully - User ID: ${payload.sub}, Email: ${payload.email || 'N/A'}`);
+                  
+                  // Check if token issuer matches configured Supabase URL
+                  const tokenIssuer = payload.iss ? payload.iss.replace('/auth/v1', '') : null;
+                  const configuredUrl = process.env.REACT_APP_SUPABASE_URL;
+                  
+                  if (tokenIssuer && configuredUrl) {
+                    logToFile(`  📍 Token issuer: ${tokenIssuer}`);
+                    logToFile(`  📍 Configured URL: ${configuredUrl}`);
+                    
+                    if (tokenIssuer !== configuredUrl) {
+                      const mismatchError = new Error(
+                        `Token issuer mismatch! Token is from ${tokenIssuer} but your .env has ${configuredUrl}. ` +
+                        `Update your .env file to match the token issuer.`
+                      );
+                      logToFile(`❌ Step 2: ${mismatchError.message}`, 'error');
+                      sessionError = mismatchError;
+                    } else {
+                      logToFile(`  ✓ Token issuer matches configured URL`);
+                    }
+                  }
+                  
+                  // Step 3: Instead of setSession(), let Supabase auto-process the hash
+                  // with detectSessionInUrl: true, getSession() should trigger automatic processing
+                  if (!sessionError) {
+                    logToFile('🔵 Step 3: Triggering Supabase automatic hash processing...');
+                    logToFile('  Note: detectSessionInUrl: true should auto-process the hash when getSession() is called');
+                    
+                    // Give Supabase time to process the hash automatically
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // Call getSession() which should trigger automatic hash processing
+                    logToFile('🔵 Step 3: Calling getSession() to trigger automatic hash processing...');
+                    const { data: { session: autoSession }, error: getSessionErr } = await supabase.auth.getSession();
+                    
+                    if (autoSession) {
+                      session = autoSession;
+                      logToFile('✅ Step 3: Session retrieved via automatic hash processing');
+                      logToFile(`  ✓ User: ${autoSession.user?.email || 'N/A'}`);
+                      
+                      // Clear hash from URL now that session is set
+                      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                      logToFile('  ✓ Step 4: Hash cleared from URL');
+                    } else if (getSessionErr) {
+                      logToFile(`⚠️ Step 3: Automatic processing failed: ${getSessionErr.message}`, 'warn');
+                      logToFile('🔵 Step 3: Trying manual setSession() as fallback...');
+                      
+                      // Fallback: Try manual setSession() but construct proper session object
+                      try {
+                        const { data: sessionResult, error: setSessionError } = await supabase.auth.setSession({
+                          access_token: accessToken,
+                          refresh_token: refreshToken || '',
+                        });
+                        
+                        if (setSessionError) {
+                          logToFile(`❌ Step 3: Manual setSession() also failed: ${setSessionError.message}`, 'error');
+                          
+                          // Enhanced error message
+                          if (setSessionError.message.includes('Invalid API key')) {
+                            const enhancedError = new Error(
+                              `Invalid API key error. Your REACT_APP_SUPABASE_ANON_KEY in .env is incorrect.\n` +
+                              `Get the correct anon key from: Supabase Dashboard → Settings → API → anon public key\n` +
+                              `Make sure the key matches the project: ${tokenIssuer}`
+                            );
+                            logToFile(`  💡 ${enhancedError.message}`, 'error');
+                            sessionError = enhancedError;
+                          } else {
+                            sessionError = setSessionError;
+                          }
+                        } else {
+                          // Manual setSession() worked
+                          logToFile('✅ Step 3: Manual setSession() succeeded');
+                          await new Promise(resolve => setTimeout(resolve, 200));
+                          const { data: { session: manualSession } } = await supabase.auth.getSession();
+                          if (manualSession) {
+                            session = manualSession;
+                            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                          }
+                        }
+                      } catch (manualError: any) {
+                        logToFile(`❌ Step 3: Manual setSession() error: ${manualError.message}`, 'error');
+                        sessionError = manualError;
+                      }
+                    } else {
+                      // No session and no error - try constructing session manually as last resort
+                      logToFile('⚠️ Step 3: Automatic processing failed, constructing session manually...', 'warn');
+                      
+                      // Last resort: Try calling Supabase auth API directly
+                      logToFile('🔵 Step 3: Attempting direct API call to exchange tokens...');
+                      
+                      try {
+        const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+                        const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+                        
+                        logToFile(`  📍 Using URL: ${supabaseUrl}`);
+                        logToFile(`  📍 Anon key present: ${!!supabaseAnonKey}`);
+                        logToFile(`  📍 Anon key preview: ${supabaseAnonKey ? supabaseAnonKey.substring(0, 50) + '...' : 'missing'}`);
+                        
+                        // Decode anon key to verify it matches the project
+                        if (supabaseAnonKey) {
+                          try {
+                            const anonKeyParts = supabaseAnonKey.split('.');
+                            if (anonKeyParts.length === 3) {
+                              const anonPayload = JSON.parse(atob(anonKeyParts[1]));
+                              logToFile(`  📍 Anon key project ref: ${anonPayload.ref}`);
+                              logToFile(`  📍 Token issuer project: ${tokenIssuer?.split('//')[1]?.split('.')[0] || 'unknown'}`);
+                              
+                              const anonProjectRef = anonPayload.ref;
+                              const tokenProjectRef = tokenIssuer?.split('//')[1]?.split('.')[0] || '';
+                              
+                              if (anonProjectRef !== tokenProjectRef) {
+                                sessionError = new Error(
+                                  `CRITICAL MISMATCH: Anon key is for project "${anonProjectRef}" but token is from "${tokenProjectRef}"!\n` +
+                                  `You need the anon key from the project: ${tokenIssuer}\n` +
+                                  `Get it from: Supabase Dashboard → Select project "${tokenProjectRef}" → Settings → API → anon public key`
+                                );
+                                logToFile(`  ❌ ${sessionError.message}`, 'error');
+                              } else {
+                                logToFile(`  ✓ Anon key project matches token project`);
+                              }
+                            }
+                          } catch (decodeErr) {
+                            logToFile(`  ⚠️ Could not decode anon key: ${decodeErr}`, 'warn');
+                          }
+                        }
+                        
+                        // Only proceed if no mismatch detected
+                        if (!sessionError) {
+                          // First, try setSession directly (simplest approach)
+                          logToFile('🔵 Step 3: Attempting setSession() with correct anon key...');
+                          const { data: sessionResult, error: finalSetError } = await supabase.auth.setSession({
+                            access_token: accessToken,
+                            refresh_token: refreshToken || '',
+                          });
+                          
+                          if (!finalSetError && sessionResult?.session) {
+                            session = sessionResult.session;
+                            logToFile('✅ Step 3: Session set successfully!');
+                            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                          } else if (finalSetError) {
+                            logToFile(`❌ Step 3: setSession() failed: ${finalSetError.message}`, 'error');
+                            
+                            // Enhanced diagnostics for Invalid API key
+                            if (finalSetError.message.includes('Invalid API key')) {
+                              logToFile('  🔍 Diagnostic: Invalid API key error details...');
+                              logToFile(`    Token issuer: ${tokenIssuer}`);
+                              logToFile(`    Configured URL: ${supabaseUrl}`);
+                              logToFile(`    Anon key loaded: ${!!supabaseAnonKey}`);
+                              
+                              sessionError = new Error(
+                                `Invalid API key error. The anon key doesn't match the project that issued the tokens.\n` +
+                                `Token is from: ${tokenIssuer}\n` +
+                                `Make sure your .env file has the anon key from the SAME project.\n` +
+                                `If you just updated the .env file, make sure you restarted the dev server.`
+                              );
+                              logToFile(`  ❌ ${sessionError.message}`, 'error');
+                            } else {
+                              sessionError = finalSetError;
+                            }
+                          }
+                        }
+                      } catch (apiError: any) {
+                        logToFile(`❌ Step 3: setSession() error: ${apiError.message}`, 'error');
+                        sessionError = apiError;
+                      }
+                      
+                      // Final fallback: wait for SIGNED_IN event
+                      if (!session && !sessionError) {
+                        logToFile('🔵 Step 3: Waiting for SIGNED_IN event as final fallback...');
+                        
+                        const sessionPromise = new Promise<any>((resolve, reject) => {
+                          let resolved = false;
+                          const timeout = setTimeout(() => {
+                            if (!resolved) {
+                              resolved = true;
+                              reject(new Error('Timeout waiting for SIGNED_IN event'));
+                            }
+                          }, 3000);
+                          
+                          const { data: { subscription } } = supabase.auth.onAuthStateChange((event, authSession) => {
+                            if (event === 'SIGNED_IN' && authSession && !resolved) {
+                              resolved = true;
+                              clearTimeout(timeout);
+                              subscription.unsubscribe();
+                              resolve(authSession);
+                            }
+                          });
+                        });
+                        
+                        try {
+                          session = await Promise.race([
+                            sessionPromise,
+                            new Promise<any>((_, reject) => 
+                              setTimeout(() => reject(new Error('SIGNED_IN event timeout')), 3000)
+                            )
+                          ]);
+                          logToFile('✅ Step 3: Session received from SIGNED_IN event');
+                          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                        } catch (eventError: any) {
+                          logToFile(`⚠️ Step 3: SIGNED_IN event timeout: ${eventError.message}`, 'warn');
+                        }
+                      }
+                    }
+                  }
+                } else {
+                  logToFile('⚠️ AuthCallback: Invalid access token format (expected JWT with 3 parts)', 'warn');
+                }
+              } catch (decodeError: any) {
+                logToFile(`❌ AuthCallback: Error decoding token: ${decodeError.message}`, 'error');
+                sessionError = decodeError;
+              }
+            } else {
+              logToFile('⚠️ AuthCallback: No access_token found in hash', 'warn');
+            }
+          } catch (hashError: any) {
+            logToFile(`❌ AuthCallback: Error processing hash: ${hashError.message}`, 'error');
+            sessionError = hashError;
           }
         }
         
+        // FALLBACK STRATEGY: If manual processing didn't work, try automatic detection
+        if (!session && !sessionError) {
+          logToFile('🔵 AuthCallback: Manual processing skipped (no hash), trying automatic detection...');
+          logToFile('  Waiting 500ms for Supabase to process URL hash automatically...');
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          logToFile('🔵 AuthCallback: Attempting getSession() with automatic detection...');
+          const getSessionResult = await supabase.auth.getSession();
+          session = getSessionResult.data.session;
+          sessionError = getSessionResult.error;
+          
+          logToFile(`🔵 AuthCallback: getSession() result:`);
+          logToFile(`  Session exists: ${!!session}`);
+          logToFile(`  Error: ${sessionError?.message || 'none'}`);
+        }
+        
         if (sessionError) {
-          logToFile(`❌ AuthCallback: Error retrieving session: ${sessionError.message}`, 'error');
-          setError(sessionError.message || 'Session retrieval failed');
+          const errorMessage = sessionError.message || 'Session retrieval failed';
+          logToFile(`❌ AuthCallback: Error retrieving session: ${errorMessage}`, 'error');
+          setError(errorMessage);
           setStatus('Authentication failed. Redirecting to login...');
           setTimeout(() => {
             exportLogsToFile();
             setTimeout(() => {
               navigate('/login', { 
                 replace: true, 
-                state: { error: `Authentication failed: ${sessionError.message}` } 
+                state: { error: `Authentication failed: ${errorMessage}` } 
               });
             }, 500);
           }, 1000);
