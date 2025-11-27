@@ -178,28 +178,28 @@ export async function updatePet(data: PetUpdateRequest): Promise<Pet> {
 }
 
 export async function feedPetAction(foodType: string): Promise<PetActionResponse> {
-  return apiRequest<PetActionResponse>(`${BASE_PATH}/actions/feed`, {
+  return apiRequest<PetActionResponse>(`${BASE_PATH}/feed`, {
     method: 'POST',
     body: JSON.stringify({ food_type: foodType }),
   });
 }
 
 export async function playWithPet(gameType: string): Promise<PetActionResponse> {
-  return apiRequest<PetActionResponse>(`${BASE_PATH}/actions/play`, {
+  return apiRequest<PetActionResponse>(`${BASE_PATH}/play`, {
     method: 'POST',
     body: JSON.stringify({ game_type: gameType }),
   });
 }
 
 export async function bathePetAction(): Promise<PetActionResponse> {
-  return apiRequest<PetActionResponse>(`${BASE_PATH}/actions/bathe`, {
+  return apiRequest<PetActionResponse>(`${BASE_PATH}/bathe`, {
     method: 'POST',
     body: JSON.stringify({} as PetActionRequest),
   });
 }
 
 export async function restPetAction(durationHours: number): Promise<PetActionResponse> {
-  return apiRequest<PetActionResponse>(`${BASE_PATH}/actions/rest`, {
+  return apiRequest<PetActionResponse>(`${BASE_PATH}/rest`, {
     method: 'POST',
     body: JSON.stringify({ duration_hours: durationHours }),
   });
@@ -258,7 +258,7 @@ export async function parsePetAICommand(payload: { command_text: string }): Prom
   // AI command parsing requires backend AI service
   // No mock fallback - must use backend API
   try {
-    return await apiRequest<PetCommandResponse>(`${BASE_PATH}/ai/parse`, {
+    return await apiRequest<PetCommandResponse>(`${BASE_PATH}/ai/command`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });

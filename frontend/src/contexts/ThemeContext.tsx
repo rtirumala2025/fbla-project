@@ -4,7 +4,7 @@
  * Removed localStorage - preferences stored in component state
  * Future: Will sync to Supabase user_preferences table when table is extended with theme/color_blind_mode columns
  */
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 
 export type Theme = 'light' | 'dark';
 
@@ -53,51 +53,33 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [colorBlindMode]);
 
-  // Listen to system theme changes
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const handler = (event: MediaQueryListEvent) => {
-      // Only auto-switch if user hasn't manually set a preference
-      // For now, just listen - user can manually toggle
-    };
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
-  }, []);
-
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
     // TODO: Sync to Supabase user_preferences table when table is extended with theme column
-  };
+  }, []);
 
-  const setColorBlindMode = (newMode: boolean) => {
+  const setColorBlindMode = useCallback((newMode: boolean) => {
     setColorBlindModeState(newMode);
     // TODO: Sync to Supabase user_preferences table when table is extended with color_blind_mode column
-  };
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const handler = (event: MediaQueryListEvent) => {
-      setTheme(event.matches ? 'dark' : 'light');
-    };
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
   }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  }, [theme, setTheme]);
+
+  const toggleColorBlindMode = useCallback(() => {
+    setColorBlindMode(!colorBlindMode);
+  }, [colorBlindMode, setColorBlindMode]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
       theme,
       colorBlindMode,
-      toggleTheme: () => setTheme(theme === 'light' ? 'dark' : 'light'),
-      toggleColorBlindMode: () => setColorBlindMode(!colorBlindMode),
+      toggleTheme,
+      toggleColorBlindMode,
       setTheme,
     }),
-    [theme, colorBlindMode],
+    [theme, colorBlindMode, toggleTheme, toggleColorBlindMode, setTheme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

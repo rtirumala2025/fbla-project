@@ -107,7 +107,8 @@ export function PetCarePanel() {
     }, 60000);
 
     return () => clearInterval(refreshInterval);
-  }, [loadCareData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // loadCareData is stable, only run interval setup once
 
   const handleAction = useCallback(
     async (action: CareAction, arg?: string | number) => {

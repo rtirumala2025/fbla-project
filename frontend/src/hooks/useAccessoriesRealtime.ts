@@ -29,7 +29,6 @@ export const useAccessoriesRealtime = (
 
   useEffect(() => {
     if (!petId || isSupabaseMock()) {
-      console.log('⚠️ useAccessoriesRealtime: Skipping realtime (no petId or mock mode)');
       return;
     }
 
@@ -45,7 +44,6 @@ export const useAccessoriesRealtime = (
           .eq('pet_id', petId);
 
         if (initialError) {
-          console.error('❌ useAccessoriesRealtime: Failed to load initial accessories', initialError);
           return;
         }
 
@@ -60,10 +58,6 @@ export const useAccessoriesRealtime = (
             updated_at: item.updated_at,
           }));
           callbackRef.current(accessories);
-          console.log('✅ useAccessoriesRealtime: Initial accessories loaded', {
-            petId,
-            count: accessories.length,
-          });
         }
 
         // Setup realtime subscription
@@ -139,7 +133,7 @@ export const useAccessoriesRealtime = (
 
         channelRef.current = channel;
       } catch (error) {
-        console.error('❌ useAccessoriesRealtime: Setup error', error);
+        // Setup error - continue silently
       }
     };
 
@@ -148,7 +142,6 @@ export const useAccessoriesRealtime = (
     return () => {
       isActive = false;
       if (channelRef.current) {
-        console.log('🔵 useAccessoriesRealtime: Unsubscribing from realtime', { petId });
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }

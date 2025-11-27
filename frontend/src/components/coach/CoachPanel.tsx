@@ -4,6 +4,7 @@
  */
 import { AnimatePresence, motion } from 'framer-motion';
 import { Brain, Loader2 } from 'lucide-react';
+import { memo } from 'react';
 import type { CoachAdviceResponse } from '../../types/quests';
 
 interface CoachPanelProps {
@@ -12,7 +13,7 @@ interface CoachPanelProps {
   onRefresh: () => void;
 }
 
-export const CoachPanel = ({ advice, isLoading, onRefresh }: CoachPanelProps) => {
+export const CoachPanel = memo(({ advice, isLoading, onRefresh }: CoachPanelProps) => {
   return (
     <div className="rounded-3xl border border-slate-100 bg-gradient-to-br from-indigo-50 via-white to-white p-6 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -70,7 +71,15 @@ export const CoachPanel = ({ advice, isLoading, onRefresh }: CoachPanelProps) =>
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if advice or loading state changes
+  return (
+    prevProps.isLoading === nextProps.isLoading &&
+    JSON.stringify(prevProps.advice) === JSON.stringify(nextProps.advice)
+  );
+});
+
+CoachPanel.displayName = 'CoachPanel';
 
 export default CoachPanel;
 

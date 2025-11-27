@@ -165,9 +165,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Fallback timeout to ensure loading never gets stuck
     const fallbackTimeout = setTimeout(() => {
-      console.warn('⏰ AuthContext: Fallback timeout - forcing loading to false');
       setLoading(false);
-    }, 10000); // 10 second timeout
+    }, 3000); // 3 second timeout for localhost
     
     // Get initial session - this restores the session from localStorage
     (async () => {
@@ -346,6 +345,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           onboardingLogger.realtimeEvent('Cleaning up pet subscription - user logged out');
           petSubscriptionRef.current.unsubscribe();
           petSubscriptionRef.current = null;
+        }
+        
+        // Explicitly handle SIGNED_OUT event
+        if (event === 'SIGNED_OUT') {
+          onboardingLogger.authStateChange('SIGNED_OUT event received - clearing all state');
+          setCurrentUser(null);
+          setIsNewUser(false);
+          setHasPet(false);
+          setLoading(false);
         }
       }
     });
@@ -547,21 +555,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    // Mock sign out for development
-    if (process.env.REACT_APP_USE_MOCK === 'true') {
+    try {
+      // Mock sign out for development
+      if (process.env.REACT_APP_USE_MOCK === 'true') {
+        setCurrentUser(null);
+        setIsNewUser(false);
+        setHasPet(false);
+        setLoading(false);
+        return;
+      }
+
+      // Clear pet subscription before signing out
+      if (petSubscriptionRef.current) {
+        onboardingLogger.realtimeEvent('Cleaning up pet subscription before sign out');
+        petSubscriptionRef.current.unsubscribe();
+        petSubscriptionRef.current = null;
+      }
+
+      // Clear state immediately to prevent UI flicker
       setCurrentUser(null);
       setIsNewUser(false);
       setHasPet(false);
-      return;
-    }
+      setLoading(false);
 
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      throw new Error(error.message);
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        // Even if signOut fails, we've cleared local state
+        // Log the error but don't throw - user is already logged out locally
+        onboardingLogger.error('Supabase signOut error (non-blocking)', error);
+      }
+
+      // Clear any cached tokens
+      const { clearAuthTokens } = await import('../api/httpClient');
+      clearAuthTokens();
+
+      // Clear any cached data
+      const { requestCache } = await import('../utils/requestCache');
+      requestCache.clearAll();
+    } catch (error) {
+      // Ensure state is cleared even if there's an error
+      setCurrentUser(null);
+      setIsNewUser(false);
+      setHasPet(false);
+      setLoading(false);
+      onboardingLogger.error('Error during sign out', error);
+      // Don't throw - user should still be able to navigate away
     }
-    setCurrentUser(null);
-    setIsNewUser(false);
-    setHasPet(false);
   };
 
   const value = {

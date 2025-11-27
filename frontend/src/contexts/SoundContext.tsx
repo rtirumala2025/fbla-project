@@ -47,7 +47,6 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .single();
 
         if (error && error.code !== 'PGRST116') {
-          console.error('Failed to load sound preferences:', error);
           setIsLoading(false);
           return;
         }
@@ -59,7 +58,7 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setAmbientEnabledState(prefs.music ?? true);
         }
       } catch (error) {
-        console.error('Error loading sound preferences:', error);
+        // Failed to load preferences - use defaults
       } finally {
         setIsLoading(false);
       }
@@ -88,7 +87,7 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             });
         }
       } catch (error) {
-        console.error('Failed to save sound preferences:', error);
+        // Failed to save preferences - continue silently
       }
     }
   };
@@ -112,7 +111,7 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             });
         }
       } catch (error) {
-        console.error('Failed to save ambient sound preferences:', error);
+        // Failed to save preferences - continue silently
       }
     }
   };
@@ -137,7 +136,6 @@ export const useSoundPreferences = (): SoundContextValue => {
   const context = useContext(SoundContext);
   if (!context) {
     // Return defaults instead of throwing - allows usage without provider
-    console.warn('useSoundPreferences used without SoundProvider, using defaults');
     return {
       effectsEnabled: true,
       ambientEnabled: true,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   TrendingUp,
@@ -85,7 +85,7 @@ export interface BudgetAdvisorAIProps {
   className?: string;
 }
 
-const BudgetAdvisorAI: React.FC<BudgetAdvisorAIProps> = ({
+const BudgetAdvisorAI: React.FC<BudgetAdvisorAIProps> = memo(({
   transactions,
   monthlyBudget,
   userId,
@@ -182,7 +182,8 @@ const BudgetAdvisorAI: React.FC<BudgetAdvisorAIProps> = ({
       lastTransactionsRef.current = transactionsKey;
       fetchAnalysis();
     }
-  }, [autoFetch, fetchAnalysis, transactions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFetch, transactions]); // fetchAnalysis is stable, transactions key prevents unnecessary runs
 
   // Animation variants
   const containerVariants = {
@@ -551,7 +552,18 @@ const BudgetAdvisorAI: React.FC<BudgetAdvisorAIProps> = ({
       </motion.div>
     </motion.div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if props actually change
+  return (
+    prevProps.autoFetch === nextProps.autoFetch &&
+    prevProps.className === nextProps.className &&
+    prevProps.userId === nextProps.userId &&
+    prevProps.monthlyBudget === nextProps.monthlyBudget &&
+    JSON.stringify(prevProps.transactions) === JSON.stringify(nextProps.transactions)
+  );
+});
+
+BudgetAdvisorAI.displayName = 'BudgetAdvisorAI';
 
 export default BudgetAdvisorAI;
 

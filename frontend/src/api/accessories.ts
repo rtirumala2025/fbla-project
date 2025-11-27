@@ -58,7 +58,6 @@ export async function fetchAccessories(): Promise<Accessory[]> {
     return response.accessories;
   } catch (error) {
     // Fallback to mock data if API fails
-    console.warn('Accessories API unavailable, using mock data', error);
     return generateMockAccessories();
   }
 }
@@ -85,7 +84,6 @@ export async function equipAccessory(payload: AccessoryEquipPayload): Promise<Ac
     });
   } catch (error) {
     // Fallback to mock response if API fails
-    console.warn('Equip accessory API unavailable, using mock response', error);
     return {
       accessory_id: payload.accessory_id,
       pet_id: payload.pet_id || null,

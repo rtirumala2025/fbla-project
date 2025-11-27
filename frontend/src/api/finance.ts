@@ -5,6 +5,7 @@
  */
 import { apiRequest } from './httpClient';
 import { supabase, isSupabaseMock } from '../lib/supabase';
+import { cachedRequest } from '../utils/requestCache';
 import type {
   DonationPayload,
   EarnRequestPayload,
@@ -214,17 +215,22 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
 }
 
 export async function getFinanceSummary(): Promise<FinanceResponse> {
-  try {
-    return await getFinanceSummaryFromSupabase();
-  } catch (error) {
-    // Try backend API as fallback
-    try {
-      return await apiRequest<FinanceResponse>(API_BASE);
-    } catch (apiError: any) {
-      console.error('Failed to fetch finance summary from Supabase and API', error, apiError);
-      throw new Error('Failed to load finance data. Please ensure you are logged in and try again.');
-    }
-  }
+  return cachedRequest(
+    'finance-summary',
+    async () => {
+      try {
+        return await getFinanceSummaryFromSupabase();
+      } catch (error) {
+        // Try backend API as fallback
+        try {
+          return await apiRequest<FinanceResponse>(API_BASE);
+        } catch (apiError: any) {
+          throw new Error('Failed to load finance data. Please ensure you are logged in and try again.');
+        }
+      }
+    },
+    30000 // Cache for 30 seconds
+  );
 }
 
 export async function earnCoins(data: EarnRequestPayload): Promise<FinanceResponse> {

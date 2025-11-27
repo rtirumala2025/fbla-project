@@ -43,7 +43,7 @@ export const FinancePanel: React.FC = () => {
 
   useEffect(() => {
     fetchSummary();
-  }, [fetchSummary]);
+  }, [fetchSummary]); // fetchSummary is memoized with useCallback, so this is safe
 
   useFinanceRealtime(fetchSummary);
 

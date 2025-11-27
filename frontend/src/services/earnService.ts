@@ -35,7 +35,6 @@ async function getCooldowns(userId: string | undefined): Promise<Record<string, 
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Failed to load cooldowns from Supabase:', error);
       return {};
     }
 
@@ -56,7 +55,6 @@ async function getCooldowns(userId: string | undefined): Promise<Record<string, 
 
     return {};
   } catch (error) {
-    console.error('Error loading cooldowns:', error);
     return {};
   }
 }
@@ -79,10 +77,10 @@ async function setCooldowns(userId: string | undefined, data: Record<string, num
       });
 
     if (error) {
-      console.error('Failed to save cooldowns to Supabase:', error);
+      // Failed to save cooldowns - continue silently
     }
   } catch (error) {
-    console.error('Error saving cooldowns:', error);
+    // Error saving cooldowns - continue silently
   }
 }
 

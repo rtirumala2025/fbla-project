@@ -3,7 +3,7 @@
  * Displays quests organized by type (daily, weekly, event)
  */
 import { AnimatePresence, motion } from 'framer-motion';
-import { Fragment } from 'react';
+import { Fragment, memo } from 'react';
 import type { Quest } from '../../types/quests';
 import { QuestCard } from './QuestCard';
 
@@ -19,7 +19,7 @@ const sectionTitles: Record<'daily' | 'weekly' | 'event', { title: string; capti
   event: { title: 'Event Spotlight', caption: 'Limited-time adventures and seasonal quests.' },
 };
 
-export const QuestBoard = ({ quests, onComplete, isProcessingId = null }: QuestBoardProps) => {
+export const QuestBoard = memo(({ quests, onComplete, isProcessingId = null }: QuestBoardProps) => {
   return (
     <div className="space-y-10">
       {(Object.keys(sectionTitles) as Array<'daily' | 'weekly' | 'event'>).map((key) => {
@@ -58,7 +58,15 @@ export const QuestBoard = ({ quests, onComplete, isProcessingId = null }: QuestB
       })}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if quests or processing state changes
+  return (
+    JSON.stringify(prevProps.quests) === JSON.stringify(nextProps.quests) &&
+    prevProps.isProcessingId === nextProps.isProcessingId
+  );
+});
+
+QuestBoard.displayName = 'QuestBoard';
 
 export default QuestBoard;
 

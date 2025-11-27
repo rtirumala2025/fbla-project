@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, Home, ShoppingCart, PawPrint, BarChart3, Sparkles, Calendar, Zap, Palette, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-const Header = () => {
+const Header = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
@@ -20,13 +20,6 @@ const Header = () => {
   // Get auth state
   const { currentUser, signOut, loading } = useAuth();
 
-  // Log login state changes and button rendering
-  useEffect(() => {
-    console.log('🔵 Header: Auth state changed');
-    console.log('  Loading:', loading);
-    console.log('  Current user:', currentUser ? `${currentUser.displayName || currentUser.email || 'User'}` : 'null');
-    console.log('  Profile button visibility:', !loading && currentUser ? 'visible' : 'hidden');
-  }, [currentUser, loading]);
 
   // Handle scroll effect
   useEffect(() => {
@@ -53,16 +46,25 @@ const Header = () => {
   }, [isMoreMenuOpen]);
 
 
-  const handleLogout = async () => {
-    console.log('🔵 Header: Logout initiated');
+  const handleLogout = useCallback(async () => {
     try {
+      // Close any open menus
+      setIsMobileMenuOpen(false);
+      setIsMoreMenuOpen(false);
+      
+      // Sign out
       await signOut();
-      console.log('✅ Header: Logout successful');
-      navigate('/login');
+      
+      // Small delay to ensure state is cleared before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to login page
+      navigate('/login', { replace: true });
     } catch (error) {
-      console.error('❌ Header: Failed to log out', error);
+      // Even if signOut throws, try to navigate anyway
+      navigate('/login', { replace: true });
     }
-  };
+  }, [signOut, navigate]);
 
   // Navigation links for authenticated users only (Profile link removed - shown as welcome message)
   const authenticatedNavLinks = [
@@ -278,6 +280,8 @@ const Header = () => {
       </AnimatePresence>
     </header>
   );
-};
+});
+
+Header.displayName = 'Header';
 
 export default Header;

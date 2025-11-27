@@ -85,7 +85,15 @@ export const SyncBridge = ({ pet, onRefreshPet }: SyncBridgeProps) => {
     }
     lastSnapshotRef.current = signature;
     enqueueChange(snapshot, new Date().toISOString());
-  }, [pet, pet?.stats?.health, pet?.stats?.happiness, pet?.stats?.hunger, pet?.stats?.cleanliness, pet?.stats?.energy, enqueueChange]);
+  }, [
+    pet?.id,
+    pet?.stats?.health,
+    pet?.stats?.happiness,
+    pet?.stats?.hunger,
+    pet?.stats?.cleanliness,
+    pet?.stats?.energy,
+    enqueueChange
+  ]);
 
   return null;
 };

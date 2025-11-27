@@ -59,7 +59,6 @@ export const AIChat: React.FC = () => {
       sessionTokenExpiryRef.current = now + (5 * 60 * 1000); // 5 minutes
       return token;
     } catch (error) {
-      console.error('Failed to get session token:', error);
       return '';
     }
   }, []);

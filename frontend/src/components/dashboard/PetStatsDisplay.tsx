@@ -2,7 +2,7 @@
  * PetStatsDisplay Component
  * Displays pet stats with health bars and visual indicators
  */
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Zap, Smile, Droplet, Activity } from 'lucide-react';
 import { PetStats } from '../../types/pet';
@@ -51,7 +51,7 @@ const statConfig = {
   },
 } as const;
 
-export const PetStatsDisplay: React.FC<PetStatsDisplayProps> = ({ stats, level, xp }) => {
+export const PetStatsDisplay: React.FC<PetStatsDisplayProps> = memo(({ stats, level, xp }) => {
   const statsArray = [
     { key: 'health' as const, value: stats.health },
     { key: 'energy' as const, value: stats.energy },
@@ -159,7 +159,20 @@ export const PetStatsDisplay: React.FC<PetStatsDisplayProps> = ({ stats, level, 
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo
+  return (
+    prevProps.stats.health === nextProps.stats.health &&
+    prevProps.stats.energy === nextProps.stats.energy &&
+    prevProps.stats.happiness === nextProps.stats.happiness &&
+    prevProps.stats.cleanliness === nextProps.stats.cleanliness &&
+    prevProps.stats.hunger === nextProps.stats.hunger &&
+    prevProps.level === nextProps.level &&
+    prevProps.xp === nextProps.xp
+  );
+});
+
+PetStatsDisplay.displayName = 'PetStatsDisplay';
 
 export default PetStatsDisplay;
 

@@ -2,7 +2,7 @@
  * Pet3DVisualization Component
  * 3D pet visualization using Three.js with accessories support
  */
-import React, { Suspense, useMemo } from 'react';
+import React, { Suspense, useMemo, memo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment } from '@react-three/drei';
 import { Pet } from '../../types/pet';
@@ -121,7 +121,7 @@ function LoadingFallback() {
   );
 }
 
-export const Pet3DVisualization: React.FC<Pet3DVisualizationProps> = ({
+export const Pet3DVisualization: React.FC<Pet3DVisualizationProps> = memo(({
   pet,
   accessories = [],
   size = 'md',
@@ -186,7 +186,18 @@ export const Pet3DVisualization: React.FC<Pet3DVisualizationProps> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if pet or accessories change
+  return (
+    prevProps.pet.id === nextProps.pet.id &&
+    prevProps.pet.name === nextProps.pet.name &&
+    prevProps.pet.species === nextProps.pet.species &&
+    JSON.stringify(prevProps.accessories) === JSON.stringify(nextProps.accessories) &&
+    prevProps.size === nextProps.size
+  );
+});
+
+Pet3DVisualization.displayName = 'Pet3DVisualization';
 
 export default Pet3DVisualization;
 
