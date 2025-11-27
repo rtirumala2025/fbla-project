@@ -1,94 +1,49 @@
 /**
- * useSyncManager Hook
- * Manages cloud sync state, conflict resolution, and offline queue
- * Uses Supabase cloud_sync_snapshots table instead of localStorage
+ * Enhanced useSyncManager Hook
+ * Manages cloud sync state, conflict resolution, offline queue, and real-time subscriptions
+ * Integrates with state capture service and offline storage
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchCloudState, pushCloudState } from '../api/sync';
+import { fetchCloudState } from '../api/sync';
 import { supabase, isSupabaseMock } from '../lib/supabase';
-import type { CloudSyncState, SyncPushRequest } from '../types/sync';
+import type { CloudSyncState } from '../types/sync';
+import { saveToCloud, restoreFromCloud, processSyncQueue, setupRealtimeSync } from '../services/syncService';
+import { captureAppState } from '../services/stateCaptureService';
+import { offlineStorage } from '../services/offlineStorageService';
+import { useOfflineStatus } from './useOfflineStatus';
 
-export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'conflict';
+export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'conflict' | 'restoring';
 
-interface ChangeRecord {
-  snapshot: CloudSyncState['snapshot'];
-  last_modified: string;
-  enqueued_at: number;
+export interface SyncManagerResult {
+  status: SyncStatus;
+  conflicts: Array<Record<string, unknown>>;
+  cloudState: CloudSyncState | null;
+  lastSynced: number | null;
+  queuedOperations: number;
+  save: (options?: { force?: boolean; silent?: boolean }) => Promise<void>;
+  restore: (options?: { force?: boolean; silent?: boolean }) => Promise<void>;
+  clearConflicts: () => void;
+  deviceId: string;
 }
 
-// Device ID stored in component state (no localStorage)
-// Future: Could store in Supabase user_preferences or device table
-function generateDeviceId(): string {
-  if (typeof window === 'undefined') return 'server';
-  return `device-${crypto.randomUUID()}`;
-}
-
-// Load queue from Supabase cloud_sync_snapshots (no localStorage)
-async function loadQueueFromSupabase(userId: string | null): Promise<ChangeRecord[]> {
-  if (!userId || isSupabaseMock()) {
-    return [];
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('cloud_sync_snapshots')
-      .select('snapshot, last_modified')
-      .eq('user_id', userId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.warn('Failed to load sync queue from Supabase:', error);
-      return [];
-    }
-
-    if (data && data.snapshot) {
-      // Convert Supabase snapshot to ChangeRecord format
-      return [{
-        snapshot: data.snapshot as CloudSyncState['snapshot'],
-        last_modified: data.last_modified || new Date().toISOString(),
-        enqueued_at: Date.now(),
-      }];
-    }
-
-    return [];
-  } catch (error) {
-    console.warn('Error loading sync queue:', error);
-    return [];
-  }
-}
-
-// Save queue to Supabase (no localStorage)
-async function saveQueueToSupabase(userId: string | null, queue: ChangeRecord[], deviceId: string): Promise<void> {
-  if (!userId || isSupabaseMock() || !queue.length) {
-    return;
-  }
-
-  try {
-    // Use the latest change in the queue
-    const latestChange = queue[queue.length - 1];
-    
-    await supabase
-      .from('cloud_sync_snapshots')
-      .upsert({
-        user_id: userId,
-        snapshot: latestChange.snapshot,
-        last_modified: latestChange.last_modified,
-        last_device_id: deviceId,
-      }, {
-        onConflict: 'user_id',
-      });
-  } catch (error) {
-    console.warn('Failed to save sync queue to Supabase:', error);
-  }
-}
-
-export function useSyncManager() {
+export function useSyncManager(): SyncManagerResult {
   const [cloudState, setCloudState] = useState<CloudSyncState | null>(null);
   const [status, setStatus] = useState<SyncStatus>('idle');
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
-  const queueRef = useRef<ChangeRecord[]>([]);
+  const [lastSynced, setLastSynced] = useState<number | null>(null);
+  const [queuedOperations, setQueuedOperations] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
-  const deviceId = useMemo(() => (typeof window !== 'undefined' ? generateDeviceId() : 'server'), []);
+  const deviceId = useMemo(() => {
+    if (typeof window === 'undefined') return 'server';
+    let id = sessionStorage.getItem('device_id');
+    if (!id) {
+      id = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('device_id', id);
+    }
+    return id;
+  }, []);
+  const offlineStatus = useOfflineStatus();
+  const realtimeCleanupRef = useRef<(() => void) | null>(null);
 
   // Get user ID from Supabase session
   useEffect(() => {
@@ -106,110 +61,187 @@ export function useSyncManager() {
     getUserId();
   }, []);
 
-  const enqueueChange = useCallback(async (snapshot: CloudSyncState['snapshot'], lastModified: string) => {
-    const queue = [...queueRef.current, { snapshot, last_modified: lastModified, enqueued_at: Date.now() }];
-    queueRef.current = queue;
-    // Save to Supabase instead of localStorage
-    await saveQueueToSupabase(userId, queue, deviceId);
-    setStatus((prev) => (prev === 'offline' ? prev : 'syncing'));
-  }, [userId, deviceId]);
+  // Save state to cloud
+  const save = useCallback(
+    async (options: { force?: boolean; silent?: boolean } = {}) => {
+      if (!userId) return;
 
-  const flushQueue = useCallback(async () => {
-    if (!queueRef.current.length || !cloudState) return;
-    setStatus('syncing');
-    const queue = [...queueRef.current];
-    for (const change of queue) {
+      setStatus('syncing');
       try {
-        const payload: SyncPushRequest = {
-          snapshot: change.snapshot,
-          last_modified: change.last_modified,
-          device_id: deviceId,
-          version: cloudState.version,
-        };
-        const response = await pushCloudState(payload);
-        setCloudState(response.state);
-        if (response.conflicts.length) {
-          setConflicts(response.conflicts);
-          setStatus('conflict');
+        const result = await saveToCloud(userId, options);
+        if (result.success) {
+          setStatus('idle');
+          setConflicts(result.conflicts);
+          setLastSynced(Date.now());
+          
+          // Update cloud state
+          const response = await fetchCloudState();
+          setCloudState(response.state);
+        } else {
+          if (result.error?.includes('Offline')) {
+            setStatus('offline');
+          } else {
+            setStatus('idle');
+          }
         }
-        queueRef.current = queueRef.current.filter((item) => item !== change);
-        // Save to Supabase instead of localStorage
-        await saveQueueToSupabase(userId, queueRef.current, deviceId);
       } catch (error) {
-        console.warn('Sync flush failed', error);
-        setStatus('offline');
-        return;
+        console.error('Save failed:', error);
+        setStatus(offlineStatus.offline ? 'offline' : 'idle');
       }
-    }
-    if (!queueRef.current.length && status !== 'conflict') {
-      setStatus('idle');
-    }
-  }, [cloudState, deviceId, status, userId]);
+    },
+    [userId, offlineStatus.offline],
+  );
 
-  const pullCloudState = useCallback(async () => {
-    setStatus('syncing');
-    try {
-      const response = await fetchCloudState();
-      setCloudState(response.state);
-      setConflicts(response.conflicts ?? []);
-      // Load from Supabase instead of localStorage
-      queueRef.current = await loadQueueFromSupabase(userId);
-      setStatus(queueRef.current.length ? 'syncing' : 'idle');
-    } catch (error) {
-      console.warn('Failed to fetch cloud state', error);
-      // Load from Supabase even on error
-      queueRef.current = await loadQueueFromSupabase(userId);
-      setStatus('offline');
-    }
-  }, [userId]);
+  // Restore state from cloud or offline
+  const restore = useCallback(
+    async (options: { force?: boolean; silent?: boolean } = {}) => {
+      if (!userId) return;
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    // Load queue from Supabase on mount
-    loadQueueFromSupabase(userId).then((queue) => {
-      queueRef.current = queue;
-    });
-    
-    void pullCloudState();
+      setStatus('restoring');
+      try {
+        const result = await restoreFromCloud(userId, options);
+        if (result.success || result.restored) {
+          setStatus('idle');
+          setConflicts(result.conflicts);
+          
+          // Update cloud state
+          const response = await fetchCloudState();
+          setCloudState(response.state);
+        } else {
+          setStatus('idle');
+        }
+      } catch (error) {
+        console.error('Restore failed:', error);
+        setStatus('idle');
+      }
+    },
+    [userId],
+  );
 
-    const onOnline = () => {
-      setStatus(queueRef.current.length ? 'syncing' : 'idle');
-      void pullCloudState().then(flushQueue).catch(() => {
-        setStatus('offline');
-      });
-    };
-    const onOffline = () => setStatus('offline');
-
-    window.addEventListener('online', onOnline);
-    window.addEventListener('offline', onOffline);
-
-    return () => {
-      window.removeEventListener('online', onOnline);
-      window.removeEventListener('offline', onOffline);
-    };
-  }, [flushQueue, pullCloudState, userId]);
-
-  useEffect(() => {
-    if (status === 'syncing') {
-      void flushQueue();
-    }
-  }, [flushQueue, status]);
-
+  // Clear conflicts
   const clearConflicts = useCallback(() => {
     setConflicts([]);
-    setStatus(queueRef.current.length ? 'syncing' : 'idle');
-  }, []);
+    if (status === 'conflict') {
+      setStatus('idle');
+    }
+  }, [status]);
+
+  // Initialize: restore state on mount
+  useEffect(() => {
+    if (!userId) return;
+
+    const initialize = async () => {
+      // Initialize offline storage
+      await offlineStorage.init();
+
+      // Try to restore from cloud/offline
+      await restore({ silent: true });
+
+      // Process any queued operations
+      if (navigator.onLine) {
+        const { processed, failed } = await processSyncQueue(userId);
+        if (processed > 0 || failed > 0) {
+          // Refresh state after processing queue
+          await save({ silent: true });
+        }
+      }
+
+      // Update queued operations count
+      const queued = await offlineStorage.getQueuedOperations();
+      setQueuedOperations(queued.length);
+    };
+
+    void initialize();
+  }, [userId, restore, save]);
+
+  // Setup real-time subscription for sync changes
+  useEffect(() => {
+    if (!userId || isSupabaseMock()) return;
+
+    const cleanup = setupRealtimeSync(userId, (state) => {
+      setCloudState(state);
+      setLastSynced(Date.now());
+    });
+
+    realtimeCleanupRef.current = cleanup;
+
+    return () => {
+      if (realtimeCleanupRef.current) {
+        realtimeCleanupRef.current();
+      }
+    };
+  }, [userId]);
+
+  // Handle online/offline transitions
+  useEffect(() => {
+    if (!userId) return;
+
+    const handleOnline = async () => {
+      setStatus('syncing');
+      
+      // Process queued operations
+      const { processed, failed } = await processSyncQueue(userId);
+      
+      // Update queued count
+      const queued = await offlineStorage.getQueuedOperations();
+      setQueuedOperations(queued.length);
+
+      // Save current state
+      await save({ silent: true });
+    };
+
+    const handleOffline = () => {
+      setStatus('offline');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [userId, save]);
+
+  // Auto-save on state changes (debounced)
+  useEffect(() => {
+    if (!userId || status === 'syncing' || status === 'restoring') return;
+
+    const timeoutId = setTimeout(() => {
+      // Only auto-save if online and not recently synced
+      if (navigator.onLine && (!lastSynced || Date.now() - lastSynced > 30000)) {
+        void save({ silent: true });
+      }
+    }, 5000); // 5 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [userId, status, lastSynced, save]);
+
+  // Update queued operations count periodically
+  useEffect(() => {
+    if (!userId) return;
+
+    const updateQueueCount = async () => {
+      const queued = await offlineStorage.getQueuedOperations();
+      setQueuedOperations(queued.length);
+    };
+
+    const interval = setInterval(updateQueueCount, 10000); // Every 10 seconds
+    updateQueueCount();
+
+    return () => clearInterval(interval);
+  }, [userId]);
 
   return {
     status,
     conflicts,
     cloudState,
-    enqueueChange,
-    refresh: pullCloudState,
-    flush: flushQueue,
-    deviceId,
+    lastSynced,
+    queuedOperations,
+    save,
+    restore,
     clearConflicts,
+    deviceId,
   };
 }
 
