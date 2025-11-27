@@ -40,13 +40,20 @@ async def social_interaction_endpoint(payload: SocialInteractionRequest) -> Soci
 
 
 @router.post("/voice", response_model=VoiceCommandResponse)
-async def voice_command_endpoint(payload: VoiceCommandRequest) -> VoiceCommandResponse:
-    return await voice_command_intent(payload)
+async def voice_command_endpoint(
+    payload: VoiceCommandRequest,
+    session: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> VoiceCommandResponse:
+    return await voice_command_intent(payload, session, user_id)
 
 
 @router.get("/ar", response_model=ARSessionResponse)
-async def ar_session_endpoint(user_id: str = Depends(get_current_user_id)) -> ARSessionResponse:
-    return await generate_ar_session(user_id)
+async def ar_session_endpoint(
+    session: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+) -> ARSessionResponse:
+    return await generate_ar_session(user_id, session)
 
 
 @router.post("/cloud", response_model=CloudSaveResponse, status_code=status.HTTP_201_CREATED)
@@ -61,8 +68,10 @@ async def cloud_save_endpoint(
 async def weather_reaction_endpoint(
     lat: float,
     lon: float,
+    session: AsyncSession = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ) -> WeatherReactionResponse:
-    return await fetch_weather_reaction(lat, lon)
+    return await fetch_weather_reaction(lat, lon, session, user_id)
 
 
 @router.get("/habits", response_model=HabitPredictionResponse)

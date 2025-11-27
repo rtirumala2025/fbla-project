@@ -39,6 +39,7 @@ class ARSessionResponse(BaseModel):
     session_id: str
     anchor_description: str
     instructions: List[str]
+    pet_data: Optional[dict] = Field(default=None, description="Pet data for AR rendering")
 
 
 class CloudSavePayload(BaseModel):
@@ -61,6 +62,8 @@ class HabitPredictionResponse(BaseModel):
     preferred_actions: List[str]
     next_best_time: str
     confidence: float
+    ai_suggestions: List[str] = Field(default_factory=list, description="AI-generated care suggestions")
+    notification_message: Optional[str] = Field(default=None, description="Notification to display to user")
 
 
 class SeasonalEventResponse(BaseModel):
