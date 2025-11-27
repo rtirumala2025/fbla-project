@@ -5,6 +5,8 @@ import { completeQuest, fetchActiveQuests, fetchCoachAdvice } from '../../api/qu
 import type { ActiveQuestsResponse, CoachAdviceResponse, Quest } from '../../types/quests';
 import { useOfflineCache } from '../../hooks/useOfflineCache';
 import { useToast } from '../../contexts/ToastContext';
+import { useCoachRealtime } from '../../hooks/useCoachRealtime';
+import { useAuth } from '../../contexts/AuthContext';
 import { QuestBoard } from '../../components/quests/QuestBoard';
 import { CoachPanel } from '../../components/coach/CoachPanel';
 
@@ -16,6 +18,7 @@ const emptyResponse: ActiveQuestsResponse = {
 };
 
 export const QuestDashboard = () => {
+  const { currentUser } = useAuth();
   const [quests, setQuests] = useState<ActiveQuestsResponse | null>(null);
   const [coachAdvice, setCoachAdvice] = useState<CoachAdviceResponse | null>(null);
   const [isLoadingQuests, setIsLoadingQuests] = useState(false);
@@ -66,6 +69,9 @@ export const QuestDashboard = () => {
     void loadQuests();
     void loadCoachAdvice();
   }, [loadQuests, loadCoachAdvice]);
+
+  // Subscribe to real-time pet stats changes for Coach Panel
+  useCoachRealtime(loadCoachAdvice, currentUser?.uid);
 
   const handleComplete = useCallback(
     async (quest: Quest) => {

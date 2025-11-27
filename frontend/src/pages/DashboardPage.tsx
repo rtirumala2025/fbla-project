@@ -31,6 +31,7 @@ import type { AnalyticsSnapshot, SnapshotNotification, SnapshotSummary, TrendSer
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { DailyChallengeCard } from '../components/minigames/DailyChallengeCard';
 import { useAccessoriesRealtime } from '../hooks/useAccessoriesRealtime';
+import { useCoachRealtime } from '../hooks/useCoachRealtime';
 import { shopService } from '../services/shopService';
 import { earnService, type Chore } from '../services/earnService';
 
@@ -401,6 +402,9 @@ export function DashboardPage() {
   useAccessoriesRealtime(pet?.id || null, (updatedAccessories) => {
     setEquippedAccessories(updatedAccessories.filter((acc) => acc.equipped));
   });
+
+  // Subscribe to real-time pet stats changes for Coach Panel
+  useCoachRealtime(loadCoachAdvice, currentUser?.uid);
 
   // Feed with food selection
   const handleFeedWithFood = useCallback(async () => {
