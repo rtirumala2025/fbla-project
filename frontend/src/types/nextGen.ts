@@ -19,6 +19,21 @@ export interface ARSessionResponse {
   session_id: string;
   anchor_description: string;
   instructions: string[];
+  pet_data?: {
+    id: string;
+    name: string;
+    species: string;
+    breed: string;
+    color_pattern: string;
+    mood: string;
+    stats: {
+      hunger: number;
+      happiness: number;
+      cleanliness: number;
+      energy: number;
+      health: number;
+    };
+  } | null;
 }
 
 export interface CloudSaveResponse {
@@ -37,6 +52,8 @@ export interface HabitPredictionResponse {
   preferred_actions: string[];
   next_best_time: string;
   confidence: number;
+  ai_suggestions?: string[];
+  notification_message?: string | null;
 }
 
 export interface SeasonalEventResponse {

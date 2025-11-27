@@ -73,10 +73,31 @@ export async function sendVoiceCommand(payload: {
   transcript: string;
   locale?: string;
 }): Promise<VoiceCommandResponse> {
-  return apiRequest<VoiceCommandResponse>(`${API_BASE}/voice`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  // Validate input
+  if (!payload.transcript || payload.transcript.trim().length === 0) {
+    throw new Error('Voice transcript cannot be empty');
+  }
+  
+  // Retry logic for network resilience
+  let lastError: Error | null = null;
+  const maxRetries = 3;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await apiRequest<VoiceCommandResponse>(`${API_BASE}/voice`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (error: any) {
+      lastError = error;
+      if (attempt < maxRetries - 1) {
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Voice command failed after retries');
 }
 
 export async function fetchARSession(): Promise<ARSessionResponse> {
@@ -86,13 +107,24 @@ export async function fetchARSession(): Promise<ARSessionResponse> {
     return generateMockARSession();
   }
 
-  try {
-    return await apiRequest<ARSessionResponse>(`${API_BASE}/ar`);
-  } catch (error) {
-    // Fallback to mock data if API fails
-    console.warn('AR API unavailable, using mock data', error);
-    return generateMockARSession();
+  // Retry logic with fallback
+  let lastError: Error | null = null;
+  const maxRetries = 2;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await apiRequest<ARSessionResponse>(`${API_BASE}/ar`);
+    } catch (error: any) {
+      lastError = error;
+      if (attempt < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+      }
+    }
   }
+  
+  // Fallback to mock data if API fails
+  console.warn('AR API unavailable after retries, using mock data', lastError);
+  return generateMockARSession();
 }
 
 export async function saveCloudState(payload: { state: Record<string, unknown> }): Promise<CloudSaveResponse> {
@@ -103,19 +135,36 @@ export async function saveCloudState(payload: { state: Record<string, unknown> }
 }
 
 export async function fetchWeatherReaction(lat: number, lon: number): Promise<WeatherReactionResponse> {
+  // Validate coordinates
+  if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) {
+    console.warn('Invalid coordinates, using mock data');
+    return generateMockWeatherReaction();
+  }
+  
   // Use mock data if in mock mode or if API fails
   if (useMock) {
     await new Promise(resolve => setTimeout(resolve, 200));
     return generateMockWeatherReaction();
   }
 
-  try {
-    return await apiRequest<WeatherReactionResponse>(`${API_BASE}/weather?lat=${lat}&lon=${lon}`);
-  } catch (error) {
-    // Fallback to mock data if API fails
-    console.warn('Weather API unavailable, using mock data', error);
-    return generateMockWeatherReaction();
+  // Retry logic with fallback
+  let lastError: Error | null = null;
+  const maxRetries = 3;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await apiRequest<WeatherReactionResponse>(`${API_BASE}/weather?lat=${lat}&lon=${lon}`);
+    } catch (error: any) {
+      lastError = error;
+      if (attempt < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+      }
+    }
   }
+  
+  // Fallback to mock data if API fails
+  console.warn('Weather API unavailable after retries, using mock data', lastError);
+  return generateMockWeatherReaction();
 }
 
 export async function fetchHabitPrediction(): Promise<HabitPredictionResponse> {
@@ -125,13 +174,24 @@ export async function fetchHabitPrediction(): Promise<HabitPredictionResponse> {
     return generateMockHabitPrediction();
   }
 
-  try {
-    return await apiRequest<HabitPredictionResponse>(`${API_BASE}/habits`);
-  } catch (error) {
-    // Fallback to mock data if API fails
-    console.warn('Habit prediction API unavailable, using mock data', error);
-    return generateMockHabitPrediction();
+  // Retry logic with fallback
+  let lastError: Error | null = null;
+  const maxRetries = 2;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await apiRequest<HabitPredictionResponse>(`${API_BASE}/habits`);
+    } catch (error: any) {
+      lastError = error;
+      if (attempt < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+      }
+    }
   }
+  
+  // Fallback to mock data if API fails
+  console.warn('Habit prediction API unavailable after retries, using mock data', lastError);
+  return generateMockHabitPrediction();
 }
 
 export async function fetchSeasonalEvent(): Promise<SeasonalEventResponse> {

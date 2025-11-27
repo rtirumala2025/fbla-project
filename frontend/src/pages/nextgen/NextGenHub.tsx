@@ -20,6 +20,7 @@ import { fetchSnapshot } from '../../api/analytics';
 import type { AnalyticsSnapshot } from '../../types/analytics';
 import type {
   ARSessionResponse,
+  HabitPredictionResponse,
   SeasonalEventResponse,
   SocialInteractionResponse,
   VoiceCommandResponse,
@@ -60,6 +61,7 @@ export const NextGenHub: React.FC = () => {
   const [arSession, setArSession] = useState<ARSessionResponse | null>(null);
   const [weather, setWeather] = useState<WeatherReactionResponse | null>(null);
   const [habits, setHabits] = useState<string | null>(null);
+  const [habitPrediction, setHabitPrediction] = useState<HabitPredictionResponse | null>(null);
   const [seasonal, setSeasonal] = useState<SeasonalEventResponse | null>(null);
   const [leaderboard, setLeaderboard] = useState<GameLeaderboardEntry[]>([]);
   const [voiceResult, setVoiceResult] = useState<VoiceCommandResponse | null>(null);
@@ -89,7 +91,27 @@ export const NextGenHub: React.FC = () => {
         ]);
         setSnapshot(snapshotData);
         setArSession(ar);
-        setHabits(`${habitPrediction.preferred_actions.join(', ')} around ${habitPrediction.next_best_time}`);
+        setHabitPrediction(habitPrediction);
+        
+        // Enhanced habit prediction display with AI suggestions
+        const habitText = habitPrediction.preferred_actions.length > 0
+          ? `${habitPrediction.preferred_actions.join(', ')} around ${habitPrediction.next_best_time}`
+          : 'No prediction yet. Keep interacting with your pet!';
+        setHabits(habitText);
+        
+        // Show habit prediction notification if available
+        if (habitPrediction.notification_message) {
+          setNotifications((prev) => [
+            {
+              id: `habit-prediction-${Date.now()}`,
+              title: 'Habit Prediction',
+              message: habitPrediction.notification_message,
+              type: 'info',
+            },
+            ...prev,
+          ]);
+        }
+        
         setSeasonal(seasonalEvent);
         setLeaderboard(leaderboardEntries);
       } catch (error: any) {
@@ -122,15 +144,23 @@ export const NextGenHub: React.FC = () => {
       try {
         const response = await sendVoiceCommand({ transcript });
         setVoiceResult(response);
+        
+        // Enhanced notification with action feedback
+        const notificationType = response.confidence > 0.7 ? 'success' : response.confidence > 0.5 ? 'info' : 'warning';
         setNotifications((prev) => [
           {
-            id: `${response.intent}-${Date.now()}`,
-            title: 'Voice intent detected',
-            message: `${response.intent} (${(response.confidence * 100).toFixed(0)}%)`,
-            type: response.confidence > 0.5 ? 'success' : 'info',
+            id: `voice-${response.intent}-${Date.now()}`,
+            title: response.action ? 'Voice command executed' : 'Voice intent detected',
+            message: response.feedback || `${response.intent} (${(response.confidence * 100).toFixed(0)}% confidence)`,
+            type: notificationType,
           },
           ...prev,
         ]);
+        
+        // Show success toast if action was executed
+        if (response.action && response.confidence > 0.7) {
+          toast.success(response.feedback || 'Voice command executed successfully!');
+        }
       } catch (error: any) {
         console.error('Voice command failed', error);
         // Don't show toast for voice command failures - they're not critical
@@ -396,8 +426,18 @@ export const NextGenHub: React.FC = () => {
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
               <h2 className="text-lg font-semibold text-slate-800">AR Companion</h2>
+              {arSession?.pet_data && (
+                <div className="mb-3 rounded-xl bg-indigo-50 p-3">
+                  <p className="text-sm font-semibold text-indigo-800">
+                    {arSession.pet_data.name} ({arSession.pet_data.species})
+                  </p>
+                  <p className="text-xs text-indigo-600">
+                    Mood: {arSession.pet_data.mood} • Health: {arSession.pet_data.stats.health}%
+                  </p>
+                </div>
+              )}
               <p className="text-sm text-slate-600">
-                Session ID: <span className="font-mono">{arSession?.session_id}</span>
+                Session ID: <span className="font-mono text-xs">{arSession?.session_id}</span>
               </p>
               <p className="mt-2 text-xs text-slate-500">{arSession?.anchor_description}</p>
               <ul className="mt-3 space-y-1 text-xs text-slate-600">
@@ -431,6 +471,16 @@ export const NextGenHub: React.FC = () => {
               <p className="mt-2 text-sm text-slate-600">
                 {habits ?? 'No prediction yet. Keep interacting with your pet!'}
               </p>
+              {habitPrediction?.ai_suggestions && habitPrediction.ai_suggestions.length > 0 && (
+                <div className="mt-3 rounded-xl bg-emerald-50 p-3">
+                  <p className="text-xs font-semibold text-emerald-800">AI Suggestions:</p>
+                  <ul className="mt-1 space-y-1 text-xs text-emerald-700">
+                    {habitPrediction.ai_suggestions.map((suggestion, idx) => (
+                      <li key={idx}>• {suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
 
