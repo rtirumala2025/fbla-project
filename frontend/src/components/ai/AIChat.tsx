@@ -193,7 +193,16 @@ export const AIChat: React.FC = () => {
       }
 
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+        // Try to get error message from response
+        let errorMessage = `Error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -223,8 +232,26 @@ export const AIChat: React.FC = () => {
       });
       
       logFormSubmit({ message: messageContent }, true);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error sending message:', err);
+      
+      // Determine error message
+      let errorMessage = "I'm having trouble connecting right now. Please try again later.";
+      if (err.message) {
+        if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+          errorMessage = "Please log in to use the AI chat feature.";
+        } else if (err.message.includes('403') || err.message.includes('Forbidden')) {
+          errorMessage = "You don't have permission to use this feature.";
+        } else if (err.message.includes('429') || err.message.includes('rate limit')) {
+          errorMessage = "Too many requests. Please wait a moment and try again.";
+        } else if (err.message.includes('500') || err.message.includes('Internal Server Error')) {
+          errorMessage = "The server encountered an error. Please try again later.";
+        } else if (err.message.includes('Network') || err.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
       
       // Update the assistant's message with an error
       setMessages(prev => {
@@ -234,15 +261,15 @@ export const AIChat: React.FC = () => {
         if (messageIndex !== -1) {
           newMessages[messageIndex] = {
             ...newMessages[messageIndex],
-            content: "I'm having trouble connecting right now. Please try again later.",
+            content: errorMessage,
           };
         }
         
         return newMessages;
       });
       
-      setError('Failed to get response. Please check your connection and try again.');
-      logFormError('chat_error', 'Failed to get response', { message: messageContent });
+      setError(errorMessage);
+      logFormError('chat_error', 'Failed to get response', { message: messageContent, error: err.message });
     } finally {
       setIsLoading(false);
     }
