@@ -83,10 +83,15 @@ def _merge_collections(existing: List[Dict[str, Any]], incoming: List[Dict[str, 
 
 
 def _merge_snapshots(existing: Dict[str, Any], incoming: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """
+    Merge snapshots with enhanced conflict resolution.
+    Handles pets, inventory, quests, and progress (which includes profile, preferences, wallet, etc.)
+    """
     existing = existing or _default_snapshot()
     incoming = incoming or _default_snapshot()
     conflicts: List[Dict[str, Any]] = []
 
+    # Merge collections (pets, inventory, quests)
     pets, pet_conflicts = _merge_collections(existing.get("pets", []), incoming.get("pets", []))
     inventory, inventory_conflicts = _merge_collections(existing.get("inventory", []), incoming.get("inventory", []))
     quests, quest_conflicts = _merge_collections(existing.get("quests", []), incoming.get("quests", []))
@@ -95,7 +100,39 @@ def _merge_snapshots(existing: Dict[str, Any], incoming: Dict[str, Any]) -> Tupl
     conflicts.extend([{"type": "inventory", **c} for c in inventory_conflicts])
     conflicts.extend([{"type": "quest", **c} for c in quest_conflicts])
 
-    merged_progress = {**existing.get("progress", {}), **incoming.get("progress", {})}
+    # Merge progress object (contains profile, preferences, wallet, transactions, goals, etc.)
+    # Use last-write-wins for progress sub-objects
+    existing_progress = existing.get("progress", {})
+    incoming_progress = incoming.get("progress", {})
+    merged_progress: Dict[str, Any] = {}
+
+    # Get last captured timestamps
+    existing_captured = existing_progress.get("lastCaptured") or existing_progress.get("last_captured")
+    incoming_captured = incoming_progress.get("lastCaptured") or incoming_progress.get("last_captured")
+
+    # If timestamps exist, use them to determine which progress to keep
+    if existing_captured and incoming_captured:
+        try:
+            from datetime import datetime
+            existing_ts = datetime.fromisoformat(existing_captured.replace("Z", "+00:00"))
+            incoming_ts = datetime.fromisoformat(incoming_captured.replace("Z", "+00:00"))
+            
+            if incoming_ts > existing_ts:
+                # Incoming is newer, prefer it but merge non-conflicting keys
+                merged_progress = {**existing_progress, **incoming_progress}
+            else:
+                # Existing is newer, prefer it but merge non-conflicting keys
+                merged_progress = {**incoming_progress, **existing_progress}
+        except (ValueError, AttributeError):
+            # Fallback to simple merge if timestamp parsing fails
+            merged_progress = {**existing_progress, **incoming_progress}
+    else:
+        # No timestamps, merge with incoming taking precedence
+        merged_progress = {**existing_progress, **incoming_progress}
+
+    # Always update lastCaptured to current time
+    from datetime import datetime, timezone
+    merged_progress["lastCaptured"] = datetime.now(timezone.utc).isoformat()
 
     merged_snapshot = {
         "pets": pets,
