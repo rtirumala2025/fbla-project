@@ -68,35 +68,39 @@ async def analyze_budget(
     )
 
     try:
-        # Validate request has transactions
-        if not request.transactions:
-            LOGGER.warning("Empty transactions list received")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="At least one transaction is required for analysis",
-            )
+        # Note: If no transactions provided, service will attempt to fetch from database
+        # Validate transaction data only if transactions are provided
+        if request.transactions:
+            invalid_transactions = []
+            for idx, transaction in enumerate(request.transactions):
+                # Check for missing required fields (Pydantic handles this, but we log it)
+                if not transaction.category or not transaction.category.strip():
+                    invalid_transactions.append(f"Transaction {idx + 1}: missing category")
+                if transaction.amount <= 0:
+                    invalid_transactions.append(f"Transaction {idx + 1}: amount must be positive")
 
-        # Validate transaction data
-        invalid_transactions = []
-        for idx, transaction in enumerate(request.transactions):
-            # Check for missing required fields (Pydantic handles this, but we log it)
-            if not transaction.category or not transaction.category.strip():
-                invalid_transactions.append(f"Transaction {idx + 1}: missing category")
-            if transaction.amount <= 0:
-                invalid_transactions.append(f"Transaction {idx + 1}: amount must be positive")
+            if invalid_transactions:
+                LOGGER.warning(f"Invalid transactions detected: {invalid_transactions}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid transaction data: {', '.join(invalid_transactions)}",
+                )
 
-        if invalid_transactions:
-            LOGGER.warning(f"Invalid transactions detected: {invalid_transactions}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid transaction data: {', '.join(invalid_transactions)}",
-            )
-
-        # Perform analysis with database session and user_id for future integration
+        # Perform analysis with database session and user_id
+        # Service will fetch from database if no transactions provided
         LOGGER.debug("Starting budget analysis with database session")
-        analysis = await BudgetAdvisorService.analyze_budget(
-            request, session=session, user_id=user_id
-        )
+        try:
+            analysis = await BudgetAdvisorService.analyze_budget(
+                request, session=session, user_id=user_id
+            )
+        except ValueError as ve:
+            # Handle case where no transactions are available
+            if "No transactions" in str(ve):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(ve),
+                ) from ve
+            raise
 
         # Log analysis results
         LOGGER.info(

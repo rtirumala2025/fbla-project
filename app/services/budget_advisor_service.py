@@ -22,7 +22,8 @@ from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, desc
+from sqlalchemy.orm import selectinload
 
 from app.schemas.budget_advisor import (
     BudgetAdvisorAnalysis,
@@ -31,6 +32,8 @@ from app.schemas.budget_advisor import (
     SpendingTrend,
     TransactionInput,
 )
+from app.models.ai_features import BudgetAdvisorAnalysis as BudgetAdvisorAnalysisModel
+from app.models.finance import Transaction, Wallet
 
 # Configure structured logging
 LOGGER = logging.getLogger(__name__)
@@ -64,6 +67,76 @@ class BudgetAdvisorService:
     HIGH_SEVERITY_THRESHOLD = 0.50  # 50% over budget
 
     @staticmethod
+    async def fetch_user_transactions(
+        session: AsyncSession,
+        user_id: UUID | str,
+        limit: Optional[int] = None,
+        days_back: Optional[int] = 90,
+    ) -> List[TransactionInput]:
+        """
+        Fetch user transactions from database and convert to TransactionInput format.
+
+        Args:
+            session: Database session
+            user_id: User ID to fetch transactions for
+            limit: Optional limit on number of transactions
+            days_back: Number of days back to fetch transactions (default 90)
+
+        Returns:
+            List of TransactionInput objects
+        """
+        try:
+            user_uuid = UUID(str(user_id)) if isinstance(user_id, str) else user_id
+            
+            # Get user's wallet
+            wallet_stmt = select(Wallet).where(Wallet.user_id == user_uuid)
+            wallet_result = await session.execute(wallet_stmt)
+            wallet = wallet_result.scalar_one_or_none()
+            
+            if not wallet:
+                LOGGER.warning(f"No wallet found for user {user_id}")
+                return []
+            
+            # Build query for transactions
+            from datetime import timedelta
+            cutoff_date = datetime.now(tz=timezone.utc) - timedelta(days=days_back or 90)
+            
+            stmt = (
+                select(Transaction)
+                .where(Transaction.wallet_id == wallet.id)
+                .where(Transaction.created_at >= cutoff_date)
+                .order_by(desc(Transaction.created_at))
+            )
+            
+            if limit:
+                stmt = stmt.limit(limit)
+            
+            result = await session.execute(stmt)
+            transactions = result.scalars().all()
+            
+            # Convert to TransactionInput format
+            transaction_inputs = []
+            for txn in transactions:
+                # Convert amount: expenses are positive, income is negative
+                amount = abs(txn.amount) if txn.transaction_type == 'expense' else -abs(txn.amount)
+                
+                transaction_inputs.append(
+                    TransactionInput(
+                        amount=amount,
+                        category=txn.category or 'other',
+                        date=txn.created_at.date(),
+                        description=txn.description,
+                    )
+                )
+            
+            LOGGER.info(f"Fetched {len(transaction_inputs)} transactions from database for user {user_id}")
+            return transaction_inputs
+            
+        except Exception as e:
+            LOGGER.error(f"Error fetching user transactions: {str(e)}", exc_info=True)
+            return []
+
+    @staticmethod
     async def analyze_budget(
         request: BudgetAdvisorRequest,
         session: Optional[AsyncSession] = None,
@@ -72,6 +145,7 @@ class BudgetAdvisorService:
         """
         Analyze transaction data and generate budget insights.
         Uses caching for identical transaction sets to improve response times.
+        Optionally fetches transactions from database if not provided.
 
         Args:
             request: Budget advisor request containing transactions and optional budget
@@ -89,8 +163,17 @@ class BudgetAdvisorService:
             f"User ID: {user_id}, Has DB Session: {session is not None}"
         )
 
+        # If no transactions provided but we have session and user_id, fetch from database
+        transactions = request.transactions
+        if not transactions and session and user_id:
+            LOGGER.info(f"No transactions in request, fetching from database for user {user_id}")
+            transactions = await BudgetAdvisorService.fetch_user_transactions(session, user_id)
+            if not transactions:
+                LOGGER.warning(f"No transactions found in database for user {user_id}")
+                raise ValueError("No transactions available for analysis. Please add transactions first.")
+        
         # Validate and process transactions
-        if not request.transactions:
+        if not transactions:
             LOGGER.warning("Empty transactions list provided - raising ValueError")
             raise ValueError("No transactions provided for analysis")
 
@@ -98,7 +181,7 @@ class BudgetAdvisorService:
         cache_data = {
             "transactions": [
                 {"amount": t.amount, "category": t.category, "date": t.date.isoformat()}
-                for t in request.transactions
+                for t in transactions
             ],
             "monthly_budget": request.monthly_budget,
         }
@@ -117,11 +200,11 @@ class BudgetAdvisorService:
                 del _analysis_cache[cache_key]
 
         # Log transaction details for debugging
-        LOGGER.debug(f"Transaction details: {[f'{t.category}: ${t.amount}' for t in request.transactions[:5]]}")
+        LOGGER.debug(f"Transaction details: {[f'{t.category}: ${t.amount}' for t in transactions[:5]]}")
         
         # Validate transaction amounts and categories
         invalid_count = 0
-        for idx, transaction in enumerate(request.transactions):
+        for idx, transaction in enumerate(transactions):
             if transaction.amount <= 0:
                 LOGGER.warning(f"Transaction {idx + 1} has invalid amount: {transaction.amount}")
                 invalid_count += 1
@@ -134,8 +217,8 @@ class BudgetAdvisorService:
 
         # Separate income and expenses
         # Note: In our system, expenses are positive, income is negative
-        expenses = [t for t in request.transactions if t.amount > 0]
-        income_transactions = [t for t in request.transactions if t.amount < 0]
+        expenses = [t for t in transactions if t.amount > 0]
+        income_transactions = [t for t in transactions if t.amount < 0]
 
         LOGGER.debug(f"Expenses: {len(expenses)}, Income transactions: {len(income_transactions)}")
 
@@ -148,7 +231,7 @@ class BudgetAdvisorService:
         net_balance = total_income - total_spending
 
         # Calculate date range
-        dates = [t.date for t in request.transactions]
+        dates = [t.date for t in transactions]
         start_date = min(dates)
         end_date = max(dates)
         days_span = (end_date - start_date).days + 1
@@ -202,6 +285,15 @@ class BudgetAdvisorService:
             ]
             for k in expired_keys:
                 del _analysis_cache[k]
+        
+        # Persist analysis to database if session and user_id are available
+        if session and user_id:
+            try:
+                await BudgetAdvisorService._persist_analysis(session, user_id, result, request.monthly_budget, len(transactions))
+                LOGGER.info(f"Persisted budget analysis to database for user {user_id}")
+            except Exception as e:
+                LOGGER.error(f"Failed to persist budget analysis to database: {str(e)}", exc_info=True)
+                # Don't fail the request if persistence fails
         
         LOGGER.debug(f"Returning analysis result with {len(result.top_categories)} top categories")
         return result
@@ -495,6 +587,62 @@ class BudgetAdvisorService:
             )
 
         return suggestions[:5]  # Limit to top 5 suggestions
+
+    @staticmethod
+    async def _persist_analysis(
+        session: AsyncSession,
+        user_id: UUID | str,
+        analysis: BudgetAdvisorAnalysis,
+        monthly_budget: Optional[float],
+        transaction_count: int,
+    ) -> None:
+        """
+        Persist budget analysis to database.
+
+        Args:
+            session: Database session
+            user_id: User ID
+            analysis: Analysis result
+            monthly_budget: Optional monthly budget
+            transaction_count: Number of transactions analyzed
+        """
+        try:
+            user_uuid = UUID(str(user_id)) if isinstance(user_id, str) else user_id
+            
+            # Parse analysis period dates
+            period_start = date.fromisoformat(analysis.analysis_period["start"])
+            period_end = date.fromisoformat(analysis.analysis_period["end"])
+            
+            # Convert Pydantic models to dicts for JSON storage
+            trends_dict = [t.dict() for t in analysis.trends]
+            alerts_dict = [a.dict() for a in analysis.overspending_alerts]
+            
+            # Create database record
+            db_analysis = BudgetAdvisorAnalysisModel(
+                user_id=user_uuid,
+                analysis_date=datetime.now(tz=timezone.utc),
+                total_spending=float(analysis.total_spending),
+                total_income=float(analysis.total_income),
+                net_balance=float(analysis.net_balance),
+                average_daily_spending=float(analysis.average_daily_spending),
+                monthly_budget=float(monthly_budget) if monthly_budget else None,
+                transaction_count=transaction_count,
+                top_categories_json=analysis.top_categories,
+                trends_json=trends_dict,
+                overspending_alerts_json=alerts_dict,
+                suggestions_json=analysis.suggestions,
+                analysis_period_start=period_start,
+                analysis_period_end=period_end,
+                full_analysis_json=analysis.dict(),
+            )
+            
+            session.add(db_analysis)
+            await session.commit()
+            LOGGER.debug(f"Successfully persisted budget analysis {db_analysis.id} to database")
+            
+        except Exception as e:
+            await session.rollback()
+            raise
 
 
 # Convenience function for async usage
