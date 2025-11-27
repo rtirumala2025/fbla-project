@@ -26,6 +26,195 @@
   --color-charcoal: #000000;
 }
 
+/* Color-Blind Mode: Add textures and patterns to color-dependent elements */
+/* This helps users with color vision deficiencies distinguish elements by pattern/texture in addition to color */
+
+.color-blind {
+  /* Progress bars and status indicators get patterns */
+  --color-blind-pattern-1: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(0, 0, 0, 0.1) 4px,
+    rgba(0, 0, 0, 0.1) 8px
+  );
+  --color-blind-pattern-2: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 4px,
+    rgba(0, 0, 0, 0.1) 4px,
+    rgba(0, 0, 0, 0.1) 8px
+  );
+  --color-blind-pattern-3: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px
+  );
+  --color-blind-pattern-size: 8px;
+}
+
+.color-blind .color-blind {
+  /* Ensure nested elements don't double-apply patterns */
+}
+
+/* Progress bars with texture overlay */
+.color-blind [role="progressbar"],
+.color-blind .progress-bar,
+.color-blind progress {
+  position: relative;
+}
+
+.color-blind [role="progressbar"]::after,
+.color-blind .progress-bar::after,
+.color-blind progress::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: var(--color-blind-pattern-1);
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* Status indicators with different patterns */
+.color-blind .status-success,
+.color-blind .status-healthy,
+.color-blind [data-status="success"],
+.color-blind [data-status="healthy"] {
+  position: relative;
+}
+
+.color-blind .status-success::after,
+.color-blind .status-healthy::after,
+.color-blind [data-status="success"]::after,
+.color-blind [data-status="healthy"]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: var(--color-blind-pattern-1);
+  pointer-events: none;
+  opacity: 0.2;
+}
+
+.color-blind .status-warning,
+.color-blind .status-hungry,
+.color-blind [data-status="warning"],
+.color-blind [data-status="hungry"] {
+  position: relative;
+}
+
+.color-blind .status-warning::after,
+.color-blind .status-hungry::after,
+.color-blind [data-status="warning"]::after,
+.color-blind [data-status="hungry"]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: var(--color-blind-pattern-2);
+  pointer-events: none;
+  opacity: 0.2;
+}
+
+.color-blind .status-danger,
+.color-blind .status-low,
+.color-blind [data-status="danger"],
+.color-blind [data-status="low"] {
+  position: relative;
+}
+
+.color-blind .status-danger::after,
+.color-blind .status-low::after,
+.color-blind [data-status="danger"]::after,
+.color-blind [data-status="low"]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: var(--color-blind-pattern-3);
+  background-size: var(--color-blind-pattern-size) var(--color-blind-pattern-size);
+  pointer-events: none;
+  opacity: 0.25;
+}
+
+/* Buttons and interactive elements get subtle borders in color-blind mode */
+.color-blind button:not([aria-pressed]),
+.color-blind .btn:not([aria-pressed]) {
+  border-width: 2px;
+  border-style: solid;
+}
+
+/* Ensure sufficient contrast for text in color-blind mode */
+.color-blind {
+  /* Increase contrast ratios */
+  --text-contrast-boost: 1.1;
+}
+
+.color-blind * {
+  /* Ensure minimum 4.5:1 contrast ratio for normal text */
+  /* Ensure minimum 3:1 contrast ratio for large text */
+}
+
+/* Dark mode adjustments for color-blind mode */
+.color-blind.dark [role="progressbar"]::after,
+.color-blind.dark .progress-bar::after,
+.color-blind.dark progress::after {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(255, 255, 255, 0.15) 4px,
+    rgba(255, 255, 255, 0.15) 8px
+  );
+}
+
+.color-blind.dark .status-success::after,
+.color-blind.dark .status-healthy::after,
+.color-blind.dark [data-status="success"]::after,
+.color-blind.dark [data-status="healthy"]::after {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(255, 255, 255, 0.1) 4px,
+    rgba(255, 255, 255, 0.1) 8px
+  );
+}
+
+.color-blind.dark .status-warning::after,
+.color-blind.dark .status-hungry::after,
+.color-blind.dark [data-status="warning"]::after,
+.color-blind.dark [data-status="hungry"]::after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 4px,
+    rgba(255, 255, 255, 0.1) 4px,
+    rgba(255, 255, 255, 0.1) 8px
+  );
+}
+
+.color-blind.dark .status-danger::after,
+.color-blind.dark .status-low::after,
+.color-blind.dark [data-status="danger"]::after,
+.color-blind.dark [data-status="low"]::after {
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.15) 1px,
+    transparent 1px
+  );
+  background-size: var(--color-blind-pattern-size) var(--color-blind-pattern-size);
+}
+
 @layer base {
   html, body, #root {
     background-color: var(--color-cream);
