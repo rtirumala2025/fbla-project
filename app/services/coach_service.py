@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.models.quest import QuestDifficulty, QuestStatus
+from app.models.ai_features import CoachAdviceHistory
 from app.schemas.quest import CoachAdviceResponse, CoachInsight
 from app.services.pet_service import PetNotFoundError, get_pet_by_user
 from app.services.quest_service import get_active_quests
@@ -153,9 +154,10 @@ async def _call_llm(endpoint: str, payload: dict) -> Optional[CoachAdviceRespons
 async def generate_coach_advice(session: AsyncSession, user_id: UUID | str) -> CoachAdviceResponse:
     """
     Create AI coach guidance, optionally delegating to an external LLM if configured.
+    Persists advice to database for history tracking.
     """
 
-    user_uuid = UUID(str(user_id))
+    user_uuid = UUID(str(user_id)) if isinstance(user_id, str) else user_id
     settings = get_settings()
 
     pet = None
@@ -179,7 +181,23 @@ async def generate_coach_advice(session: AsyncSession, user_id: UUID | str) -> C
 
     difficulty = _determine_difficulty(stats_payload or {})
 
+    # Prepare quest context for persistence
+    quest_context = {
+        "total_quests": len(quests),
+        "pending_quests": len(pending),
+        "quests": [
+            {
+                "id": str(quest.id),
+                "difficulty": quest.difficulty.value,
+                "status": quest.status.value,
+                "type": quest.quest_type.value,
+            }
+            for quest in quests
+        ],
+    }
+
     endpoint = settings.ai_coach_endpoint
+    advice_response = None
     if endpoint:
         llm_payload = {
             "pet": {
@@ -187,21 +205,43 @@ async def generate_coach_advice(session: AsyncSession, user_id: UUID | str) -> C
                 "species": getattr(pet, "species", None),
                 "stats": stats_payload,
             },
-            "quests": [
-                {
-                    "id": str(quest.id),
-                    "difficulty": quest.difficulty.value,
-                    "status": quest.status.value,
-                    "type": quest.quest_type.value,
-                }
-                for quest in quests
-            ],
+            "quests": quest_context["quests"],
             "suggested_difficulty": difficulty.value,
         }
         llm_response = await _call_llm(str(endpoint), llm_payload)
         if llm_response:
-            return llm_response
+            advice_response = llm_response
 
-    return _build_heuristic_response(pet, difficulty, len(quests), len(pending))
+    if not advice_response:
+        advice_response = _build_heuristic_response(pet, difficulty, len(quests), len(pending))
+
+    # Persist advice to database
+    try:
+        from datetime import datetime, timezone
+        suggestions_dict = [s.dict() for s in advice_response.suggestions]
+        
+        db_advice = CoachAdviceHistory(
+            user_id=user_uuid,
+            advice_date=datetime.now(tz=timezone.utc),
+            mood=advice_response.mood,
+            difficulty_hint=advice_response.difficulty_hint.value,
+            summary=advice_response.summary,
+            suggestions_json=suggestions_dict,
+            source=advice_response.source,
+            pet_stats_snapshot_json=stats_payload if stats_payload else None,
+            quest_context_json=quest_context,
+            generated_at=advice_response.generated_at,
+        )
+        
+        session.add(db_advice)
+        await session.commit()
+    except Exception as e:
+        # Log error but don't fail the request
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to persist coach advice to database: {str(e)}", exc_info=True)
+        await session.rollback()
+
+    return advice_response
 
 
