@@ -12,6 +12,7 @@ from .pets import router as pets_router
 from .pet_interactions import router as pet_interactions_router
 from .profiles import router as profiles_router
 from .shop import router as shop_router
+from .social import router as social_router
 from .users import router as users_router
 
 api_router = APIRouter(prefix="/api")
@@ -26,5 +27,6 @@ api_router.include_router(events_router)
 api_router.include_router(weather_router)
 api_router.include_router(accessories_router)
 api_router.include_router(art_router)
+api_router.include_router(social_router)
 
 __all__ = ["api_router"]
