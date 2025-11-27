@@ -1,7 +1,7 @@
 import { useState, useEffect, memo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, Home, ShoppingCart, PawPrint, BarChart3, Sparkles, Calendar, Zap, Palette, Settings } from 'lucide-react';
+import { Menu, X, LogOut, Home, ShoppingCart, PawPrint, BarChart3, Sparkles, Calendar, Zap, Palette, Settings, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = memo(() => {
@@ -73,8 +73,8 @@ const Header = memo(() => {
     { name: 'Shop', to: '/shop', icon: <ShoppingCart size={20} /> },
     { name: 'Analytics', to: '/analytics', icon: <Sparkles size={20} /> },
     { name: 'Events', to: '/events', icon: <Calendar size={20} /> },
+    { name: 'Social', to: '/social', icon: <Users size={20} /> },
     // Wallet menu item removed - functionality integrated into Budget page
-    // Social menu item removed
     // Quests menu item removed - functionality integrated into Dashboard page
     { name: 'NextGen', to: '/nextgen', icon: <Zap size={20} /> },
     { name: 'Avatar', to: '/customize/avatar', icon: <Palette size={20} /> },
