@@ -4,6 +4,7 @@ import { supabase, isSupabaseMock, withTimeout } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/networkUtils';
+import { useAutoSync } from '../hooks/useAutoSync';
 
 interface PetContextType {
   pet: Pet | null;
@@ -543,6 +544,9 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       hunger: Math.max(pet.stats.hunger - 10, 0),
     });
   }, [pet, updatePetStats]);
+
+  // Auto-sync when pet state changes
+  useAutoSync();
 
   const value = useMemo(() => ({
     pet,
