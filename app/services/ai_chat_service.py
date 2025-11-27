@@ -11,6 +11,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from types import SimpleNamespace
+from uuid import UUID
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +20,7 @@ from app.core.config import get_settings
 from app.schemas.ai import AIChatRequest, AIChatResponse
 from app.schemas.pet import PetInteractRequest
 from app.services.mcp_memory import MCPMemoryStore, MemoryMessage
+from app.models.ai_features import AIChatSession, AIChatMessage
 from app.services.pet_service import (
     PetNotFoundError,
     bathe_pet,
@@ -101,12 +103,31 @@ class AIChatService:
     ) -> AIChatResponse:
         """
         Handle free-form chat with Scout.
+        Persists messages to database for full conversation history.
         """
 
+        from uuid import UUID
+        from sqlalchemy import select
+        
         session_id = payload.ensure_session_id()
+        user_uuid = UUID(user_id) if isinstance(user_id, str) else user_id
+        
+        # Get or create chat session in database
+        db_session = await self._get_or_create_chat_session(session, user_uuid, session_id)
+        
         history = await self._memory.get_history(session_id)
 
         pet_context = await self._collect_pet_context(session, user_id)
+
+        # Persist user message to database
+        user_message = await self._persist_message(
+            session,
+            db_session.id,
+            user_uuid,
+            "user",
+            payload.message,
+            metadata={"type": "chat"},
+        )
 
         await self._memory.append(
             session_id,
@@ -119,6 +140,24 @@ class AIChatService:
             payload.model,
             fallback_seed=payload.message,
             pet_context=pet_context,
+        )
+
+        # Persist assistant message to database
+        await self._persist_message(
+            session,
+            db_session.id,
+            user_uuid,
+            "assistant",
+            response_payload["message"],
+            metadata={
+                "type": "chat",
+                "mood": response_payload.get("mood"),
+                "notifications": response_payload.get("notifications", []),
+            },
+            pet_state=response_payload.get("pet_state"),
+            health_forecast=response_payload.get("health_forecast"),
+            mood=response_payload.get("mood"),
+            notifications=response_payload.get("notifications", []),
         )
 
         await self._memory.append(
@@ -151,9 +190,17 @@ class AIChatService:
     ) -> AIChatResponse:
         """
         Handle command-oriented pet interactions (feed, play, etc).
+        Persists messages to database for full conversation history.
         """
 
+        from uuid import UUID as UUIDType
+        
         session_id = payload.ensure_session_id()
+        user_uuid = UUIDType(user_id) if isinstance(user_id, str) else user_id
+        
+        # Get or create chat session in database
+        db_session = await self._get_or_create_chat_session(session, user_uuid, session_id)
+        
         history = await self._memory.get_history(session_id)
 
         try:
@@ -162,15 +209,45 @@ class AIChatService:
             )
         except PetNotFoundError:
             response = self._no_pet_response(payload.original_prompt or payload.action)
+            
+            # Persist messages to database
+            user_msg = payload.original_prompt or payload.action
+            await self._persist_message(
+                session,
+                db_session.id,
+                user_uuid,
+                "user",
+                user_msg,
+                metadata={"type": "command"},
+            )
+            await self._persist_message(
+                session,
+                db_session.id,
+                user_uuid,
+                "assistant",
+                response["message"],
+                metadata={"type": "command", "fallback": True},
+            )
+            
             await self._memory.append(
                 session_id,
-                MemoryMessage(role="user", content=payload.original_prompt or payload.action, metadata={"type": "command"}),
+                MemoryMessage(role="user", content=user_msg, metadata={"type": "command"}),
             )
             await self._memory.append(
                 session_id,
                 MemoryMessage(role="assistant", content=response["message"], metadata={"type": "command", "fallback": True}),
             )
             return AIChatResponse(**response, session_id=session_id)
+
+        # Persist user command message
+        await self._persist_message(
+            session,
+            db_session.id,
+            user_uuid,
+            "user",
+            command_summary,
+            metadata={"type": "command", "action": interpreted_action},
+        )
 
         await self._memory.append(
             session_id,
@@ -195,6 +272,24 @@ class AIChatService:
             model_override=None,
             fallback_seed=action_result.reaction,
             pet_context=pet_context,
+        )
+
+        # Persist assistant response to database
+        await self._persist_message(
+            session,
+            db_session.id,
+            user_uuid,
+            "assistant",
+            response_payload["message"],
+            metadata={
+                "type": "command",
+                "action": interpreted_action,
+                "notifications": response_payload.get("notifications", []),
+            },
+            pet_state=response_payload.get("pet_state"),
+            health_forecast=response_payload.get("health_forecast"),
+            mood=response_payload.get("mood"),
+            notifications=response_payload.get("notifications", []),
         )
 
         await self._memory.append(
@@ -608,6 +703,107 @@ class AIChatService:
             params["duration_hours"] = duration or 4
 
         return params
+
+    async def _get_or_create_chat_session(
+        self,
+        session: AsyncSession,
+        user_id: UUID,
+        session_id: str,
+    ) -> AIChatSession:
+        """
+        Get or create a chat session in the database.
+        
+        Args:
+            session: Database session
+            user_id: User UUID
+            session_id: Session ID string
+            
+        Returns:
+            AIChatSession database model
+        """
+        from sqlalchemy import select
+        
+        try:
+            # Try to find existing session
+            stmt = select(AIChatSession).where(
+                AIChatSession.user_id == user_id,
+                AIChatSession.session_id == session_id,
+            )
+            result = await session.execute(stmt)
+            db_session = result.scalar_one_or_none()
+            
+            if db_session:
+                return db_session
+            
+            # Create new session
+            db_session = AIChatSession(
+                user_id=user_id,
+                session_id=session_id,
+                message_count=0,
+            )
+            session.add(db_session)
+            await session.commit()
+            await session.refresh(db_session)
+            return db_session
+            
+        except Exception as e:
+            await session.rollback()
+            LOGGER.error(f"Error getting/creating chat session: {str(e)}", exc_info=True)
+            raise
+
+    async def _persist_message(
+        self,
+        session: AsyncSession,
+        db_session_id: UUID,
+        user_id: UUID,
+        role: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        pet_state: Optional[Dict[str, Any]] = None,
+        health_forecast: Optional[Dict[str, Any]] = None,
+        mood: Optional[str] = None,
+        notifications: Optional[List[str]] = None,
+    ) -> AIChatMessage:
+        """
+        Persist a chat message to the database.
+        
+        Args:
+            session: Database session
+            db_session_id: Database session UUID
+            user_id: User UUID
+            role: Message role (user/assistant/system)
+            content: Message content
+            metadata: Optional metadata dict
+            pet_state: Optional pet state dict
+            health_forecast: Optional health forecast dict
+            mood: Optional mood string
+            notifications: Optional notifications list
+            
+        Returns:
+            AIChatMessage database model
+        """
+        try:
+            message = AIChatMessage(
+                session_id=db_session_id,
+                user_id=user_id,
+                role=role,
+                content=content,
+                metadata_json=metadata,
+                pet_state_json=pet_state,
+                health_forecast_json=health_forecast,
+                mood=mood,
+                notifications_json=notifications,
+            )
+            session.add(message)
+            await session.commit()
+            await session.refresh(message)
+            return message
+            
+        except Exception as e:
+            await session.rollback()
+            LOGGER.error(f"Error persisting chat message: {str(e)}", exc_info=True)
+            # Don't fail the request if persistence fails
+            raise
 
     def _derive_trend(self, risk_level: Optional[str]) -> str:
         """
