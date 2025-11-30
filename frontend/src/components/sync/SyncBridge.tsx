@@ -84,7 +84,7 @@ export const SyncBridge = ({ pet, onRefreshPet }: SyncBridgeProps) => {
       return;
     }
     lastSnapshotRef.current = signature;
-    enqueueChange(snapshot, new Date().toISOString());
+    enqueueChange({ snapshot, timestamp: new Date().toISOString() });
   }, [
     pet?.id,
     pet?.stats?.health,

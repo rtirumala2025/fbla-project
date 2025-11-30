@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { ARSessionView } from '../../components/ar/ARSessionView';
 import { DailyChallengeCard } from '../../components/minigames/DailyChallengeCard';
 import { GameLeaderboardPanel } from '../../components/minigames/GameLeaderboardPanel';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -54,6 +56,7 @@ export const NextGenHub: React.FC = () => {
   const { currentUser } = useAuth();
   const { pet } = usePet();
   const toast = useToast();
+  const navigate = useNavigate();
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,8 +108,8 @@ export const NextGenHub: React.FC = () => {
             {
               id: `habit-prediction-${Date.now()}`,
               title: 'Habit Prediction',
-              message: habitPrediction.notification_message,
-              type: 'info',
+              message: habitPrediction.notification_message || '',
+              type: 'info' as const,
             },
             ...prev,
           ]);
@@ -160,6 +163,19 @@ export const NextGenHub: React.FC = () => {
         // Show success toast if action was executed
         if (response.action && response.confidence > 0.7) {
           toast.success(response.feedback || 'Voice command executed successfully!');
+          
+          // Navigate based on action
+          if (response.action === 'open_analytics') {
+            navigate('/analytics');
+          } else if (response.action === 'open_quests') {
+            navigate('/dashboard'); // Quests are in dashboard
+          } else if (response.action === 'open_shop') {
+            navigate('/shop');
+          } else if (response.action === 'open_budget') {
+            navigate('/budget');
+          } else if (response.action === 'check_status') {
+            navigate('/dashboard'); // Status is shown in dashboard
+          }
         }
       } catch (error: any) {
         console.error('Voice command failed', error);
@@ -424,28 +440,7 @@ export const NextGenHub: React.FC = () => {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-              <h2 className="text-lg font-semibold text-slate-800">AR Companion</h2>
-              {arSession?.pet_data && (
-                <div className="mb-3 rounded-xl bg-indigo-50 p-3">
-                  <p className="text-sm font-semibold text-indigo-800">
-                    {arSession.pet_data.name} ({arSession.pet_data.species})
-                  </p>
-                  <p className="text-xs text-indigo-600">
-                    Mood: {arSession.pet_data.mood} • Health: {arSession.pet_data.stats.health}%
-                  </p>
-                </div>
-              )}
-              <p className="text-sm text-slate-600">
-                Session ID: <span className="font-mono text-xs">{arSession?.session_id}</span>
-              </p>
-              <p className="mt-2 text-xs text-slate-500">{arSession?.anchor_description}</p>
-              <ul className="mt-3 space-y-1 text-xs text-slate-600">
-                {arSession?.instructions.map((instruction) => (
-                  <li key={instruction}>• {instruction}</li>
-                ))}
-              </ul>
-            </div>
+            <ARSessionView session={arSession} petName={pet?.name} />
 
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
               <h2 className="text-lg font-semibold text-slate-800">Weather Reaction</h2>

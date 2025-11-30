@@ -74,6 +74,12 @@ class OfflineStorageService {
         if (!db.objectStoreNames.contains(STORE_NAMES.CACHE)) {
           const cacheStore = db.createObjectStore(STORE_NAMES.CACHE, { keyPath: 'key' });
           cacheStore.createIndex('expiresAt', 'expiresAt', { unique: false });
+        } else {
+          // Ensure index exists for existing stores
+          const cacheStore = (event.target as IDBOpenDBRequest).transaction?.objectStore(STORE_NAMES.CACHE);
+          if (cacheStore && !cacheStore.indexNames.contains('expiresAt')) {
+            cacheStore.createIndex('expiresAt', 'expiresAt', { unique: false });
+          }
         }
       };
     });
@@ -275,6 +281,143 @@ class OfflineStorageService {
   }
 
   /**
+   * Get cached item by key
+   */
+  async getCachedItem<T>(key: string): Promise<T | null> {
+    await this.init();
+
+    if (!this.db) {
+      return null;
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([STORE_NAMES.CACHE], 'readonly');
+      const store = transaction.objectStore(STORE_NAMES.CACHE);
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        if (result) {
+          // Check if expired
+          const now = Date.now();
+          if (result.expiresAt && result.expiresAt < now) {
+            // Expired, remove it
+            this.removeCachedItem(key).then(() => resolve(null)).catch(() => resolve(null));
+            return;
+          }
+          // Return the full cached data structure
+          resolve(result as T);
+        } else {
+          resolve(null);
+        }
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Set cached item with expiration
+   */
+  async setCachedItem<T>(key: string, data: T | { data: T; timestamp: number; expiresAt: number }, ttl?: number): Promise<void> {
+    await this.init();
+
+    if (!this.db) {
+      return;
+    }
+
+    const now = Date.now();
+    let cachedItem: { key: string; data: T; timestamp: number; expiresAt: number };
+    
+    // Handle both direct data and CachedData format
+    if (data && typeof data === 'object' && 'data' in data && 'timestamp' in data && 'expiresAt' in data) {
+      // Already in CachedData format
+      cachedItem = {
+        key,
+        data: (data as { data: T; timestamp: number; expiresAt: number }).data,
+        timestamp: (data as { data: T; timestamp: number; expiresAt: number }).timestamp,
+        expiresAt: (data as { data: T; timestamp: number; expiresAt: number }).expiresAt,
+      };
+    } else {
+      // Direct data, wrap it
+      const ttlMs = ttl || DEFAULT_TTL;
+      cachedItem = {
+        key,
+        data: data as T,
+        timestamp: now,
+        expiresAt: now + ttlMs,
+      };
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([STORE_NAMES.CACHE], 'readwrite');
+      const store = transaction.objectStore(STORE_NAMES.CACHE);
+      const request = store.put(cachedItem);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Remove cached item
+   */
+  async removeCachedItem(key: string): Promise<void> {
+    await this.init();
+
+    if (!this.db) {
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([STORE_NAMES.CACHE], 'readwrite');
+      const store = transaction.objectStore(STORE_NAMES.CACHE);
+      const request = store.delete(key);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Clear expired cache items
+   */
+  async clearExpiredCache(): Promise<number> {
+    await this.init();
+
+    if (!this.db) {
+      return 0;
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([STORE_NAMES.CACHE], 'readwrite');
+      const store = transaction.objectStore(STORE_NAMES.CACHE);
+      const index = store.index('expiresAt');
+      const request = index.openCursor();
+      const now = Date.now();
+      let cleared = 0;
+
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+        if (cursor) {
+          if (cursor.value.expiresAt < now) {
+            cursor.delete();
+            cleared++;
+            cursor.continue();
+          } else {
+            // Items are ordered by expiresAt, so we can stop here
+            resolve(cleared);
+          }
+        } else {
+          resolve(cleared);
+        }
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
    * Get storage size estimate
    */
   async getStorageSize(): Promise<{ state: number; queue: number; total: number }> {
@@ -296,6 +439,8 @@ class OfflineStorageService {
     }
   }
 }
+
+const DEFAULT_TTL = 60 * 60 * 1000; // 1 hour
 
 // Export singleton instance
 export const offlineStorage = new OfflineStorageService();

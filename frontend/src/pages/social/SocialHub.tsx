@@ -78,7 +78,13 @@ export const SocialHub: React.FC = () => {
   );
 
   // Real-time subscription
-  useSocialRealtime(loadData);
+  const refreshData = useCallback(
+    async (options?: { silent?: boolean }) => {
+      await loadData(options?.silent);
+    },
+    [loadData],
+  );
+  useSocialRealtime(refreshData);
 
   // Initial load
   useEffect(() => {

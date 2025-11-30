@@ -22,7 +22,9 @@ export interface SyncManagerResult {
   queuedOperations: number;
   save: (options?: { force?: boolean; silent?: boolean }) => Promise<void>;
   restore: (options?: { force?: boolean; silent?: boolean }) => Promise<void>;
+  refresh: (options?: { force?: boolean; silent?: boolean }) => Promise<void>;
   clearConflicts: () => void;
+  enqueueChange: (change: Record<string, unknown>) => Promise<void>;
   deviceId: string;
 }
 
@@ -232,6 +234,36 @@ export function useSyncManager(): SyncManagerResult {
     return () => clearInterval(interval);
   }, [userId]);
 
+  // Refresh function (alias for restore)
+  const refresh = useCallback(
+    async (options?: { force?: boolean; silent?: boolean }) => {
+      await restore(options);
+    },
+    [restore],
+  );
+
+  // Enqueue change for offline sync
+  const enqueueChange = useCallback(
+    async (change: Record<string, unknown>) => {
+      if (!userId) return;
+      
+      try {
+        await offlineStorage.queueOperation({
+          type: 'update',
+          table: 'app_state',
+          data: change,
+        });
+        
+        // Update queued count
+        const queued = await offlineStorage.getQueuedOperations();
+        setQueuedOperations(queued.length);
+      } catch (error) {
+        console.error('Failed to enqueue change:', error);
+      }
+    },
+    [userId],
+  );
+
   return {
     status,
     conflicts,
@@ -240,7 +272,9 @@ export function useSyncManager(): SyncManagerResult {
     queuedOperations,
     save,
     restore,
+    refresh,
     clearConflicts,
+    enqueueChange,
     deviceId,
   };
 }

@@ -93,6 +93,32 @@ COMMAND_PATTERNS: Dict[str, List[Tuple[str, str]]] = {
         (r"\b(sit|stay|roll|shake|speak|fetch)\b", "trick"),
         (r"\b(learn|teach|train)\b", "trick"),
     ],
+    "status": [
+        (r"\b(status|stats|statistics|check|how|what)\s+(?:is|are|my|the)\s+(?:pet|health|happiness|energy|hunger|cleanliness)\b", "status"),
+        (r"\b(how\s+is|what's|check)\s+(?:my\s+)?(?:pet|health|happiness|energy|hunger|cleanliness|stats)\b", "status"),
+        (r"\b(show|display|view)\s+(?:pet\s+)?(?:status|stats|statistics)\b", "status"),
+        (r"\b(pet\s+)?(status|stats|statistics|condition|state)\b", "status"),
+    ],
+    "analytics": [
+        (r"\b(analytics|analyses|analysis|report|reports|insights|dashboard)\b", "analytics"),
+        (r"\b(show|open|view|display|see)\s+(?:analytics|report|dashboard|insights)\b", "analytics"),
+        (r"\b(how\s+am\s+i\s+doing|my\s+progress|my\s+performance|care\s+summary)\b", "analytics"),
+    ],
+    "quests": [
+        (r"\b(quest|quests|challenge|challenges|mission|missions|task|tasks)\b", "quests"),
+        (r"\b(show|open|view|display|see|check)\s+(?:my\s+)?(?:quest|quests|challenge|challenges|mission|missions)\b", "quests"),
+        (r"\b(what\s+quest|active\s+quest|daily\s+quest|weekly\s+quest)\b", "quests"),
+    ],
+    "shop": [
+        (r"\b(shop|store|buy|purchase|shopping|marketplace)\b", "shop"),
+        (r"\b(show|open|view|display|see)\s+(?:shop|store|marketplace)\b", "shop"),
+        (r"\b(i\s+want\s+to\s+)?(buy|purchase|get)\s+(?:something|item|toy|food|accessory)\b", "shop"),
+    ],
+    "budget": [
+        (r"\b(budget|finance|financial|money|coins|balance|spending)\b", "budget"),
+        (r"\b(show|open|view|display|see|check)\s+(?:budget|finance|financial|balance|spending)\b", "budget"),
+        (r"\b(how\s+much|how\s+many\s+coins|what's\s+my\s+balance)\b", "budget"),
+    ],
 }
 
 # Multi-step connectors
@@ -491,6 +517,146 @@ async def _execute_bathe(
         )
 
 
+async def _execute_status(
+    session: AsyncSession,
+    user_id: UUID | str,
+    parameters: Dict[str, Any],
+    pet: Pet,
+) -> CommandResult:
+    """Execute a status check command."""
+    logger.info("Executing status check command")
+    
+    try:
+        # Format pet status information
+        stats = pet.stats if pet.stats else {}
+        status_message = (
+            f"{pet.name}'s current status:\n"
+            f"Health: {stats.get('health', pet.health)}%\n"
+            f"Happiness: {stats.get('happiness', pet.happiness)}%\n"
+            f"Hunger: {stats.get('hunger', pet.hunger)}%\n"
+            f"Energy: {stats.get('energy', pet.energy)}%\n"
+            f"Cleanliness: {stats.get('cleanliness', pet.cleanliness)}%\n"
+            f"Mood: {pet.mood}"
+        )
+        
+        return CommandResult(
+            success=True,
+            action="status",
+            message=status_message,
+            pet_state={
+                "health": stats.get('health', pet.health),
+                "happiness": stats.get('happiness', pet.happiness),
+                "hunger": stats.get('hunger', pet.hunger),
+                "energy": stats.get('energy', pet.energy),
+                "cleanliness": stats.get('cleanliness', pet.cleanliness),
+                "mood": pet.mood,
+            },
+        )
+    except Exception as e:
+        logger.error(f"Error executing status command: {e}", exc_info=True)
+        return CommandResult(
+            success=False,
+            action="status",
+            message=f"Failed to check status: {str(e)}",
+        )
+
+
+async def _execute_analytics(
+    session: AsyncSession,
+    user_id: UUID | str,
+    parameters: Dict[str, Any],
+    pet: Pet,
+) -> CommandResult:
+    """Execute an analytics command."""
+    logger.info("Executing analytics command")
+    
+    try:
+        return CommandResult(
+            success=True,
+            action="analytics",
+            message="Navigate to the analytics dashboard to view detailed reports, trends, and AI insights about your pet's care.",
+        )
+    except Exception as e:
+        logger.error(f"Error executing analytics command: {e}", exc_info=True)
+        return CommandResult(
+            success=False,
+            action="analytics",
+            message=f"Failed to access analytics: {str(e)}",
+        )
+
+
+async def _execute_quests(
+    session: AsyncSession,
+    user_id: UUID | str,
+    parameters: Dict[str, Any],
+    pet: Pet,
+) -> CommandResult:
+    """Execute a quests command."""
+    logger.info("Executing quests command")
+    
+    try:
+        return CommandResult(
+            success=True,
+            action="quests",
+            message="Navigate to the quest dashboard to view your active challenges, daily quests, and weekly missions.",
+        )
+    except Exception as e:
+        logger.error(f"Error executing quests command: {e}", exc_info=True)
+        return CommandResult(
+            success=False,
+            action="quests",
+            message=f"Failed to access quests: {str(e)}",
+        )
+
+
+async def _execute_shop(
+    session: AsyncSession,
+    user_id: UUID | str,
+    parameters: Dict[str, Any],
+    pet: Pet,
+) -> CommandResult:
+    """Execute a shop command."""
+    logger.info("Executing shop command")
+    
+    try:
+        return CommandResult(
+            success=True,
+            action="shop",
+            message="Navigate to the shop to browse items, toys, food, and accessories for your pet.",
+        )
+    except Exception as e:
+        logger.error(f"Error executing shop command: {e}", exc_info=True)
+        return CommandResult(
+            success=False,
+            action="shop",
+            message=f"Failed to access shop: {str(e)}",
+        )
+
+
+async def _execute_budget(
+    session: AsyncSession,
+    user_id: UUID | str,
+    parameters: Dict[str, Any],
+    pet: Pet,
+) -> CommandResult:
+    """Execute a budget command."""
+    logger.info("Executing budget command")
+    
+    try:
+        return CommandResult(
+            success=True,
+            action="budget",
+            message="Navigate to the budget dashboard to view your finances, transactions, spending, and savings goals.",
+        )
+    except Exception as e:
+        logger.error(f"Error executing budget command: {e}", exc_info=True)
+        return CommandResult(
+            success=False,
+            action="budget",
+            message=f"Failed to access budget: {str(e)}",
+        )
+
+
 async def _execute_trick(
     session: AsyncSession,
     user_id: UUID | str,
@@ -675,6 +841,16 @@ async def execute_command(
                 result = await _execute_bathe(session, user_id, step.parameters, pet_model)
             elif step.action == "trick":
                 result = await _execute_trick(session, user_id, step.parameters, pet_model)
+            elif step.action == "status":
+                result = await _execute_status(session, user_id, step.parameters, pet_model)
+            elif step.action == "analytics":
+                result = await _execute_analytics(session, user_id, step.parameters, pet_model)
+            elif step.action == "quests":
+                result = await _execute_quests(session, user_id, step.parameters, pet_model)
+            elif step.action == "shop":
+                result = await _execute_shop(session, user_id, step.parameters, pet_model)
+            elif step.action == "budget":
+                result = await _execute_budget(session, user_id, step.parameters, pet_model)
             else:
                 logger.warning(f"Unknown action '{step.action}' in step {step_idx}")
                 result = CommandResult(

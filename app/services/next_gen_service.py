@@ -108,6 +108,26 @@ async def voice_command_intent(
                 action = "trick_pet"
                 intent = "care.trick"
                 confidence = 0.80
+            elif executed_action == "status":
+                action = "check_status"
+                intent = "info.status"
+                confidence = 0.80
+            elif executed_action == "analytics":
+                action = "open_analytics"
+                intent = "info.analytics"
+                confidence = 0.80
+            elif executed_action == "quests":
+                action = "open_quests"
+                intent = "info.quests"
+                confidence = 0.80
+            elif executed_action == "shop":
+                action = "open_shop"
+                intent = "info.shop"
+                confidence = 0.80
+            elif executed_action == "budget":
+                action = "open_budget"
+                intent = "info.budget"
+                confidence = 0.80
             
             # Generate feedback from execution result
             if execution_result.get("message"):
@@ -136,24 +156,76 @@ async def voice_command_intent(
                 intent = "care.bathe"
                 confidence = 0.70
                 feedback = "I heard 'bathe'. Use the pet care panel to bathe your pet."
-            elif "analytics" in normalized or "report" in normalized or "stats" in normalized:
+            elif "status" in normalized or ("check" in normalized and "pet" in normalized) or ("how" in normalized and "pet" in normalized):
+                action = "check_status"
+                intent = "info.status"
+                confidence = 0.70
+                feedback = "I heard 'status'. Check your pet's stats in the dashboard."
+            elif "analytics" in normalized or "report" in normalized or ("stats" in normalized and "analytics" not in normalized):
                 action = "open_analytics"
-                intent = "analytics.open"
-                confidence = 0.65
+                intent = "info.analytics"
+                confidence = 0.70
                 feedback = "I heard 'analytics'. Navigate to the analytics dashboard to view reports."
+            elif "quest" in normalized or "challenge" in normalized or "mission" in normalized:
+                action = "open_quests"
+                intent = "info.quests"
+                confidence = 0.70
+                feedback = "I heard 'quests'. Navigate to the quest dashboard to see your challenges."
+            elif "shop" in normalized or "store" in normalized or ("buy" in normalized and "something" in normalized):
+                action = "open_shop"
+                intent = "info.shop"
+                confidence = 0.70
+                feedback = "I heard 'shop'. Navigate to the shop to browse items."
+            elif "budget" in normalized or "finance" in normalized or ("balance" in normalized and "check" in normalized):
+                action = "open_budget"
+                intent = "info.budget"
+                confidence = 0.70
+                feedback = "I heard 'budget'. Navigate to the budget dashboard to view your finances."
             else:
-                # Provide helpful suggestions
+                # Provide helpful suggestions with expanded vocabulary
                 feedback = (
-                    "I didn't understand that command. Try saying 'feed my pet', "
-                    "'play with my pet', 'let my pet sleep', or 'bathe my pet'."
+                    "I didn't understand that command. Try saying:\n"
+                    "- 'feed my pet' or 'give food'\n"
+                    "- 'play with my pet' or 'play fetch'\n"
+                    "- 'let my pet sleep' or 'rest'\n"
+                    "- 'bathe my pet' or 'clean'\n"
+                    "- 'check status' or 'how is my pet'\n"
+                    "- 'show analytics' or 'open dashboard'\n"
+                    "- 'show quests' or 'view challenges'\n"
+                    "- 'open shop' or 'go shopping'\n"
+                    "- 'check budget' or 'view finances'"
                 )
     except Exception as e:
         # Log error but return graceful response
         logger.error(f"Error executing voice command for user {user_id}: {e}", exc_info=True)
-        feedback = "Command processing encountered an error. Please try again or use the pet care panel."
+        feedback = (
+            "Command processing encountered an error. Please try again or use the pet care panel. "
+            f"Error: {str(e)[:100]}"
+        )
         confidence = 0.0
     
     logger.info(f"Voice command processed: intent={intent}, action={action}, confidence={confidence:.2f}")
+    
+    # Log voice command to database
+    try:
+        from app.models.next_gen import VoiceCommand
+        voice_command = VoiceCommand(
+            user_id=user_id if isinstance(user_id, UUID) else UUID(str(user_id)),
+            transcript=payload.transcript,
+            intent=intent,
+            confidence=confidence,
+            action=action,
+            feedback=feedback,
+            execution_result=execution_result if execution_result else None,
+        )
+        session.add(voice_command)
+        await session.commit()
+        logger.debug(f"Voice command logged to database: {voice_command.id}")
+    except Exception as e:
+        # Don't fail the request if logging fails
+        logger.warning(f"Failed to log voice command to database: {e}", exc_info=True)
+        await session.rollback()
+    
     return VoiceCommandResponse(
         intent=intent,
         confidence=confidence,
@@ -232,6 +304,27 @@ async def generate_ar_session(
                 "health": pet.health,
             },
         }
+    
+    # Persist AR session to database
+    try:
+        from app.models.next_gen import ARSession
+        from datetime import datetime, timezone
+        
+        ar_session = ARSession(
+            user_id=user_id if isinstance(user_id, UUID) else UUID(str(user_id)),
+            session_id=session_id,
+            device_info=None,  # Can be populated from request headers if needed
+            anchor_data=None,  # Can be populated when AR anchor is created
+            pet_data=pet_data,
+            started_at=datetime.now(tz=timezone.utc),
+        )
+        session.add(ar_session)
+        await session.commit()
+        logger.debug(f"AR session persisted to database: {ar_session.id}")
+    except Exception as e:
+        # Don't fail the request if persistence fails
+        logger.warning(f"Failed to persist AR session to database: {e}", exc_info=True)
+        await session.rollback()
     
     return ARSessionResponse(
         session_id=session_id,

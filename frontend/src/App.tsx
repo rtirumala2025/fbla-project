@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { PetProvider } from './context/PetContext';
 import { FinancialProvider } from './context/FinancialContext';
+import { PetAutoSync } from './components/sync/PetAutoSync';
 import Header from './components/Header';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import './styles/globals.css';
@@ -206,6 +207,7 @@ function AppContent() {
 
   return (
     <PetProvider userId={currentUser?.uid || null}>
+      <PetAutoSync />
       <FinancialProvider user={currentUser}>
         <div className="bg-cream text-charcoal">
         <Header />

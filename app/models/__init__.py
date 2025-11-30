@@ -20,6 +20,7 @@ from app.models.pet import BREED_OPTIONS, Pet, SpeciesEnum
 from app.models.profile import Profile, UserPreferences
 from app.models.quest import Quest, QuestDifficulty, QuestStatus, QuestType, UserQuest
 from app.models.social import FriendStatus, Friendship, PublicProfile
+from app.models.next_gen import ARSession, VoiceCommand
 from app.models.sync import CloudSyncSnapshot
 from app.models.user import User, UserCreate, UserLogin, UserRead, UserUpdate
 
@@ -59,5 +60,7 @@ __all__ = [
     "AnalyticsNotification",
     "Profile",
     "UserPreferences",
+    "VoiceCommand",
+    "ARSession",
 ]
 
