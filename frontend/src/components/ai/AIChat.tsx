@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Loader2, Heart, Zap, Coffee, Droplet, AlertCircle, HelpCircle } from 'lucide-react';
 import PetEmotionCard from './PetEmotionCard';
 import { useInteractionLogger } from '../../hooks/useInteractionLogger';
+import { apiRequest } from '../../api/httpClient';
 
 type Message = {
   id: string;

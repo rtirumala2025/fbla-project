@@ -4,12 +4,14 @@ import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useSoundPreferences } from '../../contexts/SoundContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const SettingsScreen: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { currentUser } = useAuth();
   const { effectsEnabled, ambientEnabled, setEffectsEnabled, setAmbientEnabled } = useSoundPreferences();
+  const { theme, toggleTheme, colorBlindMode, toggleColorBlindMode } = useTheme();
   const [sound, setSound] = useState(true);
   const [music, setMusic] = useState(true);
   const [notifications, setNotifications] = useState(true);
@@ -201,6 +203,27 @@ export const SettingsScreen: React.FC = () => {
                   }} 
                 /> 
                 Notifications
+              </label>
+            </div>
+          </div>
+          <div className="ds-card p-4">
+            <h2 className="text-lg font-bold mb-2">Appearance</h2>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  checked={theme === 'dark'} 
+                  onChange={() => toggleTheme()} 
+                /> 
+                Dark mode
+              </label>
+              <label className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  checked={colorBlindMode} 
+                  onChange={() => toggleColorBlindMode()} 
+                /> 
+                Color blind mode
               </label>
             </div>
           </div>
