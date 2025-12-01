@@ -53,6 +53,9 @@ class Wallet(Base, TimestampMixin):
 class Transaction(Base):
     """
     Individual finance transaction entry for income or expenses.
+    
+    Note: user_id is derived from wallet.user_id relationship (normalized schema).
+    Use wallet.user_id to access the user_id.
     """
 
     __tablename__ = "finance_transactions"
@@ -69,12 +72,9 @@ class Transaction(Base):
         PGUUID(as_uuid=True),
         ForeignKey("finance_wallets.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
-    user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-    )
+    # user_id removed - access via wallet.user_id relationship
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     transaction_type: Mapped[str] = mapped_column(String(10), nullable=False)
     category: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -123,6 +123,9 @@ class ShopItem(Base, TimestampMixin):
 class Goal(Base, TimestampMixin):
     """
     Savings goals associated with a wallet.
+    
+    Note: user_id is derived from wallet.user_id relationship (normalized schema).
+    Use wallet.user_id to access the user_id.
     """
 
     __tablename__ = "finance_goals"
@@ -136,12 +139,9 @@ class Goal(Base, TimestampMixin):
         PGUUID(as_uuid=True),
         ForeignKey("finance_wallets.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
-    user_id: Mapped[UUID] = mapped_column(
-        PGUUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-    )
+    # user_id removed - access via wallet.user_id relationship
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     target_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     current_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

@@ -195,7 +195,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   // Save progress to IndexedDB whenever step changes
   const saveProgress = useCallback(async (currentStep: number) => {
     try {
-      if (indexedDBStorage.isSupported()) {
+      if (IndexedDBStorage.isSupported()) {
         await indexedDBStorage.saveTutorialProgress(TUTORIAL_ID, currentStep);
       }
     } catch (error) {
@@ -266,15 +266,17 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
     }
   }, []);
 
-  // Expose methods for parent components
-  React.useImperativeHandle(
-    React.forwardRef(() => null),
-    () => ({
-      start: startTutorial,
-      restart: restartTutorial,
-    }),
-    [startTutorial, restartTutorial]
-  );
+  // Expose methods for parent components (if ref is provided)
+  // Note: This component doesn't use forwardRef, so this is commented out
+  // If ref support is needed, wrap the component with React.forwardRef
+  // React.useImperativeHandle(
+  //   ref,
+  //   () => ({
+  //     start: startTutorial,
+  //     restart: restartTutorial,
+  //   }),
+  //   [startTutorial, restartTutorial]
+  // );
 
   if (isLoading) {
     return null;

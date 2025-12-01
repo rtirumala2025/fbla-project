@@ -253,6 +253,9 @@ class IndexedDBStorage {
 // Export singleton instance
 export const indexedDBStorage = new IndexedDBStorage();
 
+// Export class for static methods
+export { IndexedDBStorage };
+
 // Export types for use in components
 export type { StoreName };
 export { STORE_NAMES };
