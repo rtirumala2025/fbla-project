@@ -9,15 +9,26 @@ from app.schemas.ai import (
     AIChatResponse,
     BudgetAdviceRequest,
     BudgetAdviceResponse,
+    DecisionEvaluationRequest,
+    DecisionEvaluationResponse,
+    FinanceScenarioRequest,
+    FinanceScenarioResponse,
+    HabitPredictionRequest,
+    HabitPredictionResponse,
     PetBehaviorRequest,
     PetBehaviorResponse,
+    PetMoodForecastRequest,
+    PetMoodForecastResponse,
     PetNameSuggestionRequest,
     PetNameSuggestionResponse,
 )
 from app.services.ai_service import AIService
 from app.services.budget_ai_service import BudgetAIService
+from app.services.finance_simulator import FinanceSimulatorService
+from app.services.habit_prediction import HabitPredictionService
 from app.services.nlp_command_service import NLPCommandService
 from app.services.pet_behavior_ai_service import PetBehaviorAIService
+from app.services.pet_mood_forecast import PetMoodForecastService
 from app.services.pet_name_ai_service import PetNameAIService
 from app.services.pet_service import PetService
 from app.utils.dependencies import get_ai_service, get_current_user, get_pet_service
@@ -196,4 +207,128 @@ async def process_nlp_command(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process command: {str(e)}",
+        )
+
+
+@router.post("/pet_mood_forecast", response_model=PetMoodForecastResponse, summary="Generate pet mood forecast")
+async def get_pet_mood_forecast(
+    payload: PetMoodForecastRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    pet_service: PetService = Depends(get_pet_service),
+) -> PetMoodForecastResponse:
+    """
+    Generate AI-powered mood forecast for a pet based on current stats and interaction history.
+    
+    Uses OpenAI API to predict future mood states with confidence scores and reasoning.
+    """
+    # Verify pet belongs to user
+    pet = await pet_service.get_pet(current_user.id)
+    if pet is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pet not found",
+        )
+    
+    if payload.pet_id != str(pet.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access mood forecast for another user's pet",
+        )
+
+    service = PetMoodForecastService()
+    try:
+        forecast = await service.forecast_mood(
+            pet_id=payload.pet_id,
+            current_stats=payload.current_stats,
+            interaction_history=payload.interaction_history,
+            forecast_days=payload.forecast_days,
+        )
+        return PetMoodForecastResponse(forecast=forecast)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate mood forecast: {str(e)}",
+        )
+
+
+@router.post("/habit_prediction", response_model=HabitPredictionResponse, summary="Predict user habits")
+async def predict_user_habits(
+    payload: HabitPredictionRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+) -> HabitPredictionResponse:
+    """
+    Predict user pet care habits based on interaction patterns and history.
+    
+    Uses OpenAI API to analyze behavioral patterns and predict future care routines.
+    """
+    # Verify user_id matches authenticated user
+    if payload.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access habit predictions for another user",
+        )
+
+    service = HabitPredictionService()
+    try:
+        predictions = await service.predict_habits(
+            user_id=payload.user_id,
+            interaction_history=payload.interaction_history,
+            pet_stats_history=payload.pet_stats_history,
+            forecast_days=payload.forecast_days,
+        )
+        return HabitPredictionResponse(**predictions)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to predict habits: {str(e)}",
+        )
+
+
+@router.post("/finance_simulator/scenario", response_model=FinanceScenarioResponse, summary="Generate financial scenario")
+async def generate_finance_scenario(
+    payload: FinanceScenarioRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+) -> FinanceScenarioResponse:
+    """
+    Generate an interactive financial literacy scenario.
+    
+    Creates educational scenarios for loans, investments, budgeting, or savings decisions.
+    Uses OpenAI API to generate realistic, personalized scenarios.
+    """
+    service = FinanceSimulatorService()
+    try:
+        scenario = await service.generate_scenario(
+            scenario_type=payload.scenario_type,
+            user_context=payload.user_context,
+        )
+        return FinanceScenarioResponse(**scenario)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate scenario: {str(e)}",
+        )
+
+
+@router.post("/finance_simulator/evaluate", response_model=DecisionEvaluationResponse, summary="Evaluate financial decision")
+async def evaluate_finance_decision(
+    payload: DecisionEvaluationRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+) -> DecisionEvaluationResponse:
+    """
+    Evaluate a user's financial decision in a scenario.
+    
+    Provides AI-powered feedback, learning outcomes, and recommendations.
+    """
+    service = FinanceSimulatorService()
+    try:
+        evaluation = await service.evaluate_decision(
+            scenario_id=payload.scenario_id,
+            user_decision={"selected_option_id": payload.selected_option_id},
+            scenario_context=payload.scenario_context,
+        )
+        return DecisionEvaluationResponse(**evaluation)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to evaluate decision: {str(e)}",
         )

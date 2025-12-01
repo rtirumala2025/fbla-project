@@ -111,3 +111,124 @@ class PetBehaviorResponse(BaseModel):
 
     mood_forecast: List[str] = Field(..., description="Predicted mood states for upcoming period")
     activity_prediction: List[str] = Field(..., description="Predicted activity patterns")
+
+
+# Pet Mood Forecast Schemas
+class PetMoodForecastRequest(BaseModel):
+    """Request payload for pet mood forecast."""
+
+    pet_id: str = Field(..., description="Pet ID for forecast")
+    current_stats: Dict[str, Any] = Field(..., description="Current pet statistics")
+    interaction_history: List[Dict[str, Any]] = Field(default_factory=list, description="Recent interaction history")
+    forecast_days: int = Field(default=7, ge=1, le=30, description="Number of days to forecast")
+
+
+class MoodForecastEntry(BaseModel):
+    """Single mood forecast entry."""
+
+    date: str = Field(..., description="Forecast date in YYYY-MM-DD format")
+    predicted_mood: str = Field(..., description="Predicted mood state")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score (0.0-1.0)")
+    reasoning: str = Field(..., description="Brief explanation for the prediction")
+
+
+class PetMoodForecastResponse(BaseModel):
+    """Response payload for pet mood forecast."""
+
+    forecast: List[MoodForecastEntry] = Field(..., description="Mood forecast entries")
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# Habit Prediction Schemas
+class HabitPredictionRequest(BaseModel):
+    """Request payload for habit prediction."""
+
+    user_id: str = Field(..., description="User ID for prediction")
+    interaction_history: List[Dict[str, Any]] = Field(default_factory=list, description="User interaction history")
+    pet_stats_history: List[Dict[str, Any]] = Field(default_factory=list, description="Historical pet statistics")
+    forecast_days: int = Field(default=14, ge=1, le=60, description="Number of days to forecast")
+
+
+class PredictedHabit(BaseModel):
+    """Predicted user habit."""
+
+    habit_type: str = Field(..., description="Type of habit (feeding, playing, cleaning, etc.)")
+    frequency: str = Field(..., description="Predicted frequency (daily, every_other_day, weekly, irregular)")
+    likely_times: List[str] = Field(..., description="Likely times of day for this habit")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score")
+    description: str = Field(..., description="Description of the predicted habit")
+
+
+class HabitPredictionResponse(BaseModel):
+    """Response payload for habit prediction."""
+
+    predicted_habits: List[PredictedHabit] = Field(..., description="List of predicted habits")
+    patterns_identified: List[str] = Field(..., description="Identified behavioral patterns")
+    recommendations: List[str] = Field(..., description="Recommendations based on patterns")
+    forecast_summary: str = Field(..., description="Summary of predicted care patterns")
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# Finance Simulator Schemas
+class FinanceScenarioRequest(BaseModel):
+    """Request payload for generating a financial scenario."""
+
+    scenario_type: str = Field(..., description="Type of scenario (loan, investment, budgeting, savings)")
+    user_context: Optional[Dict[str, Any]] = Field(default=None, description="Optional user financial context")
+
+
+class FinancialImpact(BaseModel):
+    """Financial impact of an option."""
+
+    income_change: float = Field(default=0.0, description="Change in income")
+    expense_change: float = Field(default=0.0, description="Change in expenses")
+    savings_change: float = Field(default=0.0, description="Change in savings")
+    debt_change: float = Field(default=0.0, description="Change in debt")
+
+
+class ScenarioOption(BaseModel):
+    """Option in a financial scenario."""
+
+    option_id: str = Field(..., description="Unique option identifier")
+    label: str = Field(..., description="Option label")
+    description: str = Field(..., description="What this option entails")
+    financial_impact: FinancialImpact = Field(..., description="Financial impact of this option")
+    risk_level: str = Field(..., description="Risk level (low, medium, high)")
+    time_horizon: str = Field(..., description="Time horizon (short, medium, long)")
+
+
+class FinanceScenarioResponse(BaseModel):
+    """Response payload for financial scenario."""
+
+    scenario_id: str = Field(..., description="Unique scenario identifier")
+    title: str = Field(..., description="Scenario title")
+    description: str = Field(..., description="Detailed scenario description")
+    scenario_type: str = Field(..., description="Type of scenario")
+    initial_situation: Dict[str, float] = Field(..., description="Initial financial situation")
+    options: List[ScenarioOption] = Field(..., description="Available options")
+    learning_objectives: List[str] = Field(..., description="Learning objectives")
+    concepts_covered: List[str] = Field(..., description="Financial concepts covered")
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class DecisionEvaluationRequest(BaseModel):
+    """Request payload for evaluating a financial decision."""
+
+    scenario_id: str = Field(..., description="Scenario identifier")
+    selected_option_id: str = Field(..., description="User's selected option")
+    scenario_context: Dict[str, Any] = Field(..., description="Original scenario context")
+
+
+class DecisionEvaluationResponse(BaseModel):
+    """Response payload for decision evaluation."""
+
+    evaluation_score: float = Field(..., ge=0.0, le=1.0, description="Evaluation score (0.0-1.0)")
+    immediate_impact: Dict[str, str] = Field(..., description="Immediate financial impact")
+    long_term_consequences: List[str] = Field(..., description="Long-term consequences")
+    lessons_learned: List[str] = Field(..., description="Lessons learned")
+    feedback: str = Field(..., description="Detailed feedback")
+    alternative_perspectives: List[str] = Field(..., description="Alternative perspectives")
+    recommendations: List[str] = Field(..., description="Recommendations")
+    overall_assessment: str = Field(..., description="Overall assessment")
+    evaluated_at: datetime = Field(default_factory=datetime.utcnow)
+    scenario_id: str = Field(..., description="Scenario identifier")

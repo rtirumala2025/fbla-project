@@ -1,9 +1,10 @@
 /**
  * LeaderboardPanel Component
- * Displays social leaderboard with different metrics
+ * Displays social leaderboard with different metrics and real-time updates
  */
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trophy, Coins, Award, Medal, Crown } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import type { LeaderboardEntry, LeaderboardMetric } from '../../api/social';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
@@ -43,6 +44,56 @@ export const LeaderboardPanel: React.FC<LeaderboardPanelProps> = ({
   onViewProfile,
   currentUserId,
 }) => {
+  const [realtimeEntries, setRealtimeEntries] = useState<LeaderboardEntry[]>(entries);
+
+  // Subscribe to real-time updates for leaderboard
+  useEffect(() => {
+    setRealtimeEntries(entries);
+
+    // Subscribe to public_profiles changes for real-time leaderboard updates
+    const channel = supabase
+      .channel('leaderboard-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'public_profiles',
+        },
+        (payload) => {
+          // Update entries when profile data changes
+          setRealtimeEntries((prev) => {
+            return prev.map((entry) => {
+              if (entry.user_id === payload.new.user_id) {
+                return {
+                  ...entry,
+                  total_xp: payload.new.total_xp || entry.total_xp,
+                  total_coins: payload.new.total_coins || entry.total_coins,
+                  achievements_count: Array.isArray(payload.new.achievements)
+                    ? payload.new.achievements.length
+                    : entry.achievements_count,
+                  metric_value:
+                    metric === 'xp'
+                      ? payload.new.total_xp || entry.metric_value
+                      : metric === 'coins'
+                      ? payload.new.total_coins || entry.metric_value
+                      : Array.isArray(payload.new.achievements)
+                      ? payload.new.achievements.length
+                      : entry.metric_value,
+                };
+              }
+              return entry;
+            });
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [entries, metric]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -85,7 +136,7 @@ export const LeaderboardPanel: React.FC<LeaderboardPanelProps> = ({
 
       {/* Leaderboard List */}
       <div className="space-y-2">
-        {entries.map((entry, index) => {
+        {realtimeEntries.map((entry, index) => {
           const isCurrentUser = currentUserId && entry.user_id === currentUserId;
           const rankIcon = getRankIcon(entry.rank);
 
