@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     openai_image_model: str = Field(default="gpt-image-1", alias="OPENAI_IMAGE_MODEL")
     openai_image_api: str = Field(default="https://api.openai.com/v1/images/generations", alias="OPENAI_IMAGE_API")
+    openai_chat_api: str = Field(default="https://api.openai.com/v1/chat/completions", alias="OPENAI_CHAT_API")
+    openai_chat_model: str = Field(default="gpt-4o-mini", alias="OPENAI_CHAT_MODEL")
     art_cache_ttl_hours: int = Field(default=12, alias="ART_CACHE_TTL_HOURS")
     weather_api_key: str = Field(default="", alias="WEATHER_API_KEY")
     allowed_origins: List[str] = Field(default_factory=lambda: ["*"])
