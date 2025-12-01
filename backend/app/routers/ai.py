@@ -16,6 +16,7 @@ from app.schemas.ai import (
 )
 from app.services.ai_service import AIService
 from app.services.budget_ai_service import BudgetAIService
+from app.services.nlp_command_service import NLPCommandService
 from app.services.pet_behavior_ai_service import PetBehaviorAIService
 from app.services.pet_name_ai_service import PetNameAIService
 from app.services.pet_service import PetService
@@ -129,4 +130,70 @@ async def analyze_pet_behavior(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to analyze pet behavior: {str(e)}",
+        )
+
+
+@router.post("/nlp_command", summary="Process natural language command with context awareness")
+async def process_nlp_command(
+    payload: dict,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    pet_service: PetService = Depends(get_pet_service),
+) -> dict:
+    """
+    Process a natural language command with context-aware, multi-turn conversation support.
+    
+    Uses OpenAI API for better understanding with fallback to rule-based parsing.
+    Maintains conversation context for multi-turn interactions.
+    
+    Request body:
+    {
+        "command": "feed my pet",
+        "user_id": "user-id",
+        "session_id": "optional-session-id",
+        "pet_context": {...}
+    }
+    """
+    command = payload.get("command")
+    user_id = payload.get("user_id", current_user.id)
+    session_id = payload.get("session_id")
+    pet_context = payload.get("pet_context")
+    
+    if not command:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Command is required",
+        )
+    
+    # Verify user_id matches authenticated user
+    if user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot process commands for another user",
+        )
+    
+    # Get pet context if not provided
+    if not pet_context:
+        pet = await pet_service.get_pet(current_user.id)
+        if pet is not None:
+            pet_context = {
+                "name": pet.name,
+                "hunger": pet.stats.hunger if hasattr(pet.stats, 'hunger') else 70,
+                "happiness": pet.stats.happiness if hasattr(pet.stats, 'happiness') else 70,
+                "energy": pet.stats.energy if hasattr(pet.stats, 'energy') else 70,
+                "cleanliness": pet.stats.hygiene if hasattr(pet.stats, 'hygiene') else 70,
+            }
+    
+    service = NLPCommandService()
+    try:
+        result = await service.process_command(
+            command=command,
+            user_id=user_id,
+            session_id=session_id,
+            pet_context=pet_context,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process command: {str(e)}",
         )

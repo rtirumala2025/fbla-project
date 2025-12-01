@@ -148,7 +148,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        if (!indexedDBStorage.isSupported()) {
+        if (!IndexedDBStorage.isSupported()) {
           console.warn('IndexedDB not supported, tutorial progress will not persist');
           setIsLoading(false);
           if (autoStart) {
