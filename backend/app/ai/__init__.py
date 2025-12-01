@@ -14,10 +14,10 @@ All AI services are designed with:
 - Context-aware processing where applicable
 """
 
-from backend.app.ai.nlp_command import NLPCommandEngine
-from backend.app.ai.behavior_prediction import BehaviorPredictionModel
-from backend.app.ai.name_validator import NameValidatorAI
-from backend.app.ai.budget_forecasting import BudgetForecastingEngine
+from app.ai.nlp_command import NLPCommandEngine
+from app.ai.behavior_prediction import BehaviorPredictionModel
+from app.ai.name_validator import NameValidatorAI
+from app.ai.budget_forecasting import BudgetForecastingEngine
 
 __all__ = [
     "NLPCommandEngine",

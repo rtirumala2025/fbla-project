@@ -186,9 +186,16 @@ async def get_pet_name_suggestions(
     Raises:
         500: If AI service fails (fallback suggestions still returned)
     """
-    service = PetNameAIService()
+    ai_service = get_unified_ai_service()
     try:
-        return await service.validate_and_suggest(payload)
+        result = await ai_service.validate_and_suggest_name(
+            input_name=payload.input_name,
+            pet_species=None,
+        )
+        return PetNameSuggestionResponse(
+            valid=result["valid"],
+            suggestions=result["suggestions"][:5],
+        )
     except Exception as e:
         # Service should handle fallbacks internally, but catch unexpected errors
         raise HTTPException(
@@ -244,9 +251,39 @@ async def analyze_pet_behavior(
             detail="Cannot access behavior analysis for another user's pet",
         )
 
-    service = PetBehaviorAIService()
+    ai_service = get_unified_ai_service()
     try:
-        return await service.analyze_behavior(payload)
+        # Convert interaction history to format expected by prediction model
+        interaction_history = []
+        for item in payload.interaction_history:
+            interaction_history.append({
+                "action": item.action,
+                "timestamp": item.timestamp,
+                "pet_stats_before": item.pet_stats_before,
+                "pet_stats_after": item.pet_stats_after,
+            })
+        
+        # Get current pet stats for context
+        current_stats = {
+            "hunger": pet.stats.hunger,
+            "happiness": pet.stats.happiness if hasattr(pet.stats, "happiness") else 70,
+            "energy": pet.stats.energy,
+            "cleanliness": pet.stats.hygiene,
+            "health": pet.stats.health,
+        }
+        
+        # Generate behavior predictions
+        result = await ai_service.predict_behavior(
+            pet_id=payload.pet_id,
+            interaction_history=interaction_history,
+            forecast_days=7,
+            current_stats=current_stats,
+        )
+        
+        return PetBehaviorResponse(
+            mood_forecast=result.get("mood_forecast", [])[:10],
+            activity_prediction=result.get("activity_prediction", [])[:10],
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -327,9 +364,9 @@ async def process_nlp_command(
                 "cleanliness": pet.stats.hygiene if hasattr(pet.stats, 'hygiene') else 70,
             }
     
-    service = NLPCommandService()
+    ai_service = get_unified_ai_service()
     try:
-        result = await service.process_command(
+        result = await ai_service.process_nlp_command(
             command=command,
             user_id=user_id,
             session_id=session_id,
