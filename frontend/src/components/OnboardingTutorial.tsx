@@ -6,7 +6,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Joyride, { CallBackProps, STATUS, Step, EVENTS, ACTIONS } from 'react-joyride';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { X, RotateCcw } from 'lucide-react';
-import { indexedDBStorage } from '../utils/indexedDBStorage';
+import { indexedDBStorage, IndexedDBStorage } from '../utils/indexedDBStorage';
 
 const TUTORIAL_ID = 'main-onboarding-tutorial';
 
@@ -148,7 +148,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        if (!IndexedDBStorage.isSupported()) {
+        if (!indexedDBStorage.isSupported()) {
           console.warn('IndexedDB not supported, tutorial progress will not persist');
           setIsLoading(false);
           if (autoStart) {
@@ -195,7 +195,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   // Save progress to IndexedDB whenever step changes
   const saveProgress = useCallback(async (currentStep: number) => {
     try {
-      if (IndexedDBStorage.isSupported()) {
+      if (indexedDBStorage.isSupported()) {
         await indexedDBStorage.saveTutorialProgress(TUTORIAL_ID, currentStep);
       }
     } catch (error) {
