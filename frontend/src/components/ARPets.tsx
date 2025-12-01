@@ -40,16 +40,17 @@ const ARPetMesh: React.FC<ARPetMeshProps> = ({ pet, onInteraction }) => {
 
   // Check for hand tracking and gestures
   useEffect(() => {
-    if (!gl.xr) return;
+    if (!gl.xr || !gl.xr.isPresenting) return;
 
-    const handleSelect = (event: any) => {
+    // Handle controller select events through the XR session
+    const handleControllerSelect = (event: any) => {
       if (interactionCooldown) return;
       
       // Check if hand/controller is near pet
-      if (meshRef.current) {
-        const handPosition = event.target.position;
+      if (meshRef.current && event.target) {
+        const controllerPosition = event.target.position;
         const petPosition = meshRef.current.position;
-        const distance = handPosition.distanceTo(petPosition);
+        const distance = controllerPosition.distanceTo(petPosition);
         
         if (distance < 2) {
           // Trigger interaction
@@ -60,10 +61,25 @@ const ARPetMesh: React.FC<ARPetMeshProps> = ({ pet, onInteraction }) => {
       }
     };
 
-    gl.xr.addEventListener('select', handleSelect);
-    return () => {
-      gl.xr?.removeEventListener('select', handleSelect);
-    };
+    // Access controllers through the XR session
+    const session = gl.xr.getSession();
+    if (session) {
+      // Listen to input source events
+      session.addEventListener('inputsourceschange', () => {
+        // Controller connections handled here
+      });
+      
+      // Handle select events through input sources
+      const handleSelectStart = (event: XRInputSourceEvent) => {
+        handleControllerSelect(event);
+      };
+      
+      session.addEventListener('selectstart', handleSelectStart);
+      
+      return () => {
+        session.removeEventListener('selectstart', handleSelectStart);
+      };
+    }
   }, [gl, onInteraction, interactionCooldown]);
 
   // Animate pet in AR
@@ -178,7 +194,7 @@ export const ARPets: React.FC<ARPetsProps> = ({ pet, onInteraction }) => {
           {pet.name} ({pet.species})
         </p>
         <p className="text-xs text-slate-600">
-          Mood: {pet.mood || 'happy'} • Health: {pet.health || 80}%
+          Mood: {pet.stats.mood || 'happy'} • Health: {pet.stats.health || 80}%
         </p>
       </div>
 
