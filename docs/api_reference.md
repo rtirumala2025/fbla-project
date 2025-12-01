@@ -36,7 +36,12 @@ Health check endpoint for monitoring and testing.
 
 **Authentication**: Not required
 
-**Response**:
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/health
+```
+
+**Response** (`200 OK`):
 ```json
 {
   "status": "ok"
@@ -58,27 +63,45 @@ Create a new user account.
 
 **Authentication**: Not required
 
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securepassword123",
+    "username": "johndoe"
+  }'
+```
+
 **Request Body**:
 ```json
 {
   "email": "user@example.com",
-  "password": "securepassword",
-  "username": "username"
+  "password": "securepassword123",
+  "username": "johndoe"
 }
 ```
 
 **Response** (`201 Created`):
 ```json
 {
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "bearer"
+}
+```
+
+**Error Response** (`409 Conflict`):
+```json
+{
+  "detail": "User with this email already exists"
 }
 ```
 
 **Status Codes**:
 - `201 Created`: User created successfully
-- `400 Bad Request`: Invalid input
+- `400 Bad Request`: Invalid input (e.g., invalid email format, password too short)
 - `409 Conflict`: User already exists
 
 ---
@@ -89,20 +112,37 @@ Authenticate and receive tokens.
 
 **Authentication**: Not required
 
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securepassword123"
+  }'
+```
+
 **Request Body**:
 ```json
 {
   "email": "user@example.com",
-  "password": "securepassword"
+  "password": "securepassword123"
 }
 ```
 
 **Response** (`200 OK`):
 ```json
 {
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "bearer"
+}
+```
+
+**Error Response** (`401 Unauthorized`):
+```json
+{
+  "detail": "Invalid email or password"
 }
 ```
 
@@ -647,60 +687,181 @@ Base path: `/api/ai`
 
 ### POST /api/ai/chat
 
-Conversational AI chat endpoint.
+Chat with the virtual pet AI companion (Scout). Provides context-aware responses based on pet state and conversation history. Supports multi-turn conversations with session management.
 
 **Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/ai/chat \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "How is my pet doing today?",
+    "session_id": "session-12345"
+  }'
+```
 
 **Request Body**:
 ```json
 {
-  "message": "How is my pet doing?",
-  "context": "optional context string"
+  "message": "How is my pet doing today?",
+  "session_id": "session-12345",
+  "model": "meta-llama/llama-3.2-3b-instruct"
 }
 ```
+
+**Fields**:
+- `message` (required): User's chat message
+- `session_id` (optional): Session ID for conversation continuity. If not provided, a new session is created.
+- `model` (optional): LLM model override. Defaults to configured OpenRouter model.
 
 **Response** (`200 OK`):
 ```json
 {
-  "response": "Your pet is doing great! They're happy and healthy.",
-  "mood_analysis": "happy",
-  "suggestions": ["Consider playing a game", "Time for a snack"]
+  "session_id": "session-12345",
+  "message": "Fluffy is doing wonderfully! Their energy is high at 85%, hunger is good at 75%, and they seem very content. I noticed they enjoyed playing earlier. Consider giving them a treat or going for a walk together!",
+  "mood": "happy",
+  "notifications": [
+    "Pet has been active today - great job keeping them engaged!",
+    "Hunger level is optimal - no immediate feeding needed"
+  ],
+  "pet_state": {
+    "mood": "happy",
+    "happiness": 85,
+    "energy": 85,
+    "hunger": 75,
+    "cleanliness": 80,
+    "health": 90,
+    "last_updated": "2025-01-27T14:30:00Z"
+  },
+  "health_forecast": {
+    "trend": "improving",
+    "risk": "low",
+    "recommended_actions": [
+      "Continue current care routine",
+      "Maintain regular play sessions"
+    ]
+  }
+}
+```
+
+**Error Response** (`401 Unauthorized`):
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+**Error Response** (`503 Service Unavailable`):
+```json
+{
+  "detail": "AI service temporarily unavailable"
 }
 ```
 
 **Status Codes**:
-- `200 OK`: Chat response generated
-- `400 Bad Request`: Invalid input
-- `401 Unauthorized`: Not authenticated
+- `200 OK`: Chat response generated successfully
+- `400 Bad Request`: Invalid input (missing message)
+- `401 Unauthorized`: Not authenticated or invalid token
+- `503 Service Unavailable`: AI service (OpenRouter) is unavailable
 
 ---
 
 ### POST /api/ai/budget_advice
 
-Get AI-powered budget advice.
+Generate personalized budget advice and spending forecast based on transaction history. Uses AI to analyze spending patterns and provide actionable financial advice.
 
 **Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/ai/budget_advice \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
+    "transaction_history": [
+      {"amount": -50, "category": "food", "date": "2025-01-20T10:00:00Z"},
+      {"amount": 100, "category": "income", "date": "2025-01-19T09:00:00Z"},
+      {"amount": -25, "category": "toys", "date": "2025-01-18T15:30:00Z"}
+    ]
+  }'
+```
 
 **Request Body**:
 ```json
 {
-  "current_balance": 500,
-  "spending_history": [],
-  "goals": ["Save for premium food"]
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "transaction_history": [
+    {
+      "amount": -50,
+      "category": "food",
+      "date": "2025-01-20T10:00:00Z"
+    },
+    {
+      "amount": 100,
+      "category": "income",
+      "date": "2025-01-19T09:00:00Z"
+    },
+    {
+      "amount": -25,
+      "category": "toys",
+      "date": "2025-01-18T15:30:00Z"
+    }
+  ]
 }
 ```
+
+**Fields**:
+- `user_id` (required): Must match authenticated user ID
+- `transaction_history` (required): Array of transaction objects with `amount` (negative for expenses, positive for income), `category`, and `date`
 
 **Response** (`200 OK`):
 ```json
 {
-  "advice": "Consider setting aside 20% of earnings for savings",
-  "recommendations": ["Track daily spending", "Set weekly budget limits"]
+  "advice": "Based on your spending patterns, you're spending about 75% of your income. I recommend setting aside 20% for savings each month. Your top spending category is food, so consider meal planning to reduce costs. Track your daily spending to identify additional savings opportunities.",
+  "forecast": [
+    {
+      "month": "2025-02",
+      "predicted_spend": 255.00
+    },
+    {
+      "month": "2025-03",
+      "predicted_spend": 260.10
+    },
+    {
+      "month": "2025-04",
+      "predicted_spend": 265.30
+    },
+    {
+      "month": "2025-05",
+      "predicted_spend": 270.61
+    },
+    {
+      "month": "2025-06",
+      "predicted_spend": 276.02
+    },
+    {
+      "month": "2025-07",
+      "predicted_spend": 281.54
+    }
+  ]
+}
+```
+
+**Error Response** (`403 Forbidden`):
+```json
+{
+  "detail": "Cannot access budget advice for another user"
 }
 ```
 
 **Status Codes**:
-- `200 OK`: Advice generated
+- `200 OK`: Advice generated successfully
 - `401 Unauthorized`: Not authenticated
+- `403 Forbidden`: Attempting to access another user's budget advice
+- `500 Internal Server Error`: Failed to generate advice (fallback advice still returned)
 
 ---
 
@@ -1117,5 +1278,69 @@ Some endpoints support real-time updates via Supabase Realtime subscriptions. Ch
 
 ---
 
+---
+
+## Example Usage Workflows
+
+### Complete Pet Care Session
+
+1. **Login**:
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "password123"}'
+```
+
+2. **Check Pet Status** (using NLP command):
+```bash
+curl -X POST http://localhost:8000/api/ai/nlp_command \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"command": "how is my pet doing?"}'
+```
+
+3. **Feed Pet**:
+```bash
+curl -X POST http://localhost:8000/api/pets/actions/feed \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"food_type": "treat"}'
+```
+
+4. **Chat with AI**:
+```bash
+curl -X POST http://localhost:8000/api/ai/chat \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What should I do with my pet today?"}'
+```
+
+### Budget Analysis Workflow
+
+1. **Get Budget Advice**:
+```bash
+curl -X POST http://localhost:8000/api/ai/budget_advice \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "<your-user-id>",
+    "transaction_history": [...]
+  }'
+```
+
+2. **Generate Finance Scenario**:
+```bash
+curl -X POST http://localhost:8000/api/ai/finance_simulator/scenario \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scenario_type": "investment",
+    "user_context": {"age": 20, "income": 2000}
+  }'
+```
+
+---
+
 *Last Updated: 2025-01-27*  
-*Generated from FastAPI routers and docstrings*
+*Generated from FastAPI routers and docstrings*  
+*Enhanced with examples by Documentation Completion Agent*
