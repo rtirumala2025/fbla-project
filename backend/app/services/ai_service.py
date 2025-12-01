@@ -506,36 +506,81 @@ class AIService:
 
     @staticmethod
     def _derive_personality(pet_snapshot: Optional[Dict[str, Any]]) -> Dict[str, str]:
+        """
+        Derive pet personality traits based on species/type.
+        
+        Creates personalized AI responses by matching pet species to personality
+        archetypes. Each species has unique traits, tone, and motivation that
+        influence how Scout (the AI) responds to users.
+        
+        Args:
+            pet_snapshot: Pet data containing species information
+            
+        Returns:
+            Dict with personality traits: traits, tone, and motivation strings
+        """
+        # Default personality if no pet snapshot available
         if not pet_snapshot:
             return {"traits": "gentle and curious", "tone": "warm", "motivation": "encouraging daily care"}
         species = (pet_snapshot.get("species") or "").lower()
+        # Species-specific personality archetypes
         personality_map = {
             "canine": {"traits": "loyal and adventurous", "tone": "energetic", "motivation": "active playtime"},
             "feline": {"traits": "independent yet affectionate", "tone": "soothing", "motivation": "cozy routines"},
             "dragon": {"traits": "brave and wise", "tone": "majestic", "motivation": "mindful training"},
         }
+        # Match species (supports partial matches like "canine" in "canine-dog")
         for key, value in personality_map.items():
             if key in species:
                 return value
+        # Default personality for unknown species
         return {"traits": "curious and loyal", "tone": "warm", "motivation": "kind interactions"}
 
     @staticmethod
     def _score_from_mood(mood: Optional[str]) -> int:
+        """
+        Convert mood string to numeric happiness score (0-100).
+        
+        Maps emotional states to quantitative scores for consistency.
+        Used when mood is known but happiness score is missing.
+        
+        Args:
+            mood: Mood string (ecstatic, happy, content, anxious, distressed)
+            
+        Returns:
+            Numeric happiness score (0-100), defaults to 70 (content)
+        """
         mapping = {
-            "ecstatic": 95,
-            "happy": 85,
-            "content": 70,
-            "anxious": 45,
-            "distressed": 25,
+            "ecstatic": 95,  # Extremely happy
+            "happy": 85,     # Very happy
+            "content": 70,   # Neutral-positive (default)
+            "anxious": 45,   # Worried/uncomfortable
+            "distressed": 25, # Very unhappy
         }
-        return mapping.get((mood or "").lower(), 70)
+        return mapping.get((mood or "").lower(), 70)  # Default to content
 
     def _infer_mood_from_snapshot(self, pet_snapshot: Optional[Dict[str, Any]]) -> str:
+        """
+        Infer pet mood from stat snapshot when explicit mood is missing.
+        
+        Uses weighted average of key stats (hunger, energy, hygiene, health)
+        to determine emotional state. This provides a fallback when mood
+        field is not explicitly set.
+        
+        Args:
+            pet_snapshot: Pet state with stats but potentially missing mood
+            
+        Returns:
+            Inferred mood string (ecstatic, happy, content, anxious, distressed)
+        """
+        # Default to neutral-positive if no snapshot
         if not pet_snapshot:
             return "content"
+        # Use explicit mood if available
         mood = pet_snapshot.get("mood")
         if mood:
             return str(mood).lower()
+        # Calculate average of key wellbeing stats
         scores = [
             pet_snapshot.get("hunger", 0),
             pet_snapshot.get("energy", 0),
@@ -543,15 +588,16 @@ class AIService:
             pet_snapshot.get("health", 0),
         ]
         avg = sum(scores) / max(len(scores), 1)
-        if avg >= 80:
+        # Map average score to mood using thresholds
+        if avg >= 80:  # Excellent stats
             return "ecstatic"
-        if avg >= 60:
+        if avg >= 60:  # Good stats
             return "happy"
-        if avg >= 45:
+        if avg >= 45:  # Average stats
             return "content"
-        if avg >= 30:
+        if avg >= 30:  # Poor stats
             return "anxious"
-        return "distressed"
+        return "distressed"  # Very poor stats
 
     def _fabricate_message(self, message: str, pet_snapshot: Optional[Dict[str, Any]]) -> str:
         base_name = pet_snapshot.get("name") if pet_snapshot else "your pet"

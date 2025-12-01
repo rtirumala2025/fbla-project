@@ -22,14 +22,11 @@ from app.schemas.ai import (
     PetNameSuggestionRequest,
     PetNameSuggestionResponse,
 )
+from app.api.ai import get_unified_ai_service, UnifiedAIService
 from app.services.ai_service import AIService
-from app.services.budget_ai_service import BudgetAIService
 from app.services.finance_simulator import FinanceSimulatorService
 from app.services.habit_prediction import HabitPredictionService
-from app.services.nlp_command_service import NLPCommandService
-from app.services.pet_behavior_ai_service import PetBehaviorAIService
 from app.services.pet_mood_forecast import PetMoodForecastService
-from app.services.pet_name_ai_service import PetNameAIService
 from app.services.pet_service import PetService
 from app.utils.dependencies import get_ai_service, get_current_user, get_pet_service
 
@@ -43,9 +40,34 @@ async def chat_with_virtual_pet(
     service: AIService = Depends(get_ai_service),
     pet_service: PetService = Depends(get_pet_service),
 ) -> AIChatResponse:
+    """
+    Chat with the virtual pet AI companion (Scout).
+    
+    Endpoint for conversational interactions with the AI. Provides context-aware
+    responses based on pet state and conversation history. Supports multi-turn
+    conversations with session management.
+    
+    Authentication: Required (Bearer token)
+    
+    Args:
+        payload: Chat request with message and optional session_id
+        current_user: Authenticated user (injected via dependency)
+        service: AI service instance (injected via dependency)
+        pet_service: Pet service for retrieving pet state (injected via dependency)
+        
+    Returns:
+        AIChatResponse with AI message, mood analysis, notifications, pet state, and health forecast
+        
+    Raises:
+        401: If not authenticated
+        404: If pet not found (optional - continues without pet context if missing)
+        500: If AI service fails
+    """
+    # Retrieve current pet state for context-aware responses
     pet_snapshot = None
     pet = await pet_service.get_pet(current_user.id)
     if pet is not None:
+        # Build pet snapshot with current stats for AI context
         pet_snapshot = {
             "id": pet.id,
             "name": pet.name,
@@ -55,8 +77,9 @@ async def chat_with_virtual_pet(
             "hygiene": pet.stats.hygiene,
             "energy": pet.stats.energy,
             "health": pet.stats.health,
-            "cleanliness": pet.stats.hygiene,
+            "cleanliness": pet.stats.hygiene,  # Alias for compatibility
         }
+    # Delegate to AI service for processing (handles LLM calls, context management, etc.)
     return await service.chat(current_user.id, payload, pet_snapshot)
 
 
@@ -64,23 +87,72 @@ async def chat_with_virtual_pet(
 async def get_budget_advice(
     payload: BudgetAdviceRequest,
     current_user: AuthenticatedUser = Depends(get_current_user),
+    ai_service: UnifiedAIService = Depends(get_unified_ai_service),
 ) -> BudgetAdviceResponse:
     """
     Generate personalized budget advice and spending forecast based on transaction history.
     
-    Uses OpenAI API to analyze spending patterns and provide actionable financial advice.
+    Analyzes user's transaction history to identify spending patterns, provides
+    personalized financial advice, and generates spending forecasts. Uses consolidated
+    AI forecasting engine with Python-based statistical analysis and AI-powered insights.
+    
+    Authentication: Required (Bearer token)
+    
+    Security: Validates that user_id in request matches authenticated user to prevent
+    unauthorized access to other users' financial data.
+    
+    Args:
+        payload: Budget advice request with user_id and transaction history
+        current_user: Authenticated user (injected via dependency)
+        ai_service: Unified AI service instance (injected via dependency)
+        
+    Returns:
+        BudgetAdviceResponse with AI-generated advice and spending forecast
+        
+    Raises:
+        403: If attempting to access another user's budget advice
+        500: If AI service fails or transaction analysis fails
     """
-    # Verify user_id matches authenticated user
+    # Security check: ensure user can only access their own budget advice
     if payload.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot access budget advice for another user",
         )
 
-    service = BudgetAIService()
     try:
-        return await service.get_budget_advice(payload)
+        # Convert transaction history to format expected by forecasting engine
+        transactions = []
+        for txn in payload.transaction_history:
+            transactions.append({
+                "amount": txn.amount,
+                "category": txn.category,
+                "date": txn.date,
+                "description": getattr(txn, "description", None),
+            })
+        
+        # Generate comprehensive forecast
+        forecast_result = await ai_service.generate_budget_forecast(
+            transactions=transactions,
+            forecast_months=6,
+            user_id=payload.user_id,
+        )
+        
+        # Generate AI advice from recommendations
+        advice = " ".join(forecast_result.get("recommendations", [])[:3])
+        if not advice:
+            advice = "Continue tracking expenses to identify spending patterns and optimize your budget."
+        
+        # Convert forecast items to response format
+        from app.schemas.ai import ForecastItem
+        forecast_items = [
+            ForecastItem(month=item["month"], predicted_spend=item["predicted_spend"])
+            for item in forecast_result.get("monthly_forecast", [])
+        ]
+        
+        return BudgetAdviceResponse(advice=advice, forecast=forecast_items)
     except Exception as e:
+        # Convert service exceptions to HTTP errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate budget advice: {str(e)}",
@@ -94,13 +166,31 @@ async def get_pet_name_suggestions(
     """
     Validate a pet name and generate AI-powered alternative suggestions.
     
-    Validates names against length, offensive words, and character rules.
-    Uses OpenAI API to generate creative, appropriate name suggestions.
+    Validates names against business rules:
+    - Length: 1-20 characters
+    - Character set: alphanumeric plus spaces, hyphens, apostrophes
+    - Content: filters offensive/inappropriate words
+    - Must contain at least one letter
+    
+    Generates creative name suggestions using AI when validation passes or fails.
+    Provides fallback suggestions if AI is unavailable.
+    
+    Authentication: Not required (public endpoint for pet naming)
+    
+    Args:
+        payload: Pet name suggestion request with input_name
+        
+    Returns:
+        PetNameSuggestionResponse with validation result and 5 name suggestions
+        
+    Raises:
+        500: If AI service fails (fallback suggestions still returned)
     """
     service = PetNameAIService()
     try:
         return await service.validate_and_suggest(payload)
     except Exception as e:
+        # Service should handle fallbacks internally, but catch unexpected errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to validate name and generate suggestions: {str(e)}",
@@ -116,11 +206,30 @@ async def analyze_pet_behavior(
     """
     Analyze pet interaction history and predict future behavior patterns.
     
-    Uses OpenAI API to analyze interaction patterns and predict:
-    - Mood forecasts for upcoming periods
-    - Activity predictions based on historical data
+    Uses AI to analyze historical pet interactions and predict:
+    - Mood forecasts: predicted emotional states for upcoming periods
+    - Activity predictions: likely care needs and interaction patterns
+    
+    Helpful for proactive pet care planning and understanding pet behavior trends.
+    
+    Authentication: Required (Bearer token)
+    
+    Security: Validates that pet belongs to authenticated user before analysis.
+    
+    Args:
+        payload: Behavior analysis request with pet_id and interaction_history
+        current_user: Authenticated user (injected via dependency)
+        pet_service: Pet service for validation (injected via dependency)
+        
+    Returns:
+        PetBehaviorResponse with mood forecasts and activity predictions
+        
+    Raises:
+        404: If pet not found for current user
+        403: If attempting to analyze another user's pet
+        500: If AI analysis fails
     """
-    # Verify pet belongs to user
+    # Security check: verify pet exists and belongs to user
     pet = await pet_service.get_pet(current_user.id)
     if pet is None:
         raise HTTPException(
@@ -128,6 +237,7 @@ async def analyze_pet_behavior(
             detail="Pet not found",
         )
     
+    # Additional security: ensure pet_id in request matches user's pet
     if payload.pet_id != str(pet.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -153,36 +263,59 @@ async def process_nlp_command(
     """
     Process a natural language command with context-aware, multi-turn conversation support.
     
-    Uses OpenAI API for better understanding with fallback to rule-based parsing.
-    Maintains conversation context for multi-turn interactions.
+    Parses natural language pet care commands (e.g., "feed my pet", "play with Fluffy")
+    and returns structured action data. Supports multi-turn conversations with
+    session-based context tracking.
     
-    Request body:
+    Uses OpenAI API for advanced NLP understanding with intelligent fallback to
+    rule-based pattern matching if AI is unavailable.
+    
+    Supported actions: feed, play, bathe, rest, status, shop, budget
+    
+    Authentication: Required (Bearer token)
+    
+    Request body format:
     {
-        "command": "feed my pet",
-        "user_id": "user-id",
-        "session_id": "optional-session-id",
-        "pet_context": {...}
+        "command": "feed my pet",  // Required: natural language command
+        "user_id": "user-id",      // Optional: defaults to authenticated user
+        "session_id": "optional-session-id",  // Optional: for conversation continuity
+        "pet_context": {...}       // Optional: pet state context (auto-fetched if missing)
     }
+    
+    Args:
+        payload: Dict with command and optional context fields
+        current_user: Authenticated user (injected via dependency)
+        pet_service: Pet service for retrieving pet context (injected via dependency)
+        
+    Returns:
+        Dict with parsed action, confidence score, intent, and suggestions
+        
+    Raises:
+        400: If command is missing or invalid
+        403: If attempting to process commands for another user
+        404: If pet not found (when fetching context)
+        500: If NLP processing fails
     """
     command = payload.get("command")
-    user_id = payload.get("user_id", current_user.id)
+    user_id = payload.get("user_id", current_user.id)  # Default to authenticated user
     session_id = payload.get("session_id")
     pet_context = payload.get("pet_context")
     
+    # Validation: command is required
     if not command:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Command is required",
         )
     
-    # Verify user_id matches authenticated user
+    # Security: ensure user can only process commands for themselves
     if user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot process commands for another user",
         )
     
-    # Get pet context if not provided
+    # Auto-fetch pet context if not provided in request
     if not pet_context:
         pet = await pet_service.get_pet(current_user.id)
         if pet is not None:
