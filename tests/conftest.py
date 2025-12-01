@@ -25,8 +25,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
+BACKEND_ROOT = ROOT / "backend"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 # Provide sane defaults so tests can run without a fully provisioned environment.
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./tests/test.db")
