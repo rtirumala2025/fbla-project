@@ -6,7 +6,7 @@
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { ARButton, Controllers, Hands, useHitTest } from '@react-three/xr';
-import { OrbitControls, PerspectiveCamera, Environment, Text } from '@react-three/drei';
+import { Text } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';

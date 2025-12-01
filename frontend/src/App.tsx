@@ -42,7 +42,11 @@ const AvatarStudio = lazy(() => import('./pages/pets/AvatarStudio').then(m => ({
 const PetSelectionPage = lazy(() => import('./pages/PetSelectionPage').then(m => ({ default: m.PetSelectionPage })));
 const GameUI = lazy(() => import('./pages/GameUI').then(m => ({ default: m.GameUI })));
 const SocialHub = lazy(() => import('./pages/social/SocialHub').then(m => ({ default: m.SocialHub })));
+const SocialFeaturesPage = lazy(() => import('./pages/social/SocialFeaturesPage').then(m => ({ default: m.SocialFeaturesPage })));
 const AnalyticsDashboard = lazy(() => import('./pages/analytics/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
+const ARPetModePage = lazy(() => import('./pages/ar/ARPetModePage').then(m => ({ default: m.ARPetModePage })));
+const HabitPredictionPage = lazy(() => import('./pages/habits/HabitPredictionPage').then(m => ({ default: m.HabitPredictionPage })));
+const FinanceSimulatorPage = lazy(() => import('./pages/finance_sim/FinanceSimulatorPage').then(m => ({ default: m.FinanceSimulatorPage })));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage').then(m => ({ default: m.ReportsPage })));
 
 // Page transition wrapper component with Suspense for lazy loading
@@ -249,8 +253,13 @@ function AppContent() {
             <Route path="/help" element={<ProtectedRoute><PageTransition><HelpScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><PageTransition><EventCalendarPage /></PageTransition></ProtectedRoute>} />
             <Route path="/social" element={<ProtectedRoute><PageTransition><SocialHub /></PageTransition></ProtectedRoute>} />
+            <Route path="/social-features" element={<ProtectedRoute><PageTransition><SocialFeaturesPage /></PageTransition></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><PageTransition><AnalyticsDashboard /></PageTransition></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><PageTransition><ReportsPage /></PageTransition></ProtectedRoute>} />
+            {/* Nationals-level features */}
+            <Route path="/ar" element={<ProtectedRoute><PageTransition><ARPetModePage /></PageTransition></ProtectedRoute>} />
+            <Route path="/habits" element={<ProtectedRoute><PageTransition><HabitPredictionPage /></PageTransition></ProtectedRoute>} />
+            <Route path="/finance-sim" element={<ProtectedRoute><PageTransition><FinanceSimulatorPage /></PageTransition></ProtectedRoute>} />
             {/* Wallet route removed - functionality integrated into Budget page */}
             {/* Quests route removed - functionality integrated into Dashboard page */}
             <Route
