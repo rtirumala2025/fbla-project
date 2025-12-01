@@ -8,11 +8,12 @@ from .ai import router as ai_router
 from .art import router as art_router
 from .auth import router as auth_router
 from .events import events_router, weather_router
+from .finance_sim import router as finance_sim_router
+from .habits import router as habits_router
 from .pets import router as pets_router
 from .pet_interactions import router as pet_interactions_router
 from .profiles import router as profiles_router
 from .shop import router as shop_router
-from .social import router as social_router
 from .users import router as users_router
 
 api_router = APIRouter(prefix="/api")
@@ -27,6 +28,7 @@ api_router.include_router(events_router)
 api_router.include_router(weather_router)
 api_router.include_router(accessories_router)
 api_router.include_router(art_router)
-api_router.include_router(social_router)
+api_router.include_router(habits_router)
+api_router.include_router(finance_sim_router)
 
 __all__ = ["api_router"]

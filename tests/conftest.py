@@ -35,8 +35,18 @@ if str(BACKEND_ROOT) not in sys.path:
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./tests/test.db")
 os.environ.setdefault("JWT_SECRET", "test-secret")
 
-from app.core.database import get_db, get_engine, get_session_factory
-from app.models import Base
+# Note: These imports are for the old app/ structure. 
+# backend/app/ uses asyncpg directly, not SQLAlchemy.
+# Tests should be updated to use backend/app/ structure or backend/tests/.
+try:
+    from app.core.database import get_db, get_engine, get_session_factory
+    from app.models import Base
+except ImportError:
+    # backend/app/ structure doesn't have these - using asyncpg directly
+    get_db = None
+    get_engine = None
+    get_session_factory = None
+    Base = None
 
 try:
     from app.main import app
