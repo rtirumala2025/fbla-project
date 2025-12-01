@@ -148,7 +148,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        if (!IndexedDBStorage.isSupported()) {
+        if (!indexedDBStorage.isSupported()) {
           console.warn('IndexedDB not supported, tutorial progress will not persist');
           setIsLoading(false);
           if (autoStart) {
@@ -195,7 +195,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   // Save progress to IndexedDB whenever step changes
   const saveProgress = useCallback(async (currentStep: number) => {
     try {
-      if (IndexedDBStorage.isSupported()) {
+      if (indexedDBStorage.isSupported()) {
         await indexedDBStorage.saveTutorialProgress(TUTORIAL_ID, currentStep);
       }
     } catch (error) {
