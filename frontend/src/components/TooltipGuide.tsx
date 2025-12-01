@@ -298,7 +298,7 @@ export const TooltipGuide: React.FC<TooltipGuideProps> = ({
   // Reset all tooltips (for testing or user reset)
   const resetAllTooltips = useCallback(async () => {
     try {
-      if (indexedDBStorage.isSupported()) {
+      if (IndexedDBStorage.isSupported()) {
         await indexedDBStorage.resetAllTooltips();
       }
       setDismissedTooltips(new Set());
@@ -385,7 +385,7 @@ export const TooltipGuide: React.FC<TooltipGuideProps> = ({
 export const useTooltipGuide = () => {
   const resetAllTooltips = useCallback(async () => {
     try {
-      if (indexedDBStorage.isSupported()) {
+      if (IndexedDBStorage.isSupported()) {
         await indexedDBStorage.resetAllTooltips();
       }
     } catch (error) {

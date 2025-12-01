@@ -232,13 +232,6 @@ class IndexedDBStorage {
   }
 
   /**
-   * Check if IndexedDB is supported (instance method)
-   */
-  isSupported(): boolean {
-    return IndexedDBStorage.isSupported();
-  }
-
-  /**
    * Check if IndexedDB is supported (static method)
    */
   static isSupported(): boolean {
