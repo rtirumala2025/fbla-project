@@ -23,6 +23,7 @@ This document provides a comprehensive reference of all libraries, tools, and th
 | lucide-react | ^0.546.0 | Icon library |
 | react-icons | ^4.12.0 | Popular icon sets |
 | canvas-confetti | ^1.9.3 | Confetti effects |
+| react-joyride | ^2.9.3 | Guided tours and onboarding |
 
 ### State Management
 | Library | Version | Purpose |
@@ -40,6 +41,7 @@ This document provides a comprehensive reference of all libraries, tools, and th
 | three | ^0.181.2 | 3D graphics |
 | @react-three/fiber | ^8.18.0 | React renderer for Three.js |
 | @react-three/drei | ^9.122.0 | Three.js helpers |
+| @react-three/xr | ^3.1.0 | VR support for React Three Fiber |
 
 ### Backend Integration
 | Library | Version | Purpose |
@@ -82,6 +84,7 @@ This document provides a comprehensive reference of all libraries, tools, and th
 | @types/canvas-confetti | ^1.6.4 | canvas-confetti types |
 | @types/classnames | ^2.3.4 | classnames types |
 | @types/recharts | ^1.8.29 | recharts types |
+| @types/react-joyride | ^2.0.2 | react-joyride types |
 
 ---
 
@@ -132,6 +135,7 @@ This document provides a comprehensive reference of all libraries, tools, and th
 | Library | Version | Purpose |
 |---------|---------|---------|
 | ruff | 0.7.1 | Linter and formatter |
+| reportlab | 4.0.7 | PDF generation |
 
 ---
 
@@ -263,4 +267,5 @@ All development dependencies are included in the main dependency files.
 ---
 
 *Last Updated: 2025-01-27*  
-*Generated from package.json and requirements.txt*
+*Generated from package.json and requirements.txt*  
+*Verified and updated by Documentation Completion Agent*

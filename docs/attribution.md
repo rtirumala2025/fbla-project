@@ -260,6 +260,12 @@ See [LICENSE](../LICENSE) for full license text.
 - **Repository**: https://github.com/DefinitelyTyped/DefinitelyTyped
 - **Purpose**: TypeScript definitions for recharts
 
+#### @types/react-joyride
+- **Package**: `@types/react-joyride@^2.0.2`
+- **License**: MIT
+- **Repository**: https://github.com/DefinitelyTyped/DefinitelyTyped
+- **Purpose**: TypeScript definitions for react-joyride
+
 ### Performance & Monitoring
 
 #### Web Vitals
@@ -421,9 +427,10 @@ All custom assets, graphics, and media files are original works created for this
 
 ## License Summary
 
-The majority of dependencies use permissive licenses (MIT, Apache-2.0, BSD-3-Clause), ensuring compatibility with the project's MIT license. The only exception is:
+The majority of dependencies use permissive licenses (MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause), ensuring compatibility with the project's MIT license. Exceptions:
 
 - **psycopg**: LGPL-3.0-or-later (compatible with MIT for library usage)
+- **reportlab**: BSD-2-Clause (compatible with MIT)
 
 ---
 
@@ -437,4 +444,5 @@ The majority of dependencies use permissive licenses (MIT, Apache-2.0, BSD-3-Cla
 ---
 
 *Last Updated: 2025-01-27*  
-*Generated from package.json and requirements.txt*
+*Generated from package.json and requirements.txt*  
+*Verified and updated by Documentation Completion Agent*
