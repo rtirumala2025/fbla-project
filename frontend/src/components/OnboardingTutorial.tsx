@@ -6,7 +6,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Joyride, { CallBackProps, STATUS, Step, EVENTS, ACTIONS } from 'react-joyride';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { X, RotateCcw } from 'lucide-react';
-import { indexedDBStorage, IndexedDBStorage } from '../utils/indexedDBStorage';
+import { indexedDBStorage } from '../utils/indexedDBStorage';
 
 const TUTORIAL_ID = 'main-onboarding-tutorial';
 
