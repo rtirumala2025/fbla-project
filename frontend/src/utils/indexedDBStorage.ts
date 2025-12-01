@@ -232,7 +232,7 @@ class IndexedDBStorage {
   }
 
   /**
-   * Check if IndexedDB is supported
+   * Check if IndexedDB is supported (static method)
    */
   static isSupported(): boolean {
     return typeof indexedDB !== 'undefined';

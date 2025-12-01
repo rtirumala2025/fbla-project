@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Send, AlertCircle, CheckCircle, History, X } from 'lucide-react';
+import { Mic, MicOff, Send, AlertCircle, CheckCircle, History, X, RotateCcw } from 'lucide-react';
 import apiClient from '../services/apiClient';
 
 // TypeScript interfaces
