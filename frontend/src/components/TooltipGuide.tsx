@@ -6,7 +6,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { X, ChevronRight, ChevronLeft } from 'lucide-react';
-import { indexedDBStorage } from '../utils/indexedDBStorage';
+import { indexedDBStorage, IndexedDBStorage } from '../utils/indexedDBStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Tooltip {
