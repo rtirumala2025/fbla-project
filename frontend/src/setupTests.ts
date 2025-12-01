@@ -37,9 +37,10 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 // Mock recharts ResponsiveContainer for tests
 jest.mock('recharts', () => {
   const actual = jest.requireActual('recharts');
+  const React = require('react');
   return {
     ...actual,
-    ResponsiveContainer: ({ children }: { children: React.ReactNode }) =>
+    ResponsiveContainer: ({ children }: { children: any }) =>
       React.createElement('div', { style: { width: 800, height: 400 } }, children),
   };
 });
