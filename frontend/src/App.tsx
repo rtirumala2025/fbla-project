@@ -43,6 +43,7 @@ const PetSelectionPage = lazy(() => import('./pages/PetSelectionPage').then(m =>
 const GameUI = lazy(() => import('./pages/GameUI').then(m => ({ default: m.GameUI })));
 const SocialHub = lazy(() => import('./pages/social/SocialHub').then(m => ({ default: m.SocialHub })));
 const AnalyticsDashboard = lazy(() => import('./pages/analytics/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
+const ReportsPage = lazy(() => import('./pages/reports/ReportsPage').then(m => ({ default: m.ReportsPage })));
 
 // Page transition wrapper component with Suspense for lazy loading
 const PageTransition = ({ children }: { children: React.ReactNode }) => {
@@ -249,6 +250,7 @@ function AppContent() {
             <Route path="/events" element={<ProtectedRoute><PageTransition><EventCalendarPage /></PageTransition></ProtectedRoute>} />
             <Route path="/social" element={<ProtectedRoute><PageTransition><SocialHub /></PageTransition></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><PageTransition><AnalyticsDashboard /></PageTransition></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><PageTransition><ReportsPage /></PageTransition></ProtectedRoute>} />
             {/* Wallet route removed - functionality integrated into Budget page */}
             {/* Quests route removed - functionality integrated into Dashboard page */}
             <Route

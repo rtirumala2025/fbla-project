@@ -1,7 +1,7 @@
 import { useState, useEffect, memo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, LogOut, Home, ShoppingCart, PawPrint, BarChart3, Sparkles, Calendar, Zap, Palette, Settings, Users } from 'lucide-react';
+import { Menu, X, LogOut, Home, ShoppingCart, PawPrint, BarChart3, Sparkles, Calendar, Zap, Palette, Settings, Users, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = memo(() => {
@@ -72,6 +72,7 @@ const Header = memo(() => {
     { name: 'Budget', to: '/budget', icon: <BarChart3 size={20} /> },
     { name: 'Shop', to: '/shop', icon: <ShoppingCart size={20} /> },
     { name: 'Analytics', to: '/analytics', icon: <Sparkles size={20} /> },
+    { name: 'Reports', to: '/reports', icon: <FileText size={20} /> },
     { name: 'Events', to: '/events', icon: <Calendar size={20} /> },
     { name: 'Social', to: '/social', icon: <Users size={20} /> },
     // Wallet menu item removed - functionality integrated into Budget page
