@@ -7,15 +7,21 @@ import ExpensePieChart from '../../components/analytics/ExpensePieChart';
 import TrendChart from '../../components/analytics/TrendChart';
 import { DailyChallengeCard } from '../../components/minigames/DailyChallengeCard';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { ForecastChart } from '../../components/reports/ForecastChart';
 import { useToast } from '../../contexts/ToastContext';
 import { fetchSnapshot, exportReports } from '../../api/analytics';
-import type { AnalyticsSnapshot, SnapshotNotification, SnapshotSummary, TrendSeries } from '../../types/analytics';
+import { exportPDF, forecastCost } from '../../api/reports';
+import type { AnalyticsSnapshot, CostForecast, SnapshotNotification, SnapshotSummary, TrendSeries } from '../../types/analytics';
 
 export const AnalyticsDashboard: React.FC = () => {
   const toast = useToast();
   const [snapshot, setSnapshot] = useState<AnalyticsSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const [forecast, setForecast] = useState<CostForecast | null>(null);
+  const [loadingForecast, setLoadingForecast] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isLoadingRef = useRef(false);
 
@@ -84,6 +90,63 @@ export const AnalyticsDashboard: React.FC = () => {
       toast.error(error?.message || 'Unable to export CSV');
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!snapshot) return;
+    setExportingPDF(true);
+    try {
+      const start = snapshot.weekly_trend.points[0]?.timestamp.slice(0, 10);
+      const end = snapshot.weekly_trend.points.at(-1)?.timestamp.slice(0, 10);
+      if (!start || !end) {
+        throw new Error('Unable to determine date range for export');
+      }
+      const exportData = await exportPDF({
+        start_date: start,
+        end_date: end,
+        selected_metrics: [],
+        include_charts: true,
+        include_forecast: showForecast && forecast !== null,
+      });
+      
+      // Decode base64 and create blob
+      const binaryString = atob(exportData.content);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = exportData.filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast.success('PDF exported successfully.');
+    } catch (error: any) {
+      console.error('PDF export failed', error);
+      toast.error(error?.message || 'Unable to export PDF');
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
+  const handleLoadForecast = async () => {
+    if (showForecast && forecast) {
+      setShowForecast(false);
+      return;
+    }
+    setLoadingForecast(true);
+    try {
+      const forecastData = await forecastCost(30);
+      setForecast(forecastData);
+      setShowForecast(true);
+    } catch (error: any) {
+      console.error('Failed to load forecast', error);
+      toast.error(error?.message || 'Unable to load cost forecast');
+    } finally {
+      setLoadingForecast(false);
     }
   };
 
@@ -171,7 +234,7 @@ export const AnalyticsDashboard: React.FC = () => {
               Track your pet&apos;s wellbeing, spending, and care trends with AI-guided insights.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={loadSnapshot}
               className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:border-primary hover:text-primary"
@@ -181,9 +244,23 @@ export const AnalyticsDashboard: React.FC = () => {
             <button
               onClick={handleExport}
               disabled={exporting}
+              className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:border-primary hover:text-primary disabled:opacity-60"
+            >
+              {exporting ? 'Exporting…' : 'Export CSV'}
+            </button>
+            <button
+              onClick={handleExportPDF}
+              disabled={exportingPDF}
               className="rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow hover:bg-primary/90 disabled:opacity-60"
             >
-              {exporting ? 'Exporting…' : 'Export Weekly CSV'}
+              {exportingPDF ? 'Generating PDF…' : 'Export PDF'}
+            </button>
+            <button
+              onClick={handleLoadForecast}
+              disabled={loadingForecast}
+              className="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-100 disabled:opacity-60"
+            >
+              {loadingForecast ? 'Loading…' : showForecast ? 'Hide Forecast' : 'Show Forecast'}
             </button>
           </div>
         </div>
@@ -225,6 +302,13 @@ export const AnalyticsDashboard: React.FC = () => {
           {formattedSeries.monthly && <TrendChart series={formattedSeries.monthly} color="#f97316" />}
           <ExpensePieChart expenses={snapshot.expenses} />
         </div>
+
+        {/* Cost Forecast Section */}
+        {showForecast && forecast && (
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+            <ForecastChart forecast={forecast} />
+          </div>
+        )}
 
         <DailyChallengeCard
           challengeText="Keep a positive coin flow for the next three days to unlock a savings bonus."

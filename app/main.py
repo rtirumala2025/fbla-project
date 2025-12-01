@@ -24,6 +24,7 @@ from app.routers import (
     pets,
     profiles,
     quests,
+    reports,
     shop,
     social,
     stats,
@@ -63,6 +64,7 @@ def create_application() -> FastAPI:
     application.include_router(finance.router)
     application.include_router(games.router)
     application.include_router(analytics.router)
+    application.include_router(reports.router)
     application.include_router(next_gen.router)
     application.include_router(profiles.router)
     application.include_router(shop.router)

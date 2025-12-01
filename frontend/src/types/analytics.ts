@@ -81,3 +81,48 @@ export interface AnalyticsCSVResponse {
   content: string;
 }
 
+// Advanced Reporting Types
+
+export interface MetricOption {
+  key: string;
+  label: string;
+  description?: string;
+}
+
+export interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  selectedMetrics: string[];
+}
+
+export interface ForecastDataPoint {
+  date: string;
+  predicted_cost: number;
+  confidence_interval_lower?: number;
+  confidence_interval_upper?: number;
+}
+
+export interface CostForecast {
+  forecast_period_start: string;
+  forecast_period_end: string;
+  current_average_daily_cost: number;
+  predicted_average_daily_cost: number;
+  total_predicted_cost: number;
+  forecast_points: ForecastDataPoint[];
+  insights: string[];
+  generated_at: string;
+}
+
+export interface PDFExportRequest {
+  start_date: string;
+  end_date: string;
+  selected_metrics: string[];
+  include_charts?: boolean;
+  include_forecast?: boolean;
+}
+
+export interface PDFExportResponse {
+  filename: string;
+  content: string; // Base64 encoded
+}
+

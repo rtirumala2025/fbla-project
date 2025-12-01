@@ -8,6 +8,7 @@ import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { logger } from './utils/logger';
 import './styles/globals.css';
+import './styles/print.css';
 
 // Global error handlers
 window.addEventListener('unhandledrejection', (event) => {

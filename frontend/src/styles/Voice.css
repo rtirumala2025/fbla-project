@@ -1,0 +1,269 @@
+/**
+ * Voice Command Component Styles
+ * Waveform animations, confidence score display, and error messages
+ */
+
+.voice-command-container {
+  @apply flex flex-col items-center gap-4;
+}
+
+.voice-command-button {
+  @apply rounded-full p-4 text-white shadow-lg transition-all duration-200;
+  @apply focus:outline-none focus:ring-4 focus:ring-offset-2;
+  @apply disabled:cursor-not-allowed disabled:opacity-50;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.voice-command-button:active {
+  transform: scale(0.95);
+}
+
+/* Pulse animation when listening */
+.voice-command-button[aria-label*="Stop"] {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Waveform canvas */
+.voice-command-waveform {
+  @apply rounded-lg border border-gray-200 bg-gray-50;
+  width: 100%;
+  max-width: 300px;
+  height: 80px;
+  display: block;
+}
+
+/* Status display container */
+.voice-command-status {
+  @apply w-full max-w-md space-y-3;
+}
+
+/* Transcript display */
+.voice-command-transcript {
+  @apply flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200;
+  @apply text-sm text-blue-900;
+}
+
+.voice-command-transcript svg {
+  @apply text-blue-500 flex-shrink-0;
+}
+
+/* Confidence score */
+.voice-command-confidence {
+  @apply flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200;
+  @apply text-sm;
+}
+
+.confidence-label {
+  @apply text-gray-700 font-medium whitespace-nowrap;
+}
+
+.confidence-bar-container {
+  @apply flex-1 h-4 bg-gray-200 rounded-full overflow-hidden;
+}
+
+.confidence-bar {
+  @apply h-full transition-all duration-300 rounded-full;
+}
+
+.confidence-bar.high {
+  @apply bg-green-500;
+}
+
+.confidence-bar.medium {
+  @apply bg-yellow-500;
+}
+
+.confidence-bar.low {
+  @apply bg-red-500;
+}
+
+.confidence-value {
+  @apply text-gray-700 font-semibold whitespace-nowrap text-xs;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Command response */
+.voice-command-response {
+  @apply p-3 rounded-lg bg-green-50 border border-green-200 space-y-2;
+  @apply text-sm;
+}
+
+.response-intent {
+  @apply text-green-900 font-medium;
+}
+
+.response-feedback {
+  @apply text-green-800;
+}
+
+.response-action {
+  @apply flex items-center gap-2 text-green-700 text-xs;
+}
+
+.response-action svg {
+  @apply text-green-600;
+}
+
+/* Error message */
+.voice-command-error {
+  @apply flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200;
+  @apply text-sm text-red-900;
+}
+
+.voice-command-error svg {
+  @apply text-red-500 flex-shrink-0 mt-0.5;
+}
+
+/* Processing indicator */
+.voice-command-processing {
+  @apply flex items-center gap-2 p-3 rounded-lg bg-yellow-50 border border-yellow-200;
+  @apply text-sm text-yellow-900;
+}
+
+.voice-command-processing svg {
+  @apply text-yellow-600;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Unsupported message */
+.voice-command-unsupported {
+  @apply p-3 rounded-lg bg-gray-100 border border-gray-300;
+  @apply text-sm;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .voice-command-button {
+    width: 56px;
+    height: 56px;
+    padding: 12px;
+  }
+
+  .voice-command-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .voice-command-waveform {
+    max-width: 100%;
+    height: 60px;
+  }
+
+  .voice-command-status {
+    max-width: 100%;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .voice-command-transcript {
+    @apply bg-blue-900 border-blue-700 text-blue-100;
+  }
+
+  .voice-command-confidence {
+    @apply bg-gray-800 border-gray-700;
+  }
+
+  .confidence-label {
+    @apply text-gray-300;
+  }
+
+  .confidence-bar-container {
+    @apply bg-gray-700;
+  }
+
+  .confidence-value {
+    @apply text-gray-300;
+  }
+
+  .voice-command-response {
+    @apply bg-green-900 border-green-700;
+  }
+
+  .response-intent {
+    @apply text-green-100;
+  }
+
+  .response-feedback {
+    @apply text-green-200;
+  }
+
+  .response-action {
+    @apply text-green-300;
+  }
+
+  .voice-command-error {
+    @apply bg-red-900 border-red-700 text-red-100;
+  }
+
+  .voice-command-processing {
+    @apply bg-yellow-900 border-yellow-700 text-yellow-100;
+  }
+
+  .voice-command-unsupported {
+    @apply bg-gray-800 border-gray-700 text-gray-300;
+  }
+}
+
+/* Accessibility improvements */
+.voice-command-button:focus-visible {
+  @apply ring-4 ring-offset-2;
+  outline: none;
+}
+
+/* Animation for state transitions */
+.voice-command-status > * {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Waveform animation enhancements */
+.voice-command-waveform {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
