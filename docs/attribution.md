@@ -104,6 +104,12 @@ See [LICENSE](../LICENSE) for full license text.
 - **Repository**: https://github.com/pmndrs/drei
 - **Purpose**: Useful helpers for React Three Fiber
 
+#### React Three XR
+- **Package**: `@react-three/xr@^3.1.0`
+- **License**: MIT
+- **Repository**: https://github.com/pmndrs/react-xr
+- **Purpose**: Virtual reality support for React Three Fiber
+
 ### Backend Integration
 
 #### Supabase JS Client
@@ -137,6 +143,12 @@ See [LICENSE](../LICENSE) for full license text.
 - **License**: MIT
 - **Repository**: https://github.com/catdad/canvas-confetti
 - **Purpose**: Confetti animation effects
+
+#### React Joyride
+- **Package**: `react-joyride@^2.9.3`
+- **License**: MIT
+- **Repository**: https://github.com/gilbarbara/react-joyride
+- **Purpose**: Create guided tours and onboarding experiences
 
 ### Notifications & Feedback
 
@@ -361,6 +373,12 @@ See [LICENSE](../LICENSE) for full license text.
 - **License**: MIT
 - **Repository**: https://github.com/astral-sh/ruff
 - **Purpose**: Fast Python linter and formatter
+
+#### ReportLab
+- **Package**: `reportlab==4.0.7`
+- **License**: BSD-2-Clause
+- **Repository**: https://github.com/ReportLab/reportlab
+- **Purpose**: PDF generation and document creation
 
 ---
 
