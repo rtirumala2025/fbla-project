@@ -113,7 +113,7 @@ export const TooltipGuide: React.FC<TooltipGuideProps> = ({
   // Load dismissed tooltips from IndexedDB
   useEffect(() => {
     const loadDismissedTooltips = async () => {
-      if (!IndexedDBStorage.isSupported()) {
+      if (!indexedDBStorage.isSupported()) {
         setIsLoading(false);
         return;
       }
@@ -230,7 +230,7 @@ export const TooltipGuide: React.FC<TooltipGuideProps> = ({
 
         // Save to IndexedDB
         try {
-          if (IndexedDBStorage.isSupported()) {
+          if (indexedDBStorage.isSupported()) {
             await indexedDBStorage.dismissTooltip(tooltipId);
           }
         } catch (error) {
@@ -298,7 +298,7 @@ export const TooltipGuide: React.FC<TooltipGuideProps> = ({
   // Reset all tooltips (for testing or user reset)
   const resetAllTooltips = useCallback(async () => {
     try {
-      if (IndexedDBStorage.isSupported()) {
+      if (indexedDBStorage.isSupported()) {
         await indexedDBStorage.resetAllTooltips();
       }
       setDismissedTooltips(new Set());
@@ -385,7 +385,7 @@ export const TooltipGuide: React.FC<TooltipGuideProps> = ({
 export const useTooltipGuide = () => {
   const resetAllTooltips = useCallback(async () => {
     try {
-      if (IndexedDBStorage.isSupported()) {
+      if (indexedDBStorage.isSupported()) {
         await indexedDBStorage.resetAllTooltips();
       }
     } catch (error) {
