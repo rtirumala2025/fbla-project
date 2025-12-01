@@ -8,6 +8,8 @@ import { FinancialProvider } from './context/FinancialContext';
 import { PetAutoSync } from './components/sync/PetAutoSync';
 import Header from './components/Header';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
+import OnboardingTutorial from './components/OnboardingTutorial';
+import TooltipGuide from './components/TooltipGuide';
 import './styles/globals.css';
 
 // Lazy load all pages for code splitting
@@ -209,6 +211,9 @@ function AppContent() {
     <PetProvider userId={currentUser?.uid || null}>
       <PetAutoSync />
       <FinancialProvider user={currentUser}>
+        {/* UX Enhancement Components */}
+        <OnboardingTutorial autoStart={false} />
+        <TooltipGuide enabled={true} />
         <div className="bg-cream text-charcoal">
         <Header />
         <main className="bg-cream">
