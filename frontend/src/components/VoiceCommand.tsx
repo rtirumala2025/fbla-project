@@ -253,17 +253,29 @@ export const VoiceCommand: React.FC<VoiceCommandProps> = ({
           </button>
         </div>
 
-        {/* Error Display */}
+        {/* Error Display with Retry */}
         <AnimatePresence>
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mt-3 flex items-center space-x-2 text-sm text-red-600"
+              className="mt-3 flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200"
             >
-              <AlertCircle className="w-4 h-4" />
-              <span>{error}</span>
+              <div className="flex items-center space-x-2 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{error}</span>
+              </div>
+              <button
+                onClick={() => {
+                  setError(null);
+                  handleCommandSubmit(command, 1);
+                }}
+                className="ml-3 px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded hover:bg-red-200 transition-colors flex items-center space-x-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Retry</span>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -338,9 +350,19 @@ export const VoiceCommand: React.FC<VoiceCommandProps> = ({
                   </div>
                 </div>
                 {item.error && (
-                  <div className="mt-2 text-xs text-red-600 flex items-center space-x-1">
-                    <AlertCircle className="w-3 h-3" />
-                    <span>{item.error}</span>
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="text-xs text-red-600 flex items-center space-x-1">
+                      <AlertCircle className="w-3 h-3" />
+                      <span>{item.error}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCommandSubmit(item.command, 1)}
+                      className="ml-2 px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded hover:bg-red-200 transition-colors flex items-center space-x-1"
+                      title="Retry this command"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Retry</span>
+                    </button>
                   </div>
                 )}
               </motion.div>
