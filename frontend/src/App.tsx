@@ -42,6 +42,7 @@ const AvatarStudio = lazy(() => import('./pages/pets/AvatarStudio').then(m => ({
 const PetSelectionPage = lazy(() => import('./pages/PetSelectionPage').then(m => ({ default: m.PetSelectionPage })));
 const GameUI = lazy(() => import('./pages/GameUI').then(m => ({ default: m.GameUI })));
 const SocialHub = lazy(() => import('./pages/social/SocialHub').then(m => ({ default: m.SocialHub })));
+const AnalyticsDashboard = lazy(() => import('./pages/analytics/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
 
 // Page transition wrapper component with Suspense for lazy loading
 const PageTransition = ({ children }: { children: React.ReactNode }) => {
@@ -207,6 +208,11 @@ function AppContent() {
     };
   }, []);
 
+  // Scroll to top on route change
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location.pathname]);
+
   return (
     <PetProvider userId={currentUser?.uid || null}>
       <PetAutoSync />
@@ -242,6 +248,7 @@ function AppContent() {
             <Route path="/help" element={<ProtectedRoute><PageTransition><HelpScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><PageTransition><EventCalendarPage /></PageTransition></ProtectedRoute>} />
             <Route path="/social" element={<ProtectedRoute><PageTransition><SocialHub /></PageTransition></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><PageTransition><AnalyticsDashboard /></PageTransition></ProtectedRoute>} />
             {/* Wallet route removed - functionality integrated into Budget page */}
             {/* Quests route removed - functionality integrated into Dashboard page */}
             <Route
