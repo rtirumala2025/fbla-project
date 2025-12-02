@@ -18,7 +18,7 @@ from app.schemas.ai import (
     TransactionHistoryItem,
 )
 
-router = APIRouter(prefix="/api/budget-advisor", tags=["Budget Advisor"])
+router = APIRouter(prefix="/budget-advisor", tags=["Budget Advisor"])
 
 
 class BudgetAdvisorRequest(BaseModel):

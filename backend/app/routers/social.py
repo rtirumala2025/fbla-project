@@ -23,7 +23,7 @@ def get_social_service(pool: Optional[Pool] = Depends(get_db_pool)) -> SocialSer
     return SocialService(pool)
 
 
-router = APIRouter(prefix="/api/social", tags=["Social"])
+router = APIRouter(prefix="/social", tags=["Social"])
 
 
 @router.get("/friends", response_model=FriendsListResponse)
@@ -126,7 +126,7 @@ async def accept_friend_request(
     Accept a friend request (convenience endpoint).
     
     Args:
-        payload: FriendRespondPayload with request_id
+        payload: FriendRespondPayload with request_id (action is ignored, always 'accept')
         
     Returns:
         FriendsListResponse with updated friendship list

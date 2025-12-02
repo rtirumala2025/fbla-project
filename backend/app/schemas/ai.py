@@ -175,7 +175,7 @@ class PetNameSuggestionResponse(BaseAIResponse):
     """Response payload for pet name validation with standardized structure."""
 
     valid: bool = Field(..., description="Whether the input name is valid")
-    suggestions: List[str] = Field(..., min_items=0, max_items=5, description="List of alternative name suggestions")
+    suggestions: List[str] = Field(..., min_length=0, max_length=5, description="List of alternative name suggestions")
 
 
 # ============================================================================

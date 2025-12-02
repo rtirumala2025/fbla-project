@@ -113,6 +113,12 @@ async def get_quest_service(pool: Optional[Pool] = Depends(get_db_pool)):
     return QuestService(pool)
 
 
+async def get_social_service(pool: Optional[Pool] = Depends(get_db_pool)):
+    from app.services.social_service import SocialService
+
+    return SocialService(pool)
+
+
 async def get_current_user(request: Request) -> AuthenticatedUser:
     user = getattr(request.state, "user", None)
     if not user:

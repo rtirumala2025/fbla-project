@@ -9,7 +9,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from app.core.jwt import get_current_user_id
 from app.services.finance_simulator import FinanceSimulatorService
 
-router = APIRouter(prefix="/api/finance-sim", tags=["Finance Simulator"])
+router = APIRouter(prefix="/finance-sim", tags=["Finance Simulator"])
 
 finance_sim_service = FinanceSimulatorService()
 

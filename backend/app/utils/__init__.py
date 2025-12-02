@@ -14,6 +14,7 @@ from .dependencies import (
     get_quest_service,
     get_seasonal_service,
     get_shop_service,
+    get_social_service,
     get_storage_service,
     get_users_service,
 )
@@ -35,5 +36,6 @@ __all__ = [
     "get_shop_service",
     "get_quest_service",
     "get_seasonal_service",
+    "get_social_service",
     "get_storage_service",
 ]

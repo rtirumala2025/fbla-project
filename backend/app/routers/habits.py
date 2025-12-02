@@ -9,7 +9,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from app.core.jwt import get_current_user_id
 from app.services.habit_prediction import HabitPredictionService
 
-router = APIRouter(prefix="/api/habits", tags=["Habits"])
+router = APIRouter(prefix="/habits", tags=["Habits"])
 
 habit_service = HabitPredictionService()
 

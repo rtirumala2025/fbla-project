@@ -23,7 +23,7 @@ from app.schemas.reports import (
 )
 from app.services.report_service import generate_cost_forecast, generate_pdf_report
 
-router = APIRouter(prefix="/api/reports", tags=["Reports"])
+router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
 # Available metrics for selection

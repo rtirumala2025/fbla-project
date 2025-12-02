@@ -52,7 +52,7 @@ class FriendRequestPayload(BaseModel):
 class FriendRespondPayload(BaseModel):
     """Friend request response payload schema."""
     request_id: str
-    action: str  # 'accept' or 'decline'
+    action: str = "accept"  # 'accept' or 'decline', defaults to 'accept'
 
 
 class PublicProfilesResponse(BaseModel):
