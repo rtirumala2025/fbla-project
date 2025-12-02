@@ -206,7 +206,11 @@ export const AIChat: React.FC = () => {
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      const rawData = await response.json();
+      
+      // Use adapter to normalize AI response
+      const { adaptAIChatResponse } = await import('../../utils/aiAdapters');
+      const data = adaptAIChatResponse(rawData);
       
       // If this was a pet interaction, update the pet state
       if (data.pet_state) {
@@ -224,13 +228,18 @@ export const AIChat: React.FC = () => {
         if (messageIndex !== -1) {
           newMessages[messageIndex] = {
             ...newMessages[messageIndex],
-            content: data.message || data.response || "I'm not sure how to respond to that.",
+            content: data.message || "I'm not sure how to respond to that.",
             state: data.pet_state ? { ...data.pet_state } : undefined
           };
         }
         
         return newMessages;
       });
+      
+      // Update session ID if provided
+      if (data.session_id) {
+        setSessionId(data.session_id);
+      }
       
       logFormSubmit({ message: messageContent }, true);
     } catch (err: any) {

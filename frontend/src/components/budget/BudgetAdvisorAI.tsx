@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { adaptBudgetAdvisorResponse } from '../../utils/aiAdapters';
 
 // TypeScript types matching backend schemas
 export interface TransactionInput {

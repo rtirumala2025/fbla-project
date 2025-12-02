@@ -241,7 +241,8 @@ export async function earnCoins(data: EarnRequestPayload): Promise<FinanceRespon
 }
 
 export async function purchaseItems(data: PurchaseRequestPayload): Promise<FinanceResponse> {
-  return apiRequest<FinanceResponse>(`${API_BASE}/purchase`, {
+  // Use shop endpoint for purchases
+  return apiRequest<FinanceResponse>(`/api/shop/purchase`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -252,7 +253,7 @@ export async function getLeaderboard(metric: 'balance' | 'care_score'): Promise<
 }
 
 export async function getShopCatalog(): Promise<ShopItemEntry[]> {
-  return apiRequest<ShopItemEntry[]>(`${API_BASE}/shop`);
+  return apiRequest<ShopItemEntry[]>(`/api/shop/items`);
 }
 
 export async function getInventory(): Promise<InventoryEntry[]> {

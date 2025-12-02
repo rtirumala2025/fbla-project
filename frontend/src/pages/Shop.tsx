@@ -8,7 +8,7 @@ import { ShoppingCart, ArrowLeft, PackageCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
-import { usePet } from '../context/PetContext';
+// Removed usePet - items are now stored in inventory, not auto-applied
 import {
   getFinanceSummary,
   getShopCatalog,
@@ -35,7 +35,7 @@ export const Shop = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { currentUser } = useAuth();
-  const { pet, updatePetStats } = usePet();
+  // Removed pet context - purchases go to inventory
 
   const loadData = useCallback(async (withSpinner: boolean = true) => {
     if (!currentUser?.uid) {
@@ -111,11 +111,6 @@ export const Shop = () => {
   const handlePurchase = async () => {
     if (!currentUser?.uid) {
       toast.error('Please log in to make a purchase');
-      return;
-    }
-
-    if (!pet) {
-      toast.error('Please create a pet first!');
       return;
     }
 
@@ -195,7 +190,7 @@ export const Shop = () => {
 
         <h1 className="text-4xl font-black text-gray-900 mb-2">Shop</h1>
         <p className="text-gray-600 mb-8">
-          {pet ? `Get supplies for ${pet.name}` : 'Get supplies for your pet'}
+          Purchase items and add them to your inventory
         </p>
         
         {loading && (

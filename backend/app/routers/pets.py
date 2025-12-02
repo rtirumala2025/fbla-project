@@ -17,7 +17,7 @@ from app.schemas import (
     PetUpdate,
 )
 from app.services.pet_service import PetService
-from app.utils import get_current_user, get_pet_service
+from app.utils import get_current_user, get_pet_service, get_shop_service
 
 router = APIRouter(prefix="/pets", tags=["pets"])
 
@@ -85,17 +85,14 @@ async def create_diary_entry(
 async def process_game_loop(
     current_user: AuthenticatedUser = Depends(get_current_user),
     service: PetService = Depends(get_pet_service),
+    shop_service = Depends(get_shop_service),
 ) -> dict:
     """
     Process game loop updates (stat decay, idle coins, etc.).
     This endpoint can be called periodically or on login to catch up on missed time.
     """
     from app.services.game_loop_service import GameLoopService
-    from app.services.shop_service import ShopService
     from app.utils import get_shop_service
-    
-    # Get shop service for coin rewards
-    shop_service = get_shop_service()
     
     # Create game loop service
     game_loop_service = GameLoopService(
