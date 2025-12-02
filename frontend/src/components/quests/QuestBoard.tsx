@@ -11,6 +11,7 @@ interface QuestBoardProps {
   quests: Record<'daily' | 'weekly' | 'event', Quest[]>;
   onComplete: (quest: Quest) => void;
   isProcessingId?: string | null;
+  onClaimReward?: (quest: Quest) => void;
 }
 
 const sectionTitles: Record<'daily' | 'weekly' | 'event', { title: string; caption: string }> = {
@@ -19,7 +20,7 @@ const sectionTitles: Record<'daily' | 'weekly' | 'event', { title: string; capti
   event: { title: 'Event Spotlight', caption: 'Limited-time adventures and seasonal quests.' },
 };
 
-export const QuestBoard = memo(({ quests, onComplete, isProcessingId = null }: QuestBoardProps) => {
+export const QuestBoard = memo(({ quests, onComplete, isProcessingId = null, onClaimReward }: QuestBoardProps) => {
   return (
     <div className="space-y-10">
       {(Object.keys(sectionTitles) as Array<'daily' | 'weekly' | 'event'>).map((key) => {
@@ -49,6 +50,7 @@ export const QuestBoard = memo(({ quests, onComplete, isProcessingId = null }: Q
                     quest={quest}
                     onComplete={onComplete}
                     isProcessing={isProcessingId === quest.id}
+                    onClaimReward={onClaimReward}
                   />
                 ))}
               </AnimatePresence>

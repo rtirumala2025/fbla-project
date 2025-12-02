@@ -2,11 +2,13 @@
  * PetCarePanel Component
  * Centralized care interface for pet actions and stats
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import dayjs from 'dayjs';
+import { motion } from 'framer-motion';
 import { bathePetAction, feedPetAction, getPetDiary, getPetStats, playWithPet, restPetAction } from '../../api/pets';
 import type { PetActionResponse, PetDiaryEntry, PetStats } from '../../types/pet';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { EvolutionAnimation } from './EvolutionAnimation';
 
 type CareAction = 'feed' | 'play' | 'bathe' | 'rest';
 
@@ -42,6 +44,9 @@ export function PetCarePanel() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEvolution, setShowEvolution] = useState(false);
+  const [evolutionData, setEvolutionData] = useState<{ oldStage: string; newStage: string; level: number } | null>(null);
+  const prevStatsRef = useRef<PetStats | null>(null);
 
   const computeHealthSummary = useCallback((currentStats: PetStats | null): HealthSummary | null => {
     if (!currentStats) {
@@ -64,17 +69,53 @@ export function PetCarePanel() {
     return { summary, mood: currentStats.mood ?? 'content' };
   }, []);
 
+  const getEvolutionStage = useCallback((level: number): string => {
+    if (level >= 12) return 'legendary';
+    if (level >= 7) return 'adult';
+    if (level >= 4) return 'juvenile';
+    return 'egg';
+  }, []);
+
+  const checkEvolution = useCallback((oldStats: PetStats | null, newStats: PetStats | null) => {
+    if (!oldStats || !newStats) return;
+    
+    const oldLevel = oldStats.level ?? 1;
+    const newLevel = newStats.level ?? 1;
+    
+    if (newLevel > oldLevel) {
+      const oldStage = getEvolutionStage(oldLevel);
+      const newStage = getEvolutionStage(newLevel);
+      
+      if (oldStage !== newStage) {
+        setEvolutionData({
+          oldStage,
+          newStage,
+          level: newLevel,
+        });
+        setShowEvolution(true);
+      }
+    }
+  }, [getEvolutionStage]);
+
   const updateFromAction = useCallback((response: PetActionResponse) => {
     if (response.pet?.stats) {
-      setStats(response.pet.stats as PetStats);
-      setHealthSummary(computeHealthSummary(response.pet.stats as PetStats));
+      const newStats = response.pet.stats as PetStats;
+      const oldStats = stats;
+      
+      setStats(newStats);
+      setHealthSummary(computeHealthSummary(newStats));
+      
+      // Check for evolution
+      if (oldStats) {
+        checkEvolution(oldStats, newStats);
+      }
     }
     if (response.pet?.diary) {
       setDiary(response.pet.diary);
     }
     setReaction(response.reaction ?? '');
     setNotifications(response.notifications ?? []);
-  }, [computeHealthSummary]);
+  }, [computeHealthSummary, stats, checkEvolution]);
 
   const loadCareData = useCallback(async () => {
     try {
@@ -83,6 +124,12 @@ export function PetCarePanel() {
 
       const [fetchedStats, fetchedDiary] = await Promise.all([getPetStats(), getPetDiary()]);
 
+      // Check for evolution on load
+      if (prevStatsRef.current && fetchedStats) {
+        checkEvolution(prevStatsRef.current, fetchedStats);
+      }
+      prevStatsRef.current = fetchedStats;
+      
       setStats(fetchedStats);
       setDiary(fetchedDiary);
       setHealthSummary(computeHealthSummary(fetchedStats));
@@ -161,14 +208,30 @@ export function PetCarePanel() {
     const threshold = Math.max(1, level * 120);
     const progress = Math.min(100, Math.round((xp / threshold) * 100));
     const hygiene = stats.hygiene ?? stats.cleanliness ?? 60;
+    
+    // Calculate happiness score (weighted average)
+    const happiness = Math.round(
+      (stats.hunger * 0.25 +
+       hygiene * 0.20 +
+       stats.energy * 0.25 +
+       stats.health * 0.30)
+    );
+    
     return [
+      { key: 'happiness', label: 'Happiness', value: happiness, isSpecial: true },
       { key: 'hunger', label: 'Hunger', value: stats.hunger },
       { key: 'hygiene', label: 'Hygiene', value: hygiene },
       { key: 'energy', label: 'Energy', value: stats.energy },
       { key: 'health', label: 'Health', value: stats.health },
-      { key: 'xp', label: `Level ${level} Progress`, value: progress },
+      { key: 'xp', label: `Level ${level} Progress`, value: progress, isSpecial: true },
     ];
   }, [stats]);
+
+  const evolutionStage = useMemo(() => {
+    if (!stats) return null;
+    const level = stats.level ?? 1;
+    return getEvolutionStage(level);
+  }, [stats, getEvolutionStage]);
 
   const moodInitial = ((stats?.mood ?? '?').slice(0, 1) || '?').toUpperCase();
 
@@ -196,7 +259,21 @@ export function PetCarePanel() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <>
+      {showEvolution && evolutionData && (
+        <EvolutionAnimation
+          petName="Your Pet"
+          oldStage={evolutionData.oldStage as any}
+          newStage={evolutionData.newStage as any}
+          level={evolutionData.level}
+          onComplete={() => {
+            setShowEvolution(false);
+            setEvolutionData(null);
+          }}
+        />
+      )}
+      
+      <div className="grid gap-6 lg:grid-cols-3">
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
         <header className="flex items-center justify-between">
           <div>
@@ -306,22 +383,47 @@ export function PetCarePanel() {
       </section>
 
       <section className="flex flex-col gap-6">
+        {/* Evolution Stage Badge */}
+        {evolutionStage && (
+          <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-purple-700 mb-2">Evolution Stage</h3>
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">{evolutionStage === 'egg' ? '🥚' : evolutionStage === 'juvenile' ? '🌟' : evolutionStage === 'adult' ? '⭐' : '✨'}</span>
+              <div>
+                <p className="text-lg font-bold text-purple-900 capitalize">{evolutionStage}</p>
+                <p className="text-xs text-purple-600">Level {stats?.level ?? 1}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-700">Current Stats</h3>
           <div className="mt-4 space-y-4">
             {statEntries.map((entry) => (
-              <div key={entry.key}>
+              <motion.div
+                key={entry.key}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
                 <div className="flex items-center justify-between text-xs font-medium text-slate-600">
-                  <span>{entry.label}</span>
-                  <span>{entry.value}%</span>
+                  <span className={entry.isSpecial ? 'font-bold text-indigo-600' : ''}>{entry.label}</span>
+                  <span className={entry.isSpecial ? 'font-bold text-indigo-600' : ''}>{entry.value}%</span>
                 </div>
-                <div className="mt-2 h-2 w-full rounded-full bg-slate-100">
-                  <div
-                    className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all"
-                    style={{ width: `${Math.min(100, Math.max(0, entry.value))}%` }}
+                <div className="mt-2 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <motion.div
+                    className={`h-2 rounded-full transition-all ${
+                      entry.isSpecial
+                        ? 'bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400'
+                        : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                    }`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, Math.max(0, entry.value))}%` }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
                   />
                 </div>
-              </div>
+              </motion.div>
             ))}
             {healthSummary && (
               <div className="mt-4 rounded-md bg-emerald-50 p-3 text-sm text-emerald-700">
