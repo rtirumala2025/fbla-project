@@ -28,9 +28,11 @@ const mockUseAppStore = useAppStore as jest.MockedFunction<typeof useAppStore>;
 
 describe('Shop Component', () => {
   const mockToast = {
+    showToast: jest.fn(),
     success: jest.fn(),
     error: jest.fn(),
     info: jest.fn(),
+    warning: jest.fn(),
   };
 
   const mockPet = {
@@ -56,6 +58,7 @@ describe('Shop Component', () => {
 
   const mockShopItems = [
     {
+      id: 'food-1',
       sku: 'food-1',
       name: 'Dog Food',
       category: 'food',
@@ -65,6 +68,7 @@ describe('Shop Component', () => {
       emoji: '🍖',
     },
     {
+      id: 'toy-1',
       sku: 'toy-1',
       name: 'Ball',
       category: 'toy',
@@ -79,7 +83,7 @@ describe('Shop Component', () => {
     jest.clearAllMocks();
 
     mockUseAuth.mockReturnValue({
-      currentUser: { uid: 'user-1', email: 'test@example.com' },
+      currentUser: { uid: 'user-1', email: 'test@example.com', displayName: 'Test User' },
       loading: false,
       hasPet: true,
       isNewUser: false,
@@ -108,10 +112,15 @@ describe('Shop Component', () => {
 
     mockGetFinanceSummary.mockResolvedValue({
       summary: {
+        currency: 'coins',
         balance: 100,
-        income: 0,
-        expenses: 0,
-        transactions: [],
+        donation_total: 0,
+        lifetime_earned: 0,
+        lifetime_spent: 0,
+        income_today: 0,
+        expenses_today: 0,
+        recommendations: [],
+        notifications: [],
       },
     });
 
@@ -177,18 +186,7 @@ describe('Shop Component', () => {
   });
 
   it('should handle purchase successfully', async () => {
-    mockPurchaseItems.mockResolvedValue({
-      summary: {
-        balance: 75, // 100 - 25 (2*10 + 1*15)
-        income: 0,
-        expenses: 25,
-        transactions: [],
-      },
-      items: [
-        { item_id: 'food-1', quantity: 2 },
-        { item_id: 'toy-1', quantity: 1 },
-      ],
-    });
+    mockPurchaseItems.mockResolvedValue(undefined);
 
     render(
       <BrowserRouter>

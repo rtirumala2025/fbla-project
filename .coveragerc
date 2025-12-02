@@ -1,13 +1,27 @@
 [run]
+source = .
 omit =
-    app/routers/*
-    app/services/analytics_service.py
-    app/services/coach_service.py
-    app/services/quest_service.py
-    app/services/sync_service.py
-    app/services/user_service.py
-    backend/*
+    */tests/*
+    */__pycache__/*
+    */migrations/*
+    */alembic/*
+    */node_modules/*
+    */venv/*
+    */env/*
+    frontend/*
+    e2e/*
+    scripts/*
+    docs/*
+    reports/*
 
 [report]
 show_missing = True
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
 

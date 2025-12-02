@@ -3,7 +3,7 @@
  * Tests friend requests, leaderboard, and public profiles
  */
 
-import { socialApi } from '../../api/social';
+import { getFriends, sendFriendRequest, getPublicProfiles, getLeaderboard } from '../../api/social';
 
 global.fetch = jest.fn();
 
@@ -52,7 +52,7 @@ describe('Social API', () => {
         json: async () => mockResponse,
       });
 
-      const result = await socialApi.sendFriendRequest('user-2');
+      const result = await sendFriendRequest({ target_user_id: 'user-2' });
 
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/social/friends/request'),
@@ -90,7 +90,7 @@ describe('Social API', () => {
         json: async () => mockResponse,
       });
 
-      const result = await socialApi.respondToFriendRequest('req-1', 'accept');
+      const result = await respondToFriendRequest({ request_id: 'req-1', action: 'accept' });
 
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/social/friends/respond'),
@@ -112,7 +112,7 @@ describe('Social API', () => {
         json: async () => ({ result: { status: 'declined' } }),
       });
 
-      const result = await socialApi.respondToFriendRequest('req-1', 'decline');
+      const result = await respondToFriendRequest({ request_id: 'req-1', action: 'decline' });
 
       expect(result.status).toBe('declined');
     });
@@ -156,7 +156,7 @@ describe('Social API', () => {
         json: async () => ({ result: { profiles: mockProfiles } }),
       });
 
-      const result = await socialApi.getPublicProfiles();
+      const result = await getPublicProfiles();
 
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/social/public_profiles'),

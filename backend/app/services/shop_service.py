@@ -131,7 +131,7 @@ class ShopService:
 
                 # Validate items and calculate total cost
                 total_cost = 0
-                items_to_add = []
+                items_to_add: List[Dict[str, Any]] = []
                 validated_items = []
 
                 for line_item in payload.items:
@@ -284,7 +284,7 @@ class ShopService:
                     item_name=row["item_name"],
                     category=row["category"],
                     quantity=row["quantity"],
-                    shop_item_id=str(row["shop_item_id"]) if row["shop_item_id"] else None,
+                    shop_item_id=UUID(row["shop_item_id"]) if row["shop_item_id"] else None,
                 )
                 for row in rows
             ]

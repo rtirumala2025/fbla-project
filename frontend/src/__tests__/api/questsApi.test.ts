@@ -3,7 +3,7 @@
  * Tests API calls, error handling, and response parsing
  */
 
-import { questsApi } from '../../api/quests';
+import * as questsApi from '../../api/quests';
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -55,13 +55,13 @@ describe('Quests API', () => {
         json: async () => ({ error: 'Internal server error' }),
       });
 
-      await expect(questsApi.getActiveQuests()).rejects.toThrow();
+      await expect(questsApi.fetchActiveQuests()).rejects.toThrow();
     });
 
     it('handles network errors', async () => {
       (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
-      await expect(questsApi.getActiveQuests()).rejects.toThrow('Network error');
+      await expect(questsApi.fetchActiveQuests()).rejects.toThrow('Network error');
     });
   });
 
@@ -91,7 +91,6 @@ describe('Quests API', () => {
           method: 'POST',
           body: JSON.stringify({
             quest_id: 'quest-1',
-            action: 'feed',
           }),
         })
       );
@@ -106,7 +105,7 @@ describe('Quests API', () => {
         json: async () => ({ error: 'Quest not found' }),
       });
 
-      await expect(questsApi.completeQuest('invalid-quest', {})).rejects.toThrow();
+      await expect(questsApi.completeQuest('invalid-quest')).rejects.toThrow();
     });
   });
 
@@ -149,7 +148,7 @@ describe('Quests API', () => {
         json: async () => ({ error: 'Reward already claimed' }),
       });
 
-      await expect(questsApi.claimReward('quest-1')).rejects.toThrow();
+      await expect(questsApi.claimQuestReward('quest-1')).rejects.toThrow();
     });
   });
 

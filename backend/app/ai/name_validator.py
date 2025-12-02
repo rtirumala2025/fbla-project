@@ -173,7 +173,7 @@ class NameValidatorAI:
             Dictionary with validation results
         """
         errors = []
-        details = {}
+        details: Dict[str, Any] = {}
 
         # Empty check
         if not name:
@@ -311,6 +311,9 @@ Return only the names, one per line, without numbering, bullets, or extra text."
             "Content-Type": "application/json",
         }
 
+        if not api_url:
+            raise ValueError("API URL not configured")
+        
         client = self._client or httpx.AsyncClient(timeout=30.0)
         close_client = self._client is None
 

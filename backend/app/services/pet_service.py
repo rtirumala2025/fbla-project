@@ -618,7 +618,7 @@ class PetService:
         pool = await self._require_pool()
         columns = self._column_map
         assert columns is not None
-        updates = {
+        updates: Dict[str, Any] = {
             columns["hunger"]: pet.stats.hunger,
             columns["hygiene"]: pet.stats.hygiene,
             columns["energy"]: pet.stats.energy,

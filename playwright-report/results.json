@@ -1,0 +1,109 @@
+{
+  "config": {
+    "configFile": "/Users/ritvik/fbla-project/playwright.config.ts",
+    "rootDir": "/Users/ritvik/fbla-project/e2e",
+    "forbidOnly": true,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright-report/results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/ritvik/fbla-project/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "chromium-desktop",
+        "name": "chromium-desktop",
+        "testDir": "/Users/ritvik/fbla-project/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/ritvik/fbla-project/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "chromium-mobile",
+        "name": "chromium-mobile",
+        "testDir": "/Users/ritvik/fbla-project/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/ritvik/fbla-project/test-results",
+        "repeatEach": 1,
+        "retries": 2,
+        "metadata": {},
+        "id": "chromium-tablet",
+        "name": "chromium-tablet",
+        "testDir": "/Users/ritvik/fbla-project/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "Error: duplicate test title \"Comprehensive QA Test Suite › Budget Advisor AI Endpoints › POST /api/budget-advisor/analyze - invalid amounts\", first declared in qa-comprehensive.spec.ts:352",
+      "location": {
+        "file": "/Users/ritvik/fbla-project/e2e/qa-comprehensive.spec.ts",
+        "line": 375,
+        "column": 9
+      },
+      "snippet": "   at qa-comprehensive.spec.ts:375\n\n  373 |     });\n  374 |\n> 375 |     test('POST /api/budget-advisor/analyze - invalid amounts', async ({ page }) => {\n      |         ^\n  376 |       const token = await getAuthToken(page);\n  377 |       const { response, status } = await measureAPIResponse(\n  378 |         page,"
+    }
+  ],
+  "stats": {
+    "startTime": "2025-12-02T20:22:24.907Z",
+    "duration": 1811.7310000000002,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

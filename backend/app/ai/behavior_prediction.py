@@ -247,7 +247,7 @@ class BehaviorPredictionModel:
                 average_interval_hours = sum(intervals) / len(intervals)
 
         # Calculate stat trends
-        stat_trends = {}
+        stat_trends: Dict[str, Dict[str, Any]] = {}
         if stat_changes:
             for key in ["hunger", "happiness", "energy", "cleanliness", "health"]:
                 changes = [c.get(key, 0) for c in stat_changes if key in c]

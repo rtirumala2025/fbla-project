@@ -10,23 +10,21 @@ import type { Quest } from '../../types/quests';
 
 const mockQuest: Quest = {
   id: 'quest-1',
-  title: 'Feed Your Pet',
+  quest_key: 'feed_pet_3_times',
   description: 'Feed your pet 3 times today',
-  type: 'daily',
+  quest_type: 'daily',
   difficulty: 'easy',
-  status: 'active',
-  progress: { current: 1, target: 3 },
-  rewards: { coins: 50, xp: 100 },
-  requirements: [],
-  created_at: new Date().toISOString(),
-  expires_at: new Date(Date.now() + 86400000).toISOString(),
+  status: 'in_progress',
+  progress: 1,
+  target_value: 3,
+  rewards: { coins: 50, xp: 100, items: [] },
 };
 
 const mockCompletedQuest: Quest = {
   ...mockQuest,
   id: 'quest-2',
   status: 'completed',
-  progress: { current: 3, target: 3 },
+  progress: 3,
 };
 
 const mockQuests = {
@@ -141,15 +139,17 @@ describe('QuestBoard', () => {
     const weeklyQuest: Quest = {
       ...mockQuest,
       id: 'quest-weekly',
-      type: 'weekly',
-      title: 'Weekly Challenge',
+      quest_type: 'weekly',
+      quest_key: 'weekly_challenge',
+      description: 'Weekly Challenge',
     };
 
     const eventQuest: Quest = {
       ...mockQuest,
       id: 'quest-event',
-      type: 'event',
-      title: 'Event Quest',
+      quest_type: 'event',
+      quest_key: 'event_quest',
+      description: 'Event Quest',
     };
 
     const allQuests = {
@@ -185,7 +185,7 @@ describe('QuestBoard', () => {
     expect(screen.getByText('1 active')).toBeInTheDocument();
 
     const updatedQuests = {
-      daily: [mockQuest, { ...mockQuest, id: 'quest-3', title: 'New Quest' }],
+      daily: [mockQuest, { ...mockQuest, id: 'quest-3', quest_key: 'new_quest', description: 'New Quest' }],
       weekly: [],
       event: [],
     };

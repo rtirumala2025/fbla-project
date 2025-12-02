@@ -391,13 +391,17 @@ class AccessoryService:
         return dict(value)
 
     def _row_to_accessory(self, row) -> Accessory:
+        color_palette_raw = self._decode_json_field(row["color_palette"])
+        color_palette: Dict[str, str] = {}
+        if isinstance(color_palette_raw, dict):
+            color_palette = {k: str(v) for k, v in color_palette_raw.items()}
         return Accessory(
             accessory_id=str(row["accessory_id"]),
             name=row["name"],
             type=row["type"],
             rarity=row["rarity"],
             effects=self._decode_json_field(row["effects"]),
-            color_palette=self._decode_json_field(row["color_palette"]),
+            color_palette=color_palette,
             preview_url=row["preview_url"],
             created_at=row.get("created_at"),
             updated_at=row.get("updated_at"),

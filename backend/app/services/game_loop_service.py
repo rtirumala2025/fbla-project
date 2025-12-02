@@ -6,7 +6,7 @@ Processes game state updates server-side for consistency and reliability.
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Optional
 
 from asyncpg import Pool
 from fastapi import HTTPException, status
@@ -92,7 +92,7 @@ class GameLoopService:
 
     def _calculate_stat_decay(
         self,
-        current_stats: any,
+        current_stats: Any,
         hours_elapsed: float,
     ) -> dict:
         """

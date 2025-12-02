@@ -70,7 +70,7 @@ class HabitPredictionService:
             }
 
         # Analyze daily patterns
-        daily_patterns: Dict[str, Dict[str, int]] = {}
+        daily_patterns: Dict[str, Dict[str, Any]] = {}
         action_frequency: Dict[str, int] = {}
 
         for interaction in interaction_history:
@@ -85,16 +85,22 @@ class HabitPredictionService:
                 # Track patterns by day of week
                 if day_of_week not in daily_patterns:
                     daily_patterns[day_of_week] = {}
-                daily_patterns[day_of_week][action] = daily_patterns[day_of_week].get(action, 0) + 1
+                day_pattern = daily_patterns[day_of_week]
+                if not isinstance(day_pattern, dict):
+                    day_pattern = {}
+                    daily_patterns[day_of_week] = day_pattern
+                day_pattern[action] = day_pattern.get(action, 0) + 1  # type: ignore[assignment]
 
                 # Track action frequency
                 action_frequency[action] = action_frequency.get(action, 0) + 1
 
                 # Track time of day patterns
                 time_period = "morning" if 6 <= hour < 12 else "afternoon" if 12 <= hour < 18 else "evening" if 18 <= hour < 22 else "night"
-                if "time_periods" not in daily_patterns[day_of_week]:
-                    daily_patterns[day_of_week]["time_periods"] = {}
-                daily_patterns[day_of_week]["time_periods"][time_period] = daily_patterns[day_of_week]["time_periods"].get(time_period, 0) + 1
+                if "time_periods" not in day_pattern:
+                    day_pattern["time_periods"] = {}
+                time_periods = day_pattern["time_periods"]
+                if isinstance(time_periods, dict):
+                    time_periods[time_period] = time_periods.get(time_period, 0) + 1  # type: ignore[assignment]
             except (ValueError, AttributeError):
                 continue
 

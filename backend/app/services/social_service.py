@@ -274,7 +274,7 @@ class SocialService:
                 FROM public_profiles pp
                 WHERE pp.is_visible = TRUE
             """
-            params = []
+            params: List[str | int] = []
             
             if search:
                 query += " AND (pp.display_name ILIKE $1 OR pp.bio ILIKE $1)"

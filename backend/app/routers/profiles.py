@@ -20,7 +20,7 @@ async def get_my_profile(
     profile = await service.get_profile(current_user.id)
     if profile is None:
         raise_status_not_found()
-    return profile
+    return profile  # type: ignore[return-value]  # Guaranteed non-None after check
 
 
 @router.post("/", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)

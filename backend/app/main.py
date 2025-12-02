@@ -1,6 +1,8 @@
 """Entrypoint for the FastAPI application."""
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,6 +16,16 @@ from app.routers.health import router as health_router
 from app.utils.logging import configure_logging
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup
+    await connect_to_database(app)
+    yield
+    # Shutdown
+    await disconnect_from_database(app)
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging()
@@ -22,6 +34,7 @@ def create_app() -> FastAPI:
         title="Virtual Pet API",
         description="Backend services for the Virtual Pet web application.",
         version="0.1.0",
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -50,14 +63,6 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(api_router)
-
-    @app.on_event("startup")
-    async def startup_event() -> None:  # pragma: no cover - FastAPI lifecycle
-        await connect_to_database(app)
-
-    @app.on_event("shutdown")
-    async def shutdown_event() -> None:  # pragma: no cover - FastAPI lifecycle
-        await disconnect_from_database(app)
 
     return app
 

@@ -22,6 +22,7 @@ let useXR: any = null;
 if (typeof window !== 'undefined') {
   try {
     // Use dynamic import to avoid build-time errors
+    // @ts-ignore - Dynamic import string is checked at runtime, not compile time
     import('@react-three/xr').then((xrModule: any) => {
       ARCanvas = xrModule.ARCanvas || xrModule.default?.ARCanvas;
       XRButton = xrModule.XRButton || xrModule.default?.XRButton;

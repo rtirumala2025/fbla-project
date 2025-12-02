@@ -56,7 +56,7 @@ class WeatherService:
         }
 
         async with (self._client or httpx.AsyncClient(timeout=10.0)) as client:
-            response = await client.get(url, params=params)
+            response = await client.get(url, params=params)  # type: ignore[arg-type]
             response.raise_for_status()
             payload = response.json()
 

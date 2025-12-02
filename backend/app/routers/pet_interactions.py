@@ -75,7 +75,7 @@ async def interact_with_pet(
 
     message = _format_reaction_message(action_response.pet, action_response.reaction, action_response.mood)
 
-    pet_state = _build_pet_state(action_response.pet)
+    pet_state: Dict[str, Any] = _build_pet_state(action_response.pet)  # type: ignore[assignment]
     if action_response.health_forecast:
         pet_state["health_forecast"] = action_response.health_forecast
 

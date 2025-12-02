@@ -31,7 +31,7 @@ async def fetch_pet(
     pet = await service.get_pet(current_user.id)
     if pet is None:
         raise_status_not_found()
-    return pet
+    return pet  # type: ignore[return-value]  # Guaranteed non-None after check
 
 
 @router.post("", response_model=PetResponse, status_code=status.HTTP_201_CREATED)
@@ -108,6 +108,8 @@ async def create_diary_entry(
     pet = await service.get_pet(current_user.id)
     if pet is None:
         raise_status_not_found()
+    # pet is guaranteed non-None after check above
+    assert pet is not None
     return await service.add_diary_entry(current_user.id, pet.id, payload)
 
 

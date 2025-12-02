@@ -372,7 +372,7 @@ test.describe('Comprehensive QA Test Suite', () => {
       expect([400, 422]).toContain(status);
     });
 
-    test('POST /api/budget-advisor/analyze - invalid amounts', async ({ page }) => {
+    test('POST /api/budget-advisor/analyze - zero amounts', async ({ page }) => {
       const token = await getAuthToken(page);
       const { response, status } = await measureAPIResponse(
         page,

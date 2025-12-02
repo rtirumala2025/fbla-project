@@ -139,7 +139,7 @@ class BudgetForecastingEngine:
         )
         
         # Identify trends
-        trends = self._identify_trends(pattern_analysis)
+        trends: List[Dict[str, Any]] = self._identify_trends(pattern_analysis)
         
         # Calculate confidence
         confidence_score = self._calculate_forecast_confidence(pattern_analysis)
@@ -423,7 +423,7 @@ class BudgetForecastingEngine:
         Returns:
             List of identified trends
         """
-        trends = []
+        trends: List[Dict[str, Any]] = []
         monthly_totals = pattern_analysis.get("monthly_spending", {})
         
         if len(monthly_totals) < 2:
@@ -652,6 +652,9 @@ Keep recommendations concise, practical, and encouraging."""
             "Content-Type": "application/json",
         }
 
+        if not api_url:
+            raise ValueError("API URL not configured")
+        
         client = self._client or httpx.AsyncClient(timeout=30.0)
         close_client = self._client is None
 

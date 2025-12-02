@@ -73,9 +73,13 @@ class AuthService:
             "data": {"username": payload.username},
         }
         result = await self._request("POST", url, headers=self._base_headers, json=data)
+        access_token = result.get("access_token")
+        refresh_token = result.get("refresh_token")
+        if not access_token or not refresh_token:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Authentication service returned invalid response")
         return TokenResponse(
-            access_token=result.get("access_token"),
-            refresh_token=result.get("refresh_token"),
+            access_token=str(access_token),
+            refresh_token=str(refresh_token),
             expires_in=result.get("expires_in"),
         )
 
@@ -83,9 +87,13 @@ class AuthService:
         url = self._auth_url("/token", query="?grant_type=password")
         data = {"email": payload.email, "password": payload.password}
         result = await self._request("POST", url, headers=self._base_headers, json=data)
+        access_token = result.get("access_token")
+        refresh_token = result.get("refresh_token")
+        if not access_token or not refresh_token:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Authentication service returned invalid response")
         return TokenResponse(
-            access_token=result.get("access_token"),
-            refresh_token=result.get("refresh_token"),
+            access_token=str(access_token),
+            refresh_token=str(refresh_token),
             expires_in=result.get("expires_in"),
         )
 
@@ -93,9 +101,13 @@ class AuthService:
         url = self._auth_url("/token", query="?grant_type=refresh_token")
         data = {"refresh_token": payload.refresh_token}
         result = await self._request("POST", url, headers=self._base_headers, json=data)
+        access_token = result.get("access_token")
+        refresh_token = result.get("refresh_token")
+        if not access_token or not refresh_token:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Authentication service returned invalid response")
         return TokenResponse(
-            access_token=result.get("access_token"),
-            refresh_token=result.get("refresh_token"),
+            access_token=str(access_token),
+            refresh_token=str(refresh_token),
             expires_in=result.get("expires_in"),
         )
 

@@ -407,13 +407,20 @@ async def get_pet_mood_forecast(
 
     service = PetMoodForecastService()
     try:
-        forecast = await service.forecast_mood(
+        from app.schemas.ai import MoodForecastEntry
+        
+        forecast_data = await service.forecast_mood(
             pet_id=payload.pet_id,
             current_stats=payload.current_stats,
             interaction_history=payload.interaction_history,
             forecast_days=payload.forecast_days,
         )
-        return PetMoodForecastResponse(forecast=forecast)
+        # Convert dict list to MoodForecastEntry list
+        forecast_entries = [
+            MoodForecastEntry(**entry) if isinstance(entry, dict) else entry
+            for entry in forecast_data
+        ]
+        return PetMoodForecastResponse(forecast=forecast_entries)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

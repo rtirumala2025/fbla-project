@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from asyncpg import Pool
 from fastapi import HTTPException, status
 
-from app.models.quest import Quest, QuestDifficulty, QuestStatus, QuestType, UserQuest
+from app.models.quest import Quest, QuestDifficulty as ModelQuestDifficulty, QuestStatus as ModelQuestStatus, QuestType as ModelQuestType, UserQuest
 from app.schemas.quest import (
     ActiveQuestsResponse,
     DailyQuestsResponse,
@@ -16,6 +16,9 @@ from app.schemas.quest import (
     QuestCompletionResponse,
     QuestResponse,
     QuestReward,
+    QuestDifficulty,
+    QuestStatus,
+    QuestType,
 )
 
 logger = logging.getLogger(__name__)
@@ -97,15 +100,15 @@ class QuestService:
                     id=str(quest_row["id"]),
                     quest_key=quest_row["quest_key"],
                     description=quest_row["description"],
-                    quest_type=QuestType(quest_row["quest_type"]),
-                    difficulty=QuestDifficulty(quest_row["difficulty"]),
+                    quest_type=QuestType(quest_row["quest_type"]),  # type: ignore[arg-type]
+                    difficulty=QuestDifficulty(quest_row["difficulty"]),  # type: ignore[arg-type]
                     rewards=rewards,
                     target_value=quest_row["target_value"],
                     icon=quest_row.get("icon"),
                     start_at=quest_row.get("start_at"),
                     end_at=quest_row.get("end_at"),
                     progress=user_quest_row["progress"],
-                    status=QuestStatus(user_quest_row["status"]),
+                    status=QuestStatus(user_quest_row["status"]),  # type: ignore[arg-type]
                 )
 
                 # Group by type
@@ -412,13 +415,13 @@ class QuestService:
                     id=str(quest_row["id"]),
                     quest_key=quest_row["quest_key"],
                     description=quest_row["description"],
-                    quest_type=QuestType(quest_row["quest_type"]),
-                    difficulty=QuestDifficulty(quest_row["difficulty"]),
+                    quest_type=QuestType(quest_row["quest_type"]),  # type: ignore[arg-type]
+                    difficulty=QuestDifficulty(quest_row["difficulty"]),  # type: ignore[arg-type]
                     rewards=rewards,
                     target_value=quest_row["target_value"],
                     icon=quest_row.get("icon"),
                     progress=user_quest_row["target_value"],
-                    status=QuestStatus.COMPLETED,
+                    status=QuestStatus.COMPLETED,  # type: ignore[assignment]
                 )
 
                 return QuestCompletionResponse(
@@ -509,13 +512,13 @@ class QuestService:
                     id=str(quest_row["id"]),
                     quest_key=quest_row["quest_key"],
                     description=quest_row["description"],
-                    quest_type=QuestType(quest_row["quest_type"]),
-                    difficulty=QuestDifficulty(quest_row["difficulty"]),
+                    quest_type=QuestType(quest_row["quest_type"]),  # type: ignore[arg-type]
+                    difficulty=QuestDifficulty(quest_row["difficulty"]),  # type: ignore[arg-type]
                     rewards=rewards,
                     target_value=quest_row["target_value"],
                     icon=quest_row.get("icon"),
                     progress=quest_row["target_value"],
-                    status=QuestStatus.CLAIMED,
+                    status=QuestStatus.CLAIMED,  # type: ignore[assignment]
                 )
 
                 return QuestClaimResponse(
@@ -579,7 +582,7 @@ class QuestService:
             id=str(row["id"]),
             user_id=str(row["user_id"]),
             quest_id=str(row["quest_id"]),
-            status=QuestStatus(row["status"]),
+            status=QuestStatus(row["status"]),  # type: ignore[arg-type]
             progress=row["progress"],
             target_value=row["target_value"],
             last_progress_at=row.get("last_progress_at"),

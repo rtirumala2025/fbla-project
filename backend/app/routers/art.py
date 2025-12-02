@@ -65,7 +65,8 @@ async def generate_pet_art(
         base_prompt=base_prompt,
         force_refresh=payload.force_refresh,
     )
-    palette: Dict[str, str] = entry.metadata.get("palette", {})
+    palette_raw = entry.metadata.get("palette", {})
+    palette: Dict[str, str] = palette_raw if isinstance(palette_raw, dict) else {}
 
     return ArtGenerationResponse(
         image_base64=entry.image_base64,

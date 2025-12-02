@@ -67,8 +67,10 @@ class PetArtService:
     def _build_palette(self, accessories: Sequence[Dict[str, str]]) -> Dict[str, str]:
         palette: Dict[str, str] = {}
         for accessory in accessories:
-            for mood, color in accessory.get("color_palette", {}).items():
-                palette.setdefault(mood, color)
+            color_palette = accessory.get("color_palette", {})
+            if isinstance(color_palette, dict):
+                for mood, color in color_palette.items():
+                    palette.setdefault(mood, color)
         return palette
 
     def _build_prompt(

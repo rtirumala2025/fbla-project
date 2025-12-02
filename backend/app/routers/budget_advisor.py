@@ -99,7 +99,7 @@ async def analyze_budget(
         
         # Get budget advice from service
         service = BudgetAIService()
-        advice_response: BudgetAdviceResponse = await service.get_budget_advice(budget_request)
+        advice_response: BudgetAdviceResponseSchema = await service.get_budget_advice(budget_request)
         
         # Calculate additional analysis metrics
         total_spending = sum(abs(t.amount) for t in transaction_history if t.amount < 0)

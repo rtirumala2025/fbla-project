@@ -110,7 +110,7 @@ class SeasonalReactionsService:
             target[key] = target.get(key, 0) + delta
 
     def _derive_weather_effect(self, snapshot: WeatherSnapshot) -> Tuple[Optional[str], Dict[str, int], Dict[str, str]]:
-        default = (None, {}, {})
+        default: Tuple[Optional[str], Dict[str, int], Dict[str, str]] = (None, {}, {})
         effect = self._WEATHER_MOODS.get(snapshot.condition, default)
         if effect is default:
             return default
