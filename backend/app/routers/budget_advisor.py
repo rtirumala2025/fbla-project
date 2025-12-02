@@ -8,7 +8,15 @@ from pydantic import BaseModel, Field
 
 from app.core.jwt import get_current_user_id
 from app.services.budget_ai_service import BudgetAIService
-from app.schemas.ai import BudgetAdviceRequest, BudgetAdviceResponse, TransactionHistoryItem
+from app.schemas.ai import (
+    BudgetAdviceRequest,
+    BudgetAdviceResponse as BudgetAdviceResponseSchema,
+    BudgetAdvisorResponse,
+    ForecastItem,
+    OverspendingAlert,
+    SpendingTrend,
+    TransactionHistoryItem,
+)
 
 router = APIRouter(prefix="/api/budget-advisor", tags=["Budget Advisor"])
 
@@ -19,14 +27,6 @@ class BudgetAdvisorRequest(BaseModel):
     transactions: List[Dict[str, Any]] = Field(..., description="List of transactions to analyze")
     monthly_budget: Optional[float] = Field(default=None, description="Optional monthly budget limit")
     user_id: Optional[str] = Field(default=None, description="User ID for personalization")
-
-
-class BudgetAdvisorResponse(BaseModel):
-    """Response payload for budget advisor analysis."""
-    
-    status: str = Field(..., description="Response status: 'success' or 'error'")
-    data: Optional[Dict[str, Any]] = Field(default=None, description="Analysis data")
-    message: str = Field(..., description="Response message")
 
 
 @router.post("/analyze", response_model=BudgetAdvisorResponse)
@@ -61,10 +61,9 @@ async def analyze_budget(
     
     # Validate transactions
     if not payload.transactions or len(payload.transactions) == 0:
-        return BudgetAdvisorResponse(
-            status="error",
-            data=None,
-            message="No transactions provided for analysis",
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No transactions provided for analysis",
         )
     
     try:
@@ -124,68 +123,69 @@ async def analyze_budget(
         top_categories = sorted(category_totals.items(), key=lambda x: x[1], reverse=True)[:5]
         top_category_names = [cat for cat, _ in top_categories]
         
-        # Generate trends (simplified - in production, calculate actual trends)
-        trends: List[Dict[str, Any]] = []
+        # Generate trends with proper structure
+        trends: List[SpendingTrend] = []
         for category, total in top_categories:
-            trends.append({
-                "category": category,
-                "total_spent": total,
-                "transaction_count": sum(1 for t in transaction_history if t.category == category and t.amount < 0),
-                "average_amount": total / max(1, sum(1 for t in transaction_history if t.category == category and t.amount < 0)),
-                "trend": "stable",  # Simplified - would calculate actual trend
-                "percentage_change": None,
-            })
+            category_transactions = [t for t in transaction_history if t.category == category and t.amount < 0]
+            transaction_count = len(category_transactions)
+            trends.append(SpendingTrend(
+                category=category,
+                total_spent=total,
+                transaction_count=transaction_count,
+                average_amount=total / max(1, transaction_count),
+                trend="stable",  # Simplified - would calculate actual trend in production
+                percentage_change=None,
+            ))
         
-        # Generate overspending alerts
-        overspending_alerts: List[Dict[str, Any]] = []
+        # Generate overspending alerts with proper structure
+        overspending_alerts: List[OverspendingAlert] = []
         if payload.monthly_budget:
             if total_spending > payload.monthly_budget:
                 excess = total_spending - payload.monthly_budget
                 severity = "high" if excess > payload.monthly_budget * 0.2 else "medium"
-                overspending_alerts.append({
-                    "category": "Overall Budget",
-                    "current_spending": total_spending,
-                    "budget_limit": payload.monthly_budget,
-                    "excess_amount": excess,
-                    "severity": severity,
-                    "recommendation": f"You've exceeded your monthly budget by ${excess:.2f}. Consider reducing spending in top categories.",
-                })
+                overspending_alerts.append(OverspendingAlert(
+                    category="Overall Budget",
+                    current_spending=total_spending,
+                    budget_limit=payload.monthly_budget,
+                    excess_amount=excess,
+                    severity=severity,
+                    recommendation=f"You've exceeded your monthly budget by ${excess:.2f}. Consider reducing spending in top categories.",
+                ))
         
         # Extract suggestions from AI advice
         suggestions = advice_response.advice.split(". ") if advice_response.advice else []
         suggestions = [s.strip() for s in suggestions if s.strip()]
         
-        # Build analysis data
-        analysis_data = {
-            "total_spending": total_spending,
-            "total_income": total_income,
-            "net_balance": net_balance,
-            "average_daily_spending": average_daily_spending,
-            "top_categories": top_category_names,
-            "trends": trends,
-            "overspending_alerts": overspending_alerts,
-            "suggestions": suggestions,
-            "analysis_period": {
+        # Get forecast items
+        forecast_items = advice_response.forecast
+        
+        # Build unified response matching frontend schema
+        return BudgetAdvisorResponse(
+            total_spending=total_spending,
+            total_income=total_income,
+            net_balance=net_balance,
+            average_daily_spending=average_daily_spending,
+            top_categories=top_category_names,
+            trends=trends,
+            overspending_alerts=overspending_alerts,
+            suggestions=suggestions,
+            analysis_period={
                 "start": min(t.date for t in transaction_history) if transaction_history else "",
                 "end": max(t.date for t in transaction_history) if transaction_history else "",
             },
-            "forecast": [{"month": f.month, "predicted_spend": f.predicted_spend} for f in advice_response.forecast],
-        }
-        
-        return BudgetAdvisorResponse(
-            status="success",
-            data=analysis_data,
-            message="Budget analysis completed successfully",
+            forecast=forecast_items,
         )
         
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
-        # Log error and return error response
+        # Log error and raise HTTP exception
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Budget analysis failed: {str(e)}", exc_info=True)
         
-        return BudgetAdvisorResponse(
-            status="error",
-            data=None,
-            message=f"Failed to analyze budget: {str(e)}",
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze budget: {str(e)}",
         )

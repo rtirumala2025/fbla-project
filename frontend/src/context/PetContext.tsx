@@ -4,6 +4,7 @@ import { supabase, isSupabaseMock, withTimeout } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/networkUtils';
+import { saveService } from '../services/saveService';
 
 interface PetContextType {
   pet: Pet | null;
@@ -277,51 +278,28 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       };
       setPet(updatedPet);
       
-      // Persist to database
-      logger.debug('Updating pet stats in DB', { petId: pet.id, updates });
+      // Queue save using save service (non-blocking, debounced)
+      logger.debug('Queueing pet stats update', { petId: pet.id, updates });
       
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
+      await saveService.queueSave('pet', pet.id, {
+        health: updatedStats.health,
+        hunger: updatedStats.hunger,
+        happiness: updatedStats.happiness,
+        cleanliness: updatedStats.cleanliness,
+        energy: updatedStats.energy,
+        updated_at: now.toISOString(),
+      });
       
-      const query = supabase
-        .from('pets')
-        .update({
-          health: updatedStats.health,
-          hunger: updatedStats.hunger,
-          happiness: updatedStats.happiness,
-          cleanliness: updatedStats.cleanliness,
-          energy: updatedStats.energy,
-          updated_at: now.toISOString(),
-        })
-        .eq('id', pet.id)
-        .eq('user_id', userId);
-      
-      const { error } = await withTimeout(
-        query as unknown as Promise<any>,
-        10000,
-        'Update pet stats'
-      ) as any;
-      
-      if (error) {
-        logger.error('Error updating pet stats', { petId: pet.id, errorCode: error.code }, error);
-        // Immediate rollback
-        setPet(previousPet);
-        throw new Error(getErrorMessage(error, 'Failed to update pet stats'));
-      } else {
-        logger.debug('Pet stats updated in DB', { petId: pet.id });
-      }
+      logger.debug('Pet stats update queued', { petId: pet.id });
     } catch (err) {
       console.error('❌ Error updating pet stats:', err);
       // Rollback on any error
       setPet(previousPet);
-      // Also reload to ensure consistency
-      await loadPet();
       throw new Error('Failed to update pet stats');
     } finally {
       setUpdating(false);
     }
-  }, [pet, userId, loadPet]);
+  }, [pet, userId]);
   
   const createPet = useCallback(async (name: string, type: string, breed: string = 'Mixed') => {
     if (!userId) throw new Error('User not authenticated');

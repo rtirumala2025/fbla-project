@@ -79,6 +79,10 @@ export const QuestDashboard = () => {
       try {
         const response = await completeQuest(quest.id);
         const updatedQuest = response.result.quest;
+        const coinsAwarded = response.result.coins_awarded || 0;
+        const xpAwarded = response.result.xp_awarded || 0;
+        
+        // Update local quest state
         setQuests((current) => {
           const source = current ?? cached ?? emptyResponse;
           const updateCategory = (list: Quest[]) =>
@@ -90,7 +94,41 @@ export const QuestDashboard = () => {
             refreshed_at: new Date().toISOString(),
           };
         });
-        success(`Quest complete! +${response.result.coins_awarded} coins, +${response.result.xp_awarded} XP.`);
+        
+        // Sync with global store
+        const { useAppStore } = await import('../../store/useAppStore');
+        useAppStore.getState().completeQuest(quest.id, coinsAwarded, xpAwarded);
+        
+        // Apply pet XP rewards if pet exists (via API call since we're in callback)
+        if (xpAwarded > 0 && currentUser?.uid) {
+          try {
+            const { apiRequest } = await import('../../api/httpClient');
+            await apiRequest('/api/pets/apply-quest-rewards', {
+              method: 'POST',
+              body: JSON.stringify({
+                xp_reward: xpAwarded,
+              }),
+            });
+            // Note: Pet stats will be refreshed on next page load or manual refresh
+          } catch (petError) {
+            console.warn('Failed to apply pet XP reward:', petError);
+            // Non-critical, continue with quest completion
+          }
+        }
+        
+        // Refresh FinancialContext if it exists
+        try {
+          const { profileService } = await import('../../services/profileService');
+          const { currentUser } = await import('../../contexts/AuthContext');
+          if (currentUser?.uid) {
+            // Refresh profile to sync coins
+            await profileService.getProfile(currentUser.uid, false);
+          }
+        } catch (refreshError) {
+          console.warn('Failed to refresh profile after quest completion:', refreshError);
+        }
+        
+        success(`Quest complete! +${coinsAwarded} coins, +${xpAwarded} XP.`);
       } catch (err) {
         console.error('Quest completion failed', err);
         error('Unable to complete the quest. Please try again.');

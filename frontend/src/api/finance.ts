@@ -255,6 +255,30 @@ export async function getShopCatalog(): Promise<ShopItemEntry[]> {
   return apiRequest<ShopItemEntry[]>(`${API_BASE}/shop`);
 }
 
+export async function getInventory(): Promise<InventoryEntry[]> {
+  return apiRequest<InventoryEntry[]>(`${API_BASE}/shop/inventory`);
+}
+
+export interface UseItemPayload {
+  item_id: string;
+  quantity?: number;
+  pet_id?: string | null;
+}
+
+export interface UseItemResponse {
+  success: boolean;
+  remaining_quantity: number;
+  stat_updates: Record<string, number>;
+  message: string;
+}
+
+export async function useItem(payload: UseItemPayload): Promise<UseItemResponse> {
+  return apiRequest<UseItemResponse>(`${API_BASE}/shop/use`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function claimDailyAllowance(): Promise<FinanceResponse> {
   try {
     return await apiRequest<FinanceResponse>(`${API_BASE}/daily-allowance`, {

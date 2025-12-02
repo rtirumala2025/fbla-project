@@ -18,7 +18,7 @@ export interface VoiceCommandState {
   };
 }
 
-interface VoiceCommandUIProps {
+export interface VoiceCommandUIProps {
   onStartListening?: () => void;
   onStopListening?: () => void;
   onCommandSubmit?: (command: string) => Promise<void>;

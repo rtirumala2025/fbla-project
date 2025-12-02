@@ -459,6 +459,24 @@ export const PetInteractionPanel: React.FC<PetInteractionPanelProps> = ({
         
         return newMessages;
       });
+      
+      // Sync pet state with global store if updated
+      if (data.results && data.results.length > 0) {
+        const latestResult = data.results[data.results.length - 1];
+        if (latestResult?.pet_state) {
+          const { useAppStore } = await import('../../store/useAppStore');
+          const petState = latestResult.pet_state;
+          if (petState.stats) {
+            useAppStore.getState().updatePetStats({
+              health: petState.stats.health,
+              hunger: petState.stats.hunger,
+              happiness: petState.stats.happiness || petState.stats.mood,
+              cleanliness: petState.stats.cleanliness || petState.stats.hygiene,
+              energy: petState.stats.energy,
+            });
+          }
+        }
+      }
     } catch (error) {
       console.error('Command execution error:', error);
       

@@ -144,49 +144,16 @@ export const Shop = () => {
       setFinanceSummary(response.summary);
       await loadData(false);
 
-      const statUpdates: Record<string, number> = {};
-      const itemEffects: string[] = [];
-
-      Object.entries(cart).forEach(([sku, quantity]) => {
-        const item = shopItems.find((entry) => entry.sku === sku);
-        if (!item) return;
-        for (let i = 0; i < quantity; i += 1) {
-          switch (item.category) {
-            case 'food':
-              statUpdates.hunger = Math.min(100, (statUpdates.hunger || pet.stats.hunger) + 20);
-              statUpdates.health = Math.min(100, (statUpdates.health || pet.stats.health) + 5);
-              itemEffects.push(`${item.name}: +20 hunger, +5 health`);
-              break;
-            case 'medicine':
-              statUpdates.health = Math.min(100, (statUpdates.health || pet.stats.health) + 30);
-              itemEffects.push(`${item.name}: +30 health`);
-              break;
-            case 'energy':
-              statUpdates.energy = Math.min(100, (statUpdates.energy || pet.stats.energy) + 40);
-              itemEffects.push(`${item.name}: +40 energy`);
-              break;
-            case 'toy':
-              statUpdates.happiness = Math.min(100, (statUpdates.happiness || pet.stats.happiness) + 25);
-              itemEffects.push(`${item.name}: +25 happiness`);
-              break;
-            default:
-              break;
-          }
-        }
-      });
-
-      if (Object.keys(statUpdates).length > 0) {
-        await updatePetStats(statUpdates);
-      }
-
       const itemCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
       setCart({});
       toast.success(
-        `Purchase successful! ${itemCount} item${itemCount > 1 ? 's' : ''} applied to your pet! 🎉`,
+        `Purchase successful! ${itemCount} item${itemCount > 1 ? 's' : ''} added to your inventory! 🎉`,
       );
-      if (itemEffects.length > 0) {
-        console.info('Shop item effects', itemEffects);
-      }
+      
+      // Suggest going to inventory to use items
+      setTimeout(() => {
+        toast.info('Visit your inventory to use items on your pet!', { duration: 5000 });
+      }, 2000);
     } catch (error: any) {
       console.error('❌ Shop: Error processing purchase:', error);
       toast.error(`Failed to process purchase: ${error.message || 'Unknown error'}`);

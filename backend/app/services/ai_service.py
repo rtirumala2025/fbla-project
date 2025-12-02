@@ -188,12 +188,17 @@ class AIService:
         client = self._client or httpx.AsyncClient()
         close_client = self._client is None
         # Prepare API request payload with model and messages
+        # Using structured output requirements for better JSON parsing
         payload = {
             "model": model_override or settings.openrouter_model,
             "messages": messages,
             "temperature": 0.65,  # Balanced creativity vs consistency
             "max_tokens": 512,  # Limit response length for cost control
+            # Request JSON mode for better structured output (if supported by model)
+            "response_format": {"type": "json_object"} if "json" in (model_override or settings.openrouter_model).lower() else None,
         }
+        # Remove None values
+        payload = {k: v for k, v in payload.items() if v is not None}
         headers = {
             "Authorization": f"Bearer {settings.openrouter_api_key}",
             "Content-Type": "application/json",
@@ -310,14 +315,27 @@ class AIService:
         Returns:
             List of message dicts in OpenAI chat format ready for API
         """
-        # Core system prompt defining AI behavior and response format
+        # Core system prompt with structured output requirements and safety checks
         system_prompt = (
             "You are Scout, an empathetic AI companion helping users care for their virtual pets. "
-            "Always respond with a compact JSON object containing the keys: message, mood, "
-            "notifications, pet_state, and health_forecast. "
-            "Mood must be one of: ecstatic, happy, content, anxious, distressed. "
-            "Pet state should mirror the structure {\"mood\": str, \"happiness\": int, \"energy\": int, "
-            "\"hunger\": int, \"cleanliness\": int}. Provide actionable yet encouraging advice."
+            "\n\n"
+            "RESPONSE FORMAT (REQUIRED - MUST BE VALID JSON):\n"
+            "Always respond with a compact JSON object containing exactly these keys:\n"
+            "- message: string (required) - Your response to the user, friendly and helpful\n"
+            "- mood: string (optional) - One of: ecstatic, happy, content, anxious, distressed\n"
+            "- notifications: array of strings (optional) - Actionable tips or reminders\n"
+            "- pet_state: object (optional) - Structure: {\"mood\": str, \"happiness\": int (0-100), "
+            "\"energy\": int (0-100), \"hunger\": int (0-100), \"cleanliness\": int (0-100), \"health\": int (0-100)}\n"
+            "- health_forecast: object (optional) - Structure: {\"trend\": str, \"risk\": str, \"recommendations\": array of strings}\n"
+            "\n"
+            "SAFETY GUIDELINES:\n"
+            "- Keep responses appropriate for all ages\n"
+            "- Focus on pet care, health, and positive interactions\n"
+            "- Avoid medical advice beyond general wellness tips\n"
+            "- Be encouraging and supportive\n"
+            "- If asked about inappropriate topics, politely redirect to pet care\n"
+            "\n"
+            "Provide actionable yet encouraging advice. Ensure all numeric values are within valid ranges (0-100 for stats)."
         )
         # Personalize responses based on pet's species and personality
         persona_blurb = (

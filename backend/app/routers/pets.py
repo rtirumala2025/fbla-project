@@ -81,6 +81,32 @@ async def create_diary_entry(
     return await service.add_diary_entry(current_user.id, pet.id, payload)
 
 
+@router.post("/game-loop", summary="Process game loop updates")
+async def process_game_loop(
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    service: PetService = Depends(get_pet_service),
+) -> dict:
+    """
+    Process game loop updates (stat decay, idle coins, etc.).
+    This endpoint can be called periodically or on login to catch up on missed time.
+    """
+    from app.services.game_loop_service import GameLoopService
+    from app.services.shop_service import ShopService
+    from app.utils import get_shop_service
+    
+    # Get shop service for coin rewards
+    shop_service = get_shop_service()
+    
+    # Create game loop service
+    game_loop_service = GameLoopService(
+        pool=None,  # Will use pet_service's pool
+        pet_service=service,
+        shop_service=shop_service,
+    )
+    
+    return await game_loop_service.process_game_loop(current_user.id)
+
+
 def raise_status_not_found() -> None:
     from fastapi import HTTPException
 

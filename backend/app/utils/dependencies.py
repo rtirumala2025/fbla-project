@@ -27,10 +27,10 @@ async def get_ai_service(pool: Optional[Pool] = Depends(get_db_pool)):
     return AIService(pool=pool)
 
 
-async def get_shop_service():
+async def get_shop_service(pool: Optional[Pool] = Depends(get_db_pool)):
     from app.services.shop_service import ShopService
 
-    return ShopService()
+    return ShopService(pool)
 
 
 async def get_auth_service():
@@ -105,6 +105,12 @@ async def get_seasonal_service(
     if event_service is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Seasonal features unavailable without database.")
     return SeasonalReactionsService(event_service, weather_service)
+
+
+async def get_quest_service(pool: Optional[Pool] = Depends(get_db_pool)):
+    from app.services.quest_service import QuestService
+
+    return QuestService(pool)
 
 
 async def get_current_user(request: Request) -> AuthenticatedUser:

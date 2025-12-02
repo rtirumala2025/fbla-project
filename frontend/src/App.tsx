@@ -6,10 +6,12 @@ import { ToastProvider } from './contexts/ToastContext';
 import { PetProvider } from './context/PetContext';
 import { FinancialProvider } from './context/FinancialContext';
 import { PetAutoSync } from './components/sync/PetAutoSync';
+import { StoreSync } from './components/sync/StoreSync';
 import Header from './components/Header';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import OnboardingTutorial from './components/OnboardingTutorial';
 import TooltipGuide from './components/TooltipGuide';
+import { useGameLoop } from './hooks/useGameLoop';
 import './styles/globals.css';
 
 // Lazy load all pages for code splitting
@@ -24,6 +26,7 @@ const BreedSelection = lazy(() => import('./pages/BreedSelection').then(m => ({ 
 const PetNaming = lazy(() => import('./pages/PetNaming').then(m => ({ default: m.PetNaming })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const Shop = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
+const Inventory = lazy(() => import('./pages/Inventory').then(m => ({ default: m.Inventory })));
 const BudgetDashboard = lazy(() => import('./pages/budget/BudgetDashboard'));
 const CleanScreen = lazy(() => import('./pages/clean/CleanScreen'));
 const RestScreen = lazy(() => import('./pages/rest/RestScreen'));
@@ -201,6 +204,9 @@ function AppContent() {
   const location = useLocation();
   const { currentUser } = useAuth();
   
+  // Start/stop game loop based on auth state
+  useGameLoop(currentUser?.uid);
+  
   // Apply background color to the root element
   React.useEffect(() => {
     const root = document.documentElement;
@@ -221,6 +227,7 @@ function AppContent() {
   return (
     <PetProvider userId={currentUser?.uid || null}>
       <PetAutoSync />
+      <StoreSync />
       <FinancialProvider user={currentUser}>
         {/* UX Enhancement Components */}
         <OnboardingTutorial autoStart={false} />
@@ -244,6 +251,7 @@ function AppContent() {
             <Route path="/dashboard" element={<ProtectedRoute><PageTransition><DashboardPage /></PageTransition></ProtectedRoute>} />
             <Route path="/game" element={<ProtectedRoute><PageTransition><GameUI /></PageTransition></ProtectedRoute>} />
             <Route path="/shop" element={<ProtectedRoute><PageTransition><Shop /></PageTransition></ProtectedRoute>} />
+            <Route path="/inventory" element={<ProtectedRoute><PageTransition><Inventory /></PageTransition></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><PageTransition><ProfilePage /></PageTransition></ProtectedRoute>} />
             <Route path="/budget" element={<ProtectedRoute><PageTransition><BudgetDashboard /></PageTransition></ProtectedRoute>} />
             <Route path="/clean" element={<ProtectedRoute><PageTransition><CleanScreen /></PageTransition></ProtectedRoute>} />

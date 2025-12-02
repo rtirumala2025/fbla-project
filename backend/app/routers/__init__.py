@@ -14,8 +14,10 @@ from .habits import router as habits_router
 from .pets import router as pets_router
 from .pet_interactions import router as pet_interactions_router
 from .profiles import router as profiles_router
+from .quests import router as quests_router
 from .reports import router as reports_router
 from .shop import router as shop_router
+from .social import router as social_router
 from .users import router as users_router
 
 api_router = APIRouter(prefix="/api")
@@ -34,5 +36,7 @@ api_router.include_router(art_router)
 api_router.include_router(habits_router)
 api_router.include_router(finance_sim_router)
 api_router.include_router(reports_router)
+api_router.include_router(social_router)
+api_router.include_router(quests_router)
 
 __all__ = ["api_router"]

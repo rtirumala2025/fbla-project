@@ -56,10 +56,10 @@ export interface BudgetAdvisorAnalysis {
   };
 }
 
-export interface BudgetAdvisorResponse {
-  status: 'success' | 'error';
-  data: BudgetAdvisorAnalysis | null;
-  message: string;
+// Unified response format - matches backend BudgetAdvisorResponse schema
+export interface BudgetAdvisorResponse extends BudgetAdvisorAnalysis {
+  generated_at?: string;
+  session_id?: string;
 }
 
 export interface BudgetAdvisorRequest {
@@ -127,16 +127,19 @@ const BudgetAdvisorAI: React.FC<BudgetAdvisorAIProps> = memo(({
         user_id: userId,
       };
 
-      const response = await apiClient.post<BudgetAdvisorResponse>(
+      const response = await apiClient.post<any>(
         '/api/budget-advisor/analyze',
         request
       );
 
-      if (response.data.status === 'success' && response.data.data) {
-        setAnalysis(response.data.data);
-        onAnalysisCompleteRef.current?.(response.data.data);
+      // Use adapter to normalize response (handles both old and new formats)
+      const adaptedAnalysis = adaptBudgetAdvisorResponse(response.data);
+      
+      if (adaptedAnalysis) {
+        setAnalysis(adaptedAnalysis);
+        onAnalysisCompleteRef.current?.(adaptedAnalysis);
       } else {
-        const errorMessage = response.data.message || 'Failed to analyze budget';
+        const errorMessage = 'Failed to analyze budget: Invalid response format';
         setError(errorMessage);
         onErrorRef.current?.(errorMessage);
       }

@@ -5,7 +5,7 @@
 
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { ARButton, Controllers, Hands, useHitTest } from '@react-three/xr';
+import { ARCanvas, XRButton, DefaultXRControllers, Hands, useHitTest, XR, useXR } from '@react-three/xr';
 import { Text } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import { X, Loader2, AlertCircle } from 'lucide-react';
@@ -86,15 +86,28 @@ function ARPetPlacement({ petName }: { petName?: string }) {
   );
 }
 
+// Component to track AR session state
+function ARSessionTracker({ onSessionChange }: { onSessionChange: (isActive: boolean) => void }) {
+  const { isPresenting } = useXR();
+  
+  useEffect(() => {
+    onSessionChange(isPresenting);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPresenting]);
+  
+  return null;
+}
+
 // Main AR Scene Component
-function ARScene({ petName }: { petName?: string }) {
+function ARScene({ petName, onSessionChange }: { petName?: string; onSessionChange: (isActive: boolean) => void }) {
   return (
     <>
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} />
       <ARPetPlacement petName={petName} />
-      <Controllers />
+      <DefaultXRControllers />
       <Hands />
+      <ARSessionTracker onSessionChange={onSessionChange} />
     </>
   );
 }
@@ -179,31 +192,37 @@ export function ARPetMode({ petName = 'Your Pet', petType, onClose }: ARPetModeP
       )}
 
       {/* AR Canvas */}
-      <Canvas
+      <ARCanvas
         style={{ width: '100%', height: '100%' }}
         camera={{ position: [0, 1.6, 0], fov: 50 }}
         gl={{ antialias: true, alpha: true }}
+        sessionInit={{
+          requiredFeatures: ['hit-test'],
+          optionalFeatures: ['dom-overlay'],
+          domOverlay: { root: document.body },
+        }}
       >
-        <Suspense fallback={null}>
-          <ARScene petName={petName} />
-        </Suspense>
-      </Canvas>
+        <XR>
+          <Suspense fallback={null}>
+            <ARScene petName={petName} onSessionChange={setIsARActive} />
+          </Suspense>
+        </XR>
+      </ARCanvas>
 
       {/* AR Button Overlay */}
       {!isARActive && (
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
-          <ARButton
+          <XRButton
+            mode="AR"
             sessionInit={{
               requiredFeatures: ['hit-test'],
               optionalFeatures: ['dom-overlay'],
               domOverlay: { root: document.body },
             }}
-            onSessionStart={() => setIsARActive(true)}
-            onSessionEnd={() => setIsARActive(false)}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
             Start AR Experience
-          </ARButton>
+          </XRButton>
         </div>
       )}
 

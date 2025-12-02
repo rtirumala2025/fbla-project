@@ -7,6 +7,35 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
+# ============================================================================
+# Unified AI Response Base Schema
+# ============================================================================
+
+class BaseAIResponse(BaseModel):
+    """
+    Base schema for all AI responses with consistent structure.
+    
+    All AI endpoints should extend this base to ensure:
+    - Consistent metadata (generated_at, session_id when applicable)
+    - Standardized error handling
+    - Unified formatting across all AI features
+    """
+    
+    generated_at: datetime = Field(
+        default_factory=datetime.utcnow,
+        description="Timestamp when the AI response was generated"
+    )
+    session_id: Optional[str] = Field(
+        default=None,
+        description="Session identifier for conversation continuity (when applicable)",
+        max_length=128
+    )
+
+
+# ============================================================================
+# AI Chat Schemas
+# ============================================================================
+
 class AIChatRequest(BaseModel):
     """Incoming payload for conversational AI chat."""
 
@@ -23,8 +52,8 @@ class AIChatRequest(BaseModel):
     )
 
 
-class AIChatResponse(BaseModel):
-    """LLM-backed response payload."""
+class AIChatResponse(BaseAIResponse):
+    """LLM-backed response payload with standardized structure."""
 
     session_id: str = Field(description="Resolved session identifier managed by MCP.")
     message: str = Field(description="Assistant response surfaced to the UI.")
@@ -32,7 +61,10 @@ class AIChatResponse(BaseModel):
         default=None,
         description="Assistant-evaluated mood label (ecstatic, happy, content, anxious, distressed).",
     )
-    notifications: List[str] = Field(default_factory=list)
+    notifications: List[str] = Field(
+        default_factory=list,
+        description="Actionable tips, reminders, or alerts for the user"
+    )
     pet_state: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Derived pet state snapshot for dashboard visualisations.",
@@ -41,10 +73,12 @@ class AIChatResponse(BaseModel):
         default=None,
         description="Predictive health analytics generated for upcoming interactions.",
     )
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+# ============================================================================
 # Budget Advisor Schemas
+# ============================================================================
+
 class TransactionHistoryItem(BaseModel):
     """Individual transaction entry for budget analysis."""
 
@@ -68,28 +102,86 @@ class ForecastItem(BaseModel):
     predicted_spend: float = Field(..., description="Predicted spending amount for the month")
 
 
-class BudgetAdviceResponse(BaseModel):
-    """Response payload for budget advice endpoint."""
+class SpendingTrend(BaseModel):
+    """Spending trend for a category."""
+
+    category: str = Field(..., description="Category name")
+    total_spent: float = Field(..., description="Total amount spent in this category")
+    transaction_count: int = Field(..., description="Number of transactions")
+    average_amount: float = Field(..., description="Average transaction amount")
+    trend: str = Field(..., description="Trend direction (increasing, decreasing, stable)")
+    percentage_change: Optional[float] = Field(default=None, description="Percentage change from previous period")
+
+
+class OverspendingAlert(BaseModel):
+    """Alert for overspending in a category or overall budget."""
+
+    category: str = Field(..., description="Category or 'Overall Budget'")
+    current_spending: float = Field(..., description="Current spending amount")
+    budget_limit: float = Field(..., description="Budget limit for this category/period")
+    excess_amount: float = Field(..., description="Amount over budget")
+    severity: str = Field(..., description="Severity level (low, medium, high)")
+    recommendation: str = Field(..., description="Recommendation to address overspending")
+
+
+class BudgetAdvisorAnalysis(BaseModel):
+    """Complete budget analysis matching frontend schema expectations."""
+
+    total_spending: float = Field(..., description="Total spending amount")
+    total_income: float = Field(..., description="Total income amount")
+    net_balance: float = Field(..., description="Net balance (income - spending)")
+    average_daily_spending: float = Field(..., description="Average daily spending")
+    top_categories: List[str] = Field(..., description="Top spending categories")
+    trends: List[SpendingTrend] = Field(default_factory=list, description="Spending trends by category")
+    overspending_alerts: List[OverspendingAlert] = Field(default_factory=list, description="Overspending alerts")
+    suggestions: List[str] = Field(default_factory=list, description="AI-generated budget suggestions")
+    analysis_period: Dict[str, str] = Field(..., description="Analysis period with start and end dates")
+    forecast: List[ForecastItem] = Field(default_factory=list, description="Monthly spending forecast")
+
+
+class BudgetAdviceResponse(BaseAIResponse):
+    """Response payload for budget advice endpoint with standardized structure."""
 
     advice: str = Field(..., description="Personalized budget advice from AI")
     forecast: List[ForecastItem] = Field(..., description="Monthly spending forecast")
 
 
+class BudgetAdvisorResponse(BaseAIResponse):
+    """Unified budget advisor response matching frontend schema expectations."""
+
+    total_spending: float = Field(..., description="Total spending amount")
+    total_income: float = Field(..., description="Total income amount")
+    net_balance: float = Field(..., description="Net balance (income - spending)")
+    average_daily_spending: float = Field(..., description="Average daily spending")
+    top_categories: List[str] = Field(..., description="Top spending categories")
+    trends: List[SpendingTrend] = Field(default_factory=list, description="Spending trends by category")
+    overspending_alerts: List[OverspendingAlert] = Field(default_factory=list, description="Overspending alerts")
+    suggestions: List[str] = Field(default_factory=list, description="AI-generated budget suggestions")
+    analysis_period: Dict[str, str] = Field(..., description="Analysis period with start and end dates")
+    forecast: List[ForecastItem] = Field(default_factory=list, description="Monthly spending forecast")
+
+
+# ============================================================================
 # Pet Name Validator Schemas
+# ============================================================================
+
 class PetNameSuggestionRequest(BaseModel):
     """Request payload for pet name validation and suggestions."""
 
     input_name: str = Field(..., min_length=1, max_length=50, description="Pet name to validate")
 
 
-class PetNameSuggestionResponse(BaseModel):
-    """Response payload for pet name validation."""
+class PetNameSuggestionResponse(BaseAIResponse):
+    """Response payload for pet name validation with standardized structure."""
 
     valid: bool = Field(..., description="Whether the input name is valid")
     suggestions: List[str] = Field(..., min_items=0, max_items=5, description="List of alternative name suggestions")
 
 
+# ============================================================================
 # Pet Behavior Analysis Schemas
+# ============================================================================
+
 class InteractionHistoryItem(BaseModel):
     """Individual interaction entry for behavior analysis."""
 
@@ -106,14 +198,17 @@ class PetBehaviorRequest(BaseModel):
     interaction_history: List[InteractionHistoryItem] = Field(..., description="List of pet interactions")
 
 
-class PetBehaviorResponse(BaseModel):
-    """Response payload for pet behavior analysis."""
+class PetBehaviorResponse(BaseAIResponse):
+    """Response payload for pet behavior analysis with standardized structure."""
 
     mood_forecast: List[str] = Field(..., description="Predicted mood states for upcoming period")
     activity_prediction: List[str] = Field(..., description="Predicted activity patterns")
 
 
+# ============================================================================
 # Pet Mood Forecast Schemas
+# ============================================================================
+
 class PetMoodForecastRequest(BaseModel):
     """Request payload for pet mood forecast."""
 
@@ -132,14 +227,16 @@ class MoodForecastEntry(BaseModel):
     reasoning: str = Field(..., description="Brief explanation for the prediction")
 
 
-class PetMoodForecastResponse(BaseModel):
-    """Response payload for pet mood forecast."""
+class PetMoodForecastResponse(BaseAIResponse):
+    """Response payload for pet mood forecast with standardized structure."""
 
     forecast: List[MoodForecastEntry] = Field(..., description="Mood forecast entries")
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+# ============================================================================
 # Habit Prediction Schemas
+# ============================================================================
+
 class HabitPredictionRequest(BaseModel):
     """Request payload for habit prediction."""
 
@@ -159,17 +256,19 @@ class PredictedHabit(BaseModel):
     description: str = Field(..., description="Description of the predicted habit")
 
 
-class HabitPredictionResponse(BaseModel):
-    """Response payload for habit prediction."""
+class HabitPredictionResponse(BaseAIResponse):
+    """Response payload for habit prediction with standardized structure."""
 
     predicted_habits: List[PredictedHabit] = Field(..., description="List of predicted habits")
     patterns_identified: List[str] = Field(..., description="Identified behavioral patterns")
     recommendations: List[str] = Field(..., description="Recommendations based on patterns")
     forecast_summary: str = Field(..., description="Summary of predicted care patterns")
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+# ============================================================================
 # Finance Simulator Schemas
+# ============================================================================
+
 class FinanceScenarioRequest(BaseModel):
     """Request payload for generating a financial scenario."""
 
@@ -197,8 +296,8 @@ class ScenarioOption(BaseModel):
     time_horizon: str = Field(..., description="Time horizon (short, medium, long)")
 
 
-class FinanceScenarioResponse(BaseModel):
-    """Response payload for financial scenario."""
+class FinanceScenarioResponse(BaseAIResponse):
+    """Response payload for financial scenario with standardized structure."""
 
     scenario_id: str = Field(..., description="Unique scenario identifier")
     title: str = Field(..., description="Scenario title")
@@ -208,7 +307,6 @@ class FinanceScenarioResponse(BaseModel):
     options: List[ScenarioOption] = Field(..., description="Available options")
     learning_objectives: List[str] = Field(..., description="Learning objectives")
     concepts_covered: List[str] = Field(..., description="Financial concepts covered")
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class DecisionEvaluationRequest(BaseModel):
@@ -219,8 +317,8 @@ class DecisionEvaluationRequest(BaseModel):
     scenario_context: Dict[str, Any] = Field(..., description="Original scenario context")
 
 
-class DecisionEvaluationResponse(BaseModel):
-    """Response payload for decision evaluation."""
+class DecisionEvaluationResponse(BaseAIResponse):
+    """Response payload for decision evaluation with standardized structure."""
 
     evaluation_score: float = Field(..., ge=0.0, le=1.0, description="Evaluation score (0.0-1.0)")
     immediate_impact: Dict[str, str] = Field(..., description="Immediate financial impact")
@@ -230,5 +328,4 @@ class DecisionEvaluationResponse(BaseModel):
     alternative_perspectives: List[str] = Field(..., description="Alternative perspectives")
     recommendations: List[str] = Field(..., description="Recommendations")
     overall_assessment: str = Field(..., description="Overall assessment")
-    evaluated_at: datetime = Field(default_factory=datetime.utcnow)
     scenario_id: str = Field(..., description="Scenario identifier")

@@ -25,7 +25,15 @@ from .pets import (
     PetStats,
     PetUpdate,
 )
-from .shop import PurchaseRequest, ShopItem
+from .shop import (
+    InventoryItem,
+    PurchaseLineItem,
+    PurchaseRequest,
+    PurchaseResponse,
+    ShopItem,
+    UseItemRequest,
+    UseItemResponse,
+)
 from .users import UserBase, UserCreate, UserResponse
 from .events import (
     EventEffectPayload,
@@ -41,6 +49,30 @@ from .accessories import (
     AccessoryListResponse,
     AccessorySchema,
     EquippedAccessorySchema,
+)
+from .quest import (
+    ActiveQuestsResponse,
+    DailyQuestsResponse,
+    QuestClaimRequest,
+    QuestClaimResponse,
+    QuestCompleteRequest,
+    QuestCompletionResponse,
+    QuestDifficulty,
+    QuestResponse,
+    QuestReward,
+    QuestStatus,
+    QuestType,
+)
+from .social import (
+    AchievementBadge,
+    FriendListEntry,
+    FriendRequestPayload,
+    FriendRespondPayload,
+    FriendsListResponse,
+    LeaderboardEntry,
+    LeaderboardResponse,
+    PublicProfileSummary,
+    PublicProfilesResponse,
 )
 
 __all__ = [
@@ -76,7 +108,12 @@ __all__ = [
     "AccessoryEquipResponse",
     "EquippedAccessorySchema",
     "PurchaseRequest",
+    "PurchaseResponse",
+    "PurchaseLineItem",
     "ShopItem",
+    "InventoryItem",
+    "UseItemRequest",
+    "UseItemResponse",
     "UserBase",
     "UserCreate",
     "UserResponse",
@@ -86,4 +123,24 @@ __all__ = [
     "ParticipationResponse",
     "WeatherResponse",
     "SeasonalMoodPayload",
+    "ActiveQuestsResponse",
+    "DailyQuestsResponse",
+    "QuestResponse",
+    "QuestReward",
+    "QuestType",
+    "QuestDifficulty",
+    "QuestStatus",
+    "QuestCompleteRequest",
+    "QuestCompletionResponse",
+    "QuestClaimRequest",
+    "QuestClaimResponse",
+    "AchievementBadge",
+    "FriendListEntry",
+    "FriendRequestPayload",
+    "FriendRespondPayload",
+    "FriendsListResponse",
+    "LeaderboardEntry",
+    "LeaderboardResponse",
+    "PublicProfileSummary",
+    "PublicProfilesResponse",
 ]

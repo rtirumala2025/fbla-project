@@ -115,22 +115,31 @@ class BudgetAIService:
         transaction_summary: Dict[str, Any],
         user_id: str,
     ) -> str:
-        """Call OpenAI API to generate personalized budget advice."""
+        """Call OpenAI API to generate personalized budget advice with structured output and safety checks."""
         prompt = f"""You are a financial advisor helping a user manage their budget. Analyze their transaction history and provide personalized, actionable advice.
 
-Transaction Summary:
+TRANSACTION SUMMARY:
 - Total Transactions: {transaction_summary['total_transactions']}
 - Total Spent: ${transaction_summary['total_spent']:.2f}
 - Total Income: ${transaction_summary['total_income']:.2f}
 - Net Balance: ${transaction_summary['net_balance']:.2f}
 - Top Spending Categories: {', '.join([f"{cat}: ${amt:.2f}" for cat, amt in transaction_summary.get('top_categories', [])])}
 
+RESPONSE REQUIREMENTS:
 Provide concise, actionable budget advice (2-3 sentences) focusing on:
 1. Spending patterns and areas for improvement
 2. Practical tips to save money
 3. Recommendations for better financial management
 
-Keep the advice friendly, encouraging, and specific to their spending patterns."""
+SAFETY GUIDELINES:
+- Keep advice appropriate for educational purposes (this is a virtual pet financial literacy app)
+- Focus on general budgeting principles, not specific investment or financial product recommendations
+- Be encouraging and supportive, especially if spending exceeds income
+- Avoid medical, legal, or tax advice
+- Keep language age-appropriate
+
+OUTPUT FORMAT:
+Return only the advice text (2-3 sentences), friendly and encouraging, specific to their spending patterns."""
 
         messages = [
             {"role": "system", "content": "You are a helpful financial advisor providing budget advice."},
