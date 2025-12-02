@@ -9,7 +9,6 @@ import type { Quest } from '../../types/quests';
 import ProgressBar from '../ui/ProgressBar';
 import { RewardClaimAnimation } from './RewardClaimAnimation';
 import { claimQuestReward } from '../../api/quests';
-import type { QuestClaimResponse } from '../../types/quests';
 import { useToast } from '../../contexts/ToastContext';
 
 interface QuestCardProps {

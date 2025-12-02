@@ -187,6 +187,19 @@ export const QuestDashboard = () => {
                 }}
                 onComplete={handleComplete}
                 isProcessingId={processingQuestId}
+                onClaimReward={(quest) => {
+                  setQuests((current) => {
+                    const source = current ?? cached ?? emptyResponse;
+                    const updateCategory = (list: Quest[]) =>
+                      list.map((item) => (item.id === quest.id ? quest : item));
+                    return {
+                      daily: updateCategory(source.daily),
+                      weekly: updateCategory(source.weekly),
+                      event: updateCategory(source.event),
+                      refreshed_at: new Date().toISOString(),
+                    };
+                  });
+                }}
               />
             )}
           </div>
