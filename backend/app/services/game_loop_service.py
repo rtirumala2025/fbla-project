@@ -152,7 +152,7 @@ class GameLoopService:
         Rate: 10 coins per hour
         Max: 24 hours (240 coins max)
         """
-        if self._shop_service is None:
+        if self._pool is None:
             return 0
 
         # Cap idle hours to prevent abuse
@@ -165,16 +165,75 @@ class GameLoopService:
             return 0
 
         try:
-            # Award coins via shop service
-            # Note: This assumes shop_service has a method to add coins
-            # If not, we'll need to implement it or use a different approach
-            await self._shop_service.add_coins(
-                user_id,
-                coins_to_award,
-                f"Idle rewards ({capped_hours:.1f} hours)",
-            )
+            # Award coins by updating wallet balance
+            pool = await self._require_pool()
+            async with pool.acquire() as conn:
+                # Get or create wallet
+                wallet = await conn.fetchrow(
+                    """
+                    SELECT id, balance
+                    FROM finance_wallets
+                    WHERE user_id = $1
+                    """,
+                    user_id,
+                )
+
+                if not wallet:
+                    # Create wallet if it doesn't exist
+                    wallet_id = await conn.fetchval(
+                        """
+                        INSERT INTO finance_wallets (user_id, balance, currency)
+                        VALUES ($1, $2, 'coins')
+                        RETURNING id
+                        """,
+                        user_id,
+                        coins_to_award,
+                    )
+                else:
+                    wallet_id = wallet["id"]
+                    new_balance = (wallet["balance"] or 0) + coins_to_award
+                    await conn.execute(
+                        """
+                        UPDATE finance_wallets
+                        SET balance = $1, updated_at = NOW()
+                        WHERE id = $2
+                        """,
+                        new_balance,
+                        wallet_id,
+                    )
+
+                # Record transaction
+                await conn.execute(
+                    """
+                    INSERT INTO finance_transactions (
+                        wallet_id, user_id, item_id, item_name, amount,
+                        transaction_type, category, description, balance_after
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    """,
+                    wallet_id,
+                    user_id,
+                    "idle_reward",
+                    f"Idle rewards ({capped_hours:.1f} hours)",
+                    coins_to_award,
+                    "reward",
+                    "idle",
+                    f"Idle rewards for {capped_hours:.1f} hours",
+                    (wallet["balance"] if wallet else 0) + coins_to_award,
+                )
+
             return coins_to_award
-        except Exception:
-            # If shop service doesn't support this, return 0
-            # Frontend will handle idle coin rewards
+        except Exception as e:
+            # Log error but don't fail the game loop
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error awarding idle coins: {e}")
             return 0
+
+    async def _require_pool(self) -> Pool:
+        if self._pool is None:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                "Database connection is not configured.",
+            )
+        return self._pool
