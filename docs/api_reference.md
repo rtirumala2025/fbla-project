@@ -25,6 +25,8 @@ Authorization: Bearer <token>
 - [Weather](#weather)
 - [Accessories](#accessories)
 - [Art Generation](#art-generation)
+- [Social Features](#social-features)
+- [Quests](#quests)
 
 ---
 
@@ -1207,6 +1209,526 @@ Generate a pet avatar using AI with accessory context.
 - `400 Bad Request`: Invalid input or accessories
 - `401 Unauthorized`: Not authenticated
 - `404 Not Found`: Pet not found
+
+---
+
+## Social Features
+
+Base path: `/api/social`
+
+### GET /api/social/friends
+
+Get the authenticated user's friendship graph, including friends, pending incoming requests, and pending outgoing requests.
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/api/social/friends \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response** (`200 OK`):
+```json
+{
+  "friends": [
+    {
+      "id": "friendship-1",
+      "status": "accepted",
+      "direction": "friend",
+      "counterpart_user_id": "user-2",
+      "requested_at": "2025-01-27T00:00:00Z",
+      "responded_at": "2025-01-27T01:00:00Z",
+      "profile": {
+        "id": "profile-1",
+        "user_id": "user-2",
+        "pet_id": "pet-2",
+        "display_name": "Friend User",
+        "bio": "Pet enthusiast",
+        "achievements": [],
+        "total_xp": 1500,
+        "total_coins": 800,
+        "is_visible": true
+      }
+    }
+  ],
+  "pending_incoming": [],
+  "pending_outgoing": [],
+  "total_count": 1
+}
+```
+
+**Status Codes**:
+- `200 OK`: Success
+- `401 Unauthorized`: Not authenticated
+- `503 Service Unavailable`: Database not configured
+
+---
+
+### POST /api/social/friends/request
+
+Send a friend request to another user.
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/social/friends/request \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"friend_id": "user-2"}'
+```
+
+**Request Body**:
+```json
+{
+  "friend_id": "user-2"
+}
+```
+
+**Response** (`201 Created`):
+```json
+{
+  "friends": [],
+  "pending_incoming": [],
+  "pending_outgoing": [
+    {
+      "id": "friendship-1",
+      "status": "pending",
+      "direction": "outgoing",
+      "counterpart_user_id": "user-2",
+      "requested_at": "2025-01-27T00:00:00Z",
+      "responded_at": null,
+      "profile": null
+    }
+  ],
+  "total_count": 0
+}
+```
+
+**Error Responses**:
+- `400 Bad Request`: Cannot friend yourself, already friends, or request already pending
+- `401 Unauthorized`: Not authenticated
+- `503 Service Unavailable`: Database not configured
+
+---
+
+### PATCH /api/social/friends/respond
+
+Accept or decline a friend request.
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X PATCH http://localhost:8000/api/social/friends/respond \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"request_id": "friendship-1", "action": "accept"}'
+```
+
+**Request Body**:
+```json
+{
+  "request_id": "friendship-1",
+  "action": "accept"
+}
+```
+
+**Valid Actions**: `"accept"` or `"decline"`
+
+**Response** (`200 OK`):
+```json
+{
+  "friends": [
+    {
+      "id": "friendship-1",
+      "status": "accepted",
+      "direction": "friend",
+      "counterpart_user_id": "user-2",
+      "requested_at": "2025-01-27T00:00:00Z",
+      "responded_at": "2025-01-27T01:00:00Z",
+      "profile": {...}
+    }
+  ],
+  "pending_incoming": [],
+  "pending_outgoing": [],
+  "total_count": 1
+}
+```
+
+**Status Codes**:
+- `200 OK`: Request processed
+- `400 Bad Request`: Invalid action or request not pending
+- `401 Unauthorized`: Not authenticated
+- `403 Forbidden`: Cannot respond to requests not sent to you
+- `404 Not Found`: Friend request not found
+- `503 Service Unavailable`: Database not configured
+
+---
+
+### POST /api/social/accept
+
+Convenience endpoint to accept a friend request.
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/social/accept \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"request_id": "friendship-1"}'
+```
+
+**Request Body**:
+```json
+{
+  "request_id": "friendship-1"
+}
+```
+
+**Response**: Same as `PATCH /api/social/friends/respond` with `action: "accept"`
+
+---
+
+### POST /api/social/reject
+
+Convenience endpoint to reject a friend request.
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/social/reject \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"request_id": "friendship-1"}'
+```
+
+**Request Body**:
+```json
+{
+  "request_id": "friendship-1"
+}
+```
+
+**Response**: Same as `PATCH /api/social/friends/respond` with `action: "decline"`
+
+---
+
+### POST /api/social/remove
+
+Remove a friend (bidirectional deletion).
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/social/remove \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"friend_id": "user-2"}'
+```
+
+**Request Body**:
+```json
+{
+  "friend_id": "user-2"
+}
+```
+
+**Response** (`200 OK`):
+```json
+{
+  "friends": [],
+  "pending_incoming": [],
+  "pending_outgoing": [],
+  "total_count": 0
+}
+```
+
+**Error Responses**:
+- `400 Bad Request`: Cannot remove yourself
+- `401 Unauthorized`: Not authenticated
+- `404 Not Found`: Friendship not found
+- `503 Service Unavailable`: Database not configured
+
+---
+
+### GET /api/social/requests/incoming
+
+Get only incoming friend requests.
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/api/social/requests/incoming \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response** (`200 OK`):
+```json
+{
+  "friends": [],
+  "pending_incoming": [
+    {
+      "id": "friendship-1",
+      "status": "pending",
+      "direction": "incoming",
+      "counterpart_user_id": "user-2",
+      "requested_at": "2025-01-27T00:00:00Z",
+      "responded_at": null,
+      "profile": {...}
+    }
+  ],
+  "pending_outgoing": [],
+  "total_count": 0
+}
+```
+
+**Status Codes**:
+- `200 OK`: Success
+- `401 Unauthorized`: Not authenticated
+- `503 Service Unavailable`: Database not configured
+
+---
+
+### GET /api/social/requests/outgoing
+
+Get only outgoing friend requests.
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/api/social/requests/outgoing \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response** (`200 OK`):
+```json
+{
+  "friends": [],
+  "pending_incoming": [],
+  "pending_outgoing": [
+    {
+      "id": "friendship-1",
+      "status": "pending",
+      "direction": "outgoing",
+      "counterpart_user_id": "user-2",
+      "requested_at": "2025-01-27T00:00:00Z",
+      "responded_at": null,
+      "profile": {...}
+    }
+  ],
+  "total_count": 0
+}
+```
+
+**Status Codes**:
+- `200 OK`: Success
+- `401 Unauthorized`: Not authenticated
+- `503 Service Unavailable`: Database not configured
+
+---
+
+### GET /api/social/public_profiles
+
+Get public profiles with optional search.
+
+**Authentication**: Required
+
+**Query Parameters**:
+- `search` (optional): Search term to filter by display name or bio
+- `limit` (optional, default: 20): Maximum number of profiles to return
+
+**Example Request**:
+```bash
+curl -X GET "http://localhost:8000/api/social/public_profiles?search=john&limit=10" \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response** (`200 OK`):
+```json
+{
+  "profiles": [
+    {
+      "id": "profile-1",
+      "user_id": "user-2",
+      "pet_id": "pet-2",
+      "display_name": "John Doe",
+      "bio": "Pet enthusiast and gamer",
+      "achievements": [
+        {
+          "name": "Champion",
+          "description": "Reached level 10",
+          "earned_at": "2025-01-27T00:00:00Z"
+        }
+      ],
+      "total_xp": 2500,
+      "total_coins": 1200,
+      "is_visible": true
+    }
+  ]
+}
+```
+
+**Status Codes**:
+- `200 OK`: Success
+- `401 Unauthorized`: Not authenticated
+- `503 Service Unavailable`: Database not configured
+
+---
+
+### GET /api/social/leaderboard
+
+Get leaderboard for a specific metric.
+
+**Authentication**: Required
+
+**Query Parameters**:
+- `metric` (required): One of `"xp"`, `"coins"`, or `"achievements"`
+- `limit` (optional, default: 20): Maximum number of entries to return
+
+**Example Request**:
+```bash
+curl -X GET "http://localhost:8000/api/social/leaderboard?metric=xp&limit=10" \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response** (`200 OK`):
+```json
+{
+  "metric": "xp",
+  "entries": [
+    {
+      "user_id": "user-1",
+      "display_name": "Top Player",
+      "pet_id": "pet-1",
+      "total_xp": 5000,
+      "total_coins": 2000,
+      "achievements_count": 5,
+      "rank": 1,
+      "metric_value": 5000
+    },
+    {
+      "user_id": "user-2",
+      "display_name": "Second Place",
+      "pet_id": "pet-2",
+      "total_xp": 4500,
+      "total_coins": 1800,
+      "achievements_count": 4,
+      "rank": 2,
+      "metric_value": 4500
+    }
+  ]
+}
+```
+
+**Status Codes**:
+- `200 OK`: Success
+- `400 Bad Request`: Invalid metric (must be 'xp', 'coins', or 'achievements')
+- `401 Unauthorized`: Not authenticated
+- `503 Service Unavailable`: Database not configured
+
+---
+
+## Quests
+
+Base path: `/api/quests`
+
+### GET /api/quests
+
+Get available quests for the authenticated user.
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/api/quests \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response** (`200 OK`):
+```json
+{
+  "daily_quests": [
+    {
+      "id": "quest-1",
+      "quest_key": "daily_feed",
+      "title": "Feed Your Pet",
+      "description": "Feed your pet today",
+      "quest_type": "care",
+      "difficulty": "easy",
+      "rewards": {
+        "coins": 10,
+        "xp": 20,
+        "items": []
+      },
+      "progress": {
+        "current": 0,
+        "target": 1
+      },
+      "status": "available",
+      "expires_at": "2025-01-28T00:00:00Z"
+    }
+  ],
+  "active_quests": []
+}
+```
+
+**Status Codes**:
+- `200 OK`: Success
+- `401 Unauthorized`: Not authenticated
+- `503 Service Unavailable`: Database not configured
+
+---
+
+### POST /api/quests/complete
+
+Complete a quest and claim rewards.
+
+**Authentication**: Required
+
+**Example Request**:
+```bash
+curl -X POST http://localhost:8000/api/quests/complete \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"quest_id": "quest-1"}'
+```
+
+**Request Body**:
+```json
+{
+  "quest_id": "quest-1"
+}
+```
+
+**Response** (`200 OK`):
+```json
+{
+  "result": {
+    "quest": {
+      "id": "quest-1",
+      "status": "completed",
+      ...
+    },
+    "coins_awarded": 10,
+    "xp_awarded": 20,
+    "message": "Quest completed! You earned 10 coins and 20 XP."
+  }
+}
+```
+
+**Status Codes**:
+- `200 OK`: Quest completed
+- `400 Bad Request`: Quest not available or already completed
+- `401 Unauthorized`: Not authenticated
+- `404 Not Found`: Quest not found
+- `503 Service Unavailable`: Database not configured
 
 ---
 
