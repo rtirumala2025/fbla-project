@@ -45,6 +45,15 @@ export interface QuestCompletionResponse {
   };
 }
 
+export interface QuestClaimResponse {
+  result: {
+    quest: Quest;
+    coins_awarded: number;
+    xp_awarded: number;
+    message: string;
+  };
+}
+
 export interface CoachInsight {
   category: 'care' | 'activity' | 'quest' | 'difficulty' | 'motivation';
   recommendation: string;

@@ -240,9 +240,9 @@ export async function earnCoins(data: EarnRequestPayload): Promise<FinanceRespon
   });
 }
 
-export async function purchaseItems(data: PurchaseRequestPayload): Promise<FinanceResponse> {
+export async function purchaseItems(data: PurchaseRequestPayload): Promise<void> {
   // Use shop endpoint for purchases
-  return apiRequest<FinanceResponse>(`/api/shop/purchase`, {
+  await apiRequest(`/api/shop/purchase`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -257,7 +257,7 @@ export async function getShopCatalog(): Promise<ShopItemEntry[]> {
 }
 
 export async function getInventory(): Promise<InventoryEntry[]> {
-  return apiRequest<InventoryEntry[]>(`${API_BASE}/shop/inventory`);
+  return apiRequest<InventoryEntry[]>(`/api/shop/inventory`);
 }
 
 export interface UseItemPayload {
@@ -274,7 +274,7 @@ export interface UseItemResponse {
 }
 
 export async function useItem(payload: UseItemPayload): Promise<UseItemResponse> {
-  return apiRequest<UseItemResponse>(`${API_BASE}/shop/use`, {
+  return apiRequest<UseItemResponse>(`/api/shop/use`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });

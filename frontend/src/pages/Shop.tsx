@@ -134,8 +134,8 @@ export const Shop = () => {
         })),
       };
 
-      const response = await purchaseItems(payload);
-      setFinanceSummary(response.summary);
+      await purchaseItems(payload);
+      // Reload data to get updated balance and inventory
       await loadData(false);
 
       const itemCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
