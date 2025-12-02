@@ -132,7 +132,6 @@ export const Shop = () => {
           item_id: itemId,
           quantity,
         })),
-        pet_id: pet?.id ?? null,
       };
 
       const response = await purchaseItems(payload);
