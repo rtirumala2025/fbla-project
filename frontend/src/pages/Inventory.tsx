@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Package, ArrowLeft, Zap, Heart, UtensilsCrossed, Pill, Gamepad2 } from 'lucide-react';
+import { Package, ArrowLeft, Zap, UtensilsCrossed, Pill, Gamepad2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';

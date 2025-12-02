@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Sparkles, 
   TrendingUp, 
-  Coins,
+  // Coins, // Unused
   RefreshCw,
   ShoppingBag,
   ChevronUp

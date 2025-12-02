@@ -9,7 +9,7 @@ import { ForecastChart } from '../../components/reports/ForecastChart';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useToast } from '../../contexts/ToastContext';
 import { fetchSnapshot } from '../../api/analytics';
-import { exportPDF, forecastCost, getFilteredReport } from '../../api/reports';
+import { exportPDF, forecastCost } from '../../api/reports';
 import type { AnalyticsSnapshot, CostForecast, ReportFilters as ReportFiltersType } from '../../types/analytics';
 
 export const ReportsPage: React.FC = () => {

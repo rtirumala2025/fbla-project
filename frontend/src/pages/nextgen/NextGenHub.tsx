@@ -208,6 +208,7 @@ export const NextGenHub: React.FC = () => {
 
   useEffect(() => {
     requestWeather();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestWeather]);
 
   const snapshotHighlights = useMemo(() => {

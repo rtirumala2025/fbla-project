@@ -192,6 +192,7 @@ export const AuthCallback = () => {
             const accessToken = hashParams.get('access_token');
             const refreshToken = hashParams.get('refresh_token');
             const expiresIn = hashParams.get('expires_in');
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const tokenType = hashParams.get('token_type') || 'bearer';
             
             if (accessToken) {
@@ -253,6 +254,7 @@ export const AuthCallback = () => {
                       
                       // Fallback: Try manual setSession() but construct proper session object
                       try {
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         const { data: sessionResult, error: setSessionError } = await supabase.auth.setSession({
                           access_token: accessToken,
                           refresh_token: refreshToken || '',

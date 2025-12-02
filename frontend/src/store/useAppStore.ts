@@ -6,7 +6,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import type { Pet, PetStats } from '../types/pet';
 import type { Quest } from '../types/quests';
-import type { FinanceSummary } from '../types/finance';
+// FinanceSummary type removed - not used in this store
 
 interface InventoryItem {
   itemId: string;
