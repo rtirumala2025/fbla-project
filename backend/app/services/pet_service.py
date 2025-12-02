@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
+from datetime import datetime, timezone, timedelta
 
 from asyncpg import Pool
 from fastapi import HTTPException, status
@@ -104,6 +105,40 @@ class PetService:
             columns = self._column_map
             assert columns is not None
             color_column = columns["color"]
+            # Check for timestamp columns for stat decay calculations
+            timestamp_columns = []
+            row_check = await connection.fetchrow(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'pets'
+                AND column_name IN ('last_fed', 'last_played', 'last_bathed', 'last_slept', 'updated_at')
+                """
+            )
+            available_timestamps = set()
+            if row_check:
+                timestamp_rows = await connection.fetch(
+                    """
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'pets'
+                    AND column_name IN ('last_fed', 'last_played', 'last_bathed', 'last_slept', 'updated_at')
+                    """
+                )
+                available_timestamps = {row['column_name'] for row in timestamp_rows}
+            
+            timestamp_selects = []
+            if 'last_fed' in available_timestamps:
+                timestamp_selects.append('p.last_fed')
+            if 'last_played' in available_timestamps:
+                timestamp_selects.append('p.last_played')
+            if 'last_bathed' in available_timestamps:
+                timestamp_selects.append('p.last_bathed')
+            if 'last_slept' in available_timestamps:
+                timestamp_selects.append('p.last_slept')
+            
+            timestamp_clause = ', ' + ', '.join(timestamp_selects) if timestamp_selects else ''
+            
             row = await connection.fetchrow(
                 f"""
                 SELECT
@@ -122,6 +157,7 @@ class PetService:
                     p.{columns['health']} AS health,
                     p.{columns['xp']} AS xp,
                     p.{columns['level']} AS level
+                    {timestamp_clause}
                 FROM pets p
                 WHERE p.user_id = $1
                 """,
@@ -143,6 +179,19 @@ class PetService:
             )
 
         pet = self._row_to_domain(row, diary_rows)
+        
+        # Apply stat decay based on time elapsed since last update
+        decay_applied = False
+        if row.get('updated_at'):
+            original_stats = (pet.stats.hunger, pet.stats.hygiene, pet.stats.energy, pet.stats.health)
+            pet = self._apply_stat_decay(pet, row.get('updated_at'), row)
+            new_stats = (pet.stats.hunger, pet.stats.hygiene, pet.stats.energy, pet.stats.health)
+            decay_applied = original_stats != new_stats
+        
+        # Persist decayed stats if significant decay occurred (to avoid constant writes)
+        if decay_applied:
+            await self._persist_pet_state(user_id, pet)
+        
         seasonal_state = await self._apply_seasonal_adjustments(user_id, pet)
         return self._domain_to_response(pet, seasonal_state)
 
@@ -263,7 +312,7 @@ class PetService:
 
         updated_pet, reaction, diary_entry = self._apply_action(pet, action, request)
 
-        await self._persist_pet_state(user_id, updated_pet)
+        await self._persist_pet_state(user_id, updated_pet, action)
         reaction_result = await self._generate_ai_reaction(
             user_id=user_id,
             pet=updated_pet,
@@ -335,6 +384,138 @@ class PetService:
             )
         return PetDiaryEntryResponse(**dict(row))
 
+    async def apply_shop_item_effects(
+        self,
+        user_id: str,
+        item_category: str,
+        quantity: int = 1,
+    ) -> PetResponse:
+        """
+        Apply shop item effects to pet stats.
+        Item categories: 'food', 'medicine', 'toy', 'energy'
+        """
+        pet_response = await self.get_pet(user_id)
+        if pet_response is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Pet not found.")
+        
+        pet = self._response_to_domain(pet_response)
+        stats = pet.stats
+        
+        # Apply effects based on item category
+        for _ in range(quantity):
+            if item_category == 'food':
+                stats.hunger = self._clamp(stats.hunger + 20)
+                stats.health = self._clamp(stats.health + 5)
+                stats.xp += 5
+            elif item_category == 'medicine':
+                stats.health = self._clamp(stats.health + 30)
+                stats.xp += 3
+            elif item_category == 'toy':
+                # Toy increases happiness (which affects mood)
+                # Since we don't have a separate happiness stat, we increase multiple stats
+                stats.energy = self._clamp(stats.energy + 10)
+                stats.hunger = self._clamp(stats.hunger - 5)  # Playing burns energy
+                stats.xp += 10
+            elif item_category == 'energy':
+                stats.energy = self._clamp(stats.energy + 40)
+                stats.xp += 3
+        
+        # Recalculate level and evolution
+        stats.xp, stats.level = self._recalculate_level(stats.xp, stats.level)
+        stats.evolution_stage = self._determine_stage(stats.level).value
+        
+        # Recalculate mood and happiness
+        stats.mood = self._calculate_base_mood(stats.hunger, stats.hygiene, stats.energy, stats.health)
+        stats.is_sick = self._is_sick(stats.hunger, stats.hygiene, stats.energy, stats.health)
+        
+        # Update pet object
+        updated_pet = Pet(
+            id=pet.id,
+            user_id=pet.user_id,
+            name=pet.name,
+            species=pet.species,
+            breed=pet.breed,
+            color=pet.color,
+            created_at=pet.created_at,
+            updated_at=datetime.now(timezone.utc),
+            stats=stats,
+            diary=pet.diary,
+        )
+        
+        await self._persist_pet_state(user_id, updated_pet)
+        
+        refreshed = await self.get_pet(user_id)
+        assert refreshed is not None
+        return refreshed
+
+    async def apply_quest_rewards(
+        self,
+        user_id: str,
+        xp_reward: int = 0,
+        stat_boosts: Optional[Dict[str, int]] = None,
+    ) -> PetResponse:
+        """
+        Apply quest rewards to pet (XP and optional stat boosts).
+        """
+        pet_response = await self.get_pet(user_id)
+        if pet_response is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Pet not found.")
+        
+        pet = self._response_to_domain(pet_response)
+        stats = pet.stats
+        
+        old_level = stats.level
+        
+        # Apply XP reward
+        if xp_reward > 0:
+            stats.xp += xp_reward
+            stats.xp, stats.level = self._recalculate_level(stats.xp, stats.level)
+            
+            # Check for evolution
+            evolution_msg = self._check_evolution(pet, old_level, stats.level)
+            if evolution_msg:
+                await self.add_diary_entry(
+                    user_id,
+                    pet.id,
+                    PetDiaryCreate(mood="ecstatic", note=evolution_msg),
+                )
+        
+        # Apply stat boosts
+        if stat_boosts:
+            if 'hunger' in stat_boosts:
+                stats.hunger = self._clamp(stats.hunger + stat_boosts['hunger'])
+            if 'hygiene' in stat_boosts:
+                stats.hygiene = self._clamp(stats.hygiene + stat_boosts['hygiene'])
+            if 'energy' in stat_boosts:
+                stats.energy = self._clamp(stats.energy + stat_boosts['energy'])
+            if 'health' in stat_boosts:
+                stats.health = self._clamp(stats.health + stat_boosts['health'])
+        
+        # Recalculate evolution stage and mood
+        stats.evolution_stage = self._determine_stage(stats.level).value
+        stats.mood = self._calculate_base_mood(stats.hunger, stats.hygiene, stats.energy, stats.health)
+        stats.is_sick = self._is_sick(stats.hunger, stats.hygiene, stats.energy, stats.health)
+        
+        # Update pet object
+        updated_pet = Pet(
+            id=pet.id,
+            user_id=pet.user_id,
+            name=pet.name,
+            species=pet.species,
+            breed=pet.breed,
+            color=pet.color,
+            created_at=pet.created_at,
+            updated_at=datetime.now(timezone.utc),
+            stats=stats,
+            diary=pet.diary,
+        )
+        
+        await self._persist_pet_state(user_id, updated_pet)
+        
+        refreshed = await self.get_pet(user_id)
+        assert refreshed is not None
+        return refreshed
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -363,6 +544,7 @@ class PetService:
             xp += 15
             reaction = "delighted munching"
             note = f"Enjoyed a {payload.food_type or 'meal'}."
+            # Update last_fed timestamp will be handled in _persist_pet_state if column exists
         elif action is PetAction.play:
             hunger = self._clamp(hunger - 10)
             energy = self._clamp(energy - 15)
@@ -389,8 +571,14 @@ class PetService:
         else:  # pragma: no cover - defensive
             reaction = "confused"
 
+        old_level = level
         xp, level = self._recalculate_level(xp, level)
         evolution_stage = self._determine_stage(level)
+        
+        # Check for evolution
+        evolution_message = self._check_evolution(pet, old_level, level)
+        if evolution_message:
+            note = f"{evolution_message} {note}" if note else evolution_message
         mood = self._calculate_base_mood(hunger, hygiene, energy, health)
         is_sick = self._is_sick(hunger, hygiene, energy, health)
         if is_sick:
@@ -426,7 +614,7 @@ class PetService:
         diary_payload = PetDiaryCreate(mood=mood, note=note) if note else None
         return updated_pet, reaction, diary_payload
 
-    async def _persist_pet_state(self, user_id: str, pet: Pet) -> None:
+    async def _persist_pet_state(self, user_id: str, pet: Pet, action: Optional[PetAction] = None) -> None:
         pool = await self._require_pool()
         columns = self._column_map
         assert columns is not None
@@ -443,12 +631,40 @@ class PetService:
             updates[columns["color"]] = pet.color
 
         set_parts = [f"{col} = ${idx}" for idx, col in enumerate(updates.keys(), start=2)]
+        
+        # Update action timestamps if columns exist
+        timestamp_updates = []
+        async with pool.acquire() as connection:
+            await self._ensure_infrastructure(connection)
+            
+            # Check which timestamp columns exist
+            timestamp_cols = await connection.fetch(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = 'pets'
+                AND column_name IN ('last_fed', 'last_played', 'last_bathed', 'last_slept')
+                """
+            )
+            available_timestamp_cols = {row['column_name'] for row in timestamp_cols}
+            
+            if action:
+                if action is PetAction.feed and 'last_fed' in available_timestamp_cols:
+                    timestamp_updates.append("last_fed = NOW()")
+                elif action is PetAction.play and 'last_played' in available_timestamp_cols:
+                    timestamp_updates.append("last_played = NOW()")
+                elif action is PetAction.bathe and 'last_bathed' in available_timestamp_cols:
+                    timestamp_updates.append("last_bathed = NOW()")
+                elif action is PetAction.rest and 'last_slept' in available_timestamp_cols:
+                    timestamp_updates.append("last_slept = NOW()")
+        
+        all_updates = set_parts + timestamp_updates
         async with pool.acquire() as connection:
             await self._ensure_infrastructure(connection)
             await connection.execute(
                 f"""
                 UPDATE pets
-                SET {', '.join(set_parts)}, updated_at = NOW()
+                SET {', '.join(all_updates)}, updated_at = NOW()
                 WHERE user_id = $1
                 """,
                 user_id,
@@ -466,6 +682,14 @@ class PetService:
         return current_xp, current_level
 
     def _determine_stage(self, level: int) -> EvolutionStage:
+        """
+        Determine evolution stage based on level.
+        Evolution stages:
+        - Egg: Level 1-3 (newly created)
+        - Juvenile: Level 4-6 (young pet, learning)
+        - Adult: Level 7-11 (mature pet)
+        - Legendary: Level 12+ (fully evolved, master level)
+        """
         if level >= 12:
             return EvolutionStage.legendary
         if level >= 7:
@@ -473,6 +697,24 @@ class PetService:
         if level >= 4:
             return EvolutionStage.juvenile
         return EvolutionStage.egg
+    
+    def _check_evolution(self, pet: Pet, old_level: int, new_level: int) -> Optional[str]:
+        """
+        Check if pet has evolved and return evolution message.
+        Evolution occurs when crossing stage thresholds.
+        """
+        old_stage = self._determine_stage(old_level)
+        new_stage = self._determine_stage(new_level)
+        
+        if old_stage != new_stage:
+            stage_names = {
+                EvolutionStage.egg: "Egg",
+                EvolutionStage.juvenile: "Juvenile",
+                EvolutionStage.adult: "Adult",
+                EvolutionStage.legendary: "Legendary"
+            }
+            return f"{pet.name} has evolved to {stage_names[new_stage]} stage! 🎉"
+        return None
 
     def _calculate_base_mood(self, hunger: int, hygiene: int, energy: int, health: int) -> str:
         average = (hunger + hygiene + energy + health) / 4
@@ -681,6 +923,106 @@ class PetService:
     @staticmethod
     def _clamp(value: int, minimum: int = 0, maximum: int = 100) -> int:
         return max(minimum, min(maximum, value))
+
+    def _apply_stat_decay(self, pet: Pet, last_updated: datetime, row: Dict[str, Any]) -> Pet:
+        """
+        Apply stat decay based on time elapsed since last update.
+        Stats decay gradually over time to encourage regular interaction.
+        """
+        now = datetime.now(timezone.utc)
+        
+        # Handle both timezone-aware and naive datetime
+        if last_updated.tzinfo is None:
+            last_updated = last_updated.replace(tzinfo=timezone.utc)
+        
+        time_elapsed_hours = (now - last_updated).total_seconds() / 3600.0
+        
+        # Only apply decay if more than 1 hour has passed (prevents constant decay)
+        if time_elapsed_hours < 1.0:
+            return pet
+        
+        # Decay rates per hour (stats decrease slowly)
+        # Decay stops at minimum thresholds
+        HUNGER_DECAY_PER_HOUR = 2.0  # Hunger decreases faster
+        HYGIENE_DECAY_PER_HOUR = 1.5  # Hygiene decreases moderately
+        ENERGY_DECAY_PER_HOUR = 1.0  # Energy decreases slowly (natural regeneration possible)
+        HEALTH_DECAY_PER_HOUR = 0.5  # Health decreases very slowly (only when other stats are low)
+        
+        # Calculate decay amounts
+        hunger_decay = int(HUNGER_DECAY_PER_HOUR * time_elapsed_hours)
+        hygiene_decay = int(HYGIENE_DECAY_PER_HOUR * time_elapsed_hours)
+        energy_decay = int(ENERGY_DECAY_PER_HOUR * time_elapsed_hours)
+        
+        # Health only decays if other stats are critically low
+        health_decay = 0
+        if pet.stats.hunger < 30 or pet.stats.hygiene < 30 or pet.stats.energy < 20:
+            health_decay = int(HEALTH_DECAY_PER_HOUR * time_elapsed_hours)
+        
+        # Apply decay (but don't go below minimum thresholds)
+        new_hunger = max(0, pet.stats.hunger - hunger_decay)
+        new_hygiene = max(0, pet.stats.hygiene - hygiene_decay)
+        new_energy = max(0, pet.stats.energy - energy_decay)
+        new_health = max(20, pet.stats.health - health_decay)  # Health never goes below 20 from decay
+        
+        # Recalculate mood and sickness status
+        new_mood = self._calculate_base_mood(new_hunger, new_hygiene, new_energy, new_health)
+        is_sick = self._is_sick(new_hunger, new_hygiene, new_energy, new_health)
+        
+        # Create updated stats
+        updated_stats = DomainPetStats(
+            hunger=new_hunger,
+            hygiene=new_hygiene,
+            energy=new_energy,
+            mood=new_mood,
+            health=new_health,
+            xp=pet.stats.xp,
+            level=pet.stats.level,
+            evolution_stage=pet.stats.evolution_stage,
+            is_sick=is_sick,
+        )
+        
+        return Pet(
+            id=pet.id,
+            user_id=pet.user_id,
+            name=pet.name,
+            species=pet.species,
+            breed=pet.breed,
+            color=pet.color,
+            created_at=pet.created_at,
+            updated_at=now,  # Update timestamp to now
+            stats=updated_stats,
+            diary=pet.diary,
+        )
+
+    def _calculate_happiness_score(self, hunger: int, hygiene: int, energy: int, health: int, mood: str) -> int:
+        """
+        Calculate a happiness score (0-100) based on stats and mood.
+        This is a composite metric that influences pet behavior and reactions.
+        """
+        # Base happiness from stat average (weighted)
+        stat_happiness = (
+            hunger * 0.25 +
+            hygiene * 0.20 +
+            energy * 0.25 +
+            health * 0.30
+        )
+        
+        # Mood multiplier
+        mood_multipliers = {
+            "ecstatic": 1.2,
+            "happy": 1.0,
+            "content": 0.85,
+            "sleepy": 0.75,
+            "anxious": 0.6,
+            "distressed": 0.4,
+            "sad": 0.3,
+            "moody": 0.5,
+            "ill": 0.2,
+        }
+        multiplier = mood_multipliers.get(mood.lower(), 0.8)
+        
+        happiness = int(stat_happiness * multiplier)
+        return self._clamp(happiness, 0, 100)
 
     async def _apply_seasonal_adjustments(self, user_id: str, pet: Pet) -> Optional[SeasonalMoodPayload]:
         if self._seasonal_service is None:
