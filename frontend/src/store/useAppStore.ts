@@ -136,6 +136,13 @@ export const useAppStore = create<AppState>()(
             lastUpdated: new Date(),
           };
           
+          // Clamp stats to valid range [0, 100]
+          updatedStats.health = Math.max(0, Math.min(100, updatedStats.health));
+          updatedStats.hunger = Math.max(0, Math.min(100, updatedStats.hunger));
+          updatedStats.happiness = Math.max(0, Math.min(100, updatedStats.happiness));
+          updatedStats.cleanliness = Math.max(0, Math.min(100, updatedStats.cleanliness));
+          updatedStats.energy = Math.max(0, Math.min(100, updatedStats.energy));
+          
           const updatedPet: Pet = {
             ...currentPet,
             stats: updatedStats,
