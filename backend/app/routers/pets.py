@@ -17,7 +17,8 @@ from app.schemas import (
     PetUpdate,
 )
 from app.services.pet_service import PetService
-from app.utils import get_current_user, get_pet_service, get_shop_service
+from app.utils import get_current_user, get_pet_service, get_quest_service, get_shop_service
+from app.services.quest_service import QuestService
 
 router = APIRouter(prefix="/pets", tags=["pets"])
 
@@ -57,8 +58,37 @@ async def perform_action(
     payload: PetActionRequest,
     current_user: AuthenticatedUser = Depends(get_current_user),
     service: PetService = Depends(get_pet_service),
+    quest_service: QuestService = Depends(get_quest_service),
 ) -> PetActionResponse:
-    return await service.apply_action(current_user.id, action, payload)
+    response = await service.apply_action(current_user.id, action, payload)
+    
+    # Track quest progress for pet actions
+    try:
+        # Map pet actions to quest keys
+        quest_key_map = {
+            PetAction.feed: ['daily_feed_pet', 'daily_feed_three', 'daily_care_complete'],
+            PetAction.play: ['daily_play_pet', 'daily_play_five', 'daily_care_complete'],
+            PetAction.bathe: ['daily_bathe_pet', 'daily_care_complete'],
+            PetAction.rest: [],  # Rest doesn't have a direct quest yet
+        }
+        
+        quest_keys = quest_key_map.get(action, [])
+        for quest_key in quest_keys:
+            # Update quest progress (fire-and-forget, don't block response)
+            try:
+                await quest_service.update_progress(current_user.id, quest_key, 1)
+            except Exception as quest_err:
+                # Log individual quest failures but continue
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.debug(f"Quest progress update skipped for {quest_key}: {quest_err}")
+    except Exception as e:
+        # Log but don't fail the pet action if quest tracking fails
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to track quest progress for action {action}: {e}")
+    
+    return response
 
 
 @router.get("/diary", response_model=List[PetDiaryEntryResponse])
