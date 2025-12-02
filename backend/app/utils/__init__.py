@@ -11,7 +11,10 @@ from .dependencies import (
     get_pet_art_service,
     get_pet_service,
     get_profile_service,
+    get_quest_service,
+    get_seasonal_service,
     get_shop_service,
+    get_storage_service,
     get_users_service,
 )
 from .logging import configure_logging, get_logger
@@ -30,4 +33,7 @@ __all__ = [
     "get_users_service",
     "get_ai_service",
     "get_shop_service",
+    "get_quest_service",
+    "get_seasonal_service",
+    "get_storage_service",
 ]

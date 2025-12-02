@@ -9,9 +9,10 @@ from datetime import date, timedelta
 import base64
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
-from app.core.database import get_db
+from asyncpg import Pool
+from app.utils.dependencies import get_db_pool
 from app.core.jwt import get_current_user_id
 from app.schemas.reports import (
     CostForecast,
@@ -49,7 +50,7 @@ async def get_available_metrics():
 @router.post("/export_pdf", response_model=PDFExportResponse)
 async def export_pdf_endpoint(
     request: PDFExportRequest,
-    session: AsyncSession = Depends(get_db),
+    pool: Optional[Pool] = Depends(get_db_pool),
     user_id: str = Depends(get_current_user_id),
 ):
     """
@@ -70,7 +71,7 @@ async def export_pdf_endpoint(
         )
     
     try:
-        pdf_bytes = await generate_pdf_report(session, user_id, request)
+        pdf_bytes = await generate_pdf_report(pool, user_id, request)
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
         filename = f"care-report-{request.start_date.strftime('%Y%m%d')}-{request.end_date.strftime('%Y%m%d')}.pdf"
@@ -89,14 +90,14 @@ async def export_pdf_endpoint(
 @router.post("/forecast_cost", response_model=CostForecast)
 async def forecast_cost_endpoint(
     forecast_days: int = Query(default=30, ge=1, le=365),
-    session: AsyncSession = Depends(get_db),
+    pool: Optional[Pool] = Depends(get_db_pool),
     user_id: str = Depends(get_current_user_id),
 ):
     """
     Generate AI-powered cost forecast for future spending.
     """
     try:
-        forecast = await generate_cost_forecast(session, user_id, forecast_days)
+        forecast = await generate_cost_forecast(pool, user_id, forecast_days)
         return forecast
     except Exception as e:
         raise HTTPException(
@@ -108,7 +109,7 @@ async def forecast_cost_endpoint(
 @router.post("/filtered")
 async def get_filtered_report(
     filters: ReportFilters,
-    session: AsyncSession = Depends(get_db),
+    pool: Optional[Pool] = Depends(get_db_pool),
     user_id: str = Depends(get_current_user_id),
 ):
     """
@@ -124,7 +125,7 @@ async def get_filtered_report(
     # For now, return a basic response structure
     from app.services.analytics_service import analytics_snapshot
     
-    snapshot = await analytics_snapshot(session, user_id)
+    snapshot = await analytics_snapshot(pool, user_id)
     
     # Filter based on selected metrics if provided
     # This is a simplified version - in production, you'd filter the actual data

@@ -69,16 +69,6 @@ async def get_pet_ai_service(pool: Optional[Pool] = Depends(get_db_pool)):
     return PetAIService(pool)
 
 
-async def get_pet_service(
-    pool: Optional[Pool] = Depends(get_db_pool),
-    ai_service=Depends(get_pet_ai_service),
-    seasonal_service=Depends(get_seasonal_service),
-):
-    from app.services.pet_service import PetService
-
-    return PetService(pool, ai_service, seasonal_service)
-
-
 async def get_event_service(pool: Optional[Pool] = Depends(get_db_pool)):
     from app.services.event_service import EventService
 
@@ -105,6 +95,16 @@ async def get_seasonal_service(
     if event_service is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Seasonal features unavailable without database.")
     return SeasonalReactionsService(event_service, weather_service)
+
+
+async def get_pet_service(
+    pool: Optional[Pool] = Depends(get_db_pool),
+    ai_service=Depends(get_pet_ai_service),
+    seasonal_service=Depends(get_seasonal_service),
+):
+    from app.services.pet_service import PetService
+
+    return PetService(pool, ai_service, seasonal_service)
 
 
 async def get_quest_service(pool: Optional[Pool] = Depends(get_db_pool)):

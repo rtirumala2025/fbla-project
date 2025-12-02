@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.core.jwt import get_current_user_id
 from app.services.finance_simulator import FinanceSimulatorService
 
@@ -20,7 +18,6 @@ finance_sim_service = FinanceSimulatorService()
 async def generate_scenario(
     scenario_type: str = Body(..., description="Type of scenario: loan, investment, budgeting, savings"),
     user_context: Optional[Dict[str, Any]] = Body(default=None, description="Optional user financial context"),
-    session: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> Dict[str, Any]:
     """
@@ -58,7 +55,6 @@ async def evaluate_decision(
     scenario_id: str = Body(..., description="Scenario identifier"),
     user_decision: Dict[str, Any] = Body(..., description="User's decision/choices"),
     scenario_context: Dict[str, Any] = Body(..., description="Original scenario context"),
-    session: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> Dict[str, Any]:
     """
@@ -88,7 +84,6 @@ async def evaluate_decision(
 
 @router.get("/scenarios")
 async def list_scenario_types(
-    session: AsyncSession = Depends(get_db),
     _: str = Depends(get_current_user_id),
 ) -> Dict[str, Any]:
     """

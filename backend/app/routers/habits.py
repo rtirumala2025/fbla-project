@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
 from app.core.jwt import get_current_user_id
 from app.services.habit_prediction import HabitPredictionService
 
@@ -21,7 +19,6 @@ async def predict_habits(
     interaction_history: List[Dict[str, Any]] = Body(default=[], description="User interaction history"),
     pet_stats_history: List[Dict[str, Any]] = Body(default=[], description="Historical pet statistics"),
     forecast_days: int = Body(default=14, ge=1, le=30, description="Number of days to forecast"),
-    session: AsyncSession = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> Dict[str, Any]:
     """
