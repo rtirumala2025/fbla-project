@@ -130,3 +130,47 @@ export async function getLeaderboard(metric: LeaderboardMetric = 'xp', limit: nu
   return apiRequest<LeaderboardResponse>(`${BASE_PATH}/leaderboard?${params.toString()}`);
 }
 
+/**
+ * Accept a friend request (convenience endpoint)
+ */
+export async function acceptFriendRequest(requestId: string): Promise<FriendsListResponse> {
+  return apiRequest<FriendsListResponse>(`${BASE_PATH}/accept`, {
+    method: 'POST',
+    body: JSON.stringify({ request_id: requestId }),
+  });
+}
+
+/**
+ * Reject a friend request (convenience endpoint)
+ */
+export async function rejectFriendRequest(requestId: string): Promise<FriendsListResponse> {
+  return apiRequest<FriendsListResponse>(`${BASE_PATH}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ request_id: requestId }),
+  });
+}
+
+/**
+ * Remove a friend (bidirectional deletion)
+ */
+export async function removeFriend(friendId: string): Promise<FriendsListResponse> {
+  return apiRequest<FriendsListResponse>(`${BASE_PATH}/remove`, {
+    method: 'POST',
+    body: JSON.stringify({ friend_id: friendId }),
+  });
+}
+
+/**
+ * Get only incoming friend requests
+ */
+export async function getIncomingRequests(): Promise<FriendsListResponse> {
+  return apiRequest<FriendsListResponse>(`${BASE_PATH}/requests/incoming`);
+}
+
+/**
+ * Get only outgoing friend requests
+ */
+export async function getOutgoingRequests(): Promise<FriendsListResponse> {
+  return apiRequest<FriendsListResponse>(`${BASE_PATH}/requests/outgoing`);
+}
+

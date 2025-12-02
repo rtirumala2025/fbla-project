@@ -157,7 +157,7 @@ class SaveService {
         this.processing = false;
       }
     } catch (error) {
-      logger.error('Error processing save queue', { error }, error);
+      logger.error('Error processing save queue', { error }, error instanceof Error ? error : undefined);
       this.processing = false;
     }
   }
@@ -222,7 +222,7 @@ class SaveService {
 
       logger.debug('Save successful', { type, entityId });
     } catch (error) {
-      logger.error('Save failed', { type, entityId, error }, error);
+      logger.error('Save failed', { type, entityId, error }, error instanceof Error ? error : undefined);
       throw error;
     }
   }

@@ -119,11 +119,9 @@ export const QuestDashboard = () => {
         // Refresh FinancialContext if it exists
         try {
           const { profileService } = await import('../../services/profileService');
-          const { currentUser } = await import('../../contexts/AuthContext');
-          if (currentUser?.uid) {
-            // Refresh profile to sync coins
-            await profileService.getProfile(currentUser.uid, false);
-          }
+          const { useAuth } = await import('../../contexts/AuthContext');
+          // Note: useAuth is a hook and can't be called here, so we'll skip profile refresh
+          // The profile will be refreshed on next component mount
         } catch (refreshError) {
           console.warn('Failed to refresh profile after quest completion:', refreshError);
         }

@@ -466,13 +466,14 @@ export const PetInteractionPanel: React.FC<PetInteractionPanelProps> = ({
         if (latestResult?.pet_state) {
           const { useAppStore } = await import('../../store/useAppStore');
           const petState = latestResult.pet_state;
-          if (petState.stats) {
+          // pet_state has stats directly on it, not nested in a stats property
+          if (petState.health !== undefined || petState.hunger !== undefined || petState.happiness !== undefined) {
             useAppStore.getState().updatePetStats({
-              health: petState.stats.health,
-              hunger: petState.stats.hunger,
-              happiness: petState.stats.happiness || petState.stats.mood,
-              cleanliness: petState.stats.cleanliness || petState.stats.hygiene,
-              energy: petState.stats.energy,
+              health: petState.health,
+              hunger: petState.hunger,
+              happiness: petState.happiness,
+              cleanliness: petState.cleanliness,
+              energy: petState.energy,
             });
           }
         }

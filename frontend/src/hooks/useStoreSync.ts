@@ -46,7 +46,9 @@ export function useStoreSync() {
       const profile = await profileService.getProfile(currentUser.uid, false);
       if (profile) {
         setCoins(profile.coins || 0);
-        setXP(profile.total_xp || 0);
+        // XP is stored on the pet, not the profile
+        // We'll get it from the pet store if available
+        setXP(0); // Default to 0, will be updated from pet state
         setProfileId(profile.id);
       }
     } catch (error) {

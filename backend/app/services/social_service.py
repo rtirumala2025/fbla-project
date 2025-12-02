@@ -357,3 +357,210 @@ class SocialService:
                 ))
             
             return LeaderboardResponse(metric=metric, entries=entries)
+
+    async def remove_friend(self, user_id: str, friend_id: str) -> FriendsListResponse:
+        """Remove a friend (bidirectional deletion)."""
+        if user_id == friend_id:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Cannot remove yourself as a friend."
+            )
+        
+        pool = self._require_pool()
+        
+        async with pool.acquire() as connection:
+            async with connection.transaction():
+                # Check if friendship exists
+                friendship = await connection.fetchrow(
+                    """
+                    SELECT id, status
+                    FROM friends
+                    WHERE (user_id = $1 AND friend_id = $2)
+                       OR (user_id = $2 AND friend_id = $1)
+                    """,
+                    user_id,
+                    friend_id
+                )
+                
+                if not friendship:
+                    raise HTTPException(
+                        status.HTTP_404_NOT_FOUND,
+                        "Friendship not found."
+                    )
+                
+                # Delete the friendship (works for both directions due to OR condition)
+                await connection.execute(
+                    """
+                    DELETE FROM friends
+                    WHERE (user_id = $1 AND friend_id = $2)
+                       OR (user_id = $2 AND friend_id = $1)
+                    """,
+                    user_id,
+                    friend_id
+                )
+        
+        return await self.list_friendships(user_id)
+
+    async def get_incoming_requests(self, user_id: str) -> FriendsListResponse:
+        """Get only incoming friend requests."""
+        pool = self._require_pool()
+        
+        async with pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT 
+                    f.id,
+                    f.user_id,
+                    f.friend_id,
+                    f.status,
+                    f.requested_at,
+                    f.responded_at,
+                    f.user_id as counterpart_user_id,
+                    'incoming' as direction
+                FROM friends f
+                WHERE f.friend_id = $1 AND f.status = 'pending'
+                ORDER BY f.requested_at DESC
+                """,
+                user_id
+            )
+            
+            pending_incoming: List[FriendListEntry] = []
+            
+            # Get profile data
+            counterpart_ids = [str(row['counterpart_user_id']) for row in rows]
+            profiles_map = {}
+            if counterpart_ids:
+                profile_rows = await connection.fetch(
+                    """
+                    SELECT 
+                        pp.id,
+                        pp.user_id,
+                        pp.pet_id,
+                        pp.display_name,
+                        pp.bio,
+                        pp.achievements,
+                        pp.total_xp,
+                        pp.total_coins,
+                        pp.is_visible
+                    FROM public_profiles pp
+                    WHERE pp.user_id = ANY($1::uuid[])
+                    """,
+                    counterpart_ids
+                )
+                for profile_row in profile_rows:
+                    profiles_map[str(profile_row['user_id'])] = PublicProfileSummary(
+                        id=str(profile_row['id']),
+                        user_id=str(profile_row['user_id']),
+                        pet_id=str(profile_row['pet_id']),
+                        display_name=profile_row['display_name'],
+                        bio=profile_row['bio'],
+                        achievements=[
+                            AchievementBadge(**ach) if isinstance(ach, dict) else AchievementBadge(name=str(ach))
+                            for ach in (profile_row['achievements'] or [])
+                        ],
+                        total_xp=profile_row['total_xp'],
+                        total_coins=profile_row['total_coins'],
+                        is_visible=profile_row['is_visible'],
+                    )
+            
+            for row in rows:
+                counterpart_id = str(row['counterpart_user_id'])
+                entry = FriendListEntry(
+                    id=str(row['id']),
+                    status=row['status'],
+                    direction=row['direction'],
+                    counterpart_user_id=counterpart_id,
+                    requested_at=row['requested_at'].isoformat() if row['requested_at'] else '',
+                    responded_at=row['responded_at'].isoformat() if row['responded_at'] else None,
+                    profile=profiles_map.get(counterpart_id),
+                )
+                pending_incoming.append(entry)
+            
+            return FriendsListResponse(
+                friends=[],
+                pending_incoming=pending_incoming,
+                pending_outgoing=[],
+                total_count=0,
+            )
+
+    async def get_outgoing_requests(self, user_id: str) -> FriendsListResponse:
+        """Get only outgoing friend requests."""
+        pool = self._require_pool()
+        
+        async with pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT 
+                    f.id,
+                    f.user_id,
+                    f.friend_id,
+                    f.status,
+                    f.requested_at,
+                    f.responded_at,
+                    f.friend_id as counterpart_user_id,
+                    'outgoing' as direction
+                FROM friends f
+                WHERE f.user_id = $1 AND f.status = 'pending'
+                ORDER BY f.requested_at DESC
+                """,
+                user_id
+            )
+            
+            pending_outgoing: List[FriendListEntry] = []
+            
+            # Get profile data
+            counterpart_ids = [str(row['counterpart_user_id']) for row in rows]
+            profiles_map = {}
+            if counterpart_ids:
+                profile_rows = await connection.fetch(
+                    """
+                    SELECT 
+                        pp.id,
+                        pp.user_id,
+                        pp.pet_id,
+                        pp.display_name,
+                        pp.bio,
+                        pp.achievements,
+                        pp.total_xp,
+                        pp.total_coins,
+                        pp.is_visible
+                    FROM public_profiles pp
+                    WHERE pp.user_id = ANY($1::uuid[])
+                    """,
+                    counterpart_ids
+                )
+                for profile_row in profile_rows:
+                    profiles_map[str(profile_row['user_id'])] = PublicProfileSummary(
+                        id=str(profile_row['id']),
+                        user_id=str(profile_row['user_id']),
+                        pet_id=str(profile_row['pet_id']),
+                        display_name=profile_row['display_name'],
+                        bio=profile_row['bio'],
+                        achievements=[
+                            AchievementBadge(**ach) if isinstance(ach, dict) else AchievementBadge(name=str(ach))
+                            for ach in (profile_row['achievements'] or [])
+                        ],
+                        total_xp=profile_row['total_xp'],
+                        total_coins=profile_row['total_coins'],
+                        is_visible=profile_row['is_visible'],
+                    )
+            
+            for row in rows:
+                counterpart_id = str(row['counterpart_user_id'])
+                entry = FriendListEntry(
+                    id=str(row['id']),
+                    status=row['status'],
+                    direction=row['direction'],
+                    counterpart_user_id=counterpart_id,
+                    requested_at=row['requested_at'].isoformat() if row['requested_at'] else '',
+                    responded_at=row['responded_at'].isoformat() if row['responded_at'] else None,
+                    profile=profiles_map.get(counterpart_id),
+                )
+                pending_outgoing.append(entry)
+            
+            return FriendsListResponse(
+                friends=[],
+                pending_incoming=[],
+                pending_outgoing=pending_outgoing,
+                total_count=0,
+            )

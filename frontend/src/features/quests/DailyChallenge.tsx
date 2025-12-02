@@ -33,7 +33,7 @@ export const DailyChallenge: React.FC<DailyChallengeProps> = ({ onQuestComplete 
       const response = await fetchDailyQuests();
       setDailyQuests(response.daily);
       // Parse next reset time if available
-      if ('next_reset_at' in response && response.next_reset_at) {
+      if ('next_reset_at' in response && response.next_reset_at && typeof response.next_reset_at === 'string') {
         setNextResetAt(new Date(response.next_reset_at));
       } else {
         // Calculate next reset (midnight UTC)

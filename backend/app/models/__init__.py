@@ -7,6 +7,7 @@ from .accessory import Accessory, EquippedAccessory, PetArtCacheEntry
 from .pet import Pet, PetDiaryEntry, PetStats
 from .quest import Quest, QuestDifficulty, QuestStatus, QuestType, UserQuest
 from .shop import ShopItem
+from .social import BlockedUser, FriendRequest, FriendStatus, Friendship
 from .user import User
 
 __all__ = [
@@ -28,4 +29,8 @@ __all__ = [
     "QuestType",
     "QuestDifficulty",
     "QuestStatus",
+    "Friendship",
+    "FriendRequest",
+    "FriendStatus",
+    "BlockedUser",
 ]

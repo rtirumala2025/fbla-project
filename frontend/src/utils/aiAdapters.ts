@@ -53,7 +53,6 @@ export function adaptBudgetAdvisorResponse(
       start: '',
       end: '',
     },
-    forecast: Array.isArray(data.forecast) ? data.forecast : [],
   };
 }
 

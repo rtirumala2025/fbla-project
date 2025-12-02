@@ -5,11 +5,39 @@
 
 import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { ARCanvas, XRButton, DefaultXRControllers, Hands, useHitTest, XR, useXR } from '@react-three/xr';
 import { Text } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+
+// Dynamically import AR components to handle compatibility issues
+let ARCanvas: any = null;
+let XRButton: any = null;
+let DefaultXRControllers: any = null;
+let Hands: any = null;
+let useHitTest: any = null;
+let XR: any = null;
+let useXR: any = null;
+
+// Try to load AR module, but don't fail if it's not available
+if (typeof window !== 'undefined') {
+  try {
+    // Use dynamic import to avoid build-time errors
+    import('@react-three/xr').then((xrModule) => {
+      ARCanvas = xrModule.ARCanvas;
+      XRButton = xrModule.XRButton;
+      DefaultXRControllers = xrModule.DefaultXRControllers;
+      Hands = xrModule.Hands;
+      useHitTest = xrModule.useHitTest;
+      XR = xrModule.XR;
+      useXR = xrModule.useXR;
+    }).catch((error) => {
+      console.warn('@react-three/xr not available:', error);
+    });
+  } catch (error) {
+    console.warn('Failed to load @react-three/xr:', error);
+  }
+}
 
 interface ARPetModeProps {
   petName?: string;
@@ -35,11 +63,14 @@ function PetModel({ position = [0, 0, 0] }: { position?: [number, number, number
 }
 
 // AR Hit Test Component - places pet in real world space
+// Temporarily disabled due to AR module compatibility issues
 function ARPetPlacement({ petName }: { petName?: string }) {
   const [placed, setPlaced] = useState(false);
   const [petPosition, setPetPosition] = useState<[number, number, number]>([0, 0, -1]);
   const petRef = useRef<any>(null);
 
+  // useHitTest is temporarily disabled
+  /*
   useHitTest((hitMatrix: Float32Array) => {
     if (!placed) {
       // Extract position from hit test matrix
@@ -52,6 +83,7 @@ function ARPetPlacement({ petName }: { petName?: string }) {
       setPlaced(true);
     }
   });
+  */
 
   return (
     <>
@@ -105,8 +137,9 @@ function ARScene({ petName, onSessionChange }: { petName?: string; onSessionChan
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} />
       <ARPetPlacement petName={petName} />
-      <DefaultXRControllers />
-      <Hands />
+      {/* Temporarily disabled due to AR module compatibility issues */}
+      {/* <DefaultXRControllers /> */}
+      {/* <Hands /> */}
       <ARSessionTracker onSessionChange={onSessionChange} />
     </>
   );
@@ -117,6 +150,17 @@ export function ARPetMode({ petName = 'Your Pet', petType, onClose }: ARPetModeP
   const [isARActive, setIsARActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
+  const [arModuleError, setArModuleError] = useState<boolean>(false);
+
+  // Check if AR module is available
+  useEffect(() => {
+    if (!ARCanvas || !XRButton) {
+      setArModuleError(true);
+      setError('AR features are currently unavailable due to a compatibility issue. Please try again later.');
+      setIsChecking(false);
+      setIsSupported(false);
+    }
+  }, []);
 
   useEffect(() => {
     // Check WebXR support
@@ -139,6 +183,32 @@ export function ARPetMode({ petName = 'Your Pet', petType, onClose }: ARPetModeP
 
     checkWebXRSupport();
   }, []);
+
+  if (arModuleError || !ARCanvas || !XRButton) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900 p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full bg-gray-800 rounded-lg p-6 text-center"
+        >
+          <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">AR Feature Unavailable</h2>
+          <p className="text-gray-300 mb-4">
+            AR features are currently unavailable due to a compatibility issue with the AR library.
+          </p>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Close
+            </button>
+          )}
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isChecking) {
     return (
@@ -191,7 +261,18 @@ export function ARPetMode({ petName = 'Your Pet', petType, onClose }: ARPetModeP
         </button>
       )}
 
-      {/* AR Canvas */}
+      {/* AR Canvas - Temporarily disabled due to compatibility issues */}
+      {/* TODO: Re-enable when @react-three/xr is updated to support Three.js 0.181.2 */}
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="text-center text-white">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
+          <h2 className="text-2xl font-bold mb-2">AR Feature Temporarily Unavailable</h2>
+          <p className="text-gray-300 mb-4">
+            The AR feature requires a library update to be compatible with the current version of Three.js.
+          </p>
+        </div>
+      </div>
+      {/*
       <ARCanvas
         style={{ width: '100%', height: '100%' }}
         camera={{ position: [0, 1.6, 0], fov: 50 }}
@@ -208,8 +289,10 @@ export function ARPetMode({ petName = 'Your Pet', petType, onClose }: ARPetModeP
           </Suspense>
         </XR>
       </ARCanvas>
+      */}
 
-      {/* AR Button Overlay */}
+      {/* AR Button Overlay - Temporarily disabled */}
+      {/*
       {!isARActive && (
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
           <XRButton
@@ -225,6 +308,7 @@ export function ARPetMode({ petName = 'Your Pet', petType, onClose }: ARPetModeP
           </XRButton>
         </div>
       )}
+      */}
 
       {/* Instructions */}
       {isARActive && (

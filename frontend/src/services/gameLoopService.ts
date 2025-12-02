@@ -68,7 +68,7 @@ class GameLoopService {
 
     // Run immediately on start (catches up on missed time)
     this.runGameLoop().catch(err => {
-      logger.error('Error in initial game loop run', { userId, error: err }, err);
+      logger.error('Error in initial game loop run', { userId, error: err }, err instanceof Error ? err : undefined);
     });
 
     // Set up periodic execution
@@ -152,7 +152,7 @@ class GameLoopService {
       this.lastRunTime = now;
       logger.debug('Game loop completed', { userId: this.userId });
     } catch (error) {
-      logger.error('Error in game loop', { userId: this.userId, error }, error);
+      logger.error('Error in game loop', { userId: this.userId, error }, error instanceof Error ? error : undefined);
     } finally {
       this.isRunning = false;
     }
@@ -182,7 +182,7 @@ class GameLoopService {
 
       return data;
     } catch (error) {
-      logger.error('Error loading pet for game loop', { userId: this.userId, error }, error);
+      logger.error('Error loading pet for game loop', { userId: this.userId, error }, error instanceof Error ? error : undefined);
       return null;
     }
   }
@@ -255,7 +255,7 @@ class GameLoopService {
         .in('status', ['pending', 'in_progress']);
 
       if (error) {
-        logger.error('Error loading quests for progression', { userId, error }, error);
+        logger.error('Error loading quests for progression', { userId, error }, error instanceof Error ? error : undefined);
         return;
       }
 
@@ -290,7 +290,7 @@ class GameLoopService {
         }
       }
     } catch (error) {
-      logger.error('Error updating quest progression', { userId, error }, error);
+      logger.error('Error updating quest progression', { userId, error }, error instanceof Error ? error : undefined);
     }
   }
 
@@ -323,7 +323,7 @@ class GameLoopService {
         coins: coinsToAward,
       });
     } catch (error) {
-      logger.error('Error awarding idle coins', { userId, error }, error);
+      logger.error('Error awarding idle coins', { userId, error }, error instanceof Error ? error : undefined);
     }
   }
 

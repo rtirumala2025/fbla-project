@@ -146,7 +146,7 @@ export const Shop = () => {
       
       // Suggest going to inventory to use items
       setTimeout(() => {
-        toast.info('Visit your inventory to use items on your pet!', { duration: 5000 });
+        toast.info('Visit your inventory to use items on your pet!', 5000);
       }, 2000);
     } catch (error: any) {
       console.error('❌ Shop: Error processing purchase:', error);

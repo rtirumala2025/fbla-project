@@ -5,15 +5,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { UserPlus, Check, X, Users, UserCheck, Clock } from 'lucide-react';
+import { UserPlus, Check, X, Users, UserCheck, Clock, Trash2 } from 'lucide-react';
 import { 
   getFriends, 
   sendFriendRequest, 
   respondToFriendRequest,
+  removeFriend,
   type FriendsListResponse,
   type FriendListEntry 
 } from '../../api/social';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { AddFriendModal } from './AddFriendModal';
 
 interface FriendsListProps {
   userId?: string;
@@ -24,6 +26,7 @@ export function FriendsList({ userId }: FriendsListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const loadFriends = async () => {
     try {
@@ -66,6 +69,21 @@ export function FriendsList({ userId }: FriendsListProps) {
     }
   };
 
+  const handleRemoveFriend = async (friendId: string) => {
+    if (!window.confirm('Are you sure you want to remove this friend?')) {
+      return;
+    }
+    try {
+      setProcessing(friendId);
+      await removeFriend(friendId);
+      await loadFriends();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove friend');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -87,21 +105,39 @@ export function FriendsList({ userId }: FriendsListProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Friends Section */}
-      {friendsData.friends.length > 0 && (
-        <section>
-          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <UserCheck className="w-5 h-5" />
-            Friends ({friendsData.friends.length})
-          </h3>
-          <div className="space-y-2">
-            {friendsData.friends.map((friend) => (
-              <FriendCard key={friend.id} friend={friend} />
-            ))}
-          </div>
-        </section>
-      )}
+    <>
+      <div className="space-y-6">
+        {/* Header with Add Friend Button */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-900">Friends</h2>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Add Friend</span>
+          </button>
+        </div>
+
+        {/* Friends Section */}
+        {friendsData.friends.length > 0 && (
+          <section>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <UserCheck className="w-5 h-5" />
+              Friends ({friendsData.friends.length})
+            </h3>
+            <div className="space-y-2">
+              {friendsData.friends.map((friend) => (
+                <FriendCard 
+                  key={friend.id} 
+                  friend={friend} 
+                  onRemove={() => handleRemoveFriend(friend.counterpart_user_id)}
+                  processing={processing === friend.counterpart_user_id}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
       {/* Pending Incoming Requests */}
       {friendsData.pending_incoming.length > 0 && (
@@ -139,29 +175,50 @@ export function FriendsList({ userId }: FriendsListProps) {
         </section>
       )}
 
-      {/* Empty State */}
-      {friendsData.total_count === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>No friends yet. Start adding friends to see them here!</p>
-        </div>
-      )}
-    </div>
+        {/* Empty State */}
+        {friendsData.total_count === 0 && friendsData.pending_incoming.length === 0 && friendsData.pending_outgoing.length === 0 && (
+          <div className="text-center py-12 text-gray-500">
+            <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>No friends yet. Start adding friends to see them here!</p>
+          </div>
+        )}
+      </div>
+
+      {/* Add Friend Modal */}
+      <AddFriendModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onFriendRequestSent={() => {
+          loadFriends();
+          setShowAddModal(false);
+        }}
+      />
+    </>
   );
 }
 
-function FriendCard({ friend, isPending }: { friend: FriendListEntry; isPending?: boolean }) {
+function FriendCard({ 
+  friend, 
+  isPending, 
+  onRemove,
+  processing 
+}: { 
+  friend: FriendListEntry; 
+  isPending?: boolean;
+  onRemove?: () => void;
+  processing?: boolean;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-1">
         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
           <Users className="w-5 h-5 text-blue-600" />
         </div>
-        <div>
+        <div className="flex-1">
           <p className="font-medium text-gray-900">
             {friend.profile?.display_name || `User ${friend.counterpart_user_id.slice(0, 8)}`}
           </p>
@@ -173,12 +230,25 @@ function FriendCard({ friend, isPending }: { friend: FriendListEntry; isPending?
           )}
         </div>
       </div>
-      {friend.profile && (
-        <div className="text-right">
-          <p className="text-sm font-medium text-gray-900">{friend.profile.total_xp} XP</p>
-          <p className="text-xs text-gray-500">{friend.profile.total_coins} coins</p>
-        </div>
-      )}
+      <div className="flex items-center gap-4">
+        {friend.profile && (
+          <div className="text-right">
+            <p className="text-sm font-medium text-gray-900">{friend.profile.total_xp} XP</p>
+            <p className="text-xs text-gray-500">{friend.profile.total_coins} coins</p>
+          </div>
+        )}
+        {onRemove && !isPending && (
+          <button
+            onClick={onRemove}
+            disabled={processing}
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 transition-colors"
+            aria-label="Remove friend"
+            title="Remove friend"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </motion.div>
   );
 }

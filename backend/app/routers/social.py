@@ -114,3 +114,85 @@ async def get_leaderboard(
         LeaderboardResponse with ranked entries
     """
     return await service.get_leaderboard(user_id, metric, limit)
+
+
+@router.post("/accept", response_model=FriendsListResponse)
+async def accept_friend_request(
+    payload: FriendRespondPayload,
+    user_id: str = Depends(get_current_user_id),
+    service: SocialService = Depends(get_social_service),
+) -> FriendsListResponse:
+    """
+    Accept a friend request (convenience endpoint).
+    
+    Args:
+        payload: FriendRespondPayload with request_id
+        
+    Returns:
+        FriendsListResponse with updated friendship list
+    """
+    return await service.respond_to_friend_request(user_id, payload.request_id, 'accept')
+
+
+@router.post("/reject", response_model=FriendsListResponse)
+async def reject_friend_request(
+    payload: FriendRespondPayload,
+    user_id: str = Depends(get_current_user_id),
+    service: SocialService = Depends(get_social_service),
+) -> FriendsListResponse:
+    """
+    Reject a friend request (convenience endpoint).
+    
+    Args:
+        payload: FriendRespondPayload with request_id
+        
+    Returns:
+        FriendsListResponse with updated friendship list
+    """
+    return await service.respond_to_friend_request(user_id, payload.request_id, 'decline')
+
+
+@router.post("/remove", response_model=FriendsListResponse)
+async def remove_friend(
+    payload: FriendRequestPayload,
+    user_id: str = Depends(get_current_user_id),
+    service: SocialService = Depends(get_social_service),
+) -> FriendsListResponse:
+    """
+    Remove a friend (bidirectional deletion).
+    
+    Args:
+        payload: FriendRequestPayload with friend_id
+        
+    Returns:
+        FriendsListResponse with updated friendship list
+    """
+    return await service.remove_friend(user_id, payload.friend_id)
+
+
+@router.get("/requests/incoming", response_model=FriendsListResponse)
+async def get_incoming_requests(
+    user_id: str = Depends(get_current_user_id),
+    service: SocialService = Depends(get_social_service),
+) -> FriendsListResponse:
+    """
+    Get only incoming friend requests.
+    
+    Returns:
+        FriendsListResponse with pending_incoming populated
+    """
+    return await service.get_incoming_requests(user_id)
+
+
+@router.get("/requests/outgoing", response_model=FriendsListResponse)
+async def get_outgoing_requests(
+    user_id: str = Depends(get_current_user_id),
+    service: SocialService = Depends(get_social_service),
+) -> FriendsListResponse:
+    """
+    Get only outgoing friend requests.
+    
+    Returns:
+        FriendsListResponse with pending_outgoing populated
+    """
+    return await service.get_outgoing_requests(user_id)

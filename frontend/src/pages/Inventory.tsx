@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePet } from '../context/PetContext';
-import { getInventory, useItem } from '../api/finance';
+import { getInventory, useItem as useItemFunction } from '../api/finance';
 import type { InventoryEntry } from '../types/finance';
 
 const categoryIcons: Record<string, React.ReactNode> = {
@@ -71,7 +71,7 @@ export const Inventory = () => {
     setUsingItem(item.item_id);
 
     try {
-      const response = await useItem({
+      const response = await useItemFunction({
         item_id: item.item_id,
         quantity,
         pet_id: pet.id,
