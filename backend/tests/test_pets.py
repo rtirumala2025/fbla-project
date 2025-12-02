@@ -263,4 +263,3 @@ def test_action_logic_marks_illness():
     updated_pet, _, diary_entry = service._apply_action(pet, PetAction.rest, PetActionRequest(duration_hours=1))
     assert updated_pet.stats.is_sick is True
     assert diary_entry is not None
-*** End Patch
