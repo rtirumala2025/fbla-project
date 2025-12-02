@@ -129,8 +129,8 @@ export async function completeQuest(questId: string): Promise<QuestCompletionRes
   });
 }
 
-export async function claimQuestReward(questId: string): Promise<QuestCompletionResponse> {
-  return apiRequest<QuestCompletionResponse>('/api/quests/claim-reward', {
+export async function claimQuestReward(questId: string): Promise<import('../types/quests').QuestClaimResponse> {
+  return apiRequest<import('../types/quests').QuestClaimResponse>('/api/quests/claim-reward', {
     method: 'POST',
     body: JSON.stringify({ quest_id: questId }),
   });

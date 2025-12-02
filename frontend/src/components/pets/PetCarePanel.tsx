@@ -463,6 +463,7 @@ export function PetCarePanel() {
         </div>
       </section>
     </div>
+    </>
   );
 }
 
