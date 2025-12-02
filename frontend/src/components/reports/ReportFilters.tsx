@@ -50,6 +50,7 @@ export const ReportFilters: React.FC<Props> = ({ onFiltersChange, initialFilters
         selectedMetrics,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate, selectedMetrics, loading, onFiltersChange]);
 
   const handleMetricToggle = (metricKey: string) => {

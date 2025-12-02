@@ -5,7 +5,7 @@
 import React, { useMemo } from 'react';
 import ExpensePieChart from '../analytics/ExpensePieChart';
 import TrendChart from '../analytics/TrendChart';
-import type { AnalyticsSnapshot, ReportFilters, TrendSeries } from '../../types/analytics';
+import type { AnalyticsSnapshot, ReportFilters } from '../../types/analytics';
 
 interface Props {
   snapshot: AnalyticsSnapshot | null;

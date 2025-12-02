@@ -3,34 +3,34 @@
  * Allows users to view their virtual pet in augmented reality
  */
 
-import React, { Suspense, useState, useEffect, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useState, useEffect } from 'react';
 import { Text } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import { X, Loader2, AlertCircle } from 'lucide-react';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 // Dynamically import AR components to handle compatibility issues
 let ARCanvas: any = null;
 let XRButton: any = null;
-let DefaultXRControllers: any = null;
-let Hands: any = null;
-let useHitTest: any = null;
-let XR: any = null;
+// AR components are loaded dynamically but not currently used due to compatibility issues
+// let DefaultXRControllers: any = null;
+// let Hands: any = null;
+// let useHitTest: any = null;
+// let XR: any = null;
 let useXR: any = null;
 
 // Try to load AR module, but don't fail if it's not available
 if (typeof window !== 'undefined') {
   try {
     // Use dynamic import to avoid build-time errors
-    import('@react-three/xr').then((xrModule) => {
-      ARCanvas = xrModule.ARCanvas;
-      XRButton = xrModule.XRButton;
-      DefaultXRControllers = xrModule.DefaultXRControllers;
-      Hands = xrModule.Hands;
-      useHitTest = xrModule.useHitTest;
-      XR = xrModule.XR;
-      useXR = xrModule.useXR;
+    import('@react-three/xr').then((xrModule: any) => {
+      ARCanvas = xrModule.ARCanvas || xrModule.default?.ARCanvas;
+      XRButton = xrModule.XRButton || xrModule.default?.XRButton;
+      // AR components are loaded but not currently used due to compatibility issues
+      // DefaultXRControllers = xrModule.DefaultXRControllers || xrModule.default?.DefaultXRControllers;
+      // Hands = xrModule.Hands || xrModule.default?.Hands;
+      // useHitTest = xrModule.useHitTest || xrModule.default?.useHitTest;
+      // XR = xrModule.XR || xrModule.default?.XR;
+      useXR = xrModule.useXR || xrModule.default?.useXR;
     }).catch((error) => {
       console.warn('@react-three/xr not available:', error);
     });
@@ -65,9 +65,9 @@ function PetModel({ position = [0, 0, 0] }: { position?: [number, number, number
 // AR Hit Test Component - places pet in real world space
 // Temporarily disabled due to AR module compatibility issues
 function ARPetPlacement({ petName }: { petName?: string }) {
-  const [placed, setPlaced] = useState(false);
-  const [petPosition, setPetPosition] = useState<[number, number, number]>([0, 0, -1]);
-  const petRef = useRef<any>(null);
+  const [placed] = useState(false);
+  const [petPosition] = useState<[number, number, number]>([0, 0, -1]);
+  // const petRef = useRef<any>(null); // Unused due to AR being disabled
 
   // useHitTest is temporarily disabled
   /*
@@ -130,24 +130,21 @@ function ARSessionTracker({ onSessionChange }: { onSessionChange: (isActive: boo
   return null;
 }
 
-// Main AR Scene Component
-function ARScene({ petName, onSessionChange }: { petName?: string; onSessionChange: (isActive: boolean) => void }) {
-  return (
-    <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
-      <ARPetPlacement petName={petName} />
-      {/* Temporarily disabled due to AR module compatibility issues */}
-      {/* <DefaultXRControllers /> */}
-      {/* <Hands /> */}
-      <ARSessionTracker onSessionChange={onSessionChange} />
-    </>
-  );
-}
+// Main AR Scene Component (currently unused due to AR being disabled)
+// function ARScene({ petName, onSessionChange }: { petName?: string; onSessionChange: (isActive: boolean) => void }) {
+//   return (
+//     <>
+//       <ambientLight intensity={0.5} />
+//       <directionalLight position={[10, 10, 5]} intensity={1} />
+//       <ARPetPlacement petName={petName} />
+//       <ARSessionTracker onSessionChange={onSessionChange} />
+//     </>
+//   );
+// }
 
 export function ARPetMode({ petName = 'Your Pet', petType, onClose }: ARPetModeProps) {
   const [isSupported, setIsSupported] = useState<boolean | null>(null);
-  const [isARActive, setIsARActive] = useState(false);
+  // const [isARActive, setIsARActive] = useState(false); // Unused - AR is disabled
   const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [arModuleError, setArModuleError] = useState<boolean>(false);
@@ -310,8 +307,8 @@ export function ARPetMode({ petName = 'Your Pet', petType, onClose }: ARPetModeP
       )}
       */}
 
-      {/* Instructions */}
-      {isARActive && (
+      {/* Instructions - AR is currently disabled */}
+      {/* {isARActive && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -319,7 +316,7 @@ export function ARPetMode({ petName = 'Your Pet', petType, onClose }: ARPetModeP
         >
           Point your device at a flat surface to place your pet in AR
         </motion.div>
-      )}
+      )} */}
     </div>
   );
 }

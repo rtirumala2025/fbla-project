@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DollarSign, TrendingUp, AlertTriangle, CheckCircle, BookOpen, ArrowRight } from 'lucide-react';
+import { CheckCircle, BookOpen, ArrowRight } from 'lucide-react';
 import { apiRequest } from '../../api/httpClient';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
@@ -133,6 +133,7 @@ export function FinanceSimulator() {
   useEffect(() => {
     // Auto-generate initial scenario
     generateScenario(selectedScenarioType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading && !scenario) {

@@ -4,9 +4,9 @@
  * Dismissed steps are persisted in IndexedDB
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { X, ChevronRight, ChevronLeft } from 'lucide-react';
-import { indexedDBStorage, IndexedDBStorage } from '../utils/indexedDBStorage';
+import { useLocation } from 'react-router-dom';
+import { X, ChevronRight } from 'lucide-react';
+import { indexedDBStorage } from '../utils/indexedDBStorage';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Tooltip {
@@ -295,17 +295,17 @@ export const TooltipGuide: React.FC<TooltipGuideProps> = ({
     }
   }, [activeTooltip]);
 
-  // Reset all tooltips (for testing or user reset)
-  const resetAllTooltips = useCallback(async () => {
-    try {
-      if (indexedDBStorage.isSupported()) {
-        await indexedDBStorage.resetAllTooltips();
-      }
-      setDismissedTooltips(new Set());
-    } catch (error) {
-      console.error('Failed to reset tooltips:', error);
-    }
-  }, []);
+  // Reset all tooltips function is exposed via useTooltipGuide hook
+  // const resetAllTooltips = useCallback(async () => {
+  //   try {
+  //     if (indexedDBStorage.isSupported()) {
+  //       await indexedDBStorage.resetAllTooltips();
+  //     }
+  //     setDismissedTooltips(new Set());
+  //   } catch (error) {
+  //     console.error('Failed to reset tooltips:', error);
+  //   }
+  // }, []);
 
   if (!enabled || isLoading || !activeTooltip) {
     return null;

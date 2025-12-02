@@ -7,15 +7,13 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
   Legend,
 } from 'recharts';
-import type { CostForecast, ForecastDataPoint } from '../../types/analytics';
+import type { CostForecast } from '../../types/analytics';
 
 interface Props {
   forecast: CostForecast;

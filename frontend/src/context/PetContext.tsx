@@ -194,7 +194,8 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           }
           
           if (error && error.code !== 'PGRST116') {
-            lastError = error;
+            // Store error for debugging (intentionally unused)
+            // lastError = error;
           } else {
             // No pet found - not an error
             setPet(null);
@@ -203,7 +204,8 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
             return;
           }
         } catch (retryErr) {
-          lastError = retryErr;
+          // Store last error for debugging but don't use it
+          // lastError = retryErr;
         }
       }
       

@@ -70,6 +70,7 @@ export function FriendsList({ userId }: FriendsListProps) {
   };
 
   const handleRemoveFriend = async (friendId: string) => {
+    // eslint-disable-next-line no-restricted-globals
     if (!window.confirm('Are you sure you want to remove this friend?')) {
       return;
     }

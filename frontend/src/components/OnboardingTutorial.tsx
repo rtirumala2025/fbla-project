@@ -4,8 +4,8 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import Joyride, { CallBackProps, STATUS, Step, EVENTS, ACTIONS } from 'react-joyride';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { X, RotateCcw } from 'lucide-react';
+// Removed unused imports: useNavigate, useLocation
+import { RotateCcw } from 'lucide-react';
 import { indexedDBStorage, IndexedDBStorage } from '../utils/indexedDBStorage';
 
 const TUTORIAL_ID = 'main-onboarding-tutorial';
@@ -141,8 +141,6 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   // Load saved progress from IndexedDB
   useEffect(() => {
@@ -246,11 +244,11 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
     [saveProgress, onComplete, onSkip]
   );
 
-  // Manual start function
-  const startTutorial = useCallback(() => {
-    setStepIndex(0);
-    setRun(true);
-  }, []);
+  // Manual start function (exposed via useOnboardingTutorial hook)
+  // const startTutorial = useCallback(() => {
+  //   setStepIndex(0);
+  //   setRun(true);
+  // }, []);
 
   // Restart tutorial (reset progress)
   const restartTutorial = useCallback(async () => {
