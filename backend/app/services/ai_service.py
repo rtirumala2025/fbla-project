@@ -103,7 +103,7 @@ class AIService:
             session = await self._context_mgr.get_or_create_session(session_id=session_id, create_if_missing=False)
 
         # Extract conversation history in OpenAI message format
-        history_messages = []
+        history_messages: List[Dict[str, Any]] = []
         if self._context_mgr is not None and MessageRole is not None:
             history_messages = (session.to_openai_format() if session else [])  # type: ignore[assignment]
 

@@ -6,7 +6,7 @@ import json
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import httpx
 from asyncpg import Pool
@@ -67,7 +67,7 @@ class PetArtService:
     def _build_palette(self, accessories: Sequence[Dict[str, str]]) -> Dict[str, str]:
         palette: Dict[str, str] = {}
         for accessory in accessories:
-            color_palette = accessory.get("color_palette", {})
+            color_palette: Any = accessory.get("color_palette", {})
             if isinstance(color_palette, dict):
                 for mood, color in color_palette.items():
                     palette.setdefault(mood, color)

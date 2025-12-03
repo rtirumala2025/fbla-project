@@ -63,7 +63,7 @@ class PetMoodForecastService:
         """Prepare data for AI analysis."""
         # Analyze interaction patterns
         recent_interactions = interaction_history[-10:] if len(interaction_history) > 10 else interaction_history
-        interaction_patterns = {}
+        interaction_patterns: Dict[str, int] = {}
         for interaction in recent_interactions:
             action = interaction.get("action", "unknown")
             interaction_patterns[action] = interaction_patterns.get(action, 0) + 1

@@ -35,7 +35,7 @@ class PetService:
         seasonal_service: Optional[SeasonalReactionsService] = None,
     ) -> None:
         self._pool = pool
-        self._column_map: Optional[Dict[str, str]] = None
+        self._column_map: Optional[Dict[str, Optional[str]]] = None
         self._ai_service = ai_service
         self._seasonal_service = seasonal_service
 
@@ -106,7 +106,7 @@ class PetService:
             assert columns is not None
             color_column = columns["color"]
             # Check for timestamp columns for stat decay calculations
-            timestamp_columns = []
+            timestamp_columns: list[str] = []
             row_check = await connection.fetchrow(
                 """
                 SELECT column_name
@@ -203,7 +203,7 @@ class PetService:
             assert columns is not None
             color_column = columns["color"]
             insert_fields = ["user_id", "name", "species", "breed"]
-            values = [user_id, payload.name, payload.species, payload.breed]
+            values: list[Any] = [user_id, payload.name, payload.species, payload.breed]
             placeholders = ["$1", "$2", "$3", "$4"]
             idx = 5
             if color_column:
