@@ -578,8 +578,8 @@ export function PetGameScene() {
   // Combined loading state - only show loading if pet context is still loading
   const loading = petLoading;
 
-  // Derived values
-  const petSpecies = pet?.species || 'default';
+  // Derived values - normalize species to lowercase for sprite lookup
+  const petSpecies = (pet?.species || 'default').toLowerCase();
   const petName = pet?.name || 'Your Pet';
   const currentMood = stats?.mood || pet?.stats?.mood || 'content';
 
@@ -791,7 +791,7 @@ export function PetGameScene() {
   // Loading state
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-purple-900/50 to-slate-900 flex items-center justify-center">
+      <div className="fixed inset-0 top-[120px] bg-gradient-to-b from-slate-900 via-purple-900/50 to-slate-900 flex items-center justify-center">
         <motion.div
           className="text-center"
           initial={{ opacity: 0, scale: 0.9 }}
@@ -814,7 +814,7 @@ export function PetGameScene() {
   // No pet state
   if (!pet) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-purple-900/50 to-slate-900 flex items-center justify-center">
+      <div className="fixed inset-0 top-[120px] bg-gradient-to-b from-slate-900 via-purple-900/50 to-slate-900 flex items-center justify-center">
         <motion.div
           className="text-center max-w-md px-6"
           initial={{ opacity: 0, scale: 0.9 }}
@@ -842,7 +842,7 @@ export function PetGameScene() {
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
+    <div className="fixed inset-0 top-[120px] overflow-hidden">
       {/* ========== ENVIRONMENT BACKGROUND ========== */}
       <div className="absolute inset-0">
         {/* Base gradient */}
@@ -947,7 +947,7 @@ export function PetGameScene() {
 
       {/* ========== TOP-LEFT HUD: STATS ========== */}
       <motion.div
-        className="fixed top-4 left-4 z-30 p-4 rounded-2xl bg-black/30 backdrop-blur-xl border border-white/10 shadow-2xl"
+        className="absolute top-4 left-4 z-30 p-4 rounded-2xl bg-black/30 backdrop-blur-xl border border-white/10 shadow-2xl"
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2 }}
@@ -986,7 +986,7 @@ export function PetGameScene() {
 
       {/* ========== TOP-RIGHT HUD: COINS ========== */}
       <motion.div
-        className="fixed top-4 right-4 z-30"
+        className="absolute top-4 right-4 z-30"
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.3 }}
@@ -1043,7 +1043,7 @@ export function PetGameScene() {
       {/* ========== BOTTOM-CENTER: ACTION BUTTONS ========== */}
       <motion.div
         ref={actionButtonsRef}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
@@ -1063,7 +1063,7 @@ export function PetGameScene() {
 
       {/* ========== BOTTOM-RIGHT: AI REACTION ========== */}
       <motion.div
-        className="fixed bottom-24 right-4 z-30 max-w-xs"
+        className="absolute bottom-24 right-4 z-30 max-w-xs"
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.7 }}
@@ -1077,7 +1077,7 @@ export function PetGameScene() {
 
       {/* ========== RIGHT SIDE: DIARY TOGGLE ========== */}
       <motion.button
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-30 w-10 h-24 rounded-l-xl bg-black/30 backdrop-blur-xl border border-white/10 border-r-0 flex items-center justify-center text-white/60 hover:text-white hover:bg-black/50 transition-all"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-10 h-24 rounded-l-xl bg-black/30 backdrop-blur-xl border border-white/10 border-r-0 flex items-center justify-center text-white/60 hover:text-white hover:bg-black/50 transition-all"
         onClick={() => setDiaryOpen(true)}
         whileHover={{ x: -5 }}
         initial={{ opacity: 0, x: 20 }}
@@ -1098,7 +1098,7 @@ export function PetGameScene() {
       <AnimatePresence>
         {error && (
           <motion.div
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl bg-rose-500/90 backdrop-blur-xl border border-rose-400/50 shadow-2xl"
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl bg-rose-500/90 backdrop-blur-xl border border-rose-400/50 shadow-2xl"
             initial={{ opacity: 0, y: -20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
@@ -1124,7 +1124,7 @@ export function PetGameScene() {
       <AnimatePresence>
         {notifications.length > 0 && (
           <motion.div
-            className="fixed top-24 left-4 z-40 max-w-sm"
+            className="absolute top-24 left-4 z-40 max-w-sm"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
@@ -1149,7 +1149,7 @@ export function PetGameScene() {
 
       {/* ========== PET NAME BADGE ========== */}
       <motion.div
-        className="fixed bottom-32 left-1/2 -translate-x-1/2 z-20"
+        className="absolute bottom-32 left-1/2 -translate-x-1/2 z-20"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.9 }}
