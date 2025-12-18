@@ -557,11 +557,26 @@ export function PetGameScene() {
     if (pet?.stats) {
       setStats(pet.stats);
       setDataLoading(false);
+    } else if (!petLoading && !pet) {
+      // No pet found after loading completed
+      setDataLoading(false);
     }
-  }, [pet?.stats]);
+  }, [pet?.stats, pet, petLoading]);
 
-  // Combined loading state
-  const loading = petLoading || (dataLoading && !stats);
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (dataLoading) {
+        console.warn('Pet game loading timeout - forcing display');
+        setDataLoading(false);
+      }
+    }, 5000); // 5 second timeout
+    
+    return () => clearTimeout(timeout);
+  }, [dataLoading]);
+
+  // Combined loading state - only show loading if pet context is still loading
+  const loading = petLoading;
 
   // Derived values
   const petSpecies = pet?.species || 'default';
@@ -747,22 +762,31 @@ export function PetGameScene() {
     }
   }, [updateFromAction, refreshBalance, soundEnabled, addFloatingText]);
 
-  // Calculate computed stats
+  // Calculate computed stats - use pet.stats as fallback
   const computedStats = useMemo(() => {
-    if (!stats) return null;
+    const currentStats = stats || pet?.stats;
+    if (!currentStats) {
+      // Return defaults if no stats available yet
+      return {
+        happiness: 50,
+        health: 50,
+        energy: 50,
+        cleanliness: 50,
+      };
+    }
     
-    const hygiene = stats.hygiene ?? stats.cleanliness ?? 60;
-    const happiness = stats.happiness ?? Math.round(
-      ((stats.hunger ?? 50) * 0.25 + hygiene * 0.20 + (stats.energy ?? 50) * 0.25 + (stats.health ?? 50) * 0.30)
+    const hygiene = currentStats.hygiene ?? currentStats.cleanliness ?? 60;
+    const happiness = currentStats.happiness ?? Math.round(
+      ((currentStats.hunger ?? 50) * 0.25 + hygiene * 0.20 + (currentStats.energy ?? 50) * 0.25 + (currentStats.health ?? 50) * 0.30)
     );
     
     return {
       happiness,
-      health: stats.health ?? 50,
-      energy: stats.energy ?? 50,
+      health: currentStats.health ?? 50,
+      energy: currentStats.energy ?? 50,
       cleanliness: hygiene,
     };
-  }, [stats]);
+  }, [stats, pet?.stats]);
 
   // Loading state
   if (loading) {
@@ -782,6 +806,36 @@ export function PetGameScene() {
           </motion.div>
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-white/60">Waking up your pet...</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // No pet state
+  if (!pet) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-purple-900/50 to-slate-900 flex items-center justify-center">
+        <motion.div
+          className="text-center max-w-md px-6"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <motion.div
+            className="text-8xl mb-6"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            🥚
+          </motion.div>
+          <h2 className="text-2xl font-bold text-white mb-3">No Pet Found</h2>
+          <p className="text-white/60 mb-6">You don't have a pet yet! Create one to start playing.</p>
+          <a
+            href="/pet-selection"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg"
+          >
+            <span>🎉</span>
+            Create Your Pet
+          </a>
         </motion.div>
       </div>
     );
