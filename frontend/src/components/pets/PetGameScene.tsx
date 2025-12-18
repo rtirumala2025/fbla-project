@@ -15,7 +15,6 @@ import {
   Gamepad2, 
   Bath, 
   Moon,
-  ChevronRight,
   ChevronLeft,
   X,
   Volume2,

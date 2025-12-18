@@ -163,14 +163,16 @@ export async function fetchCoachAdvice(): Promise<CoachAdviceResponse> {
   // This feature can be implemented later if needed
   console.warn('Coach endpoint not available, returning basic advice');
   return {
-    advice: 'Keep taking good care of your pet! Remember to feed, play, and bathe regularly.',
-    tips: [
-      'Check your pet\'s stats daily',
-      'Complete quests to earn rewards',
-      'Save coins for special items',
-      'Maintain a balanced care routine',
+    mood: 'happy',
+    difficulty_hint: 'normal',
+    summary: 'Keep taking good care of your pet! Remember to feed, play, and bathe regularly.',
+    suggestions: [
+      { category: 'care', recommendation: 'Check your pet\'s stats daily' },
+      { category: 'quest', recommendation: 'Complete quests to earn rewards' },
+      { category: 'activity', recommendation: 'Save coins for special items' },
+      { category: 'motivation', recommendation: 'You\'re doing great! Keep up the excellent pet care!' },
     ],
-    encouragement: 'You\'re doing great! Keep up the excellent pet care!',
+    generated_at: new Date().toISOString(),
   };
 }
 
