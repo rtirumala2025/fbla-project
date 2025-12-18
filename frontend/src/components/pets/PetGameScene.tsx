@@ -112,6 +112,10 @@ const PET_SPRITES: Record<string, string> = {
   rabbit: '🐰',
   fox: '🦊',
   dragon: '🐉',
+  panda: '🐼',
+  hamster: '🐹',
+  fish: '🐠',
+  turtle: '🐢',
   default: '🐾',
 };
 
@@ -582,6 +586,18 @@ export function PetGameScene() {
   const petSpecies = (pet?.species || 'default').toLowerCase();
   const petName = pet?.name || 'Your Pet';
   const currentMood = stats?.mood || pet?.stats?.mood || 'content';
+  
+  // Debug logging for pet sprite
+  useEffect(() => {
+    if (pet) {
+      console.log('Pet Game Scene - Pet data:', {
+        species: pet.species,
+        normalizedSpecies: petSpecies,
+        spriteAvailable: PET_SPRITES[petSpecies] ? 'yes' : 'no (using default)',
+        sprite: PET_SPRITES[petSpecies] || PET_SPRITES.default
+      });
+    }
+  }, [pet, petSpecies]);
 
   // Helper functions
   const getEvolutionStage = useCallback((level: number): string => {
