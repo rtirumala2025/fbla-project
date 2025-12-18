@@ -268,3 +268,42 @@ export async function parsePetAICommand(payload: { command_text: string }): Prom
   }
 }
 
+// Pet interaction endpoint - unified endpoint for all pet actions
+export interface PetInteractRequest {
+  session_id?: string;
+  action: string;
+  message?: string;
+}
+
+export interface PetInteractResponse {
+  session_id: string;
+  message: string;
+  mood: string;
+  pet_state: {
+    health?: number;
+    hunger?: number;
+    happiness?: number;
+    cleanliness?: number;
+    energy?: number;
+    mood?: string;
+    level?: number;
+    xp?: number;
+    last_updated?: string;
+    [key: string]: unknown;
+  };
+  notifications: string[];
+  health_forecast?: {
+    trend?: string;
+    risk?: string;
+    recommended_actions?: string[];
+    [key: string]: unknown;
+  };
+}
+
+export async function interactWithPet(payload: PetInteractRequest): Promise<PetInteractResponse> {
+  return apiRequest<PetInteractResponse>('/api/pet/interact', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
