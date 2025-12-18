@@ -51,6 +51,7 @@ const ARPetModePage = lazy(() => import('./pages/ar/ARPetModePage').then(m => ({
 const HabitPredictionPage = lazy(() => import('./pages/habits/HabitPredictionPage').then(m => ({ default: m.HabitPredictionPage })));
 const FinanceSimulatorPage = lazy(() => import('./pages/finance_sim/FinanceSimulatorPage').then(m => ({ default: m.FinanceSimulatorPage })));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const PetGameScreen = lazy(() => import('./pages/PetGameScreen').then(m => ({ default: m.PetGameScreen })));
 
 // Page transition wrapper component with Suspense for lazy loading
 const PageTransition = ({ children }: { children: React.ReactNode }) => {
@@ -287,6 +288,7 @@ function AppContent() {
             {/* Protected routes - require authentication */}
             <Route path="/dashboard" element={<ProtectedRoute><PageTransition><DashboardPage /></PageTransition></ProtectedRoute>} />
             <Route path="/game" element={<ProtectedRoute><PageTransition><GameUI /></PageTransition></ProtectedRoute>} />
+            <Route path="/pet-game" element={<ProtectedRoute><PageTransition><PetGameScreen /></PageTransition></ProtectedRoute>} />
             <Route path="/shop" element={<ProtectedRoute><PageTransition><Shop /></PageTransition></ProtectedRoute>} />
             <Route path="/inventory" element={<ProtectedRoute><PageTransition><Inventory /></PageTransition></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><PageTransition><ProfilePage /></PageTransition></ProtectedRoute>} />
