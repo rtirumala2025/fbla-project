@@ -224,6 +224,43 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
 
+  // Handle chunk load errors - automatically reload page when chunks fail to load
+  // This happens when webpack chunks are stale (e.g., after a new build)
+  React.useEffect(() => {
+    const handleChunkError = (event: ErrorEvent) => {
+      const error = event.error;
+      if (
+        error &&
+        (error.name === 'ChunkLoadError' ||
+          (error.message && error.message.includes('Loading chunk') && error.message.includes('failed')))
+      ) {
+        console.warn('Chunk load error detected, reloading page...', error);
+        // Reload the page to fetch fresh chunks
+        window.location.reload();
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      if (
+        reason &&
+        (reason.name === 'ChunkLoadError' ||
+          (reason.message && reason.message.includes('Loading chunk') && reason.message.includes('failed')))
+      ) {
+        console.warn('Chunk load error detected in promise rejection, reloading page...', reason);
+        // Reload the page to fetch fresh chunks
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('error', handleChunkError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    return () => {
+      window.removeEventListener('error', handleChunkError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
   return (
     <PetProvider userId={currentUser?.uid || null}>
       <PetAutoSync />
