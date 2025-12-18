@@ -117,7 +117,7 @@ export interface PetDiaryEntry {
   id: string;
   entry_text?: string; // Optional for backward compatibility
   note?: string; // Backend uses 'note' field
-  mood: string; // Backend requires 'mood' field
+  mood?: string; // Backend provides 'mood' but may be optional in some responses
   created_at: string;
 }
 

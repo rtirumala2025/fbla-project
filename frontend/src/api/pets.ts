@@ -199,7 +199,12 @@ export async function getPetStats(): Promise<PetStats> {
 }
 
 export async function getPetDiary(): Promise<PetDiaryEntry[]> {
-  return apiRequest<PetDiaryEntry[]>(`${BASE_PATH}/diary`);
+  const response = await apiRequest<PetDiaryEntry[]>(`${BASE_PATH}/diary`);
+  // Ensure all entries have required fields with defaults
+  return response.map(entry => ({
+    ...entry,
+    mood: entry.mood || 'unknown',
+  }));
 }
 
 export async function addDiaryEntry(payload: PetDiaryCreateRequest): Promise<PetDiaryEntry> {

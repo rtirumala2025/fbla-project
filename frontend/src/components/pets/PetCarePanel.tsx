@@ -453,7 +453,7 @@ export function PetCarePanel() {
             {diary.map((entry) => (
               <li key={entry.id} className="rounded-md border border-slate-100 bg-slate-50 p-3">
                 <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span className="font-semibold capitalize">Mood: {entry.mood}</span>
+                  <span className="font-semibold capitalize">Mood: {entry.mood || 'unknown'}</span>
                   <span>{dayjs(entry.created_at).format('MMM D, h:mm A')}</span>
                 </div>
                 <p className="mt-2 text-slate-700">{entry.note || entry.entry_text || 'No note recorded.'}</p>
