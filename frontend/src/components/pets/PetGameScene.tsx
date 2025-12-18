@@ -20,7 +20,7 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { bathePetAction, feedPetAction, getPetDiary, getPetStats, playWithPet, restPetAction } from '../../api/pets';
+import { bathePetAction, feedPetAction, getPetDiary, playWithPet, restPetAction } from '../../api/pets';
 import type { PetActionResponse, PetDiaryEntry, PetStats } from '../../types/pet';
 import { usePet } from '../../context/PetContext';
 import { useFinancial } from '../../context/FinancialContext';
@@ -529,12 +529,16 @@ const ReactionBubble: React.FC<{
 // ============================================================================
 
 export function PetGameScene() {
+  // Get pet from context - this is the source of truth
+  const { pet, loading: petLoading, error: petError } = usePet();
+  const { balance, refreshBalance } = useFinancial();
+
   // State
   const [stats, setStats] = useState<PetStats | null>(null);
   const [diary, setDiary] = useState<PetDiaryEntry[]>([]);
   const [reaction, setReaction] = useState<string>('');
   const [notifications, setNotifications] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<CareAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showEvolution, setShowEvolution] = useState(false);
@@ -547,14 +551,22 @@ export function PetGameScene() {
   const prevStatsRef = useRef<PetStats | null>(null);
   const prevBalanceRef = useRef<number>(0);
   const actionButtonsRef = useRef<HTMLDivElement>(null);
-  
-  const { pet } = usePet();
-  const { balance, refreshBalance } = useFinancial();
+
+  // Sync stats from pet context
+  useEffect(() => {
+    if (pet?.stats) {
+      setStats(pet.stats);
+      setDataLoading(false);
+    }
+  }, [pet?.stats]);
+
+  // Combined loading state
+  const loading = petLoading || (dataLoading && !stats);
 
   // Derived values
   const petSpecies = pet?.species || 'default';
   const petName = pet?.name || 'Your Pet';
-  const currentMood = stats?.mood || 'content';
+  const currentMood = stats?.mood || pet?.stats?.mood || 'content';
 
   // Helper functions
   const getEvolutionStage = useCallback((level: number): string => {
@@ -657,53 +669,40 @@ export function PetGameScene() {
     prevBalanceRef.current = balance;
   }, [balance, addFloatingText]);
 
-  // Load data
-  const loadCareData = useCallback(async () => {
+  // Load diary data (stats come from pet context)
+  const loadDiaryData = useCallback(async () => {
     try {
-      setLoading(true);
       setError(null);
-
-      const [fetchedStats, fetchedDiary] = await Promise.all([getPetStats(), getPetDiary()]);
-
-      if (prevStatsRef.current && fetchedStats) {
-        checkEvolution(prevStatsRef.current, fetchedStats);
-      }
-      prevStatsRef.current = fetchedStats;
-      
-      setStats(fetchedStats);
+      const fetchedDiary = await getPetDiary();
       setDiary(fetchedDiary);
-      setNotifications([]);
-      
+      setDataLoading(false);
       await refreshBalance();
     } catch (err: any) {
-      console.error('Failed to load pet care data:', err);
-      let message = 'Unable to load pet care data.';
-      
-      if (err instanceof Error) {
-        message = err.message;
-      } else if (err?.status === 0 || err?.message?.includes('Network error')) {
-        message = 'Network error: Unable to connect. Please check your connection.';
-      } else if (err?.status === 401) {
-        message = 'Please log in again.';
-      } else if (err?.status === 404) {
-        message = 'Pet not found. Please create a pet first.';
-      }
-      
-      setError(message);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load diary data:', err);
+      // Don't block on diary errors - just log and continue
+      setDataLoading(false);
     }
-  }, [refreshBalance, checkEvolution]);
+  }, [refreshBalance]);
 
+  // Load diary when pet is available
   useEffect(() => {
-    loadCareData();
-    
-    const refreshInterval = setInterval(() => {
-      loadCareData().catch(() => {});
-    }, 60000);
+    if (pet) {
+      loadDiaryData();
+      
+      const refreshInterval = setInterval(() => {
+        loadDiaryData().catch(() => {});
+      }, 60000);
 
-    return () => clearInterval(refreshInterval);
-  }, [loadCareData]);
+      return () => clearInterval(refreshInterval);
+    }
+  }, [pet, loadDiaryData]);
+
+  // Handle pet context errors
+  useEffect(() => {
+    if (petError) {
+      setError(petError);
+    }
+  }, [petError]);
 
   // Handle actions
   const handleAction = useCallback(async (action: CareAction) => {
@@ -1056,7 +1055,7 @@ export function PetGameScene() {
               <button
                 onClick={() => {
                   setError(null);
-                  loadCareData();
+                  loadDiaryData();
                 }}
                 className="ml-2 px-3 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-semibold transition-colors"
               >
