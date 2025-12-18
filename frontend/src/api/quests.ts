@@ -173,6 +173,7 @@ export async function fetchCoachAdvice(): Promise<CoachAdviceResponse> {
       { category: 'motivation', recommendation: 'You\'re doing great! Keep up the excellent pet care!' },
     ],
     generated_at: new Date().toISOString(),
+    source: 'heuristic',
   };
 }
 
