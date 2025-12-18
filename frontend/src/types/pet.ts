@@ -82,21 +82,42 @@ export interface PetCreateRequest {
 }
 
 export interface PetActionResponse {
-  success: boolean;
-  message: string;
-  reaction?: string;
-  pet?: {
-    stats?: PetStats & { mood?: string; level?: number; xp?: number; hygiene?: number; is_sick?: boolean };
+  pet: {
+    id: string;
+    name: string;
+    species: string;
+    breed?: string | null;
+    color?: string | null;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+    stats: PetStats & { 
+      mood: string; 
+      level: number; 
+      xp: number; 
+      hygiene: number; 
+      is_sick: boolean;
+      evolution_stage?: string;
+    };
     diary?: PetDiaryEntry[];
+    seasonal_state?: unknown;
   };
-  notifications?: string[];
+  reaction: string;
+  mood: string;
+  notifications: string[];
+  health_forecast?: {
+    trend?: string;
+    risk?: string;
+    recommended_actions?: string[];
+    [key: string]: unknown;
+  };
 }
 
 export interface PetDiaryEntry {
   id: string;
-  entry_text: string;
-  note?: string;
-  mood?: string;
+  entry_text?: string; // Optional for backward compatibility
+  note?: string; // Backend uses 'note' field
+  mood: string; // Backend requires 'mood' field
   created_at: string;
 }
 

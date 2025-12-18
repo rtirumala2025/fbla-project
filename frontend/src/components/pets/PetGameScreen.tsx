@@ -170,7 +170,7 @@ export function PetGameScreen() {
   }, []);
 
   const updateFromAction = useCallback((response: PetActionResponse) => {
-    if (response.pet?.stats) {
+    if (response.pet && response.pet.stats) {
       const newStats = response.pet.stats as PetStats;
       const oldStats = stats;
       
@@ -190,8 +190,8 @@ export function PetGameScreen() {
     if (response.pet?.diary) {
       setDiary(response.pet.diary);
     }
-    setReaction(response.reaction ?? '');
-    setNotifications(response.notifications ?? []);
+    setReaction(response.reaction || '');
+    setNotifications(response.notifications || []);
   }, [computeHealthSummary, stats, checkEvolution, calculateStatChanges]);
 
   // Track coin changes
@@ -234,10 +234,23 @@ export function PetGameScreen() {
       
       // Refresh balance to track changes
       await refreshBalance();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to load pet care data.';
-      setError(message);
+    } catch (err: any) {
       console.error('Failed to load pet care data:', err);
+      let message = 'Unable to load pet care data.';
+      
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (err?.status === 0 || err?.message?.includes('Network error') || err?.message?.includes('Failed to fetch')) {
+        message = 'Network error: Unable to connect to the backend server. Please ensure the server is running.';
+      } else if (err?.status === 401) {
+        message = 'Authentication error: Please log in again.';
+      } else if (err?.status === 404) {
+        message = 'Pet not found. Please create a pet first.';
+      } else if (err?.data?.detail) {
+        message = err.data.detail;
+      }
+      
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -261,42 +274,57 @@ export function PetGameScreen() {
       try {
         setActionLoading(true);
         setError(null);
+        setReaction('');
         
         // Get current balance before action
         const balanceBefore = balance;
         
+        let response: PetActionResponse;
         switch (action) {
           case 'feed': {
             const foodType = typeof arg === 'string' ? arg : 'standard';
-            const response = await feedPetAction(foodType);
-            updateFromAction(response);
+            response = await feedPetAction(foodType);
             break;
           }
           case 'play': {
             const gameType = typeof arg === 'string' ? arg : 'fetch';
-            const response = await playWithPet(gameType);
-            updateFromAction(response);
+            response = await playWithPet(gameType);
             break;
           }
           case 'bathe': {
-            const response = await bathePetAction();
-            updateFromAction(response);
+            response = await bathePetAction();
             break;
           }
           case 'rest': {
             const duration = typeof arg === 'number' ? arg : 1;
-            const response = await restPetAction(duration);
-            updateFromAction(response);
+            response = await restPetAction(duration);
             break;
           }
           default:
-            break;
+            throw new Error('Unknown action');
         }
+        
+        // Update state from response
+        updateFromAction(response);
         
         // Refresh balance after action to detect coin changes
         await refreshBalance();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Action failed. Please try again.';
+      } catch (err: any) {
+        console.error('Pet action error:', err);
+        let message = 'Action failed. Please try again.';
+        
+        if (err instanceof Error) {
+          message = err.message;
+        } else if (err?.status === 0 || err?.message?.includes('Network error') || err?.message?.includes('Failed to fetch')) {
+          message = 'Network error: Unable to connect to the backend server. Please ensure the server is running.';
+        } else if (err?.status === 401) {
+          message = 'Authentication error: Please log in again.';
+        } else if (err?.status === 404) {
+          message = 'Pet not found. Please create a pet first.';
+        } else if (err?.data?.detail) {
+          message = err.data.detail;
+        }
+        
         setError(message);
       } finally {
         setActionLoading(false);
@@ -317,18 +345,18 @@ export function PetGameScreen() {
     
     // Calculate happiness score (weighted average)
     const happiness = Math.round(
-      (stats.hunger * 0.25 +
+      ((stats.hunger ?? 50) * 0.25 +
        hygiene * 0.20 +
-       stats.energy * 0.25 +
-       stats.health * 0.30)
+       (stats.energy ?? 50) * 0.25 +
+       (stats.health ?? 50) * 0.30)
     );
     
     return [
       { key: 'happiness', label: 'Happiness', value: happiness, isSpecial: true },
-      { key: 'hunger', label: 'Hunger', value: stats.hunger },
+      { key: 'hunger', label: 'Hunger', value: stats.hunger ?? 50 },
       { key: 'hygiene', label: 'Hygiene', value: hygiene },
-      { key: 'energy', label: 'Energy', value: stats.energy },
-      { key: 'health', label: 'Health', value: stats.health },
+      { key: 'energy', label: 'Energy', value: stats.energy ?? 50 },
+      { key: 'health', label: 'Health', value: stats.health ?? 50 },
       { key: 'xp', label: `Level ${level} Progress`, value: progress, isSpecial: true },
     ];
   }, [stats]);
@@ -358,22 +386,8 @@ export function PetGameScreen() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
-        <div className="max-w-md w-full rounded-xl border border-red-200 bg-red-50 p-6 text-red-700">
-          <p className="font-semibold text-lg">Pet care unavailable</p>
-          <p className="mt-2 text-sm">{error}</p>
-          <button
-            className="mt-4 inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-red-700"
-            onClick={() => loadCareData()}
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Show error inline instead of blocking the entire screen
+  // This allows users to retry actions even if initial load failed
 
   return (
     <div className="min-h-screen bg-cream px-4 sm:px-6 py-8 sm:py-12">
@@ -432,6 +446,27 @@ export function PetGameScreen() {
               reaction={reaction}
             />
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="font-semibold text-red-800">Error</p>
+                  <p className="mt-1 text-sm text-red-700">{error}</p>
+                </div>
+                <button
+                  className="ml-4 rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white shadow hover:bg-red-700 transition-colors"
+                  onClick={() => {
+                    setError(null);
+                    loadCareData();
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 p-4">
