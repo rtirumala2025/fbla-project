@@ -237,16 +237,16 @@ export function PetGameScreen() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to load pet care data.';
       setError(message);
+      console.error('Failed to load pet care data:', err);
     } finally {
       setLoading(false);
     }
-  }, [computeHealthSummary, refreshBalance]);
+  }, [computeHealthSummary, refreshBalance, checkEvolution]);
 
   useEffect(() => {
     loadCareData();
-  }, [loadCareData]);
-
-  useEffect(() => {
+    
+    // Set up refresh interval
     const refreshInterval = setInterval(() => {
       loadCareData().catch(() => {
         // Swallow interval errors
@@ -254,7 +254,7 @@ export function PetGameScreen() {
     }, 60000);
 
     return () => clearInterval(refreshInterval);
-  }, []);
+  }, [loadCareData]);
 
   const handleAction = useCallback(
     async (action: CareAction, arg?: string | number) => {
@@ -349,29 +349,34 @@ export function PetGameScreen() {
 
   if (loading) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-indigo-200 bg-indigo-50">
-        <LoadingSpinner size="md" />
+      <div className="min-h-screen bg-cream flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-slate-600">Loading pet care interface...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-700">
-        <p className="font-semibold">Pet care unavailable</p>
-        <p className="mt-2 text-sm">{error}</p>
-        <button
-          className="mt-4 inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-red-700"
-          onClick={() => loadCareData()}
-        >
-          Retry
-        </button>
+      <div className="min-h-screen bg-cream flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+        <div className="max-w-md w-full rounded-xl border border-red-200 bg-red-50 p-6 text-red-700">
+          <p className="font-semibold text-lg">Pet care unavailable</p>
+          <p className="mt-2 text-sm">{error}</p>
+          <button
+            className="mt-4 inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-red-700"
+            onClick={() => loadCareData()}
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-cream px-4 sm:px-6 py-8 sm:py-12">
       {showEvolution && evolutionData && (
         <EvolutionAnimation
           petName="Your Pet"
@@ -397,7 +402,8 @@ export function PetGameScreen() {
         />
       ))}
       
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-6 lg:grid-cols-3">
         <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm lg:col-span-2">
           <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -616,7 +622,8 @@ export function PetGameScreen() {
           </div>
         </section>
       </div>
-    </>
+      </div>
+    </div>
   );
 }
 

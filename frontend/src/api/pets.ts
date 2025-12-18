@@ -5,25 +5,13 @@
  */
 import { apiRequest } from './httpClient';
 import { supabase, isSupabaseMock } from '../lib/supabase';
-import type { Pet, PetStats } from '../types/pet';
+import type { Pet, PetStats, PetActionResponse } from '../types/pet';
 
 // Pet types - using existing pet.ts types and extending as needed
 interface PetActionRequest {
   food_type?: string;
   game_type?: string;
   duration_hours?: number;
-}
-
-interface PetActionResponse {
-  success: boolean;
-  message: string;
-  stats: {
-    health: number;
-    hunger: number;
-    happiness: number;
-    cleanliness: number;
-    energy: number;
-  };
 }
 
 interface PetCreateRequest {
@@ -178,28 +166,28 @@ export async function updatePet(data: PetUpdateRequest): Promise<Pet> {
 }
 
 export async function feedPetAction(foodType: string): Promise<PetActionResponse> {
-  return apiRequest<PetActionResponse>(`${BASE_PATH}/feed`, {
+  return apiRequest<PetActionResponse>(`${BASE_PATH}/actions/feed`, {
     method: 'POST',
     body: JSON.stringify({ food_type: foodType }),
   });
 }
 
 export async function playWithPet(gameType: string): Promise<PetActionResponse> {
-  return apiRequest<PetActionResponse>(`${BASE_PATH}/play`, {
+  return apiRequest<PetActionResponse>(`${BASE_PATH}/actions/play`, {
     method: 'POST',
     body: JSON.stringify({ game_type: gameType }),
   });
 }
 
 export async function bathePetAction(): Promise<PetActionResponse> {
-  return apiRequest<PetActionResponse>(`${BASE_PATH}/bathe`, {
+  return apiRequest<PetActionResponse>(`${BASE_PATH}/actions/bathe`, {
     method: 'POST',
     body: JSON.stringify({} as PetActionRequest),
   });
 }
 
 export async function restPetAction(durationHours: number): Promise<PetActionResponse> {
-  return apiRequest<PetActionResponse>(`${BASE_PATH}/rest`, {
+  return apiRequest<PetActionResponse>(`${BASE_PATH}/actions/rest`, {
     method: 'POST',
     body: JSON.stringify({ duration_hours: durationHours }),
   });

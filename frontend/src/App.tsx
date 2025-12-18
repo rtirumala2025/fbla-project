@@ -51,7 +51,7 @@ const ARPetModePage = lazy(() => import('./pages/ar/ARPetModePage').then(m => ({
 const HabitPredictionPage = lazy(() => import('./pages/habits/HabitPredictionPage').then(m => ({ default: m.HabitPredictionPage })));
 const FinanceSimulatorPage = lazy(() => import('./pages/finance_sim/FinanceSimulatorPage').then(m => ({ default: m.FinanceSimulatorPage })));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage').then(m => ({ default: m.ReportsPage })));
-const PetGameScreen = lazy(() => import('./pages/PetGameScreen').then(m => ({ default: m.PetGameScreen })));
+const PetGameScreen = lazy(() => import('./components/pets/PetGameScreen').then(m => ({ default: m.PetGameScreen })));
 
 // Page transition wrapper component with Suspense for lazy loading
 const PageTransition = ({ children }: { children: React.ReactNode }) => {

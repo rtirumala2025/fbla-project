@@ -10,7 +10,8 @@ import {
   // Coins, // Unused
   RefreshCw,
   ShoppingBag,
-  ChevronUp
+  ChevronUp,
+  Gamepad2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePet } from '../context/PetContext';
@@ -634,6 +635,13 @@ export function DashboardPage() {
             <p className="text-sm text-gray-600">Manage your pet and track progress</p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/pet-game')}
+              className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-white shadow-md transition hover:shadow-lg hover:from-indigo-600 hover:to-purple-600"
+            >
+              <Gamepad2 className="h-4 w-4" />
+              <span>Pet Game</span>
+            </button>
             <button
               onClick={() => navigate('/shop')}
               className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-md transition hover:shadow-lg"
