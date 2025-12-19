@@ -586,18 +586,6 @@ export function PetGameScene() {
   const petSpecies = (pet?.species || 'default').toLowerCase();
   const petName = pet?.name || 'Your Pet';
   const currentMood = stats?.mood || pet?.stats?.mood || 'content';
-  
-  // Debug logging for pet sprite
-  useEffect(() => {
-    if (pet) {
-      console.log('Pet Game Scene - Pet data:', {
-        species: pet.species,
-        normalizedSpecies: petSpecies,
-        spriteAvailable: PET_SPRITES[petSpecies] ? 'yes' : 'no (using default)',
-        sprite: PET_SPRITES[petSpecies] || PET_SPRITES.default
-      });
-    }
-  }, [pet, petSpecies]);
 
   // Helper functions
   const getEvolutionStage = useCallback((level: number): string => {
@@ -880,28 +868,9 @@ export function PetGameScene() {
           }}
         />
         
-        {/* Stars */}
-        <div className="absolute inset-0 overflow-hidden">
-          {Array.from({ length: 50 }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 bg-white rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 60}%`,
-              }}
-              animate={{
-                opacity: [0.2, 0.8, 0.2],
-                scale: [1, 1.5, 1],
-              }}
-              transition={{
-                duration: 2 + Math.random() * 3,
-                repeat: Infinity,
-                delay: Math.random() * 2,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
+        {/* Stars - using CSS animation instead of motion to prevent re-renders */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="stars-container" />
         </div>
         
         {/* Ground/floor gradient */}
@@ -912,28 +881,8 @@ export function PetGameScene() {
           }}
         />
         
-        {/* Ground particles */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 overflow-hidden">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute bottom-0 w-2 h-2 bg-purple-400/30 rounded-full blur-sm"
-              style={{
-                left: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                y: [0, -50, 0],
-                opacity: [0.3, 0.6, 0.3],
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
-        </div>
+        {/* Ground glow effect */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-purple-500/10 to-transparent pointer-events-none" />
       </div>
 
       {/* ========== EVOLUTION ANIMATION ========== */}
