@@ -9,6 +9,7 @@ import { PetAutoSync } from './components/sync/PetAutoSync';
 import { StoreSync } from './components/sync/StoreSync';
 import Header from './components/Header';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import OnboardingTutorial from './components/OnboardingTutorial';
 import TooltipGuide from './components/TooltipGuide';
 import { useGameLoop } from './hooks/useGameLoop';
@@ -51,7 +52,28 @@ const ARPetModePage = lazy(() => import('./pages/ar/ARPetModePage').then(m => ({
 const HabitPredictionPage = lazy(() => import('./pages/habits/HabitPredictionPage').then(m => ({ default: m.HabitPredictionPage })));
 const FinanceSimulatorPage = lazy(() => import('./pages/finance_sim/FinanceSimulatorPage').then(m => ({ default: m.FinanceSimulatorPage })));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage').then(m => ({ default: m.ReportsPage })));
-const PetGameScreen = lazy(() => import('./components/pets/PetGameScreen').then(m => ({ default: m.PetGameScreen })));
+const PetGameScreen = lazy(() => 
+  import('./components/pets/PetGameScreen')
+    .catch(err => {
+      console.error('Failed to load PetGameScreen:', err);
+      // Return a fallback component
+      return { 
+        default: () => (
+          <div className="min-h-screen bg-cream flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-red-600">Failed to load Pet Game. Please refresh the page.</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              >
+                Refresh Page
+              </button>
+            </div>
+          </div>
+        )
+      };
+    })
+);
 
 // Page transition wrapper component with Suspense for lazy loading
 const PageTransition = ({ children }: { children: React.ReactNode }) => {
@@ -288,7 +310,18 @@ function AppContent() {
             {/* Protected routes - require authentication */}
             <Route path="/dashboard" element={<ProtectedRoute><PageTransition><DashboardPage /></PageTransition></ProtectedRoute>} />
             <Route path="/game" element={<ProtectedRoute><PageTransition><GameUI /></PageTransition></ProtectedRoute>} />
-            <Route path="/pet-game" element={<ProtectedRoute><PageTransition><PetGameScreen /></PageTransition></ProtectedRoute>} />
+            <Route 
+              path="/pet-game" 
+              element={
+                <ProtectedRoute>
+                  <PageTransition>
+                    <ErrorBoundary>
+                      <PetGameScreen />
+                    </ErrorBoundary>
+                  </PageTransition>
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/shop" element={<ProtectedRoute><PageTransition><Shop /></PageTransition></ProtectedRoute>} />
             <Route path="/inventory" element={<ProtectedRoute><PageTransition><Inventory /></PageTransition></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><PageTransition><ProfilePage /></PageTransition></ProtectedRoute>} />
