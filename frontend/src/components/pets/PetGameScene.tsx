@@ -868,10 +868,28 @@ export function PetGameScene() {
           }}
         />
         
-        {/* Stars - using CSS animation instead of motion to prevent re-renders */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="stars-container" />
-        </div>
+        {/* Static stars using pseudo-elements - no re-renders */}
+        <div 
+          className="absolute inset-0 overflow-hidden pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(1px 1px at 10% 10%, white 50%, transparent 50%),
+              radial-gradient(1px 1px at 20% 30%, white 50%, transparent 50%),
+              radial-gradient(1px 1px at 35% 15%, white 50%, transparent 50%),
+              radial-gradient(1px 1px at 50% 25%, white 50%, transparent 50%),
+              radial-gradient(1px 1px at 65% 8%, white 50%, transparent 50%),
+              radial-gradient(1px 1px at 80% 35%, white 50%, transparent 50%),
+              radial-gradient(1px 1px at 90% 18%, white 50%, transparent 50%),
+              radial-gradient(1px 1px at 15% 45%, white 50%, transparent 50%),
+              radial-gradient(1px 1px at 45% 40%, white 50%, transparent 50%),
+              radial-gradient(1px 1px at 75% 50%, white 50%, transparent 50%),
+              radial-gradient(2px 2px at 25% 5%, rgba(255,255,255,0.8) 50%, transparent 50%),
+              radial-gradient(2px 2px at 55% 20%, rgba(255,255,255,0.8) 50%, transparent 50%),
+              radial-gradient(2px 2px at 85% 12%, rgba(255,255,255,0.8) 50%, transparent 50%)
+            `,
+            opacity: 0.6,
+          }}
+        />
         
         {/* Ground/floor gradient */}
         <div 
