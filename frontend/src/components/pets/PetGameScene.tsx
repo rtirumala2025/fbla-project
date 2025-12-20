@@ -6,14 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import dayjs from 'dayjs';
 import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
-import { 
-  Heart, 
-  Zap, 
-  Droplets, 
-  Sparkles, 
-  X,
-  Book
-} from 'lucide-react';
+import { X } from 'lucide-react';
 import { bathePetAction, feedPetAction, getPetDiary, playWithPet, restPetAction } from '../../api/pets';
 import type { PetActionResponse, PetDiaryEntry, PetStats } from '../../types/pet';
 import { usePet } from '../../context/PetContext';
@@ -174,12 +167,12 @@ const WORLD_OBJECTS: WorldObject[] = [
 // SUB-COMPONENTS
 // ============================================================================
 
-// Success messages for each action
+// Success messages - short, playful, competition-ready
 const SUCCESS_MESSAGES: Record<CareAction, string[]> = {
-  feed: ['Yummy! 🍖', 'Delicious!', 'So tasty!', 'Nom nom!'],
-  play: ['So fun! 🎾', 'Wheee!', 'Again!', 'Best day!'],
-  bathe: ['So fresh! 🛁', 'Sparkly clean!', 'Squeaky!', 'Shiny!'],
-  rest: ['Zzz... 💤', 'So cozy!', 'Sweet dreams!', 'Relaxing~'],
+  feed: ['Yum! 😋', 'Tasty!', 'Full tummy!', 'Munch munch!'],
+  play: ['Woohoo! 🎉', 'So fun!', 'Best day!', 'Let\'s go!'],
+  bathe: ['Squeaky! ✨', 'So fresh!', 'Sparkly!', 'Clean!'],
+  rest: ['Zzz... 💤', 'So cozy~', 'Sleepy...', 'Dreaming~'],
 };
 
 // Floating particles for action feedback
@@ -219,74 +212,87 @@ const ParticleBurst: React.FC<{
   );
 };
 
-// Success toast that appears after action completes
+// Success toast - appears after action with playful animation
 const SuccessToast: React.FC<{
   indicator: SuccessIndicator;
   onComplete: () => void;
 }> = ({ indicator, onComplete }) => {
   useEffect(() => {
-    const timer = setTimeout(onComplete, 2500);
+    const timer = setTimeout(onComplete, 2000);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
-  const colors: Record<CareAction, string> = {
-    feed: 'from-amber-400 to-orange-500',
-    play: 'from-emerald-400 to-teal-500',
-    bathe: 'from-cyan-400 to-blue-500',
-    rest: 'from-violet-400 to-purple-500',
+  const styles: Record<CareAction, { bg: string; emoji: string }> = {
+    feed: { bg: 'linear-gradient(135deg, #F59E0B, #EA580C)', emoji: '🍖' },
+    play: { bg: 'linear-gradient(135deg, #10B981, #059669)', emoji: '🎉' },
+    bathe: { bg: 'linear-gradient(135deg, #06B6D4, #0284C7)', emoji: '✨' },
+    rest: { bg: 'linear-gradient(135deg, #8B5CF6, #7C3AED)', emoji: '💤' },
   };
+
+  const style = styles[indicator.action];
 
   return (
     <motion.div
-      className={`fixed top-24 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl bg-gradient-to-r ${colors[indicator.action]} text-white font-bold text-lg shadow-2xl`}
-      initial={{ opacity: 0, y: -30, scale: 0.8 }}
+      className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full text-white font-bold text-base shadow-xl"
+      style={{ 
+        background: style.bg,
+        boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+      }}
+      initial={{ opacity: 0, y: -25, scale: 0.85 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.9 }}
-      transition={{ type: 'spring', damping: 15, stiffness: 200 }}
+      exit={{ opacity: 0, y: -15, scale: 0.9 }}
+      transition={{ type: 'spring', damping: 18, stiffness: 250 }}
     >
       <div className="flex items-center gap-2">
         <motion.span
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 0.5, repeat: 2 }}
+          animate={{ rotate: [0, -10, 10, 0] }}
+          transition={{ duration: 0.4, repeat: 2 }}
         >
-          ✨
+          {style.emoji}
         </motion.span>
-        {indicator.message}
-        <motion.span
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 0.5, repeat: 2, delay: 0.2 }}
-        >
-          ✨
-        </motion.span>
+        <span>{indicator.message}</span>
       </div>
     </motion.div>
   );
 };
 
-// Clean stat bar for HUD
+// Refined stat bar for HUD - cleaner, more playful
 const StatBar: React.FC<{ 
   value: number; 
-  icon: React.ReactNode; 
+  emoji: string;
   color: string;
   label: string;
-}> = ({ value, icon, color, label }) => {
+}> = ({ value, emoji, color, label }) => {
   const clampedValue = Math.min(100, Math.max(0, value));
+  const isLow = clampedValue < 30;
+  const isCritical = clampedValue < 15;
   
   return (
-    <div className="flex items-center gap-2" title={`${label}: ${Math.round(clampedValue)}%`}>
-      <div 
-        className="w-7 h-7 rounded-lg flex items-center justify-center text-white shadow-md"
-        style={{ backgroundColor: color }}
+    <div 
+      className="flex items-center gap-2 group" 
+      title={`${label}: ${Math.round(clampedValue)}%`}
+    >
+      {/* Emoji icon with pulse when low */}
+      <motion.span 
+        className="text-base select-none"
+        animate={isCritical ? { scale: [1, 1.2, 1] } : {}}
+        transition={isCritical ? { duration: 0.5, repeat: Infinity } : {}}
       >
-        {icon}
-      </div>
-      <div className="w-20 h-2.5 bg-white/10 rounded-full overflow-hidden">
+        {emoji}
+      </motion.span>
+      
+      {/* Bar container */}
+      <div className="w-16 h-2 bg-white/10 rounded-full overflow-hidden relative">
+        {/* Fill bar with smooth transition */}
           <motion.div
           className="h-full rounded-full"
-          style={{ backgroundColor: color }}
+          style={{ 
+            backgroundColor: isLow ? '#F87171' : color,
+            boxShadow: isLow ? '0 0 8px rgba(248, 113, 113, 0.5)' : 'none',
+          }}
             initial={{ width: 0 }}
           animate={{ width: `${clampedValue}%` }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
           />
         </div>
       </div>
@@ -362,18 +368,18 @@ const InteractiveObject: React.FC<{
       
       {/* Main emoji with secondary companion */}
       <div className="relative">
-        <span 
+      <span 
           className="relative select-none block"
-          style={{ 
+        style={{ 
             filter: isHovered 
               ? `drop-shadow(0 0 16px ${zoneColor.glow})` 
               : 'drop-shadow(0 3px 4px rgba(0,0,0,0.25))',
             transition: 'filter 0.2s ease',
-          }}
-        >
-          {object.emoji}
-        </span>
-        
+        }}
+      >
+        {object.emoji}
+      </span>
+      
         {/* Secondary emoji - companion object */}
         {object.secondaryEmoji && (
           <span 
@@ -403,7 +409,7 @@ const InteractiveObject: React.FC<{
               }}
             >
               {object.description}
-            </div>
+    </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -589,16 +595,23 @@ const PetCharacter: React.FC<{
         }}
       />
 
-      {/* Name badge */}
+      {/* Name badge - clean and readable */}
       <motion.div
-        className="mt-2 px-5 py-2 rounded-full bg-slate-900/80 backdrop-blur-sm border border-white/20 shadow-xl"
-        initial={{ opacity: 0, y: 20 }}
+        className="mt-3 px-4 py-1.5 rounded-full backdrop-blur-md"
+        style={{
+          background: 'linear-gradient(135deg, rgba(15,23,42,0.85), rgba(30,41,59,0.85))',
+          border: '1px solid rgba(255,255,255,0.15)',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+        }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.4, type: 'spring', stiffness: 150 }}
       >
-        <span className="text-white font-bold text-lg">{name}</span>
+        <span className="text-white font-bold text-base">{name}</span>
         {level && (
-          <span className="ml-2 text-amber-400 text-sm font-semibold">Lv.{level}</span>
+          <span className="ml-2 text-amber-400 text-xs font-bold bg-amber-400/10 px-1.5 py-0.5 rounded-full">
+            Lv.{level}
+          </span>
         )}
       </motion.div>
     </div>
@@ -660,7 +673,7 @@ const RoomDecorations: React.FC = () => {
               <div className="bg-sky-100/30 rounded-tr-lg" />
             </div>
             {/* Sun - very subtle */}
-            <motion.div
+      <motion.div
               className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-yellow-200/80"
               animate={{ opacity: [0.6, 0.9, 0.6] }}
               transition={{ duration: 3, repeat: Infinity }}
@@ -669,12 +682,12 @@ const RoomDecorations: React.FC = () => {
           {/* Window sill */}
           <div className="w-32 h-1.5 bg-amber-600/60 rounded-b -mt-0.5 mx-auto" />
         </div>
-      </div>
-
+        </div>
+        
       {/* Central spotlight for pet - defines the main stage */}
-      <div 
+        <div 
         className="absolute bottom-[20%] left-1/2 -translate-x-1/2 w-56 h-16 rounded-full z-0"
-        style={{
+          style={{
           background: 'radial-gradient(ellipse, rgba(255,255,255,0.15) 0%, transparent 65%)',
         }}
       />
@@ -684,17 +697,17 @@ const RoomDecorations: React.FC = () => {
       <div className="absolute left-[8%] bottom-[18%] text-lg opacity-40 z-0">
         🥣
       </div>
-      
+
       {/* Rest zone decoration */}
       <div className="absolute right-[8%] bottom-[18%] text-lg opacity-40 z-0">
         ⭐
       </div>
-      
+
       {/* Play zone decoration */}
       <div className="absolute right-[8%] top-[35%] text-lg opacity-40 z-0">
         🎈
       </div>
-      
+
       {/* Clean zone decoration */}
       <div className="absolute left-[8%] top-[35%] text-lg opacity-40 z-0">
         💧
@@ -1250,86 +1263,91 @@ export function PetGameScene() {
 
       {/* ========== TOP-LEFT HUD: STATS ========== */}
       <motion.div
-        className="absolute top-4 left-4 z-30 p-3 rounded-2xl shadow-2xl"
+        className="absolute top-3 left-3 z-30 px-3 py-2.5 rounded-2xl shadow-xl backdrop-blur-sm"
         style={{ 
           backgroundColor: COLORS.hudBg,
           border: `1px solid ${COLORS.hudBorder}`,
+          boxShadow: `0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 ${COLORS.hudGlow}`,
         }}
-        initial={{ opacity: 0, x: -50 }}
+        initial={{ opacity: 0, x: -30 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.3, type: 'spring', stiffness: 150 }}
       >
-        <div className="space-y-2">
+        <div className="space-y-1.5">
               <StatBar
                 label="Happiness"
                 value={computedStats.happiness}
-            icon={<Sparkles className="w-3.5 h-3.5" />}
+            emoji="😊"
             color="#FBBF24"
               />
               <StatBar
                 label="Health"
                 value={computedStats.health}
-            icon={<Heart className="w-3.5 h-3.5" />}
-            color="#F87171"
+            emoji="❤️"
+            color="#FB7185"
               />
               <StatBar
                 label="Energy"
                 value={computedStats.energy}
-            icon={<Zap className="w-3.5 h-3.5" />}
+            emoji="⚡"
             color="#4ADE80"
               />
               <StatBar
                 label="Clean"
                 value={computedStats.cleanliness}
-            icon={<Droplets className="w-3.5 h-3.5" />}
+            emoji="✨"
             color="#38BDF8"
               />
         </div>
       </motion.div>
 
-      {/* ========== TOP-RIGHT HUD: COINS ========== */}
+      {/* ========== TOP-RIGHT HUD: COINS & ACTIONS ========== */}
       <motion.div
-        className="absolute top-4 right-4 z-30"
-        initial={{ opacity: 0, x: 50 }}
+        className="absolute top-3 right-3 z-30"
+        initial={{ opacity: 0, x: 30 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.4, type: 'spring', stiffness: 150 }}
       >
-        <div className="flex items-center gap-3">
-          {/* Diary button */}
+        <div className="flex items-center gap-2">
+          {/* Diary button - compact */}
           <motion.button
             onClick={() => setDiaryOpen(true)}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white/70 hover:text-white transition-colors"
+            className="w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-sm"
             style={{ 
               backgroundColor: COLORS.hudBg,
               border: `1px solid ${COLORS.hudBorder}`,
+              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
             }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.08, backgroundColor: 'rgba(30, 41, 59, 0.95)' }}
+            whileTap={{ scale: 0.94 }}
+            title="Pet Diary"
           >
-            <Book className="w-5 h-5" />
+            <span className="text-base">📔</span>
           </motion.button>
           
-          {/* Coin counter - Roblox style pill */}
+          {/* Coin counter - polished Roblox-style */}
           <motion.div
-            className="flex items-center gap-2 px-4 py-2 rounded-full shadow-xl"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm"
             style={{ 
-              backgroundColor: COLORS.hudBg,
+              background: 'linear-gradient(135deg, rgba(15,23,42,0.92), rgba(30,41,59,0.92))',
               border: `1px solid ${COLORS.hudBorder}`,
+              boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
             }}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.04 }}
           >
             <motion.span
-              className="text-xl"
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              className="text-lg"
+              animate={{ rotateY: [0, 360] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
               🪙
             </motion.span>
             <motion.span
               key={balance}
-              className="text-lg font-bold text-amber-400"
-              initial={{ scale: 1.3 }}
-              animate={{ scale: 1 }}
+              className="text-base font-bold text-amber-400 tabular-nums"
+              initial={{ scale: 1.2, color: '#86EFAC' }}
+              animate={{ scale: 1, color: '#FBBF24' }}
+              transition={{ duration: 0.4 }}
             >
               {balance.toLocaleString()}
             </motion.span>
@@ -1338,19 +1356,29 @@ export function PetGameScene() {
       </motion.div>
 
       {/* ========== BOTTOM INSTRUCTION HINT ========== */}
+      <AnimatePresence>
+        {showZoneLabels && (
         <motion.div
         className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20"
-        initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1 }}
-      >
-        <div 
-          className="px-4 py-2 rounded-full text-white/60 text-sm font-medium"
-          style={{ backgroundColor: COLORS.hudBg }}
-        >
-          Click objects in the room to interact with your pet! 🎮
-        </div>
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ delay: 1.2, duration: 0.4 }}
+          >
+            <motion.div 
+              className="px-4 py-2 rounded-full text-white text-sm font-semibold backdrop-blur-sm"
+              style={{ 
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9))',
+                boxShadow: '0 4px 15px rgba(99,102,241,0.3)',
+              }}
+              animate={{ y: [0, -3, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              Tap the objects to care for your pet! 🐾
       </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ========== DIARY PANEL ========== */}
       <DiaryPanel
