@@ -371,7 +371,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     // Mock authentication for development
-    if (process.env.REACT_APP_USE_MOCK === 'true') {
+    if (getEnv('USE_MOCK', 'false') === 'true') {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -400,7 +400,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, displayName: string) => {
     // Mock authentication for development
-    if (process.env.REACT_APP_USE_MOCK === 'true') {
+    if (getEnv('USE_MOCK', 'false') === 'true') {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -464,7 +464,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🔵 AuthContext: Google sign-in initiated');
     
     // Mock authentication for development
-    if (process.env.REACT_APP_USE_MOCK === 'true') {
+    if (getEnv('USE_MOCK', 'false') === 'true') {
       console.log('🔧 Mock mode: Simulating Google sign-in');
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -487,14 +487,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔵 AuthContext: Initiating Google OAuth');
       console.log('  Current origin:', window.location.origin);
       console.log('  Redirect URL:', redirectUrl);
-      console.log('  Supabase URL:', process.env.REACT_APP_SUPABASE_URL || 'Not configured');
+      console.log('  Supabase URL:', getEnv('SUPABASE_URL') || 'Not configured');
       
       // Check if Supabase is properly configured
-      if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
+      if (!getEnv('SUPABASE_URL') || !getEnv('SUPABASE_ANON_KEY')) {
         throw new Error(
           'Supabase is not configured. Please check your environment variables:\n' +
-          '- REACT_APP_SUPABASE_URL\n' +
-          '- REACT_APP_SUPABASE_ANON_KEY\n' +
+          '- VITE_SUPABASE_URL (or REACT_APP_SUPABASE_URL)\n' +
+          '- VITE_SUPABASE_ANON_KEY (or REACT_APP_SUPABASE_ANON_KEY)\n' +
           '\nAlso ensure Google OAuth is enabled in Supabase Dashboard.'
         );
       }

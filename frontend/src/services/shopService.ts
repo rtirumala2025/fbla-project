@@ -1,16 +1,8 @@
 import type { Database } from '../types/database.types';
+import { supabase } from '../lib/supabase';
+import { getEnv } from '../utils/env';
 
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
-
-// Import supabase only when not in mock mode
-let supabase: any = null;
-if (!useMock) {
-  try {
-    supabase = require('../lib/supabase').supabase;
-  } catch (error) {
-    console.warn('Failed to import supabase, using mock mode');
-  }
-}
+const useMock = getEnv('USE_MOCK', 'false') === 'true';
 
 type ShopItem = Database['public']['Tables']['shop_items']['Row'];
 type Transaction = Database['public']['Tables']['transactions']['Insert'];

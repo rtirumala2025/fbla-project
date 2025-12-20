@@ -3,6 +3,7 @@
  * Handles fetching and equipping pet accessories
  */
 import { apiRequest } from './httpClient';
+import { getEnv } from '../utils/env';
 import type {
   Accessory,
   AccessoryEquipPayload,
@@ -11,7 +12,7 @@ import type {
 } from '../types/accessories';
 
 const BASE_PATH = '/api/accessories';
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
+const useMock = getEnv('USE_MOCK', 'false') === 'true';
 
 // Generate mock accessories
 function generateMockAccessories(): Accessory[] {

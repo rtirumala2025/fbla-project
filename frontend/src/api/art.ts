@@ -3,10 +3,11 @@
  * Handles generating pet artwork with accessories
  */
 import { apiRequest } from './httpClient';
+import { getEnv } from '../utils/env';
 import type { ArtGenerationRequest, ArtGenerationResponse } from '../types/art';
 
 const BASE_PATH = '/api/art';
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
+const useMock = getEnv('USE_MOCK', 'false') === 'true';
 
 // Generate mock art (placeholder base64 image - 1x1 transparent pixel)
 const MOCK_IMAGE_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';

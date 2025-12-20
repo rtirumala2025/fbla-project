@@ -3,15 +3,16 @@
  * Displays a banner when demo mode is available
  * Note: Simplified version - demo mode features may need to be added to AuthContext
  */
-import { useCallback } from 'react';
+import { useCallback, memo } from 'react';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { getEnv } from '../utils/env';
 
-export const DemoModeBanner = () => {
+export const DemoModeBanner = memo(() => {
   const { currentUser } = useAuth();
   
   // Check if we're in demo mode (no Supabase configured)
-  const isDemoMode = !process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY;
+  const isDemoMode = !getEnv('SUPABASE_URL') || !getEnv('SUPABASE_ANON_KEY');
   const isDemoModeActive = isDemoMode && !currentUser;
 
   const handleEnterDemo = useCallback(() => {
@@ -53,6 +54,8 @@ export const DemoModeBanner = () => {
     </div>
   );
 };
+
+DemoModeBanner.displayName = 'DemoModeBanner';
 
 export default DemoModeBanner;
 

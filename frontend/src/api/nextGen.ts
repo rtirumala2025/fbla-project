@@ -3,6 +3,7 @@
  * Handles AI interactions, voice commands, AR, cloud saves, weather, habits, and seasonal events
  */
 import { apiRequest } from './httpClient';
+import { getEnv } from '../utils/env';
 import type {
   ARSessionResponse,
   CloudSaveResponse,
@@ -14,7 +15,7 @@ import type {
 } from '../types/nextGen';
 
 const API_BASE = '/api/nextgen';
-const useMock = process.env.REACT_APP_USE_MOCK === 'true';
+const useMock = getEnv('USE_MOCK', 'false') === 'true';
 
 // Generate mock AR session
 function generateMockARSession(): ARSessionResponse {

@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { supabase } from '../lib/supabase';
+import { getEnv } from '../utils/env';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = getEnv('API_URL', 'http://localhost:8000');
 
 // Create axios instance with default config
 const apiClient = axios.create({
