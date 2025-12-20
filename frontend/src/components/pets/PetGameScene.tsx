@@ -757,10 +757,16 @@ const DiaryPanel: React.FC<{
               
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {diary.length === 0 ? (
-                  <div className="text-center py-12">
-                    <span className="text-4xl mb-3 block">📝</span>
-                    <p className="text-white/60">No diary entries yet.</p>
-                    <p className="text-white/40 text-sm">Interact with your pet to create memories!</p>
+                  <div className="text-center py-10">
+                    <motion.span 
+                      className="text-5xl mb-4 block"
+                      animate={{ rotate: [0, 5, -5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      📝
+                    </motion.span>
+                    <p className="text-white/70 font-medium mb-1">No memories yet!</p>
+                    <p className="text-white/40 text-sm">Care for your pet to write new entries~</p>
                   </div>
                 ) : (
                   diary.map((entry) => (
@@ -1042,65 +1048,87 @@ export function PetGameScene() {
     };
   }, [stats, pet?.stats]);
 
-  // Loading state
+  // Loading state - polished for competition
   if (loading) {
     return (
-      <div className="fixed inset-0 top-[120px] bg-gradient-to-b from-sky-300 via-sky-200 to-amber-100 flex items-center justify-center">
+      <div 
+        className="fixed inset-0 top-[80px] flex items-center justify-center"
+        style={{ 
+          background: `linear-gradient(180deg, ${COLORS.wallTop} 0%, ${COLORS.wallBottom} 60%, ${COLORS.floor} 100%)`,
+        }}
+      >
         <motion.div
           className="text-center"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
           <motion.div
-            className="text-8xl mb-6"
-            animate={{ y: [0, -20, 0] }}
+            className="text-7xl mb-4"
+            animate={{ y: [0, -15, 0], rotate: [0, 5, -5, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           >
             🐾
           </motion.div>
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-slate-600">Waking up your pet...</p>
+          <motion.p 
+            className="mt-4 text-slate-700 font-medium"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            Waking up your pet...
+          </motion.p>
         </motion.div>
       </div>
     );
   }
 
-  // No pet state
+  // No pet state - encouraging and clear
   if (!pet) {
     return (
-      <div className="fixed inset-0 top-[120px] bg-gradient-to-b from-sky-300 via-sky-200 to-amber-100 flex items-center justify-center">
+      <div 
+        className="fixed inset-0 top-[80px] flex items-center justify-center"
+        style={{ 
+          background: `linear-gradient(180deg, ${COLORS.wallTop} 0%, ${COLORS.wallBottom} 60%, ${COLORS.floor} 100%)`,
+        }}
+      >
         <motion.div
-          className="text-center max-w-md px-6"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-sm px-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
         >
           <motion.div
-            className="text-8xl mb-6"
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            className="text-7xl mb-4"
+            animate={{ y: [0, -8, 0], scale: [1, 1.05, 1] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
           >
             🥚
           </motion.div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-3">No Pet Found</h2>
-          <p className="text-slate-600 mb-6">You don't have a pet yet! Create one to start playing.</p>
-          <a
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Ready to meet your pet?</h2>
+          <p className="text-slate-600 text-sm mb-5">Create your companion and start your adventure!</p>
+          <motion.a
             href="/pet-selection"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 text-white font-semibold hover:from-pink-600 hover:to-orange-500 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-bold shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, #FF6B9D, #FFB347)',
+              boxShadow: '0 4px 15px rgba(255, 107, 157, 0.35)',
+            }}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.98 }}
           >
             <span>🎉</span>
-            Create Your Pet
-          </a>
+            Create My Pet
+          </motion.a>
         </motion.div>
       </div>
     );
   }
 
   return (
-        <motion.div
+    <motion.div
       ref={sceneRef}
-      className="fixed inset-0 top-[120px] overflow-hidden"
-      animate={screenShake ? { x: [0, -3, 3, -3, 0] } : {}}
-      transition={{ duration: 0.2 }}
+      className="fixed inset-0 top-[80px] overflow-hidden"
+      animate={screenShake ? { x: [0, -2, 2, -2, 0] } : {}}
+      transition={{ duration: 0.15 }}
     >
       {/* ========== ROOM BACKGROUND ========== */}
       <div className="absolute inset-0">
@@ -1391,20 +1419,24 @@ export function PetGameScene() {
       <AnimatePresence>
         {error && (
           <motion.div
-            className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl bg-rose-500/90 backdrop-blur-xl border border-rose-400/50 shadow-2xl"
-            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full backdrop-blur-lg shadow-xl max-w-xs"
+            style={{
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9))',
+              border: '1px solid rgba(255,255,255,0.2)',
+            }}
+            initial={{ opacity: 0, y: -15, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
           >
-            <div className="flex items-center gap-3 text-white">
-              <span className="text-xl">😿</span>
-              <p className="font-medium">{error}</p>
+            <div className="flex items-center gap-2 text-white">
+              <span className="text-base">😿</span>
+              <p className="text-sm font-medium truncate">{error}</p>
               <button
                 onClick={() => {
                   setError(null);
                   loadDiaryData();
                 }}
-                className="ml-2 px-3 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-semibold transition-colors"
+                className="ml-1 px-2 py-0.5 rounded-full bg-white/20 hover:bg-white/30 text-xs font-bold transition-colors"
               >
                 Retry
               </button>
