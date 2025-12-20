@@ -47,11 +47,18 @@ interface SuccessIndicator {
 
 // Primary palette: Warm, inviting, kid-friendly
 const COLORS = {
-  // Room colors
-  wallTop: '#87CEEB',      // Sky blue
-  wallBottom: '#B8D4E8',   // Lighter blue
-  floor: '#8B7355',        // Warm wood brown
-  floorLight: '#A08060',   // Lighter wood
+  // Room colors - softer, less saturated for background harmony
+  wallTop: '#B4D7E8',      // Soft sky blue (desaturated)
+  wallBottom: '#D4E5EF',   // Very light blue
+  floor: '#C9A87C',        // Warm light wood
+  floorLight: '#D9BC94',   // Lighter wood
+  floorAccent: '#B89A6D',  // Wood grain accent
+  
+  // Zone colors - subtle area highlighting
+  feedZone: 'rgba(255, 183, 71, 0.12)',    // Warm orange tint
+  restZone: 'rgba(167, 139, 250, 0.10)',   // Soft purple tint
+  playZone: 'rgba(74, 222, 128, 0.10)',    // Fresh green tint
+  cleanZone: 'rgba(56, 189, 248, 0.10)',   // Cool cyan tint
   
   // Accent colors
   primary: '#FF6B9D',      // Playful pink
@@ -59,9 +66,10 @@ const COLORS = {
   accent: '#7DD3FC',       // Bright cyan
   success: '#4ADE80',      // Fresh green
   
-  // UI colors
-  hudBg: 'rgba(30, 41, 59, 0.85)',
-  hudBorder: 'rgba(255, 255, 255, 0.1)',
+  // UI colors - refined for clarity
+  hudBg: 'rgba(15, 23, 42, 0.88)',
+  hudBorder: 'rgba(255, 255, 255, 0.08)',
+  hudGlow: 'rgba(99, 102, 241, 0.15)',
 };
 
 // Pet sprites with better visual representation
@@ -96,55 +104,69 @@ const MOOD_EXPRESSIONS: Record<string, { emoji: string; color: string }> = {
 };
 
 // ============================================================================
-// WORLD OBJECTS - Interactive game elements
+// WORLD OBJECTS - Interactive game elements with consistent sizing
 // ============================================================================
 
 interface WorldObject {
   id: CareAction;
   label: string;
   emoji: string;
+  secondaryEmoji?: string; // Companion object for zone grouping
   position: { x: string; y: string };
   size: string;
   description: string;
   actionEmoji: string[];
+  zone: 'feed' | 'rest' | 'play' | 'clean';
 }
+
+// Consistent object sizing: All objects use the same base size (64px)
+// This creates visual harmony and makes the pet the clear focal point
+const OBJECT_SIZE = '64px';
 
 const WORLD_OBJECTS: WorldObject[] = [
   {
     id: 'feed',
     label: 'Food Bowl',
     emoji: '🍖',
-    position: { x: '15%', y: '75%' },
-    size: '80px',
-    description: 'Click to feed!',
-    actionEmoji: ['🍖', '🥩', '🍗', '✨'],
+    secondaryEmoji: '🥣',
+    position: { x: '18%', y: '78%' },
+    size: OBJECT_SIZE,
+    description: 'Tap to feed!',
+    actionEmoji: ['🍖', '🥩', '✨', '💕'],
+    zone: 'feed',
   },
   {
     id: 'rest',
     label: 'Cozy Bed',
     emoji: '🛏️',
-    position: { x: '75%', y: '70%' },
-    size: '100px',
-    description: 'Click for rest!',
+    secondaryEmoji: '🌙',
+    position: { x: '82%', y: '78%' },
+    size: OBJECT_SIZE,
+    description: 'Tap to rest!',
     actionEmoji: ['💤', '😴', '🌙', '⭐'],
+    zone: 'rest',
   },
   {
     id: 'play',
     label: 'Toy Box',
     emoji: '🎾',
-    position: { x: '85%', y: '50%' },
-    size: '70px',
-    description: 'Click to play!',
-    actionEmoji: ['🎾', '🎮', '⚽', '🎪'],
+    secondaryEmoji: '🧸',
+    position: { x: '82%', y: '48%' },
+    size: OBJECT_SIZE,
+    description: 'Tap to play!',
+    actionEmoji: ['🎾', '⭐', '🎉', '💫'],
+    zone: 'play',
   },
   {
     id: 'bathe',
-    label: 'Bath Tub',
+    label: 'Bath Time',
     emoji: '🛁',
-    position: { x: '8%', y: '50%' },
-    size: '85px',
-    description: 'Click to bathe!',
+    secondaryEmoji: '🧼',
+    position: { x: '18%', y: '48%' },
+    size: OBJECT_SIZE,
+    description: 'Tap to bathe!',
     actionEmoji: ['🛁', '🧼', '💧', '✨'],
+    zone: 'clean',
   },
 ];
 
@@ -271,7 +293,7 @@ const StatBar: React.FC<{
   );
 };
 
-// Interactive world object
+// Interactive world object with zone grouping
 const InteractiveObject: React.FC<{
   object: WorldObject;
   onClick: () => void;
@@ -279,6 +301,15 @@ const InteractiveObject: React.FC<{
   isActive: boolean;
 }> = ({ object, onClick, disabled, isActive }) => {
   const [isHovered, setIsHovered] = useState(false);
+
+  // Zone-specific colors for visual grouping
+  const zoneColors = {
+    feed: { bg: COLORS.feedZone, glow: 'rgba(255, 183, 71, 0.5)', border: 'rgba(255, 183, 71, 0.3)' },
+    rest: { bg: COLORS.restZone, glow: 'rgba(167, 139, 250, 0.5)', border: 'rgba(167, 139, 250, 0.3)' },
+    play: { bg: COLORS.playZone, glow: 'rgba(74, 222, 128, 0.5)', border: 'rgba(74, 222, 128, 0.3)' },
+    clean: { bg: COLORS.cleanZone, glow: 'rgba(56, 189, 248, 0.5)', border: 'rgba(56, 189, 248, 0.3)' },
+  };
+  const zoneColor = zoneColors[object.zone];
 
   return (
     <motion.button
@@ -290,7 +321,7 @@ const InteractiveObject: React.FC<{
         absolute transform -translate-x-1/2 -translate-y-1/2
         flex flex-col items-center justify-center
         transition-all duration-200
-        disabled:opacity-50 disabled:cursor-not-allowed
+        disabled:opacity-40 disabled:cursor-not-allowed
         cursor-pointer z-20
         group
       `}
@@ -299,58 +330,96 @@ const InteractiveObject: React.FC<{
         top: object.position.y,
         fontSize: object.size,
       }}
-      whileHover={!disabled ? { scale: 1.15, y: -8 } : {}}
-      whileTap={!disabled ? { scale: 0.95 } : {}}
+      whileHover={!disabled ? { scale: 1.12, y: -6 } : {}}
+      whileTap={!disabled ? { scale: 0.92 } : {}}
       animate={isActive ? { 
-        scale: [1, 1.1, 1],
-        rotate: [0, -5, 5, 0],
+        scale: [1, 1.08, 1],
+        rotate: [0, -3, 3, 0],
       } : {}}
-      transition={isActive ? { duration: 0.5, repeat: Infinity } : {}}
+      transition={isActive ? { duration: 0.4, repeat: Infinity } : { type: 'spring', stiffness: 300 }}
     >
+      {/* Zone mat/platform - subtle area indicator */}
+      <div 
+        className="absolute w-24 h-24 rounded-2xl -z-10 transition-all duration-300"
+        style={{ 
+          background: zoneColor.bg,
+          border: `2px solid ${isHovered ? zoneColor.border : 'transparent'}`,
+          transform: 'translate(-50%, -50%) scale(1.2)',
+          left: '50%',
+          top: '50%',
+        }}
+      />
+
       {/* Glow effect on hover */}
       <motion.div
         className="absolute inset-0 rounded-full blur-xl pointer-events-none"
         style={{ 
-          background: `radial-gradient(circle, ${COLORS.primary}40 0%, transparent 70%)`,
+          background: `radial-gradient(circle, ${zoneColor.glow} 0%, transparent 70%)`,
         }}
-        animate={{ opacity: isHovered ? 1 : 0 }}
+        animate={{ opacity: isHovered ? 0.8 : 0 }}
+        transition={{ duration: 0.2 }}
       />
       
-      {/* Main emoji */}
-      <span 
-        className="relative filter drop-shadow-lg select-none"
-        style={{ 
-          filter: isHovered ? 'drop-shadow(0 0 20px rgba(255,107,157,0.6))' : 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))',
-        }}
-      >
-        {object.emoji}
-      </span>
+      {/* Main emoji with secondary companion */}
+      <div className="relative">
+        <span 
+          className="relative select-none block"
+          style={{ 
+            filter: isHovered 
+              ? `drop-shadow(0 0 16px ${zoneColor.glow})` 
+              : 'drop-shadow(0 3px 4px rgba(0,0,0,0.25))',
+            transition: 'filter 0.2s ease',
+          }}
+        >
+          {object.emoji}
+        </span>
+        
+        {/* Secondary emoji - companion object */}
+        {object.secondaryEmoji && (
+          <span 
+            className="absolute -bottom-1 -right-3 text-[0.45em] opacity-80"
+            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
+          >
+            {object.secondaryEmoji}
+          </span>
+        )}
+      </div>
       
-      {/* Label tooltip */}
+      {/* Label tooltip - playful style */}
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            className="absolute -top-16 left-1/2 -translate-x-1/2 whitespace-nowrap"
-            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap"
+            initial={{ opacity: 0, y: 8, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+            exit={{ opacity: 0, y: 8, scale: 0.9 }}
+            transition={{ duration: 0.15 }}
           >
-            <div className="px-3 py-1.5 rounded-xl bg-slate-900/90 text-white text-sm font-semibold shadow-xl border border-white/10">
+            <div 
+              className="px-3 py-1.5 rounded-full text-white text-sm font-bold shadow-lg"
+              style={{ 
+                background: 'linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.95))',
+                border: `1px solid ${zoneColor.border}`,
+              }}
+            >
               {object.description}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900/90" />
-    </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Loading spinner */}
+      {/* Loading indicator - cleaner pulse */}
       {isActive && (
         <motion.div
           className="absolute inset-0 flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+          <motion.div 
+            className="w-16 h-16 rounded-full border-2 border-white/20"
+            animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.2, 0.5] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+          />
         </motion.div>
       )}
     </motion.button>
@@ -449,9 +518,9 @@ const PetCharacter: React.FC<{
         />
         
         <span 
-          className="text-[140px] sm:text-[180px] md:text-[200px] lg:text-[220px] select-none relative z-10"
+          className="text-[120px] sm:text-[140px] md:text-[160px] lg:text-[180px] select-none relative z-10"
           style={{ 
-            filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
+            filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.25))',
             lineHeight: 1,
           }}
       >
@@ -536,89 +605,55 @@ const PetCharacter: React.FC<{
   );
 };
 
-// Room decorations
+// Room decorations - simplified and subtle to not compete with pet
 const RoomDecorations: React.FC = () => {
   return (
     <>
-      {/* Window with light */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-0">
+      {/* Window with gentle light - smaller and more subtle */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-0 opacity-90">
         <div className="relative">
-          {/* Window frame */}
-          <div className="w-48 h-36 bg-gradient-to-b from-sky-300 to-sky-100 rounded-t-3xl border-4 border-amber-700 shadow-xl overflow-hidden">
+          {/* Window frame - simplified */}
+          <div className="w-32 h-24 bg-gradient-to-b from-sky-200/80 to-sky-100/60 rounded-t-2xl border-2 border-amber-600/60 shadow-md overflow-hidden">
             {/* Window panes */}
-            <div className="absolute inset-2 grid grid-cols-2 gap-1">
-              <div className="bg-sky-200/50 rounded-tl-2xl" />
-              <div className="bg-sky-200/50 rounded-tr-2xl" />
-              <div className="bg-sky-300/50" />
-              <div className="bg-sky-300/50" />
+            <div className="absolute inset-1 grid grid-cols-2 gap-0.5">
+              <div className="bg-sky-100/40 rounded-tl-xl" />
+              <div className="bg-sky-100/40 rounded-tr-xl" />
             </div>
-            {/* Sun */}
-      <motion.div
-              className="absolute top-3 right-3 w-10 h-10 rounded-full bg-yellow-300"
+            {/* Sun - smaller, gentler glow */}
+            <motion.div
+              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-yellow-200"
               animate={{ 
-                boxShadow: [
-                  '0 0 20px rgba(253, 224, 71, 0.5)',
-                  '0 0 40px rgba(253, 224, 71, 0.8)',
-                  '0 0 20px rgba(253, 224, 71, 0.5)',
-                ],
+                opacity: [0.7, 1, 0.7],
               }}
-              transition={{ duration: 2, repeat: Infinity }}
+              transition={{ duration: 3, repeat: Infinity }}
             />
-            {/* Clouds */}
-        <motion.div
-              className="absolute top-6 left-4 text-2xl opacity-80"
-              animate={{ x: [0, 5, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            >
-              ☁️
-        </motion.div>
           </div>
           {/* Window sill */}
-          <div className="w-56 h-4 bg-amber-700 rounded-b -mt-1 mx-auto" />
-          {/* Plant on window sill */}
-          <div className="absolute -bottom-2 right-2 text-3xl">🪴</div>
+          <div className="w-36 h-2 bg-amber-600/70 rounded-b -mt-0.5 mx-auto" />
         </div>
         
-        {/* Light rays from window */}
+        {/* Soft light rays - very subtle */}
         <div 
-          className="absolute top-full left-1/2 -translate-x-1/2 w-64 h-40 pointer-events-none opacity-20"
+          className="absolute top-full left-1/2 -translate-x-1/2 w-40 h-24 pointer-events-none opacity-10"
           style={{
-            background: 'linear-gradient(180deg, rgba(253,224,71,0.3) 0%, transparent 100%)',
-            clipPath: 'polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%)',
+            background: 'linear-gradient(180deg, rgba(253,224,71,0.4) 0%, transparent 100%)',
+            clipPath: 'polygon(35% 0%, 65% 0%, 100% 100%, 0% 100%)',
           }}
         />
       </div>
 
-      {/* Clock on wall */}
-      <div className="absolute top-12 right-12 text-4xl z-0">
+      {/* Wall accents - minimal, non-distracting */}
+      <div className="absolute top-8 right-8 text-xl z-0 opacity-40">
         🕐
       </div>
 
-      {/* Picture frame on wall */}
-      <div className="absolute top-16 left-12 z-0">
-        <div className="w-16 h-20 bg-amber-100 border-4 border-amber-700 rounded shadow-lg flex items-center justify-center">
-          <span className="text-2xl">🖼️</span>
-        </div>
-      </div>
-
-      {/* Rug on floor */}
+      {/* Central floor rug for pet - defines the main interaction area */}
       <div 
-        className="absolute bottom-20 left-1/2 -translate-x-1/2 w-80 h-20 rounded-full z-0"
+        className="absolute bottom-[22%] left-1/2 -translate-x-1/2 w-48 h-12 rounded-full z-0"
         style={{
-          background: 'radial-gradient(ellipse, rgba(255,107,157,0.3) 0%, rgba(255,179,71,0.2) 50%, transparent 100%)',
-          border: '2px dashed rgba(255,107,157,0.3)',
+          background: 'radial-gradient(ellipse, rgba(255,255,255,0.2) 0%, transparent 70%)',
         }}
       />
-
-      {/* Lamp */}
-      <div className="absolute bottom-24 left-[25%] text-4xl z-10 transform -translate-x-1/2">
-        🪔
-      </div>
-
-      {/* Bookshelf hint */}
-      <div className="absolute top-[40%] right-4 text-3xl z-0 opacity-70">
-        📚
-      </div>
     </>
   );
 };
@@ -1002,38 +1037,84 @@ export function PetGameScene() {
     >
       {/* ========== ROOM BACKGROUND ========== */}
       <div className="absolute inset-0">
-        {/* Sky/Wall gradient */}
+        {/* Wall gradient - soft and non-distracting */}
         <div 
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(180deg, ${COLORS.wallTop} 0%, ${COLORS.wallBottom} 60%, ${COLORS.floor} 60%, ${COLORS.floorLight} 100%)`,
+            background: `linear-gradient(180deg, 
+              ${COLORS.wallTop} 0%, 
+              ${COLORS.wallBottom} 55%, 
+              ${COLORS.floor} 55%, 
+              ${COLORS.floorLight} 100%
+            )`,
           }}
         />
         
-        {/* Floor wood pattern */}
+        {/* Floor with subtle wood grain texture */}
         <div 
-          className="absolute bottom-0 left-0 right-0 h-[40%]"
+          className="absolute bottom-0 left-0 right-0 h-[45%]"
           style={{
             background: `
               repeating-linear-gradient(
                 90deg,
                 transparent,
-                transparent 100px,
-                rgba(0,0,0,0.05) 100px,
-                rgba(0,0,0,0.05) 102px
+                transparent 80px,
+                ${COLORS.floorAccent}15 80px,
+                ${COLORS.floorAccent}15 81px
               ),
               linear-gradient(180deg, ${COLORS.floor} 0%, ${COLORS.floorLight} 100%)
             `,
           }}
         />
         
-        {/* Baseboard */}
+        {/* Baseboard - clean divider */}
         <div 
-          className="absolute left-0 right-0 h-4"
+          className="absolute left-0 right-0 h-2"
           style={{
-            top: '60%',
-            background: 'linear-gradient(180deg, #5D4E37 0%, #8B7355 100%)',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            top: '55%',
+            background: 'linear-gradient(180deg, #A08060 0%, #C9A87C 100%)',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+          }}
+        />
+
+        {/* Zone highlight areas - subtle floor mats */}
+        {/* Feed Zone - bottom left */}
+        <div 
+          className="absolute w-28 h-28 rounded-3xl z-[1]"
+          style={{
+            left: '10%',
+            bottom: '12%',
+            background: `radial-gradient(ellipse, ${COLORS.feedZone} 0%, transparent 70%)`,
+          }}
+        />
+        
+        {/* Rest Zone - bottom right */}
+        <div 
+          className="absolute w-28 h-28 rounded-3xl z-[1]"
+          style={{
+            right: '10%',
+            bottom: '12%',
+            background: `radial-gradient(ellipse, ${COLORS.restZone} 0%, transparent 70%)`,
+          }}
+        />
+        
+        {/* Play Zone - upper right */}
+        <div 
+          className="absolute w-28 h-28 rounded-3xl z-[1]"
+          style={{
+            right: '10%',
+            top: '38%',
+            background: `radial-gradient(ellipse, ${COLORS.playZone} 0%, transparent 70%)`,
+          }}
+        />
+        
+        {/* Clean Zone - upper left */}
+        <div 
+          className="absolute w-28 h-28 rounded-3xl z-[1]"
+          style={{
+            left: '10%',
+            top: '38%',
+            background: `radial-gradient(ellipse, ${COLORS.cleanZone} 0%, transparent 70%)`,
           }}
         />
       </div>
