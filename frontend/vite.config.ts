@@ -48,6 +48,8 @@ export default defineConfig({
     
     // Chunk splitting for better caching
     rollupOptions: {
+      // Explicitly set entry point to index.html (which loads main.tsx)
+      input: resolve(__dirname, './index.html'),
       output: {
         manualChunks: {
           // Core React vendor chunk

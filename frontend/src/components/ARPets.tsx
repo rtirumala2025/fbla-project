@@ -10,16 +10,33 @@ import * as THREE from 'three';
 import { Hand, Camera, AlertCircle, CheckCircle } from 'lucide-react';
 import type { Pet } from '../types/pet';
 
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ARPets.tsx:13',message:'ARPets module loading started',data:{hasImport:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+// #endregion
+
 // Conditional import for WebXR
 let ARButton: any = null;
 let useXR: any = null;
-try {
-  const xrModule = require('@react-three/xr');
-  ARButton = xrModule.ARButton;
-  useXR = xrModule.useXR;
-} catch (e) {
-  // WebXR not available, will use fallback
-}
+
+// Dynamically import @react-three/xr using ES module syntax
+(async () => {
+  try {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ARPets.tsx:25',message:'Attempting dynamic import() call',data:{moduleName:'@react-three/xr'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    const xrModule = await import('@react-three/xr');
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ARPets.tsx:28',message:'import() succeeded',data:{hasARButton:!!xrModule.ARButton,hasUseXR:!!xrModule.useXR},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    ARButton = xrModule.ARButton;
+    useXR = xrModule.useXR;
+  } catch (e) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ARPets.tsx:33',message:'import() failed',data:{errorMessage:e instanceof Error?e.message:String(e),errorName:e instanceof Error?e.name:'Unknown',errorStack:e instanceof Error?e.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    // WebXR not available, will use fallback
+  }
+})();
 
 interface ARPetsProps {
   pet: Pet;

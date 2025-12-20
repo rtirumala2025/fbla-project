@@ -10,6 +10,10 @@ import { logger } from './utils/logger';
 import './styles/globals.css';
 import './styles/print.css';
 
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.tsx:12',message:'main.tsx module loading',data:{entryPoint:'main.tsx'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+// #endregion
+
 // Global error handlers
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
