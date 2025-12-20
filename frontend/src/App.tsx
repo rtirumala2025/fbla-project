@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -13,6 +13,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import OnboardingTutorial from './components/OnboardingTutorial';
 import TooltipGuide from './components/TooltipGuide';
 import { useGameLoop } from './hooks/useGameLoop';
+import { preloadCriticalRoutes, preloadRelatedRoutes } from './utils/routePreloader';
+import { isDev } from './utils/env';
 import './styles/globals.css';
 
 // Lazy load all pages for code splitting
@@ -76,6 +78,7 @@ const PetGameScreen = lazy(() =>
 );
 
 // Page transition wrapper component with Suspense for lazy loading
+// Optimized: Skip animations in development for faster iteration
 const PageTransition = ({ children }: { children: React.ReactNode }) => {
   return (
     <Suspense
@@ -85,14 +88,14 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
         </div>
       }
     >
-      {process.env.NODE_ENV === 'development' ? (
+      {isDev() ? (
         <>{children}</>
       ) : (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.1, ease: 'easeInOut' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
         >
           {children}
         </motion.div>
