@@ -5,6 +5,7 @@ import { petService } from '../services/petService';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { onboardingLogger } from '../utils/onboardingLogger';
 import { logger } from '../utils/logger';
+import { getEnv } from '../utils/env';
 
 interface User {
   uid: string;
@@ -88,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkUserProfile = useCallback(async (userId: string): Promise<{ isNew: boolean; hasPet: boolean }> => {
     try {
       onboardingLogger.petCheck('Starting user profile check', { userId });
-      if (process.env.REACT_APP_USE_MOCK === 'true') {
+      if (getEnv('USE_MOCK', 'false') === 'true') {
         // In mock mode, assume user has profile and pet
         onboardingLogger.petCheck('Mock mode: returning default values', { userId });
         return { isNew: false, hasPet: true };
@@ -557,7 +558,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       // Mock sign out for development
-      if (process.env.REACT_APP_USE_MOCK === 'true') {
+      if (getEnv('USE_MOCK', 'false') === 'true') {
         setCurrentUser(null);
         setIsNewUser(false);
         setHasPet(false);

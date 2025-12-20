@@ -250,6 +250,21 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [location.pathname]);
 
+  // Preload critical routes on initial load (after a short delay)
+  useEffect(() => {
+    // Wait for initial render to complete, then preload routes
+    const timer = setTimeout(() => {
+      preloadCriticalRoutes();
+    }, 3000); // 3 second delay to prioritize current page
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Preload related routes when navigating
+  useEffect(() => {
+    preloadRelatedRoutes(location.pathname);
+  }, [location.pathname]);
+
   // Handle chunk load errors - automatically reload page when chunks fail to load
   // This happens when webpack chunks are stale (e.g., after a new build)
   React.useEffect(() => {
