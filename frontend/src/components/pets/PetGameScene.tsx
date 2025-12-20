@@ -605,55 +605,100 @@ const PetCharacter: React.FC<{
   );
 };
 
+// Zone labels that appear on first load to teach gameplay
+const ZoneLabels: React.FC<{ show: boolean }> = ({ show }) => {
+  if (!show) return null;
+
+  const zones = [
+    { label: 'Feed', emoji: '🍖', position: { left: '13%', bottom: '28%' }, color: '#FFB347' },
+    { label: 'Rest', emoji: '💤', position: { right: '13%', bottom: '28%' }, color: '#A78BFA' },
+    { label: 'Play', emoji: '🎾', position: { right: '13%', top: '32%' }, color: '#4ADE80' },
+    { label: 'Clean', emoji: '✨', position: { left: '13%', top: '32%' }, color: '#38BDF8' },
+  ];
+
+  return (
+    <>
+      {zones.map((zone, index) => (
+        <motion.div
+          key={zone.label}
+          className="absolute z-10 pointer-events-none"
+          style={zone.position}
+          initial={{ opacity: 0, scale: 0.8, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.8 + index * 0.15, duration: 0.4 }}
+        >
+          <motion.div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs font-bold shadow-lg"
+            style={{ 
+              background: `linear-gradient(135deg, ${zone.color}ee, ${zone.color}cc)`,
+              border: '1px solid rgba(255,255,255,0.3)',
+            }}
+            animate={{ y: [0, -2, 0] }}
+            transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
+          >
+            <span>{zone.emoji}</span>
+            <span>{zone.label}</span>
+          </motion.div>
+        </motion.div>
+      ))}
+    </>
+  );
+};
+
 // Room decorations - simplified and subtle to not compete with pet
 const RoomDecorations: React.FC = () => {
   return (
     <>
       {/* Window with gentle light - smaller and more subtle */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-0 opacity-90">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-0 opacity-85">
         <div className="relative">
           {/* Window frame - simplified */}
-          <div className="w-32 h-24 bg-gradient-to-b from-sky-200/80 to-sky-100/60 rounded-t-2xl border-2 border-amber-600/60 shadow-md overflow-hidden">
+          <div className="w-28 h-20 bg-gradient-to-b from-sky-200/70 to-sky-100/50 rounded-t-xl border-2 border-amber-600/50 shadow-md overflow-hidden">
             {/* Window panes */}
             <div className="absolute inset-1 grid grid-cols-2 gap-0.5">
-              <div className="bg-sky-100/40 rounded-tl-xl" />
-              <div className="bg-sky-100/40 rounded-tr-xl" />
+              <div className="bg-sky-100/30 rounded-tl-lg" />
+              <div className="bg-sky-100/30 rounded-tr-lg" />
             </div>
-            {/* Sun - smaller, gentler glow */}
+            {/* Sun - very subtle */}
             <motion.div
-              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-yellow-200"
-              animate={{ 
-                opacity: [0.7, 1, 0.7],
-              }}
+              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-yellow-200/80"
+              animate={{ opacity: [0.6, 0.9, 0.6] }}
               transition={{ duration: 3, repeat: Infinity }}
             />
           </div>
           {/* Window sill */}
-          <div className="w-36 h-2 bg-amber-600/70 rounded-b -mt-0.5 mx-auto" />
+          <div className="w-32 h-1.5 bg-amber-600/60 rounded-b -mt-0.5 mx-auto" />
         </div>
-        
-        {/* Soft light rays - very subtle */}
-        <div 
-          className="absolute top-full left-1/2 -translate-x-1/2 w-40 h-24 pointer-events-none opacity-10"
-          style={{
-            background: 'linear-gradient(180deg, rgba(253,224,71,0.4) 0%, transparent 100%)',
-            clipPath: 'polygon(35% 0%, 65% 0%, 100% 100%, 0% 100%)',
-          }}
-        />
       </div>
 
-      {/* Wall accents - minimal, non-distracting */}
-      <div className="absolute top-8 right-8 text-xl z-0 opacity-40">
-        🕐
-      </div>
-
-      {/* Central floor rug for pet - defines the main interaction area */}
+      {/* Central spotlight for pet - defines the main stage */}
       <div 
-        className="absolute bottom-[22%] left-1/2 -translate-x-1/2 w-48 h-12 rounded-full z-0"
+        className="absolute bottom-[20%] left-1/2 -translate-x-1/2 w-56 h-16 rounded-full z-0"
         style={{
-          background: 'radial-gradient(ellipse, rgba(255,255,255,0.2) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgba(255,255,255,0.15) 0%, transparent 65%)',
         }}
       />
+      
+      {/* Corner decorative elements - very subtle environmental cues */}
+      {/* Feed zone decoration */}
+      <div className="absolute left-[8%] bottom-[18%] text-lg opacity-40 z-0">
+        🥣
+      </div>
+      
+      {/* Rest zone decoration */}
+      <div className="absolute right-[8%] bottom-[18%] text-lg opacity-40 z-0">
+        ⭐
+      </div>
+      
+      {/* Play zone decoration */}
+      <div className="absolute right-[8%] top-[35%] text-lg opacity-40 z-0">
+        🎈
+      </div>
+      
+      {/* Clean zone decoration */}
+      <div className="absolute left-[8%] top-[35%] text-lg opacity-40 z-0">
+        💧
+      </div>
     </>
   );
 };
@@ -784,8 +829,17 @@ export function PetGameScene() {
   const [particles, setParticles] = useState<FloatingParticle[]>([]);
   const [screenShake, setScreenShake] = useState(false);
   const [successIndicator, setSuccessIndicator] = useState<SuccessIndicator | null>(null);
+  const [showZoneLabels, setShowZoneLabels] = useState(true);
   
   const sceneRef = useRef<HTMLDivElement>(null);
+
+  // Hide zone labels after first interaction (they're just for teaching)
+  useEffect(() => {
+    if (lastAction) {
+      const timer = setTimeout(() => setShowZoneLabels(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastAction]);
 
   // Sync stats from pet context
   useEffect(() => {
@@ -1121,6 +1175,9 @@ export function PetGameScene() {
 
       {/* ========== ROOM DECORATIONS ========== */}
       <RoomDecorations />
+
+      {/* ========== ZONE LABELS (teaching overlay) ========== */}
+      <ZoneLabels show={showZoneLabels && !actionLoading} />
 
       {/* ========== EVOLUTION ANIMATION ========== */}
       {showEvolution && evolutionData && (
