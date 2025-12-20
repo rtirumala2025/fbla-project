@@ -13,6 +13,12 @@ import { usePet } from '../../context/PetContext';
 import { useFinancial } from '../../context/FinancialContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EvolutionAnimation } from './EvolutionAnimation';
+import { 
+  getEnvironmentConfig, 
+  getWorldObjects, 
+  getZoneLabels,
+  type EnvironmentConfig,
+} from './environmentConfig';
 
 // ============================================================================
 // TYPES
@@ -35,34 +41,18 @@ interface SuccessIndicator {
 }
 
 // ============================================================================
-// CONSTANTS - ROBLOX-STYLE COLOR PALETTE
+// UI CONSTANTS (shared across all environments)
 // ============================================================================
 
-// Primary palette: Warm, inviting, kid-friendly
-const COLORS = {
-  // Room colors - softer, less saturated for background harmony
-  wallTop: '#B4D7E8',      // Soft sky blue (desaturated)
-  wallBottom: '#D4E5EF',   // Very light blue
-  floor: '#C9A87C',        // Warm light wood
-  floorLight: '#D9BC94',   // Lighter wood
-  floorAccent: '#B89A6D',  // Wood grain accent
-  
-  // Zone colors - subtle area highlighting
-  feedZone: 'rgba(255, 183, 71, 0.12)',    // Warm orange tint
-  restZone: 'rgba(167, 139, 250, 0.10)',   // Soft purple tint
-  playZone: 'rgba(74, 222, 128, 0.10)',    // Fresh green tint
-  cleanZone: 'rgba(56, 189, 248, 0.10)',   // Cool cyan tint
-  
-  // Accent colors
-  primary: '#FF6B9D',      // Playful pink
-  secondary: '#FFB347',    // Warm orange
-  accent: '#7DD3FC',       // Bright cyan
-  success: '#4ADE80',      // Fresh green
-  
-  // UI colors - refined for clarity
+const UI_COLORS = {
+  // UI colors - refined for clarity (these don't change per environment)
   hudBg: 'rgba(15, 23, 42, 0.88)',
   hudBorder: 'rgba(255, 255, 255, 0.08)',
   hudGlow: 'rgba(99, 102, 241, 0.15)',
+  primary: '#FF6B9D',
+  secondary: '#FFB347',
+  accent: '#7DD3FC',
+  success: '#4ADE80',
 };
 
 // Pet sprites with better visual representation
@@ -97,71 +87,20 @@ const MOOD_EXPRESSIONS: Record<string, { emoji: string; color: string }> = {
 };
 
 // ============================================================================
-// WORLD OBJECTS - Interactive game elements with consistent sizing
+// WORLD OBJECTS TYPE (config-driven, see environmentConfig.ts)
 // ============================================================================
 
 interface WorldObject {
   id: CareAction;
   label: string;
   emoji: string;
-  secondaryEmoji?: string; // Companion object for zone grouping
+  secondaryEmoji?: string;
   position: { x: string; y: string };
   size: string;
   description: string;
   actionEmoji: string[];
   zone: 'feed' | 'rest' | 'play' | 'clean';
 }
-
-// Consistent object sizing: All objects use the same base size (64px)
-// This creates visual harmony and makes the pet the clear focal point
-const OBJECT_SIZE = '64px';
-
-const WORLD_OBJECTS: WorldObject[] = [
-  {
-    id: 'feed',
-    label: 'Food Bowl',
-    emoji: '🍖',
-    secondaryEmoji: '🥣',
-    position: { x: '18%', y: '78%' },
-    size: OBJECT_SIZE,
-    description: 'Tap to feed!',
-    actionEmoji: ['🍖', '🥩', '✨', '💕'],
-    zone: 'feed',
-  },
-  {
-    id: 'rest',
-    label: 'Cozy Bed',
-    emoji: '🛏️',
-    secondaryEmoji: '🌙',
-    position: { x: '82%', y: '78%' },
-    size: OBJECT_SIZE,
-    description: 'Tap to rest!',
-    actionEmoji: ['💤', '😴', '🌙', '⭐'],
-    zone: 'rest',
-  },
-  {
-    id: 'play',
-    label: 'Toy Box',
-    emoji: '🎾',
-    secondaryEmoji: '🧸',
-    position: { x: '82%', y: '48%' },
-    size: OBJECT_SIZE,
-    description: 'Tap to play!',
-    actionEmoji: ['🎾', '⭐', '🎉', '💫'],
-    zone: 'play',
-  },
-  {
-    id: 'bathe',
-    label: 'Bath Time',
-    emoji: '🛁',
-    secondaryEmoji: '🧼',
-    position: { x: '18%', y: '48%' },
-    size: OBJECT_SIZE,
-    description: 'Tap to bathe!',
-    actionEmoji: ['🛁', '🧼', '💧', '✨'],
-    zone: 'clean',
-  },
-];
 
 // ============================================================================
 // SUB-COMPONENTS
@@ -299,21 +238,22 @@ const StatBar: React.FC<{
   );
 };
 
-// Interactive world object with zone grouping
+// Interactive world object with zone grouping (environment-aware)
 const InteractiveObject: React.FC<{
   object: WorldObject;
   onClick: () => void;
   disabled: boolean;
   isActive: boolean;
-}> = ({ object, onClick, disabled, isActive }) => {
+  envConfig: EnvironmentConfig;
+}> = ({ object, onClick, disabled, isActive, envConfig }) => {
   const [isHovered, setIsHovered] = useState(false);
 
-  // Zone-specific colors for visual grouping
+  // Zone-specific colors from environment config
   const zoneColors = {
-    feed: { bg: COLORS.feedZone, glow: 'rgba(255, 183, 71, 0.5)', border: 'rgba(255, 183, 71, 0.3)' },
-    rest: { bg: COLORS.restZone, glow: 'rgba(167, 139, 250, 0.5)', border: 'rgba(167, 139, 250, 0.3)' },
-    play: { bg: COLORS.playZone, glow: 'rgba(74, 222, 128, 0.5)', border: 'rgba(74, 222, 128, 0.3)' },
-    clean: { bg: COLORS.cleanZone, glow: 'rgba(56, 189, 248, 0.5)', border: 'rgba(56, 189, 248, 0.3)' },
+    feed: { bg: envConfig.zones.feedZone, glow: envConfig.zoneLabels.feed + '80', border: envConfig.zoneLabels.feed + '4D' },
+    rest: { bg: envConfig.zones.restZone, glow: envConfig.zoneLabels.rest + '80', border: envConfig.zoneLabels.rest + '4D' },
+    play: { bg: envConfig.zones.playZone, glow: envConfig.zoneLabels.play + '80', border: envConfig.zoneLabels.play + '4D' },
+    clean: { bg: envConfig.zones.cleanZone, glow: envConfig.zoneLabels.clean + '80', border: envConfig.zoneLabels.clean + '4D' },
   };
   const zoneColor = zoneColors[object.zone];
 
@@ -618,16 +558,11 @@ const PetCharacter: React.FC<{
   );
 };
 
-// Zone labels that appear on first load to teach gameplay
-const ZoneLabels: React.FC<{ show: boolean }> = ({ show }) => {
+// Zone labels that appear on first load to teach gameplay (environment-aware)
+const ZoneLabels: React.FC<{ show: boolean; envConfig: EnvironmentConfig }> = ({ show, envConfig }) => {
   if (!show) return null;
 
-  const zones = [
-    { label: 'Feed', emoji: '🍖', position: { left: '13%', bottom: '28%' }, color: '#FFB347' },
-    { label: 'Rest', emoji: '💤', position: { right: '13%', bottom: '28%' }, color: '#A78BFA' },
-    { label: 'Play', emoji: '🎾', position: { right: '13%', top: '32%' }, color: '#4ADE80' },
-    { label: 'Clean', emoji: '✨', position: { left: '13%', top: '32%' }, color: '#38BDF8' },
-  ];
+  const zones = getZoneLabels(envConfig);
 
   return (
     <>
@@ -658,60 +593,57 @@ const ZoneLabels: React.FC<{ show: boolean }> = ({ show }) => {
   );
 };
 
-// Room decorations - simplified and subtle to not compete with pet
-const RoomDecorations: React.FC = () => {
+// Room decorations - environment-aware, driven by config
+const RoomDecorations: React.FC<{ envConfig: EnvironmentConfig }> = ({ envConfig }) => {
   return (
     <>
-      {/* Window with gentle light - smaller and more subtle */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-0 opacity-85">
-        <div className="relative">
-          {/* Window frame - simplified */}
-          <div className="w-28 h-20 bg-gradient-to-b from-sky-200/70 to-sky-100/50 rounded-t-xl border-2 border-amber-600/50 shadow-md overflow-hidden">
-            {/* Window panes */}
-            <div className="absolute inset-1 grid grid-cols-2 gap-0.5">
-              <div className="bg-sky-100/30 rounded-tl-lg" />
-              <div className="bg-sky-100/30 rounded-tr-lg" />
+      {/* Window with gentle light - only for indoor environments */}
+      {envConfig.window.show && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-0 opacity-85">
+          <div className="relative">
+            {/* Window frame - simplified */}
+            <div className="w-28 h-20 bg-gradient-to-b from-sky-200/70 to-sky-100/50 rounded-t-xl border-2 border-amber-600/50 shadow-md overflow-hidden">
+              {/* Window panes */}
+              <div className="absolute inset-1 grid grid-cols-2 gap-0.5">
+                <div className="bg-sky-100/30 rounded-tl-lg" />
+                <div className="bg-sky-100/30 rounded-tr-lg" />
+              </div>
+              {/* Sun - color from config */}
+              <motion.div
+                className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full"
+                style={{ backgroundColor: envConfig.window.sunColor }}
+                animate={{ opacity: [0.6, 0.9, 0.6] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
             </div>
-            {/* Sun - very subtle */}
-      <motion.div
-              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-yellow-200/80"
-              animate={{ opacity: [0.6, 0.9, 0.6] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            />
+            {/* Window sill */}
+            <div className="w-32 h-1.5 bg-amber-600/60 rounded-b -mt-0.5 mx-auto" />
           </div>
-          {/* Window sill */}
-          <div className="w-32 h-1.5 bg-amber-600/60 rounded-b -mt-0.5 mx-auto" />
         </div>
-        </div>
+      )}
         
       {/* Central spotlight for pet - defines the main stage */}
-        <div 
+      <div 
         className="absolute bottom-[20%] left-1/2 -translate-x-1/2 w-56 h-16 rounded-full z-0"
-          style={{
-          background: 'radial-gradient(ellipse, rgba(255,255,255,0.15) 0%, transparent 65%)',
+        style={{
+          background: `radial-gradient(ellipse, ${envConfig.spotlight.color} 0%, transparent 65%)`,
+          opacity: envConfig.spotlight.opacity,
         }}
       />
       
-      {/* Corner decorative elements - very subtle environmental cues */}
-      {/* Feed zone decoration */}
-      <div className="absolute left-[8%] bottom-[18%] text-lg opacity-40 z-0">
-        🥣
-      </div>
-
-      {/* Rest zone decoration */}
-      <div className="absolute right-[8%] bottom-[18%] text-lg opacity-40 z-0">
-        ⭐
-      </div>
-
-      {/* Play zone decoration */}
-      <div className="absolute right-[8%] top-[35%] text-lg opacity-40 z-0">
-        🎈
-      </div>
-
-      {/* Clean zone decoration */}
-      <div className="absolute left-[8%] top-[35%] text-lg opacity-40 z-0">
-        💧
-      </div>
+      {/* Corner decorative elements from config */}
+      {envConfig.decorations.map((decoration, index) => (
+        <div 
+          key={index}
+          className="absolute text-lg z-0"
+          style={{ 
+            ...decoration.position,
+            opacity: decoration.opacity,
+          }}
+        >
+          {decoration.emoji}
+        </div>
+      ))}
     </>
   );
 };
@@ -885,6 +817,12 @@ export function PetGameScene() {
   const petName = pet?.name || 'Your Pet';
   const currentMood = stats?.mood || pet?.stats?.mood || 'content';
 
+  // Get environment config based on pet species
+  const envConfig = useMemo(() => getEnvironmentConfig(petSpecies), [petSpecies]);
+  
+  // Get world objects for this environment
+  const worldObjects = useMemo(() => getWorldObjects(envConfig), [envConfig]);
+
   // Helper functions
   const getEvolutionStage = useCallback((level: number): string => {
     if (level >= 12) return 'legendary';
@@ -909,9 +847,9 @@ export function PetGameScene() {
     }
   }, [getEvolutionStage]);
 
-  // Create particle burst
+  // Create particle burst (uses environment-specific props)
   const createParticleBurst = useCallback((action: CareAction, centerX: number, centerY: number) => {
-    const worldObject = WORLD_OBJECTS.find(o => o.id === action);
+    const worldObject = worldObjects.find(o => o.id === action);
     if (!worldObject) return;
 
     const newParticles: FloatingParticle[] = worldObject.actionEmoji.map((emoji, i) => ({
@@ -925,7 +863,7 @@ export function PetGameScene() {
     setParticles(newParticles);
     setScreenShake(true);
     setTimeout(() => setScreenShake(false), 200);
-  }, []);
+  }, [worldObjects]);
 
   const updateFromAction = useCallback((response: PetActionResponse) => {
     if (response.pet && response.pet.stats) {
@@ -1048,13 +986,14 @@ export function PetGameScene() {
     };
   }, [stats, pet?.stats]);
 
-  // Loading state - polished for competition
+  // Loading state - polished for competition (uses default environment)
   if (loading) {
+    const defaultEnv = getEnvironmentConfig('default');
     return (
       <div 
         className="fixed inset-0 top-[80px] flex items-center justify-center"
         style={{ 
-          background: `linear-gradient(180deg, ${COLORS.wallTop} 0%, ${COLORS.wallBottom} 60%, ${COLORS.floor} 100%)`,
+          background: `linear-gradient(180deg, ${defaultEnv.room.wallTop} 0%, ${defaultEnv.room.wallBottom} 60%, ${defaultEnv.room.floor} 100%)`,
         }}
       >
         <motion.div
@@ -1082,13 +1021,14 @@ export function PetGameScene() {
     );
   }
 
-  // No pet state - encouraging and clear
+  // No pet state - encouraging and clear (uses default dog environment colors)
   if (!pet) {
+    const defaultEnv = getEnvironmentConfig('default');
     return (
       <div 
         className="fixed inset-0 top-[80px] flex items-center justify-center"
         style={{ 
-          background: `linear-gradient(180deg, ${COLORS.wallTop} 0%, ${COLORS.wallBottom} 60%, ${COLORS.floor} 100%)`,
+          background: `linear-gradient(180deg, ${defaultEnv.room.wallTop} 0%, ${defaultEnv.room.wallBottom} 60%, ${defaultEnv.room.floor} 100%)`,
         }}
       >
         <motion.div
@@ -1130,22 +1070,22 @@ export function PetGameScene() {
       animate={screenShake ? { x: [0, -2, 2, -2, 0] } : {}}
       transition={{ duration: 0.15 }}
     >
-      {/* ========== ROOM BACKGROUND ========== */}
+      {/* ========== ROOM BACKGROUND (environment-driven) ========== */}
       <div className="absolute inset-0">
-        {/* Wall gradient - soft and non-distracting */}
+        {/* Wall gradient - from environment config */}
         <div 
           className="absolute inset-0"
           style={{
             background: `linear-gradient(180deg, 
-              ${COLORS.wallTop} 0%, 
-              ${COLORS.wallBottom} 55%, 
-              ${COLORS.floor} 55%, 
-              ${COLORS.floorLight} 100%
+              ${envConfig.room.wallTop} 0%, 
+              ${envConfig.room.wallBottom} 55%, 
+              ${envConfig.room.floor} 55%, 
+              ${envConfig.room.floorLight} 100%
             )`,
           }}
         />
         
-        {/* Floor with subtle wood grain texture */}
+        {/* Floor with subtle texture */}
         <div 
           className="absolute bottom-0 left-0 right-0 h-[45%]"
           style={{
@@ -1154,10 +1094,10 @@ export function PetGameScene() {
                 90deg,
                 transparent,
                 transparent 80px,
-                ${COLORS.floorAccent}15 80px,
-                ${COLORS.floorAccent}15 81px
+                ${envConfig.room.floorAccent}15 80px,
+                ${envConfig.room.floorAccent}15 81px
               ),
-              linear-gradient(180deg, ${COLORS.floor} 0%, ${COLORS.floorLight} 100%)
+              linear-gradient(180deg, ${envConfig.room.floor} 0%, ${envConfig.room.floorLight} 100%)
             `,
           }}
         />
@@ -1167,58 +1107,51 @@ export function PetGameScene() {
           className="absolute left-0 right-0 h-2"
           style={{
             top: '55%',
-            background: 'linear-gradient(180deg, #A08060 0%, #C9A87C 100%)',
+            background: `linear-gradient(180deg, ${envConfig.room.floorAccent} 0%, ${envConfig.room.floor} 100%)`,
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
           }}
         />
 
-        {/* Zone highlight areas - subtle floor mats */}
-        {/* Feed Zone - bottom left */}
+        {/* Zone highlight areas - from environment config */}
         <div 
           className="absolute w-28 h-28 rounded-3xl z-[1]"
           style={{
             left: '10%',
             bottom: '12%',
-            background: `radial-gradient(ellipse, ${COLORS.feedZone} 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse, ${envConfig.floorHighlights.feed} 0%, transparent 70%)`,
           }}
         />
-        
-        {/* Rest Zone - bottom right */}
         <div 
           className="absolute w-28 h-28 rounded-3xl z-[1]"
           style={{
             right: '10%',
             bottom: '12%',
-            background: `radial-gradient(ellipse, ${COLORS.restZone} 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse, ${envConfig.floorHighlights.rest} 0%, transparent 70%)`,
           }}
         />
-        
-        {/* Play Zone - upper right */}
         <div 
           className="absolute w-28 h-28 rounded-3xl z-[1]"
           style={{
             right: '10%',
             top: '38%',
-            background: `radial-gradient(ellipse, ${COLORS.playZone} 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse, ${envConfig.floorHighlights.play} 0%, transparent 70%)`,
           }}
         />
-        
-        {/* Clean Zone - upper left */}
         <div 
           className="absolute w-28 h-28 rounded-3xl z-[1]"
           style={{
             left: '10%',
             top: '38%',
-            background: `radial-gradient(ellipse, ${COLORS.cleanZone} 0%, transparent 70%)`,
+            background: `radial-gradient(ellipse, ${envConfig.floorHighlights.clean} 0%, transparent 70%)`,
           }}
         />
       </div>
 
       {/* ========== ROOM DECORATIONS ========== */}
-      <RoomDecorations />
+      <RoomDecorations envConfig={envConfig} />
 
       {/* ========== ZONE LABELS (teaching overlay) ========== */}
-      <ZoneLabels show={showZoneLabels && !actionLoading} />
+      <ZoneLabels show={showZoneLabels && !actionLoading} envConfig={envConfig} />
 
       {/* ========== EVOLUTION ANIMATION ========== */}
       {showEvolution && evolutionData && (
@@ -1253,16 +1186,17 @@ export function PetGameScene() {
         )}
       </AnimatePresence>
 
-      {/* ========== INTERACTIVE WORLD OBJECTS ========== */}
-      {WORLD_OBJECTS.map((obj) => (
+      {/* ========== INTERACTIVE WORLD OBJECTS (environment-driven) ========== */}
+      {worldObjects.map((obj) => (
         <InteractiveObject
           key={obj.id}
           object={obj}
           onClick={(e?: any) => handleAction(obj.id, e)}
           disabled={actionLoading !== null}
           isActive={actionLoading === obj.id}
-          />
-        ))}
+          envConfig={envConfig}
+        />
+      ))}
 
       {/* ========== PET CHARACTER (CENTER) ========== */}
       <div className="absolute inset-0 flex items-center justify-center" style={{ paddingTop: '5%' }}>
@@ -1293,9 +1227,9 @@ export function PetGameScene() {
       <motion.div
         className="absolute top-3 left-3 z-30 px-3 py-2.5 rounded-2xl shadow-xl backdrop-blur-sm"
         style={{ 
-          backgroundColor: COLORS.hudBg,
-          border: `1px solid ${COLORS.hudBorder}`,
-          boxShadow: `0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 ${COLORS.hudGlow}`,
+          backgroundColor: UI_COLORS.hudBg,
+          border: `1px solid ${UI_COLORS.hudBorder}`,
+          boxShadow: `0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 ${UI_COLORS.hudGlow}`,
         }}
         initial={{ opacity: 0, x: -30 }}
         animate={{ opacity: 1, x: 0 }}
@@ -1342,8 +1276,8 @@ export function PetGameScene() {
             onClick={() => setDiaryOpen(true)}
             className="w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-sm"
             style={{ 
-              backgroundColor: COLORS.hudBg,
-              border: `1px solid ${COLORS.hudBorder}`,
+              backgroundColor: UI_COLORS.hudBg,
+              border: `1px solid ${UI_COLORS.hudBorder}`,
               boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
             }}
             whileHover={{ scale: 1.08, backgroundColor: 'rgba(30, 41, 59, 0.95)' }}
@@ -1358,7 +1292,7 @@ export function PetGameScene() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm"
             style={{ 
               background: 'linear-gradient(135deg, rgba(15,23,42,0.92), rgba(30,41,59,0.92))',
-              border: `1px solid ${COLORS.hudBorder}`,
+              border: `1px solid ${UI_COLORS.hudBorder}`,
               boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
             }}
             whileHover={{ scale: 1.04 }}

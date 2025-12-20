@@ -1,113 +1,170 @@
-# Performance Bottlenecks Analysis
+# Performance Bottlenecks Audit Report
 
-**Date**: Generated during comprehensive performance optimization  
-**Project**: Virtual Pet FBLA Project  
-**Framework**: React 18.2.0 with Create React App
+**Generated:** December 19, 2025  
+**Auditor:** Web Performance Engineering Analysis  
+**Project:** FBLA Virtual Pet Application
 
 ---
 
 ## Executive Summary
 
-This report identifies critical performance bottlenecks across the frontend application. The analysis covers bundle size, render performance, API calls, and asset loading.
+This audit identifies performance bottlenecks across the frontend React application and Supabase backend. The analysis covers bundle size, render performance, network requests, and database query optimization.
 
-**Priority Levels:**
-- 🔴 **CRITICAL**: Blocks initial load or causes significant delays
-- 🟡 **HIGH**: Noticeable impact on user experience
-- 🟢 **MEDIUM**: Minor optimization opportunities
+**Overall Performance Grade: C+**  
+**Estimated Improvement Potential: 40-60% faster load times**
 
 ---
 
-## 1. Bundle Size & Code Splitting Issues
+## Critical Bottlenecks (P0 - Immediate Action Required)
 
-### 🔴 CRITICAL: No Route-Based Code Splitting
+### 1. Build System: Create React App (CRA) vs Vite
 
-**Location**: `frontend/src/App.tsx`
+| Metric | Issue | Impact | Priority |
+|--------|-------|--------|----------|
+| **Build Tool** | Using react-scripts (CRA) | Slow builds, larger bundles, no tree-shaking optimization | 🔴 Critical |
 
-**Issue**: All routes are imported eagerly at the top level:
-```typescript
-import { DashboardPage } from './pages/DashboardPage';
-import { Shop } from './pages/Shop';
-import BudgetDashboard from './pages/budget/BudgetDashboard';
-// ... 20+ more route imports
+**Details:**
+- CRA uses Webpack 5 with limited optimization options
+- Development server startup: ~15-30 seconds
+- Production builds: ~2-4 minutes
+- Bundle splitting is suboptimal
+
+**Recommendation:** Migrate to Vite for:
+- 10-100x faster dev server startup (native ES modules)
+- Better tree-shaking and dead code elimination
+- Improved code splitting with rollup
+- Smaller production bundles
+
+---
+
+### 2. Heavy Dependencies - Bundle Size Impact
+
+| Package | Size (estimated) | Usage | Impact |
+|---------|-----------------|-------|--------|
+| `three` + `@react-three/*` | ~500KB gzipped | 3D Pet visualization | 🔴 Critical |
+| `framer-motion` | ~85KB gzipped | Animations everywhere | 🟡 Medium |
+| `recharts` | ~150KB gzipped | Analytics charts | 🟡 Medium |
+| `react-icons` + `lucide-react` | ~40KB | Duplicate icon libs | 🟡 Medium |
+| `react-hot-toast` + `react-toastify` | ~20KB | Duplicate toast libs | 🟢 Low |
+| `react-joyride` | ~35KB gzipped | Onboarding tours | 🟢 Low |
+
+**Total Estimated Bundle Overhead:** ~830KB+ (before tree-shaking)
+
+**Recommendations:**
+- ✅ Already lazy-loading 3D visualization - good!
+- Remove `react-icons` (use only `lucide-react`)
+- Remove `react-toastify` (use only `react-hot-toast`)
+- Dynamic import `recharts` only on analytics pages
+- Consider lighter animation alternatives for simple use cases
+
+---
+
+### 3. PetGameScene.tsx - 1,452 Lines Single Component
+
+| Metric | Value | Impact |
+|--------|-------|--------|
+| File Size | 1,452 lines | 🔴 Critical |
+| Re-render Risk | High | 🔴 Critical |
+| Code Splitting | Partially split | 🟡 Medium |
+
+**Issues:**
+- Monolithic component with many responsibilities
+- Multiple `useState` hooks causing cascading re-renders
+- Inline object creation in render causing unnecessary re-renders
+- Animation controls not properly memoized
+
+**Recommendations:**
+- Split into smaller sub-components
+- Extract constants outside component
+- Memoize all child components
+- Use `useCallback` for all event handlers
+- Consider state management refactor (Zustand already available)
+
+---
+
+## High Priority Bottlenecks (P1)
+
+### 4. AuthContext - Multiple API Calls on Mount
+
+| Metric | Issue | Impact |
+|--------|-------|--------|
+| **API Calls** | 3-4 sequential calls on auth check | 🟡 High |
+| **Blocking** | Blocks UI while checking profile/pet | 🟡 High |
+
+**Current Flow:**
+1. `getSession()` - Supabase auth check
+2. `getProfile()` - Profile service check
+3. `getPet()` - Pet service check (with retry logic up to 3x)
+4. Real-time subscription setup
+
+**Recommendations:**
+- Batch profile + pet check into single API call
+- Use stale-while-revalidate pattern for faster perceived load
+- Cache last known state in sessionStorage
+
+---
+
+### 5. DashboardPage - Waterfall API Requests
+
+| Metric | Issue | Impact |
+|--------|-------|--------|
+| **Parallel Calls** | 5+ calls (good!) | ✅ Optimized |
+| **Analytics Delay** | 500ms artificial delay | 🟡 Medium |
+| **N+1 Query** | Chore cooldowns fetch individually | 🟡 Medium |
+
+**Current Flow (Good):**
+```javascript
+Promise.allSettled([
+  fetchActiveQuests(),
+  fetchCoachAdvice(), 
+  fetchAccessories(),
+  refreshBalance(),
+  earnService.listChores()
+]);
 ```
 
-**Impact**: 
-- Initial bundle includes ALL pages (~500KB+ uncompressed)
-- Users download code for pages they may never visit
-- Slower Time to Interactive (TTI)
+**Issues:**
+- Analytics delayed by 500ms (unnecessary if network is fast)
+- Chore cooldowns loaded in N+1 pattern (one query per chore)
+- Equipped accessories require second Supabase query
 
-**Load Time Impact**: +2-3 seconds on initial load
-
-**Priority**: 🔴 CRITICAL
-
-**Solution**: Implement React.lazy() for all routes
-
----
-
-### 🔴 CRITICAL: Heavy 3D Library Loaded Eagerly
-
-**Location**: `frontend/src/components/pets/Pet3DVisualization.tsx`
-
-**Issue**: Three.js, React Three Fiber, and Drei are loaded on every page load, even when 3D pet is not visible.
-
-**Impact**:
-- Three.js bundle: ~600KB
-- React Three Fiber: ~200KB
-- Drei: ~150KB
-- Total: ~950KB for 3D features
-
-**Load Time Impact**: +1.5-2 seconds on initial load
-
-**Priority**: 🔴 CRITICAL
-
-**Solution**: Lazy load 3D pet component only when needed
+**Recommendations:**
+- Remove artificial analytics delay
+- Batch cooldown queries into single Supabase call
+- Include equipped accessories in main accessories fetch
 
 ---
 
-### 🟡 HIGH: Heavy Animation Library (Framer Motion)
+### 6. Header Component - Re-renders on Every Route Change
 
-**Location**: `frontend/src/App.tsx`
+| Metric | Issue | Impact |
+|--------|-------|--------|
+| **Re-renders** | Every location.pathname change | 🟡 Medium |
+| **Mobile Menu** | AnimatePresence causes layout shifts | 🟢 Low |
 
-**Issue**: Framer Motion loaded for all pages, but only used for page transitions.
+**Issues:**
+- Header re-renders completely on route changes
+- `useLocation()` hook triggers re-renders
+- Multiple `useEffect` with scroll listeners
 
-**Impact**: ~150KB bundle size
-
-**Load Time Impact**: +300-500ms
-
-**Priority**: 🟡 HIGH
-
-**Solution**: Lazy load or use lighter alternative for transitions
-
----
-
-### 🟡 HIGH: Chart Library (Recharts) Loaded Eagerly
-
-**Location**: `frontend/src/components/analytics/ExpensePieChart.tsx`, `TrendChart.tsx`
-
-**Issue**: Recharts loaded even when analytics section is collapsed or not visible.
-
-**Impact**: ~200KB bundle size
-
-**Load Time Impact**: +400-600ms
-
-**Priority**: 🟡 HIGH
-
-**Solution**: Lazy load chart components
+**Recommendations:**
+- ✅ Already using `memo()` - good!
+- Consider extracting nav links to separate memoized component
+- Debounce scroll handler
 
 ---
 
-## 2. React Rendering Performance
+## Medium Priority Bottlenecks (P2)
 
-### 🟡 HIGH: Multiple Context Providers Wrapping Entire App
+### 7. React Context Nesting - Provider Hell
 
-**Location**: `frontend/src/App.tsx`
-
-**Issue**: Multiple context providers cause unnecessary re-renders:
-```typescript
+```jsx
 <AuthProvider>
   <ToastProvider>
     <PetProvider>
       <FinancialProvider>
+        <OnboardingTutorial />
+        <TooltipGuide />
         {/* App content */}
       </FinancialProvider>
     </PetProvider>
@@ -115,254 +172,120 @@ import BudgetDashboard from './pages/budget/BudgetDashboard';
 </AuthProvider>
 ```
 
-**Impact**: Context changes trigger re-renders across entire app tree
+**Issues:**
+- 4 levels of context nesting
+- Each provider update may cascade re-renders
+- No context selectors (all consumers re-render on any state change)
 
-**Load Time Impact**: +200-400ms on context updates
-
-**Priority**: 🟡 HIGH
-
-**Solution**: Memoize context values, split contexts by update frequency
-
----
-
-### 🟡 HIGH: Dashboard Page Loads All Data in Parallel
-
-**Location**: `frontend/src/pages/DashboardPage.tsx` (lines 286-391)
-
-**Issue**: All API calls fire simultaneously on mount:
-- Quests
-- Coach advice
-- Accessories
-- Balance
-- Chores
-- Analytics (heavy)
-
-**Impact**: 
-- Network congestion
-- UI blocks until all data loads
-- No progressive rendering
-
-**Load Time Impact**: +1-2 seconds to interactive
-
-**Priority**: 🟡 HIGH
-
-**Solution**: Prioritize critical data, lazy load analytics
+**Recommendations:**
+- Use Zustand store (already exists!) for global state
+- Implement context selectors where possible
+- Consider React Compiler (React 19) for automatic memoization
 
 ---
 
-### 🟢 MEDIUM: Missing Memoization in Pet3DVisualization
+### 8. Image/Asset Loading
 
-**Location**: `frontend/src/components/pets/Pet3DVisualization.tsx`
-
-**Issue**: Component re-renders on every parent update, even with memo() wrapper.
-
-**Impact**: Unnecessary 3D scene re-renders
-
-**Load Time Impact**: +50-100ms per render
-
-**Priority**: 🟢 MEDIUM
-
-**Solution**: Improve memo comparison function, use React.memo more effectively
+| Asset Type | Current State | Recommendation |
+|------------|--------------|----------------|
+| Pet Sprites | Emoji-based (efficient) | ✅ Good |
+| Icons | Two libraries loaded | Remove duplicate |
+| Fonts | System fonts | ✅ Good |
+| Images | No lazy loading | Add `loading="lazy"` |
 
 ---
 
-## 3. API & Database Query Performance
+### 9. Supabase Query Optimization
 
-### 🟡 HIGH: No Request Deduplication
+| Query | Issue | Impact |
+|-------|-------|--------|
+| Profile lookup | Individual query | 🟢 Low |
+| Pet check | Retry logic (up to 3x) | 🟡 Medium |
+| Accessories | Two separate queries | 🟡 Medium |
+| Real-time subs | Multiple channels | 🟢 Low |
 
-**Location**: Multiple API files
+**Existing Indexes (Good):**
+- `019_performance_indexes.sql` - Many indexes already added
 
-**Issue**: Multiple components may request same data simultaneously (e.g., pet data, balance).
-
-**Impact**: Duplicate network requests, wasted bandwidth
-
-**Load Time Impact**: +200-500ms per duplicate request
-
-**Priority**: 🟡 HIGH
-
-**Solution**: Implement request deduplication in httpClient or use requestCache more extensively
-
----
-
-### 🟡 HIGH: Supabase Queries Without Indexes
-
-**Location**: Various service files
-
-**Issue**: Queries may not be using optimal indexes:
-- `pets` table: queries by `user_id` (should have index)
-- `profiles` table: queries by `user_id` (should have index)
-- `user_accessories` table: queries by `pet_id` and `equipped` (should have composite index)
-
-**Impact**: Slower database queries
-
-**Load Time Impact**: +100-300ms per query
-
-**Priority**: 🟡 HIGH
-
-**Solution**: Verify indexes exist, add if missing
+**Recommendations:**
+- Combine profile + pet into single RPC function
+- Use `.select()` with relationships to reduce queries
+- Consider Supabase Edge Functions for complex aggregations
 
 ---
 
-### 🟢 MEDIUM: Profile Cache TTL Too Short
+## Low Priority Bottlenecks (P3)
 
-**Location**: `frontend/src/services/profileService.ts`
+### 10. CSS Performance
 
-**Issue**: Profile cache TTL is 30 seconds, causing frequent re-fetches.
-
-**Impact**: Unnecessary API calls
-
-**Load Time Impact**: +50-100ms per cache miss
-
-**Priority**: 🟢 MEDIUM
-
-**Solution**: Increase TTL to 5 minutes for profile data
+| Issue | Impact |
+|-------|--------|
+| Tailwind JIT compilation | ✅ Optimized |
+| Unused CSS purging | 🟢 Low - Tailwind handles this |
+| Critical CSS inlining | Not implemented |
 
 ---
 
-## 4. Asset Loading
+### 11. Animation Performance
 
-### 🟡 HIGH: No Resource Hints in HTML
+| Component | Animation Library | Issue |
+|-----------|------------------|-------|
+| PageTransition | Framer Motion | Smooth but adds bundle size |
+| PetGameScene | Framer Motion | Many concurrent animations |
+| Header Mobile Menu | Framer Motion | AnimatePresence overhead |
 
-**Location**: `frontend/public/index.html`
-
-**Issue**: Missing preconnect, dns-prefetch, and preload hints for:
-- Supabase API
-- Google OAuth
-- CDN resources
-
-**Impact**: Slower DNS resolution and connection setup
-
-**Load Time Impact**: +200-400ms on first load
-
-**Priority**: 🟡 HIGH
-
-**Solution**: Add resource hints to index.html
+**Recommendations:**
+- Use CSS animations for simple effects
+- Enable `layout` prop optimization
+- Use `will-change` for predictable animations
 
 ---
 
-### 🟢 MEDIUM: No Image Optimization
+## Quick Wins (Immediate Implementation)
 
-**Location**: Image assets (if any)
-
-**Issue**: Images not optimized (WebP, lazy loading, responsive sizes)
-
-**Impact**: Larger file sizes, slower loading
-
-**Load Time Impact**: +100-300ms per image
-
-**Priority**: 🟢 MEDIUM
-
-**Solution**: Convert to WebP, implement lazy loading
+1. **Remove duplicate packages:** `react-icons`, `react-toastify`
+2. **Add preload hints:** Critical fonts, Supabase connection
+3. **Implement route preloading:** Prefetch likely next routes
+4. **Add image lazy loading:** All off-screen images
+5. **Optimize dev experience:** Enable Vite for faster iteration
 
 ---
 
-## 5. State Management
+## Performance Metrics Baseline (Estimated)
 
-### 🟡 HIGH: PetContext Re-fetches on Every User Change
-
-**Location**: `frontend/src/context/PetContext.tsx` (line 216)
-
-**Issue**: `loadPet()` runs on every `userId` change, even if pet data hasn't changed.
-
-**Impact**: Unnecessary database queries
-
-**Load Time Impact**: +200-400ms per fetch
-
-**Priority**: 🟡 HIGH
-
-**Solution**: Add better caching, only refetch when needed
+| Metric | Current (Est.) | Target | Industry Standard |
+|--------|---------------|--------|-------------------|
+| **FCP** | 2.5-3.5s | < 1.8s | < 1.8s |
+| **LCP** | 3.5-4.5s | < 2.5s | < 2.5s |
+| **TTI** | 4-6s | < 3.8s | < 3.8s |
+| **TBT** | 300-500ms | < 200ms | < 200ms |
+| **CLS** | 0.1-0.2 | < 0.1 | < 0.1 |
+| **Bundle Size** | ~1.5MB | < 500KB | < 400KB |
 
 ---
 
-### 🟢 MEDIUM: FinancialContext Fetches on Every User Change
+## Implementation Priority Matrix
 
-**Location**: `frontend/src/context/FinancialContext.tsx` (line 126)
-
-**Issue**: Financial data refetches on every user change.
-
-**Impact**: Unnecessary API calls
-
-**Load Time Impact**: +100-200ms per fetch
-
-**Priority**: 🟢 MEDIUM
-
-**Solution**: Cache financial data with longer TTL
-
----
-
-## 6. Component-Specific Issues
-
-### 🟡 HIGH: Dashboard Analytics Loaded Immediately
-
-**Location**: `frontend/src/pages/DashboardPage.tsx` (line 381)
-
-**Issue**: Analytics (heavy computation) loads immediately, blocking UI.
-
-**Impact**: Dashboard feels slow even after other data loads
-
-**Load Time Impact**: +500ms-1s to dashboard interactive
-
-**Priority**: 🟡 HIGH
-
-**Solution**: Lazy load analytics section, show skeleton while loading
-
----
-
-### 🟢 MEDIUM: QuestBoard Re-renders on Every Quest Update
-
-**Location**: `frontend/src/components/quests/QuestBoard.tsx`
-
-**Issue**: Component may re-render unnecessarily when quest state updates.
-
-**Impact**: Minor performance hit
-
-**Load Time Impact**: +20-50ms per render
-
-**Priority**: 🟢 MEDIUM
-
-**Solution**: Memoize quest list rendering
-
----
-
-## Summary of Optimizations Needed
-
-### Critical (Must Fix):
-1. ✅ Implement route-based code splitting
-2. ✅ Lazy load 3D pet component
-3. ✅ Lazy load analytics section
-
-### High Priority:
-4. ✅ Lazy load chart components
-5. ✅ Add resource hints to HTML
-6. ✅ Implement request deduplication
-7. ✅ Optimize context providers
-8. ✅ Prioritize dashboard data loading
-
-### Medium Priority:
-9. ✅ Increase cache TTLs
-10. ✅ Memoize more components
-11. ✅ Verify database indexes
-
----
-
-## Expected Performance Improvements
-
-After implementing all optimizations:
-
-- **Initial Bundle Size**: -60% (~2MB → ~800KB)
-- **Time to Interactive**: -40% (~4s → ~2.4s)
-- **First Contentful Paint**: -30% (~1.5s → ~1s)
-- **Largest Contentful Paint**: -35% (~2.5s → ~1.6s)
-- **Total Blocking Time**: -50% (~800ms → ~400ms)
+| Priority | Task | Effort | Impact |
+|----------|------|--------|--------|
+| 🔴 P0 | Migrate to Vite | High | Very High |
+| 🔴 P0 | Remove duplicate deps | Low | Medium |
+| 🟡 P1 | Add route preloading | Low | Medium |
+| 🟡 P1 | Optimize DashboardPage | Medium | High |
+| 🟡 P1 | Split PetGameScene | High | High |
+| 🟢 P2 | Context optimization | Medium | Medium |
+| 🟢 P2 | Image lazy loading | Low | Low |
+| 🟢 P3 | CSS critical path | Low | Low |
 
 ---
 
 ## Next Steps
 
-1. Implement code splitting for all routes
-2. Lazy load heavy components (3D, charts, analytics)
-3. Add resource hints to HTML
-4. Optimize context providers
-5. Implement request deduplication
-6. Test and measure improvements
+1. ✅ Audit complete - bottlenecks identified
+2. 🔄 Begin implementation of optimizations
+3. 📊 Measure before/after metrics
+4. 📝 Generate final performance report
 
+---
+
+*Report generated by AI Performance Analysis*

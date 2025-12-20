@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta
+      name="description"
+      content="Virtual Pet FBLA Project - A fun and educational virtual pet game"
+    />
+    
+    <!-- Resource Hints for Performance -->
+    <link rel="preconnect" href="https://xhhtkjtcdeewesijxbts.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://xhhtkjtcdeewesijxbts.supabase.co" />
+    <link rel="preconnect" href="https://accounts.google.com" crossorigin />
+    <link rel="dns-prefetch" href="https://accounts.google.com" />
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" as="style" href="/src/styles/globals.css" />
+    
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Virtual Pet FBLA</title>
+    
+    <!-- Critical CSS for initial paint -->
+    <style>
+      html, body, #root {
+        background-color: #ffffff;
+        margin: 0;
+        padding: 0;
+        height: auto;
+      }
+      
+      /* Loading spinner for initial load */
+      .initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        z-index: 9999;
+        transition: opacity 0.3s ease-out;
+      }
+      
+      .initial-loader.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .loader-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #e5e7eb;
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    
+    <!-- Initial loading state for better perceived performance -->
+    <div id="initial-loader" class="initial-loader">
+      <div class="loader-spinner"></div>
+    </div>
+    
+    <div id="root"></div>
+    
+    <!-- Vite entry point -->
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Remove initial loader once React mounts -->
+    <script>
+      // Hide loader when React app is ready
+      window.addEventListener('DOMContentLoaded', function() {
+        // Small delay to ensure smooth transition
+        setTimeout(function() {
+          var loader = document.getElementById('initial-loader');
+          if (loader) {
+            loader.classList.add('hidden');
+            setTimeout(function() {
+              loader.remove();
+            }, 300);
+          }
+        }, 100);
+      });
+    </script>
+  </body>
+</html>
+

@@ -5,8 +5,9 @@
  * Adapted for react-scripts (uses process.env instead of import.meta.env)
  */
 import { supabase, isSupabaseMock } from '../lib/supabase';
+import { getEnv } from '../utils/env';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = getEnv('API_URL', 'http://localhost:8000');
 
 export type AuthTokens = {
   accessToken: string;
