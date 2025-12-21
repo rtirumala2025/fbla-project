@@ -44,6 +44,7 @@ const EventCalendarPage = lazy(() => import('./pages/events/EventCalendarPage').
 const NextGenHub = lazy(() => import('./pages/nextgen/NextGenHub').then(m => ({ default: m.NextGenHub })));
 const AvatarStudio = lazy(() => import('./pages/pets/AvatarStudio').then(m => ({ default: m.AvatarStudio })));
 const PetSelectionPage = lazy(() => import('./pages/PetSelectionPage').then(m => ({ default: m.PetSelectionPage })));
+const CreatePetPage = lazy(() => import('./pages/CreatePetPage').then(m => ({ default: m.CreatePetPage })));
 const GameUI = lazy(() => import('./pages/GameUI').then(m => ({ default: m.GameUI })));
 const SocialHub = lazy(() => import('./pages/social/SocialHub').then(m => ({ default: m.SocialHub })));
 const SocialFeaturesPage = lazy(() => import('./pages/social/SocialFeaturesPage').then(m => ({ default: m.SocialFeaturesPage })));
@@ -377,6 +378,8 @@ function AppContent() {
             
             {/* Pet selection page - only for users without pets */}
             <Route path="/pet-selection" element={<OnboardingRoute><PageTransition><PetSelectionPage /></PageTransition></OnboardingRoute>} />
+            {/* Simple pet creation page - alternative simpler flow */}
+            <Route path="/create-pet" element={<OnboardingRoute><PageTransition><CreatePetPage /></PageTransition></OnboardingRoute>} />
             {/* Legacy route redirect */}
             <Route path="/select-pet" element={<Navigate to="/pet-selection" replace />} />
             

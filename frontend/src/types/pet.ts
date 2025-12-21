@@ -71,7 +71,7 @@ export interface ShopItem {
 }
 
 // Extended types for pet features
-export type PetSpecies = 'dog' | 'cat' | 'bird' | 'rabbit' | 'fox' | 'dragon';
+export type PetSpecies = 'dog' | 'cat' | 'bird' | 'rabbit' | 'fox' | 'dragon' | 'panda';
 
 export interface PetCreateRequest {
   name: string;
@@ -162,4 +162,5 @@ export const speciesBreedMap: Record<PetSpecies, string[]> = {
   rabbit: ['Dutch', 'Lop', 'Angora', 'Rex', 'Lionhead'],
   fox: ['Red Fox', 'Arctic Fox', 'Fennec Fox', 'Gray Fox'],
   dragon: ['Fire Dragon', 'Ice Dragon', 'Storm Dragon', 'Earth Dragon'],
+  panda: ['Giant Panda', 'Red Panda', 'Mixed'],
 };
