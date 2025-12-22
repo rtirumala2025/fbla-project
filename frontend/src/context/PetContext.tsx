@@ -102,7 +102,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         const loadedPet: Pet = {
           id: data.id,
           name: data.name,
-          species: data.species as 'dog' | 'cat' | 'bird' | 'rabbit',
+          species: data.species as Pet['species'],
           breed: data.breed || 'Mixed',
           age: age, // Default to 0 if birthday doesn't exist
           level: 1, // Default level (not stored in DB)
@@ -422,7 +422,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       const newPet: Pet = {
         id: data.id,
         name: data.name,
-        species: data.species as 'dog' | 'cat' | 'bird' | 'rabbit',
+        species: data.species as Pet['species'],
         breed: data.breed,
         age: age, // Default to 0 if birthday doesn't exist
         level: 1, // Default level (not stored in DB)
