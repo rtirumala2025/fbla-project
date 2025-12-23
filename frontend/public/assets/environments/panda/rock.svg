@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Rock base -->
+  <path d="M 20 48 Q 16 40 20 32 Q 24 28 28 30 Q 32 26 36 30 Q 40 28 44 32 Q 48 40 44 48 Q 40 52 36 50 Q 32 54 28 50 Q 24 52 20 48 Z" fill="#808080" stroke="#606060" stroke-width="1.5"/>
+  <!-- Rock highlights -->
+  <ellipse cx="28" cy="38" rx="6" ry="4" fill="#A0A0A0" opacity="0.6"/>
+  <ellipse cx="36" cy="42" rx="4" ry="3" fill="#A0A0A0" opacity="0.5"/>
+  <!-- Moss/vegetation -->
+  <ellipse cx="24" cy="46" rx="3" ry="2" fill="#228B22" opacity="0.7"/>
+  <ellipse cx="40" cy="48" rx="2.5" ry="1.5" fill="#228B22" opacity="0.7"/>
+</svg>
+

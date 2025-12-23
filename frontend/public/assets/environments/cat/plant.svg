@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Pot -->
+  <path d="M 20 48 L 24 40 L 40 40 L 44 48 Z" fill="#8B4513" stroke="#654321" stroke-width="1.5"/>
+  <ellipse cx="32" cy="48" rx="12" ry="3" fill="#654321" stroke="#4A2C1A" stroke-width="1.5"/>
+  <!-- Plant stem -->
+  <path d="M 32 40 L 30 28 L 34 28 Z" fill="#228B22" stroke="#006400" stroke-width="1"/>
+  <!-- Leaves -->
+  <ellipse cx="28" cy="30" rx="6" ry="4" fill="#32CD32" transform="rotate(-30 28 30)"/>
+  <ellipse cx="36" cy="30" rx="6" ry="4" fill="#32CD32" transform="rotate(30 36 30)"/>
+  <ellipse cx="32" cy="26" rx="5" ry="3.5" fill="#228B22" transform="rotate(0 32 26)"/>
+</svg>
+

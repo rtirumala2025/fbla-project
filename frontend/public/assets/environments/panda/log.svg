@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Log body -->
+  <ellipse cx="32" cy="40" rx="20" ry="8" fill="#8B4513" stroke="#654321" stroke-width="2"/>
+  <!-- Log rings -->
+  <ellipse cx="32" cy="40" rx="18" ry="6" fill="none" stroke="#654321" stroke-width="1" opacity="0.6"/>
+  <ellipse cx="32" cy="40" rx="15" ry="5" fill="none" stroke="#654321" stroke-width="1" opacity="0.6"/>
+  <ellipse cx="32" cy="40" rx="12" ry="4" fill="none" stroke="#654321" stroke-width="1" opacity="0.6"/>
+  <!-- Bark texture -->
+  <path d="M 16 36 Q 20 38 24 36" stroke="#654321" stroke-width="1" fill="none" opacity="0.4"/>
+  <path d="M 20 40 Q 24 42 28 40" stroke="#654321" stroke-width="1" fill="none" opacity="0.4"/>
+  <path d="M 36 40 Q 40 42 44 40" stroke="#654321" stroke-width="1" fill="none" opacity="0.4"/>
+  <path d="M 40 44 Q 44 46 48 44" stroke="#654321" stroke-width="1" fill="none" opacity="0.4"/>
+</svg>
+

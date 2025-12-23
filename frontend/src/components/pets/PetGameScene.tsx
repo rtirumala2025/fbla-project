@@ -96,7 +96,9 @@ interface WorldObject {
   id: CareAction;
   label: string;
   emoji: string;
+  imagePath?: string;
   secondaryEmoji?: string;
+  secondaryImagePath?: string;
   position: { x: string; y: string };
   size: string;
   description: string;
@@ -278,23 +280,27 @@ const InteractiveObject: React.FC<{
         top: object.position.y,
         fontSize: object.size,
       }}
-      whileHover={!disabled ? { scale: 1.12, y: -6 } : {}}
-      whileTap={!disabled ? { scale: 0.92 } : {}}
+      whileHover={!disabled ? { scale: 1.15, y: -8 } : {}}
+      whileTap={!disabled ? { scale: 0.95 } : {}}
       animate={isActive ? { 
-        scale: [1, 1.08, 1],
-        rotate: [0, -3, 3, 0],
+        scale: [1, 1.12, 1],
+        rotate: [0, -5, 5, 0],
+        y: [0, -4, 0],
       } : {}}
-      transition={isActive ? { duration: 0.4, repeat: Infinity } : { type: 'spring', stiffness: 300 }}
+      transition={isActive ? { duration: 0.5, repeat: Infinity } : { type: 'spring', stiffness: 300, damping: 20 }}
     >
-      {/* Zone mat/platform - subtle area indicator */}
+      {/* Zone mat/platform - prominent area indicator */}
       <div 
-        className="absolute w-24 h-24 rounded-2xl -z-10 transition-all duration-300"
+        className="absolute rounded-3xl -z-10 transition-all duration-300"
         style={{ 
+          width: '220px',
+          height: '220px',
           background: zoneColor.bg,
-          border: `2px solid ${isHovered ? zoneColor.border : 'transparent'}`,
-          transform: 'translate(-50%, -50%) scale(1.2)',
+          border: `3px solid ${isHovered ? zoneColor.border : 'rgba(255,255,255,0.3)'}`,
+          transform: 'translate(-50%, -50%) scale(1.3)',
           left: '50%',
           top: '50%',
+          boxShadow: isHovered ? `0 8px 24px ${zoneColor.glow}` : '0 4px 12px rgba(0,0,0,0.15)',
         }}
       />
 
@@ -308,28 +314,115 @@ const InteractiveObject: React.FC<{
         transition={{ duration: 0.2 }}
       />
       
-      {/* Main emoji with secondary companion */}
-      <div className="relative">
-      <span 
-          className="relative select-none block"
-        style={{ 
+      {/* Main image/emoji with secondary companion */}
+      <div className="relative" style={{ width: object.size, height: object.size, minWidth: object.size, minHeight: object.size }}>
+        {object.imagePath ? (
+          <img
+            src={object.imagePath}
+            alt={object.emoji}
+            className="object-image"
+            style={{
+              width: '100%',
+              height: '100%',
+              minWidth: '100%',
+              minHeight: '100%',
+              objectFit: 'contain',
+              filter: isHovered 
+                ? `drop-shadow(0 0 32px ${zoneColor.glow}) brightness(1.1)` 
+                : 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+              transition: 'filter 0.3s ease, transform 0.3s ease',
+              display: 'block',
+              pointerEvents: 'none',
+              transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+            }}
+            onError={(e) => {
+              console.error(`[PetGameScene] Failed to load object asset: ${object.imagePath}`);
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              // Find the fallback span in the same container
+              const container = target.parentElement;
+              if (container) {
+                const fallback = container.querySelector('.object-emoji-fallback') as HTMLElement;
+                if (fallback) {
+                  fallback.style.display = 'block';
+                  console.warn(`[PetGameScene] Falling back to emoji for ${object.id}`);
+                }
+              }
+            }}
+            onLoad={(e) => {
+              // Image loaded successfully - ensure it's visible
+              const target = e.target as HTMLImageElement;
+              target.style.opacity = '1';
+              target.style.display = 'block';
+              console.log(`[PetGameScene] Successfully loaded image: ${object.imagePath}`);
+            }}
+          />
+        ) : null}
+        <span 
+          className="object-emoji-fallback"
+          style={{ 
+            display: object.imagePath ? 'none' : 'block',
+            fontSize: object.size,
             filter: isHovered 
-              ? `drop-shadow(0 0 16px ${zoneColor.glow})` 
-              : 'drop-shadow(0 3px 4px rgba(0,0,0,0.25))',
-            transition: 'filter 0.2s ease',
-        }}
-      >
-        {object.emoji}
-      </span>
+              ? `drop-shadow(0 0 32px ${zoneColor.glow}) brightness(1.1)` 
+              : 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+            transition: 'filter 0.3s ease, transform 0.3s ease',
+            lineHeight: 1,
+            transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+          }}
+          aria-hidden={!!object.imagePath}
+        >
+          {object.emoji}
+        </span>
       
-        {/* Secondary emoji - companion object */}
+        {/* Secondary image/emoji - companion object */}
         {object.secondaryEmoji && (
-          <span 
-            className="absolute -bottom-1 -right-3 text-[0.45em] opacity-80"
-            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
-          >
-            {object.secondaryEmoji}
-          </span>
+          <div className="absolute -bottom-4 -right-6" style={{ width: '64px', height: '64px', zIndex: 10 }}>
+            {object.secondaryImagePath ? (
+              <img
+                src={object.secondaryImagePath}
+                alt={object.secondaryEmoji}
+                className="object-secondary-image"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  minWidth: '100%',
+                  minHeight: '100%',
+                  objectFit: 'contain',
+                  opacity: 0.95,
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                  display: 'block',
+                  pointerEvents: 'none',
+                  transform: isHovered ? 'scale(1.1) rotate(5deg)' : 'scale(1)',
+                  transition: 'transform 0.3s ease',
+                }}
+                onError={(e) => {
+                  console.warn(`Failed to load secondary asset: ${object.secondaryImagePath}, falling back to emoji`);
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  // Find the fallback span in the same container
+                  const container = target.parentElement;
+                  if (container) {
+                    const fallback = container.querySelector('.object-secondary-emoji-fallback') as HTMLElement;
+                    if (fallback) fallback.style.display = 'block';
+                  }
+                }}
+              />
+            ) : null}
+            <span
+              className="object-secondary-emoji-fallback"
+              style={{
+                display: object.secondaryImagePath ? 'none' : 'block',
+                fontSize: '48px',
+                opacity: 0.95,
+                filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
+                lineHeight: 1,
+              }}
+              aria-hidden={!!object.secondaryImagePath}
+            >
+              {object.secondaryEmoji}
+            </span>
+          </div>
         )}
       </div>
       
@@ -344,14 +437,15 @@ const InteractiveObject: React.FC<{
             transition={{ duration: 0.15 }}
           >
             <div 
-              className="px-3 py-1.5 rounded-full text-white text-sm font-bold shadow-lg"
+              className="px-4 py-2 rounded-full text-white text-base font-bold shadow-xl"
               style={{ 
-                background: 'linear-gradient(135deg, rgba(15,23,42,0.95), rgba(30,41,59,0.95))',
-                border: `1px solid ${zoneColor.border}`,
+                background: 'linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,41,59,0.98))',
+                border: `2px solid ${zoneColor.border}`,
+                boxShadow: `0 4px 16px ${zoneColor.glow}40`,
               }}
             >
               {object.description}
-    </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -768,6 +862,16 @@ export function PetGameScene() {
   const { pet, loading: petLoading, error: petError } = usePet();
   const { balance, refreshBalance } = useFinancial();
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[PetGameScene] Render state:', {
+      petLoading,
+      hasPet: !!pet,
+      petType: pet ? ((pet as any)?.pet_type || pet?.species) : 'none',
+      petError,
+    });
+  }, [petLoading, pet, petError]);
+
   // State
   const [stats, setStats] = useState<PetStats | null>(null);
   const [diary, setDiary] = useState<PetDiaryEntry[]>([]);
@@ -819,20 +923,49 @@ export function PetGameScene() {
   // Use pet_type as canonical, fallback to species
   const petTypeRaw = ((pet as any)?.pet_type || pet?.species || 'dog').toLowerCase();
   const petType: PetType = useMemo(() => {
-    if (petTypeRaw === 'dog' || petTypeRaw === 'cat' || petTypeRaw === 'panda') {
-      return petTypeRaw;
+    const normalized = petTypeRaw.toLowerCase().trim();
+    if (normalized === 'dog' || normalized === 'cat' || normalized === 'panda') {
+      console.log(`[PetGameScene] Using petType: ${normalized}`);
+      return normalized;
     }
-    console.warn(`PetGameScene: Unknown petType "${petTypeRaw}", defaulting to "dog"`);
+    console.warn(`[PetGameScene] Unknown petType "${petTypeRaw}", defaulting to "dog"`);
     return 'dog';
   }, [petTypeRaw]);
   const petName = pet?.name || 'Your Pet';
   const currentMood = stats?.mood || pet?.stats?.mood || 'content';
 
   // Get environment config based on pet type
-  const envConfig = useMemo(() => getEnvironmentConfig(petType), [petType]);
+  const envConfig = useMemo(() => {
+    const config = getEnvironmentConfig(petType);
+    console.log(`[PetGameScene] Environment config for ${petType}:`, {
+      id: config.id,
+      name: config.name,
+      propsWithImages: {
+        feed: !!config.props.feed.imagePath,
+        rest: !!config.props.rest.imagePath,
+        play: !!config.props.play.imagePath,
+        bathe: !!config.props.bathe.imagePath,
+      },
+      decorationsWithImages: config.decorations.filter(d => d.imagePath).length,
+    });
+    return config;
+  }, [petType]);
   
   // Get world objects for this environment
-  const worldObjects = useMemo(() => getWorldObjects(envConfig), [envConfig]);
+  const worldObjects = useMemo(() => {
+    const objects = getWorldObjects(envConfig);
+    // Debug: Log world objects with image paths
+    objects.forEach(obj => {
+      console.log(`[PetGameScene] World object ${obj.id}:`, {
+        hasImagePath: !!obj.imagePath,
+        imagePath: obj.imagePath,
+        hasSecondaryImagePath: !!obj.secondaryImagePath,
+        secondaryImagePath: obj.secondaryImagePath,
+        size: obj.size,
+      });
+    });
+    return objects;
+  }, [envConfig]);
 
   // Helper functions
   const getEvolutionStage = useCallback((level: number): string => {
@@ -999,12 +1132,19 @@ export function PetGameScene() {
 
   // Loading state - polished for competition (uses default environment)
   if (loading) {
-    const defaultEnv = getEnvironmentConfig('default');
+    const defaultEnv = getEnvironmentConfig('dog'); // Use 'dog' instead of 'default'
     return (
       <div 
-        className="fixed inset-0 top-[80px] flex items-center justify-center"
+        className="fixed flex items-center justify-center"
         style={{ 
+          top: '5rem',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: 'calc(100vh - 5rem)',
           background: `linear-gradient(180deg, ${defaultEnv.room.wallTop} 0%, ${defaultEnv.room.wallBottom} 60%, ${defaultEnv.room.floor} 100%)`,
+          zIndex: 1,
         }}
       >
         <motion.div
@@ -1034,12 +1174,19 @@ export function PetGameScene() {
 
   // No pet state - encouraging and clear (uses default dog environment colors)
   if (!pet) {
-    const defaultEnv = getEnvironmentConfig('default');
+    const defaultEnv = getEnvironmentConfig('dog'); // Use 'dog' instead of 'default'
     return (
       <div 
-        className="fixed inset-0 top-[80px] flex items-center justify-center"
+        className="fixed flex items-center justify-center"
         style={{ 
+          top: '5rem',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: 'calc(100vh - 5rem)',
           background: `linear-gradient(180deg, ${defaultEnv.room.wallTop} 0%, ${defaultEnv.room.wallBottom} 60%, ${defaultEnv.room.floor} 100%)`,
+          zIndex: 1,
         }}
       >
         <motion.div
@@ -1077,7 +1224,17 @@ export function PetGameScene() {
   return (
     <motion.div
       ref={sceneRef}
-      className="fixed inset-0 top-[80px] overflow-hidden"
+      className="fixed overflow-hidden"
+      style={{ 
+        top: '5rem', // Account for header height (min-h-[5rem] on larger screens, 4rem on mobile)
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: 'calc(100vh - 5rem)',
+        backgroundColor: '#f0f0f0', // Fallback background color
+        zIndex: 1, // Above background but below header (z-50)
+      }}
       animate={screenShake ? { x: [0, -2, 2, -2, 0] } : {}}
       transition={{ duration: 0.15 }}
     >

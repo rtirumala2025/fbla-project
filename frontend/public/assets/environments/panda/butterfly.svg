@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Butterfly body -->
+  <ellipse cx="32" cy="32" rx="2" ry="8" fill="#8B4513" stroke="#654321" stroke-width="0.5"/>
+  <!-- Left wing top -->
+  <ellipse cx="24" cy="28" rx="8" ry="6" fill="#FF69B4" stroke="#FF1493" stroke-width="1" transform="rotate(-20 24 28)"/>
+  <ellipse cx="24" cy="28" rx="5" ry="4" fill="#FFB6C1" opacity="0.6"/>
+  <!-- Left wing bottom -->
+  <ellipse cx="24" cy="36" rx="6" ry="5" fill="#FF69B4" stroke="#FF1493" stroke-width="1" transform="rotate(20 24 36)"/>
+  <ellipse cx="24" cy="36" rx="4" ry="3" fill="#FFB6C1" opacity="0.6"/>
+  <!-- Right wing top -->
+  <ellipse cx="40" cy="28" rx="8" ry="6" fill="#FF69B4" stroke="#FF1493" stroke-width="1" transform="rotate(20 40 28)"/>
+  <ellipse cx="40" cy="28" rx="5" ry="4" fill="#FFB6C1" opacity="0.6"/>
+  <!-- Right wing bottom -->
+  <ellipse cx="40" cy="36" rx="6" ry="5" fill="#FF69B4" stroke="#FF1493" stroke-width="1" transform="rotate(-20 40 36)"/>
+  <ellipse cx="40" cy="36" rx="4" ry="3" fill="#FFB6C1" opacity="0.6"/>
+  <!-- Wing spots -->
+  <circle cx="26" cy="28" r="1.5" fill="#000000" opacity="0.3"/>
+  <circle cx="38" cy="28" r="1.5" fill="#000000" opacity="0.3"/>
+</svg>
+

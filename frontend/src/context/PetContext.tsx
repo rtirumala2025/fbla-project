@@ -315,7 +315,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     if (!userId) throw new Error('User not authenticated');
     
     try {
-      logger.info('Creating pet in DB', { name, type, breed, userId });
+      logger.info('Creating/updating pet in DB', { name, type, breed, userId });
       
       if (!supabase) {
         throw new Error('Supabase client not initialized');
@@ -373,11 +373,12 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       // Don't include birthday or color_pattern - they may not exist in the actual schema
       // The schema cache error confirms birthday doesn't exist
       
-      logger.debug('Pet data to insert', petData);
+      logger.debug('Pet data to upsert', petData);
       
+      // Use upsert to handle case where pet already exists (update instead of error)
       const query = supabase
         .from('pets')
-        .insert(petData)
+        .upsert(petData, { onConflict: 'user_id' })
         .select()
         .single();
       
@@ -427,7 +428,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         throw new Error('Pet created but no data returned from database');
       }
       
-      logger.info('Pet created in DB', { petId: data.id, userId, name });
+      logger.info('Pet created/updated in DB', { petId: data.id, userId, name });
       
       // Map created pet to Pet type
       // Note: age, level, and xp are computed fields (not in DB schema)

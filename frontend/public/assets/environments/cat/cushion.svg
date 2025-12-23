@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Cushion base -->
+  <ellipse cx="32" cy="40" rx="22" ry="16" fill="#DDA0DD" stroke="#BA55D3" stroke-width="2"/>
+  <!-- Cushion top -->
+  <ellipse cx="32" cy="36" rx="20" ry="14" fill="#EE82EE" stroke="#BA55D3" stroke-width="1.5"/>
+  <!-- Pattern -->
+  <circle cx="28" cy="34" r="2" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="36" cy="38" r="2" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="32" cy="40" r="1.5" fill="#FFFFFF" opacity="0.5"/>
+  <!-- Stitching -->
+  <path d="M 16 40 Q 24 36 32 40 Q 40 36 48 40" stroke="#BA55D3" stroke-width="1" fill="none" stroke-dasharray="2,2"/>
+</svg>
+

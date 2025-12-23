@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Yarn ball base -->
+  <circle cx="32" cy="32" r="20" fill="#FF69B4" stroke="#FF1493" stroke-width="2"/>
+  <!-- Yarn strands -->
+  <path d="M 20 32 Q 24 20 32 24 Q 40 20 44 32" stroke="#FFB6C1" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 24 28 Q 28 16 36 20 Q 44 16 48 28" stroke="#FFB6C1" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 16 36 Q 20 24 28 28 Q 36 24 40 36" stroke="#FFB6C1" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Highlight -->
+  <ellipse cx="28" cy="28" rx="6" ry="8" fill="#FFFFFF" opacity="0.4"/>
+</svg>
+

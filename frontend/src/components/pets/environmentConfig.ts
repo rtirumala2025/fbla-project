@@ -29,8 +29,10 @@ export interface ZoneColors {
 }
 
 export interface PropConfig {
-  emoji: string;
+  emoji: string; // Keep for fallback/accessibility
+  imagePath?: string; // Path to SVG/PNG asset
   secondaryEmoji?: string;
+  secondaryImagePath?: string; // Path to secondary asset
   label: string;
   description: string;
   actionEmoji: string[];
@@ -49,9 +51,11 @@ export interface ZoneLayout {
 }
 
 export interface Decoration {
-  emoji: string;
+  emoji: string; // Keep for fallback/accessibility
+  imagePath?: string; // Path to SVG/PNG asset
   position: { left?: string; right?: string; top?: string; bottom?: string };
   opacity: number;
+  size?: string; // Optional size override
 }
 
 export interface WindowConfig {
@@ -120,7 +124,7 @@ const DEFAULT_LAYOUT: ZoneLayout = {
   clean: { x: '18%', y: '48%' },
 };
 
-const OBJECT_SIZE = '64px';
+const OBJECT_SIZE = '180px'; // Extra large for submission-ready prominence
 
 // ============================================================================
 // DOG ENVIRONMENT — Playful, Indoor Home
@@ -157,13 +161,16 @@ const DOG_ENVIRONMENT: EnvironmentConfig = {
   props: {
     feed: {
       emoji: '🍖',
+      imagePath: '/assets/environments/dog/bowl.svg',
       secondaryEmoji: '🥣',
+      secondaryImagePath: '/assets/environments/dog/bone.svg',
       label: 'Food Bowl',
       description: 'Tap to feed!',
       actionEmoji: ['🍖', '🥩', '✨', '💕'],
     },
     rest: {
       emoji: '🛏️',
+      imagePath: '/assets/environments/dog/bed.svg',
       secondaryEmoji: '🌙',
       label: 'Cozy Bed',
       description: 'Tap to rest!',
@@ -171,13 +178,16 @@ const DOG_ENVIRONMENT: EnvironmentConfig = {
     },
     play: {
       emoji: '🎾',
+      imagePath: '/assets/environments/dog/ball.svg',
       secondaryEmoji: '🧸',
+      secondaryImagePath: '/assets/environments/dog/toy.svg',
       label: 'Toy Box',
       description: 'Tap to play!',
       actionEmoji: ['🎾', '⭐', '🎉', '💫'],
     },
     bathe: {
       emoji: '🛁',
+      imagePath: '/assets/environments/dog/bath.svg',
       secondaryEmoji: '🧼',
       label: 'Bath Time',
       description: 'Tap to bathe!',
@@ -188,10 +198,10 @@ const DOG_ENVIRONMENT: EnvironmentConfig = {
   layout: DEFAULT_LAYOUT,
 
   decorations: [
-    { emoji: '🥣', position: { left: '8%', bottom: '18%' }, opacity: 0.4 },
-    { emoji: '⭐', position: { right: '8%', bottom: '18%' }, opacity: 0.4 },
-    { emoji: '🎈', position: { right: '8%', top: '35%' }, opacity: 0.4 },
-    { emoji: '💧', position: { left: '8%', top: '35%' }, opacity: 0.4 },
+    { emoji: '🥣', imagePath: '/assets/environments/dog/bowl.svg', position: { left: '2%', bottom: '18%' }, opacity: 0.95, size: '140px' },
+    { emoji: '⭐', imagePath: '/assets/environments/dog/toy.svg', position: { right: '2%', bottom: '18%' }, opacity: 0.95, size: '128px' },
+    { emoji: '🎈', imagePath: '/assets/environments/dog/ball.svg', position: { right: '2%', top: '28%' }, opacity: 0.95, size: '112px' },
+    { emoji: '💧', position: { left: '2%', top: '28%' }, opacity: 0.4 },
   ],
 
   window: {
@@ -248,6 +258,7 @@ const CAT_ENVIRONMENT: EnvironmentConfig = {
   props: {
     feed: {
       emoji: '🐟',
+      imagePath: '/assets/environments/cat/dish.svg',
       secondaryEmoji: '🍽️',
       label: 'Food Dish',
       description: 'Tap to feed!',
@@ -255,6 +266,7 @@ const CAT_ENVIRONMENT: EnvironmentConfig = {
     },
     rest: {
       emoji: '🛋️',
+      imagePath: '/assets/environments/cat/cushion.svg',
       secondaryEmoji: '💤',
       label: 'Cushion',
       description: 'Tap to rest!',
@@ -262,6 +274,7 @@ const CAT_ENVIRONMENT: EnvironmentConfig = {
     },
     play: {
       emoji: '🧶',
+      imagePath: '/assets/environments/cat/yarn.svg',
       secondaryEmoji: '🪶',
       label: 'Yarn Ball',
       description: 'Tap to play!',
@@ -269,6 +282,7 @@ const CAT_ENVIRONMENT: EnvironmentConfig = {
     },
     bathe: {
       emoji: '🪮',
+      imagePath: '/assets/environments/cat/grooming.svg',
       secondaryEmoji: '✨',
       label: 'Grooming',
       description: 'Tap to groom!',
@@ -279,10 +293,10 @@ const CAT_ENVIRONMENT: EnvironmentConfig = {
   layout: DEFAULT_LAYOUT,
 
   decorations: [
-    { emoji: '🐾', position: { left: '8%', bottom: '18%' }, opacity: 0.35 },
-    { emoji: '🌙', position: { right: '8%', bottom: '18%' }, opacity: 0.35 },
-    { emoji: '🪴', position: { right: '8%', top: '35%' }, opacity: 0.4 },
-    { emoji: '🕯️', position: { left: '8%', top: '35%' }, opacity: 0.35 },
+    { emoji: '🐾', imagePath: '/assets/environments/cat/scratching_post.svg', position: { left: '2%', bottom: '18%' }, opacity: 0.95, size: '144px' },
+    { emoji: '🌙', position: { right: '2%', bottom: '18%' }, opacity: 0.35 },
+    { emoji: '🪴', imagePath: '/assets/environments/cat/plant.svg', position: { right: '2%', top: '28%' }, opacity: 0.95, size: '120px' },
+    { emoji: '🕯️', position: { left: '2%', top: '28%' }, opacity: 0.35 },
   ],
 
   window: {
@@ -339,28 +353,36 @@ const PANDA_ENVIRONMENT: EnvironmentConfig = {
   props: {
     feed: {
       emoji: '🎋',
+      imagePath: '/assets/environments/panda/bamboo.svg',
       secondaryEmoji: '🥬',
+      secondaryImagePath: '/assets/environments/panda/leaves.svg',
       label: 'Bamboo',
       description: 'Tap to feed!',
       actionEmoji: ['🎋', '🥬', '🌿', '💚'],
     },
     rest: {
       emoji: '🪨',
+      imagePath: '/assets/environments/panda/rock.svg',
       secondaryEmoji: '🌸',
+      secondaryImagePath: '/assets/environments/panda/flower.svg',
       label: 'Rock Bed',
       description: 'Tap to rest!',
       actionEmoji: ['💤', '🌸', '🌙', '☁️'],
     },
     play: {
       emoji: '🪵',
+      imagePath: '/assets/environments/panda/log.svg',
       secondaryEmoji: '🌺',
+      secondaryImagePath: '/assets/environments/panda/flower.svg',
       label: 'Log Roll',
       description: 'Tap to play!',
       actionEmoji: ['🪵', '🌺', '🎉', '🌈'],
     },
     bathe: {
       emoji: '💧',
+      imagePath: '/assets/environments/panda/stream.svg',
       secondaryEmoji: '🍃',
+      secondaryImagePath: '/assets/environments/panda/leaves.svg',
       label: 'Stream',
       description: 'Tap to bathe!',
       actionEmoji: ['💧', '🍃', '💦', '✨'],
@@ -370,10 +392,10 @@ const PANDA_ENVIRONMENT: EnvironmentConfig = {
   layout: DEFAULT_LAYOUT,
 
   decorations: [
-    { emoji: '🎋', position: { left: '5%', bottom: '25%' }, opacity: 0.5 },
-    { emoji: '🌸', position: { right: '5%', bottom: '25%' }, opacity: 0.45 },
-    { emoji: '🦋', position: { right: '10%', top: '30%' }, opacity: 0.4 },
-    { emoji: '🍃', position: { left: '10%', top: '30%' }, opacity: 0.45 },
+    { emoji: '🎋', imagePath: '/assets/environments/panda/bamboo.svg', position: { left: '2%', bottom: '20%' }, opacity: 0.95, size: '160px' },
+    { emoji: '🌸', imagePath: '/assets/environments/panda/flower.svg', position: { right: '2%', bottom: '20%' }, opacity: 0.95, size: '120px' },
+    { emoji: '🦋', imagePath: '/assets/environments/panda/butterfly.svg', position: { right: '6%', top: '25%' }, opacity: 0.9, size: '96px' },
+    { emoji: '🍃', imagePath: '/assets/environments/panda/leaves.svg', position: { left: '6%', top: '25%' }, opacity: 0.95, size: '112px' },
   ],
 
   window: {

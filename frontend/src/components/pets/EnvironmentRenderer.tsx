@@ -34,12 +34,34 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
     return 'dog';
   }, [petType]);
 
-  const environment = useMemo(() => getEnvironmentConfig(normalizedPetType), [normalizedPetType]);
+  const environment = useMemo(() => {
+    try {
+      return getEnvironmentConfig(normalizedPetType);
+    } catch (error) {
+      console.error('[EnvironmentRenderer] Error getting environment config:', error);
+      return getEnvironmentConfig('dog'); // Fallback to dog
+    }
+  }, [normalizedPetType]);
+
+  // Ensure we have valid environment config
+  if (!environment) {
+    console.error('[EnvironmentRenderer] No environment config available');
+    return (
+      <div className="environment-renderer" style={{ background: '#B4D7E8', width: '100%', height: '100%' }}>
+        <div style={{ padding: '20px', color: 'red' }}>Environment Error</div>
+      </div>
+    );
+  }
 
   return (
     <div 
       className="environment-renderer"
       style={{
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+        top: 0,
+        left: 0,
         background: `linear-gradient(to bottom, ${environment.room.wallTop} 0%, ${environment.room.wallBottom} 50%, ${environment.room.floor} 50%, ${environment.room.floorLight} 100%)`,
       }}
     >
@@ -86,9 +108,57 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
           style={{
             ...decoration.position,
             opacity: decoration.opacity,
+            width: decoration.size || '64px',
+            height: decoration.size || '64px',
+            minWidth: decoration.size || '64px',
+            minHeight: decoration.size || '64px',
+            zIndex: 2,
           }}
         >
-          {decoration.emoji}
+          {decoration.imagePath ? (
+            <img
+              src={decoration.imagePath}
+              alt={decoration.emoji}
+              className="decoration-image"
+              style={{
+                width: '100%',
+                height: '100%',
+                minWidth: '100%',
+                minHeight: '100%',
+                objectFit: 'contain',
+                display: 'block',
+                filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.35)) brightness(1.05)',
+                pointerEvents: 'none',
+              }}
+              onError={(e) => {
+                console.error(`[EnvironmentRenderer] Failed to load decoration asset: ${decoration.imagePath}`);
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                // Find the fallback span in the same container
+                const container = target.parentElement;
+                if (container) {
+                  const fallback = container.querySelector('.decoration-emoji-fallback') as HTMLElement;
+                  if (fallback) {
+                    fallback.style.display = 'block';
+                    console.warn(`[EnvironmentRenderer] Falling back to emoji for decoration`);
+                  }
+                }
+              }}
+              onLoad={() => {
+                console.log(`[EnvironmentRenderer] Successfully loaded decoration: ${decoration.imagePath}`);
+              }}
+            />
+          ) : null}
+          <span
+            className="decoration-emoji-fallback"
+            style={{
+              display: decoration.imagePath ? 'none' : 'block',
+              fontSize: decoration.size || '48px',
+            }}
+            aria-hidden={!!decoration.imagePath}
+          >
+            {decoration.emoji}
+          </span>
         </div>
       ))}
 
