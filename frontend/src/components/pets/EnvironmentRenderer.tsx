@@ -162,41 +162,7 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
         </div>
       ))}
 
-      {/* Zone Highlights (subtle background indicators) */}
-      <div className="zone-highlights">
-        <div 
-          className="zone-highlight feed-zone"
-          style={{
-            left: environment.layout.feed.x,
-            top: environment.layout.feed.y,
-            backgroundColor: environment.floorHighlights.feed,
-          }}
-        />
-        <div 
-          className="zone-highlight rest-zone"
-          style={{
-            left: environment.layout.rest.x,
-            top: environment.layout.rest.y,
-            backgroundColor: environment.floorHighlights.rest,
-          }}
-        />
-        <div 
-          className="zone-highlight play-zone"
-          style={{
-            left: environment.layout.play.x,
-            top: environment.layout.play.y,
-            backgroundColor: environment.floorHighlights.play,
-          }}
-        />
-        <div 
-          className="zone-highlight clean-zone"
-          style={{
-            left: environment.layout.clean.x,
-            top: environment.layout.clean.y,
-            backgroundColor: environment.floorHighlights.clean,
-          }}
-        />
-      </div>
+      {/* Zone highlights removed - items now sit directly in world without visible background indicators */}
 
       {/* Spotlight Effect */}
       <div 

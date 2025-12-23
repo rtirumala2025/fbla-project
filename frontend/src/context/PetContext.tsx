@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Pet, PetStats } from '@/types/pet';
-import { supabase, isSupabaseMock, withTimeout } from '../lib/supabase';
+import { supabase, isSupabaseMock, withTimeout, withRetry } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/networkUtils';
@@ -375,18 +375,155 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       
       logger.debug('Pet data to upsert', petData);
       
-      // Use upsert to handle case where pet already exists (update instead of error)
-      const query = supabase
-        .from('pets')
-        .upsert(petData, { onConflict: 'user_id' })
-        .select()
-        .single();
+      // Strategy: Try upsert first, with fallback to check-then-insert/update
+      const performUpsert = async () => {
+        // Try upsert with conflict resolution on user_id
+        // Supabase PostgREST uses the unique constraint name or column for onConflict
+        const query = supabase
+          .from('pets')
+          .upsert(petData, { onConflict: 'user_id' })
+          .select()
+          .single();
+        
+        return await withTimeout(
+          query as unknown as Promise<any>,
+          8000, // 8 second timeout for upsert
+          'Create pet (upsert)'
+        ) as any;
+      };
       
-      const { data, error } = await withTimeout(
-        query as unknown as Promise<any>,
-        15000,
-        'Create pet'
-      ) as any;
+      // Fallback: Check if pet exists, then insert or update
+      const performCheckThenUpsert = async () => {
+        // First, check if pet exists
+        const checkQuery = supabase
+          .from('pets')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+        
+        const checkResult = await withTimeout(
+          checkQuery as unknown as Promise<any>,
+          5000, // 5 second timeout for check
+          'Check existing pet'
+        ) as any;
+        
+        let result: any;
+        
+        if (checkResult.data && !checkResult.error) {
+          // Pet exists - update it
+          logger.debug('Pet exists, updating', { petId: checkResult.data.id });
+          const updateQuery = supabase
+            .from('pets')
+            .update(petData)
+            .eq('user_id', userId)
+            .select()
+            .single();
+          
+          result = await withTimeout(
+            updateQuery as unknown as Promise<any>,
+            8000, // 8 second timeout for update
+            'Update pet'
+          ) as any;
+        } else {
+          // Pet doesn't exist - insert it
+          logger.debug('Pet does not exist, inserting');
+          const insertQuery = supabase
+            .from('pets')
+            .insert(petData)
+            .select()
+            .single();
+          
+          result = await withTimeout(
+            insertQuery as unknown as Promise<any>,
+            8000, // 8 second timeout for insert
+            'Insert pet'
+          ) as any;
+        }
+        
+        return result;
+      };
+      
+      // Retry up to 3 times with exponential backoff
+      let lastError: any = null;
+      let data: any = null;
+      let error: any = null;
+      let usedFallback = false;
+      
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          let result: any;
+          
+          // Try upsert first (faster), fallback to check-then-insert/update on timeout
+          if (attempt === 1) {
+            try {
+              result = await performUpsert();
+            } catch (upsertErr: any) {
+              // If upsert times out, try fallback strategy
+              if (upsertErr?.message?.includes('timed out') || upsertErr?.message?.includes('timeout')) {
+                logger.warn('Upsert timed out, trying fallback strategy');
+                usedFallback = true;
+                result = await performCheckThenUpsert();
+              } else {
+                throw upsertErr;
+              }
+            }
+          } else {
+            // On retry, use fallback strategy
+            usedFallback = true;
+            result = await performCheckThenUpsert();
+          }
+          
+          data = result.data;
+          error = result.error;
+          
+          if (!error) {
+            // Success - break out of retry loop
+            if (usedFallback) {
+              logger.info('Pet created/updated using fallback strategy');
+            }
+            break;
+          }
+          
+          // Don't retry on certain errors
+          if (error?.code === '23505' || // Unique constraint
+              error?.code === '23503' || // Foreign key
+              error?.code === '42501' || // Permission denied
+              error?.code === 'PGRST116') { // Not found
+            lastError = error;
+            break;
+          }
+          
+          lastError = error;
+          
+          // Wait before retry (exponential backoff: 500ms, 1000ms)
+          if (attempt < 3) {
+            const delay = 500 * attempt;
+            logger.warn(`Pet creation attempt ${attempt} failed, retrying in ${delay}ms`, { error: error?.message });
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        } catch (err: any) {
+          lastError = err;
+          
+          // Check if it's a timeout error
+          if (err?.message?.includes('timed out') || err?.message?.includes('timeout')) {
+            if (attempt < 3) {
+              const delay = 500 * attempt;
+              logger.warn(`Pet creation attempt ${attempt} timed out, retrying in ${delay}ms`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+          }
+          
+          // For other errors, don't retry
+          error = err;
+          break;
+        }
+      }
+      
+      // Use the last error if we still have one
+      if (lastError && !error) {
+        error = lastError;
+      }
       
       if (error) {
         logger.error('Error creating pet', { userId, name, type, errorCode: error.code, errorDetails: error }, error);

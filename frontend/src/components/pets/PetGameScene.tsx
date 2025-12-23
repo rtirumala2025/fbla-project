@@ -242,24 +242,14 @@ const StatBar: React.FC<{
   );
 };
 
-// Interactive world object with zone grouping (environment-aware)
+// Interactive world object - placed directly in world, no visible UI panels
 const InteractiveObject: React.FC<{
   object: WorldObject;
   onClick: () => void;
   disabled: boolean;
   isActive: boolean;
-  envConfig: EnvironmentConfig;
-}> = ({ object, onClick, disabled, isActive, envConfig }) => {
+}> = ({ object, onClick, disabled, isActive }) => {
   const [isHovered, setIsHovered] = useState(false);
-
-  // Zone-specific colors from environment config
-  const zoneColors = {
-    feed: { bg: envConfig.zones.feedZone, glow: envConfig.zoneLabels.feed + '80', border: envConfig.zoneLabels.feed + '4D' },
-    rest: { bg: envConfig.zones.restZone, glow: envConfig.zoneLabels.rest + '80', border: envConfig.zoneLabels.rest + '4D' },
-    play: { bg: envConfig.zones.playZone, glow: envConfig.zoneLabels.play + '80', border: envConfig.zoneLabels.play + '4D' },
-    clean: { bg: envConfig.zones.cleanZone, glow: envConfig.zoneLabels.clean + '80', border: envConfig.zoneLabels.clean + '4D' },
-  };
-  const zoneColor = zoneColors[object.zone];
 
   return (
     <motion.button
@@ -279,6 +269,10 @@ const InteractiveObject: React.FC<{
         left: object.position.x, 
         top: object.position.y,
         fontSize: object.size,
+        // Invisible hit area - no visible background/border
+        background: 'transparent',
+        border: 'none',
+        padding: '20px',
       }}
       whileHover={!disabled ? { scale: 1.15, y: -8 } : {}}
       whileTap={!disabled ? { scale: 0.95 } : {}}
@@ -289,32 +283,7 @@ const InteractiveObject: React.FC<{
       } : {}}
       transition={isActive ? { duration: 0.5, repeat: Infinity } : { type: 'spring', stiffness: 300, damping: 20 }}
     >
-      {/* Zone mat/platform - prominent area indicator */}
-      <div 
-        className="absolute rounded-3xl -z-10 transition-all duration-300"
-        style={{ 
-          width: '220px',
-          height: '220px',
-          background: zoneColor.bg,
-          border: `3px solid ${isHovered ? zoneColor.border : 'rgba(255,255,255,0.3)'}`,
-          transform: 'translate(-50%, -50%) scale(1.3)',
-          left: '50%',
-          top: '50%',
-          boxShadow: isHovered ? `0 8px 24px ${zoneColor.glow}` : '0 4px 12px rgba(0,0,0,0.15)',
-        }}
-      />
-
-      {/* Glow effect on hover */}
-      <motion.div
-        className="absolute inset-0 rounded-full blur-xl pointer-events-none"
-        style={{ 
-          background: `radial-gradient(circle, ${zoneColor.glow} 0%, transparent 70%)`,
-        }}
-        animate={{ opacity: isHovered ? 0.8 : 0 }}
-        transition={{ duration: 0.2 }}
-      />
-      
-      {/* Main image/emoji with secondary companion */}
+      {/* Main image/emoji with secondary companion - placed directly in world */}
       <div className="relative" style={{ width: object.size, height: object.size, minWidth: object.size, minHeight: object.size }}>
         {object.imagePath ? (
           <img
@@ -328,8 +297,8 @@ const InteractiveObject: React.FC<{
               minHeight: '100%',
               objectFit: 'contain',
               filter: isHovered 
-                ? `drop-shadow(0 0 32px ${zoneColor.glow}) brightness(1.1)` 
-                : 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+                ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.5)) brightness(1.1)' 
+                : 'drop-shadow(0 6px 16px rgba(0,0,0,0.4))',
               transition: 'filter 0.3s ease, transform 0.3s ease',
               display: 'block',
               pointerEvents: 'none',
@@ -364,8 +333,8 @@ const InteractiveObject: React.FC<{
             display: object.imagePath ? 'none' : 'block',
             fontSize: object.size,
             filter: isHovered 
-              ? `drop-shadow(0 0 32px ${zoneColor.glow}) brightness(1.1)` 
-              : 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
+              ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.5)) brightness(1.1)' 
+              : 'drop-shadow(0 6px 16px rgba(0,0,0,0.4))',
             transition: 'filter 0.3s ease, transform 0.3s ease',
             lineHeight: 1,
             transform: isHovered ? 'scale(1.05)' : 'scale(1)',
@@ -426,40 +395,43 @@ const InteractiveObject: React.FC<{
         )}
       </div>
       
-      {/* Label tooltip - playful style */}
+      {/* Label tooltip - floating text, no visible box */}
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap"
+            className="absolute -top-14 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none z-30"
             initial={{ opacity: 0, y: 8, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.9 }}
             transition={{ duration: 0.15 }}
           >
-            <div 
-              className="px-4 py-2 rounded-full text-white text-base font-bold shadow-xl"
+            <span 
+              className="text-base font-bold"
               style={{ 
-                background: 'linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,41,59,0.98))',
-                border: `2px solid ${zoneColor.border}`,
-                boxShadow: `0 4px 16px ${zoneColor.glow}40`,
+                color: '#1f2937',
+                textShadow: '0 2px 8px rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.3)',
               }}
             >
               {object.description}
-            </div>
+            </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Loading indicator - cleaner pulse */}
+      {/* Loading indicator - subtle pulse, no visible box */}
       {isActive && (
         <motion.div
-          className="absolute inset-0 flex items-center justify-center"
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
           <motion.div 
-            className="w-16 h-16 rounded-full border-2 border-white/20"
-            animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.2, 0.5] }}
+            className="w-16 h-16 rounded-full"
+            style={{
+              border: '2px solid rgba(255,255,255,0.3)',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+            }}
+            animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.1, 0.3] }}
             transition={{ duration: 0.8, repeat: Infinity }}
           />
         </motion.div>
@@ -1279,7 +1251,7 @@ export function PetGameScene() {
         )}
       </AnimatePresence>
 
-      {/* ========== INTERACTIVE WORLD OBJECTS (environment-driven) ========== */}
+      {/* ========== INTERACTIVE WORLD OBJECTS (placed directly in world) ========== */}
       {worldObjects.map((obj) => (
         <InteractiveObject
           key={obj.id}
@@ -1287,7 +1259,6 @@ export function PetGameScene() {
           onClick={(e?: any) => handleAction(obj.id, e)}
           disabled={actionLoading !== null}
           isActive={actionLoading === obj.id}
-          envConfig={envConfig}
         />
       ))}
 
