@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="pet-eyes">
+  <!-- Panda eyes (small circles within black patches) -->
+  <circle cx="85" cy="68" r="6" fill="#FFFFFF"/>
+  <circle cx="115" cy="68" r="6" fill="#FFFFFF"/>
+  <circle cx="85" cy="68" r="4" fill="#2C2C2C"/>
+  <circle cx="115" cy="68" r="4" fill="#2C2C2C"/>
+  <!-- Eye shine -->
+  <circle cx="86" cy="67" r="1.5" fill="#FFFFFF"/>
+  <circle cx="116" cy="67" r="1.5" fill="#FFFFFF"/>
+</svg>
+

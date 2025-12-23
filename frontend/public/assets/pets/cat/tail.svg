@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="pet-tail">
+  <!-- Cat tail (curved) -->
+  <path d="M 165 135 Q 185 115 180 95 Q 175 75 160 85 Q 170 105 165 125 Z" fill="#FF8C00" opacity="0.9"/>
+</svg>
+

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="pet-body">
+  <!-- Cat body -->
+  <ellipse cx="100" cy="145" rx="60" ry="45" fill="#FFA500" opacity="0.9"/>
+  <!-- Cat chest -->
+  <ellipse cx="100" cy="135" rx="40" ry="30" fill="#FFD700"/>
+  <!-- Cat head -->
+  <circle cx="100" cy="75" r="50" fill="#FF8C00"/>
+  <!-- Cat snout -->
+  <ellipse cx="100" cy="90" rx="20" ry="15" fill="#FFD700"/>
+  <!-- Cat nose -->
+  <polygon points="100,92 95,98 105,98" fill="#FF69B4"/>
+</svg>
+

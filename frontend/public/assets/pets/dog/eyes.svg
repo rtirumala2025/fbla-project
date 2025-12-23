@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="pet-eyes">
+  <!-- Dog eyes -->
+  <circle cx="85" cy="65" r="8" fill="#FFFFFF"/>
+  <circle cx="115" cy="65" r="8" fill="#FFFFFF"/>
+  <circle cx="85" cy="65" r="5" fill="#2C2C2C"/>
+  <circle cx="115" cy="65" r="5" fill="#2C2C2C"/>
+  <!-- Eye shine -->
+  <circle cx="87" cy="63" r="2" fill="#FFFFFF"/>
+  <circle cx="117" cy="63" r="2" fill="#FFFFFF"/>
+</svg>
+

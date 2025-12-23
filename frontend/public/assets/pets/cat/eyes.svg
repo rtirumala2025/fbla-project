@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="pet-eyes">
+  <!-- Cat eyes (almond shaped) -->
+  <ellipse cx="85" cy="68" rx="10" ry="12" fill="#FFFFFF"/>
+  <ellipse cx="115" cy="68" rx="10" ry="12" fill="#FFFFFF"/>
+  <ellipse cx="85" cy="68" rx="6" ry="8" fill="#32CD32"/>
+  <ellipse cx="115" cy="68" rx="6" ry="8" fill="#32CD32"/>
+  <ellipse cx="85" cy="68" rx="3" ry="5" fill="#000000"/>
+  <ellipse cx="115" cy="68" rx="3" ry="5" fill="#000000"/>
+  <!-- Eye shine -->
+  <ellipse cx="87" cy="66" rx="2" ry="3" fill="#FFFFFF"/>
+  <ellipse cx="117" cy="66" rx="2" ry="3" fill="#FFFFFF"/>
+</svg>
+

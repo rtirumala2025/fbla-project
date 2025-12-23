@@ -409,8 +409,8 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         } else if (errorCode === '42501') {
           // Insufficient privileges (RLS policy violation)
           errorMessage = 'Permission denied. Please ensure you are logged in and try again.';
-        } else if (errorDetails.includes('timeout') || errorDetails.includes('timed out')) {
-          errorMessage = 'Request timed out. Please check your connection and try again.';
+        } else if (errorDetails.includes('timeout') || errorDetails.includes('timed out') || error.message?.includes('timed out')) {
+          errorMessage = 'Request timed out. This might be due to a slow connection. Please try again.';
         } else if (errorDetails.includes('network') || errorDetails.includes('fetch')) {
           errorMessage = 'Network error. Please check your internet connection and try again.';
         } else if (errorDetails) {

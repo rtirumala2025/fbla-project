@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="pet-tail">
+  <!-- Panda tail (small and round) -->
+  <circle cx="170" cy="140" r="15" fill="#2C2C2C" opacity="0.9"/>
+</svg>
+

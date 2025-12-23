@@ -89,7 +89,7 @@ export const PetNaming = () => {
     });
   }, [navigate, location.state]);
 
-  // Validate name with API
+  // Validate name with API (non-blocking, with timeout)
   const validateNameWithAPI = useCallback(async (value: string) => {
     const trimmed = value.trim();
     
@@ -118,11 +118,18 @@ export const PetNaming = () => {
     validationTimeoutRef.current = setTimeout(async () => {
       setIsValidatingName(true);
       try {
-        const response = await apiClient.post<NameValidationResponse>('/api/validate-name', {
+        // Add timeout wrapper to prevent hanging
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Validation timeout')), 5000); // 5 second timeout
+        });
+
+        const apiPromise = apiClient.post<NameValidationResponse>('/api/validate-name', {
           name: trimmed,
           name_type: 'pet',
           ...(currentUser?.uid && { exclude_user_id: currentUser.uid }),
         });
+        
+        const response = await Promise.race([apiPromise, timeoutPromise]);
         
         setApiValidation(response.data);
         
@@ -132,8 +139,9 @@ export const PetNaming = () => {
           setValidationError(null);
         }
       } catch (error: any) {
-        console.error('Name validation API error:', error);
-        // Don't block user if API fails - fall back to client-side validation
+        console.warn('Name validation API error (non-blocking):', error);
+        // Don't block user if API fails or times out - fall back to client-side validation
+        // Silently continue - client-side validation will handle it
         setApiValidation(null);
       } finally {
         setIsValidatingName(false);
@@ -229,17 +237,17 @@ export const PetNaming = () => {
       return;
     }
 
-    // If API validation is still pending, wait for it
-    if (isValidatingName) {
-      toast.info('Validating name...');
-      return;
-    }
+    // Don't wait for API validation - it's non-blocking
+    // If API validation failed or is pending, proceed with client-side validation only
+    // API validation is nice-to-have but not required
     
     setIsCreating(true);
     logFormSubmit({ name: name.trim(), species, breed }, false);
     
     try {
       // Create pet in database via PetContext (with breed from selection)
+      // Note: We proceed even if API validation is pending or failed
+      // Client-side validation already passed, which is sufficient
       await createPet(name.trim(), species, breed || 'Mixed');
       
       // Note: No localStorage cleanup needed - using React Router state instead
@@ -270,7 +278,11 @@ export const PetNaming = () => {
       // Extract error message properly
       let errorMessage = 'Failed to create pet';
       
-      if (error instanceof Error) {
+      // Check for timeout errors specifically
+      const errorString = error instanceof Error ? error.message : String(error?.message || error || '');
+      if (errorString.includes('timed out') || errorString.includes('timeout')) {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (error instanceof Error) {
         errorMessage = error.message;
       } else if (error?.message) {
         errorMessage = error.message;

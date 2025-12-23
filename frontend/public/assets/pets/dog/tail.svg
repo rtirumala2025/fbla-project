@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="pet-tail">
+  <!-- Dog tail -->
+  <path d="M 170 130 Q 185 110 180 90 Q 175 70 160 75 Q 165 95 170 115 Z" fill="#654321" opacity="0.9"/>
+</svg>
+

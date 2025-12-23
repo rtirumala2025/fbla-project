@@ -13,6 +13,8 @@ import { usePet } from '../../context/PetContext';
 import { useFinancial } from '../../context/FinancialContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EvolutionAnimation } from './EvolutionAnimation';
+import { EnvironmentRenderer } from './EnvironmentRenderer';
+import { PetVisual, type PetType } from './PetVisual';
 import { 
   getEnvironmentConfig, 
   getWorldObjects, 
@@ -814,11 +816,20 @@ export function PetGameScene() {
 
   const loading = petLoading;
   const petSpecies = (pet?.species || 'default').toLowerCase();
+  // Use pet_type as canonical, fallback to species
+  const petTypeRaw = ((pet as any)?.pet_type || pet?.species || 'dog').toLowerCase();
+  const petType: PetType = useMemo(() => {
+    if (petTypeRaw === 'dog' || petTypeRaw === 'cat' || petTypeRaw === 'panda') {
+      return petTypeRaw;
+    }
+    console.warn(`PetGameScene: Unknown petType "${petTypeRaw}", defaulting to "dog"`);
+    return 'dog';
+  }, [petTypeRaw]);
   const petName = pet?.name || 'Your Pet';
   const currentMood = stats?.mood || pet?.stats?.mood || 'content';
 
-  // Get environment config based on pet species
-  const envConfig = useMemo(() => getEnvironmentConfig(petSpecies), [petSpecies]);
+  // Get environment config based on pet type
+  const envConfig = useMemo(() => getEnvironmentConfig(petType), [petType]);
   
   // Get world objects for this environment
   const worldObjects = useMemo(() => getWorldObjects(envConfig), [envConfig]);
@@ -1070,85 +1081,10 @@ export function PetGameScene() {
       animate={screenShake ? { x: [0, -2, 2, -2, 0] } : {}}
       transition={{ duration: 0.15 }}
     >
-      {/* ========== ROOM BACKGROUND (environment-driven) ========== */}
-      <div className="absolute inset-0">
-        {/* Wall gradient - from environment config */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(180deg, 
-              ${envConfig.room.wallTop} 0%, 
-              ${envConfig.room.wallBottom} 55%, 
-              ${envConfig.room.floor} 55%, 
-              ${envConfig.room.floorLight} 100%
-            )`,
-          }}
-        />
-        
-        {/* Floor with subtle texture */}
-        <div 
-          className="absolute bottom-0 left-0 right-0 h-[45%]"
-          style={{
-            background: `
-              repeating-linear-gradient(
-                90deg,
-                transparent,
-                transparent 80px,
-                ${envConfig.room.floorAccent}15 80px,
-                ${envConfig.room.floorAccent}15 81px
-              ),
-              linear-gradient(180deg, ${envConfig.room.floor} 0%, ${envConfig.room.floorLight} 100%)
-            `,
-          }}
-        />
-        
-        {/* Baseboard - clean divider */}
-        <div 
-          className="absolute left-0 right-0 h-2"
-          style={{
-            top: '55%',
-            background: `linear-gradient(180deg, ${envConfig.room.floorAccent} 0%, ${envConfig.room.floor} 100%)`,
-            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-          }}
-        />
-
-        {/* Zone highlight areas - from environment config */}
-        <div 
-          className="absolute w-28 h-28 rounded-3xl z-[1]"
-          style={{
-            left: '10%',
-            bottom: '12%',
-            background: `radial-gradient(ellipse, ${envConfig.floorHighlights.feed} 0%, transparent 70%)`,
-          }}
-        />
-        <div 
-          className="absolute w-28 h-28 rounded-3xl z-[1]"
-          style={{
-            right: '10%',
-            bottom: '12%',
-            background: `radial-gradient(ellipse, ${envConfig.floorHighlights.rest} 0%, transparent 70%)`,
-          }}
-        />
-        <div 
-          className="absolute w-28 h-28 rounded-3xl z-[1]"
-          style={{
-            right: '10%',
-            top: '38%',
-            background: `radial-gradient(ellipse, ${envConfig.floorHighlights.play} 0%, transparent 70%)`,
-          }}
-        />
-        <div 
-          className="absolute w-28 h-28 rounded-3xl z-[1]"
-          style={{
-            left: '10%',
-            top: '38%',
-            background: `radial-gradient(ellipse, ${envConfig.floorHighlights.clean} 0%, transparent 70%)`,
-          }}
-        />
+      {/* ========== ENVIRONMENT RENDERER ========== */}
+      <div className="absolute inset-0" style={{ zIndex: 1 }}>
+        <EnvironmentRenderer petType={petType} />
       </div>
-
-      {/* ========== ROOM DECORATIONS ========== */}
-      <RoomDecorations envConfig={envConfig} />
 
       {/* ========== ZONE LABELS (teaching overlay) ========== */}
       <ZoneLabels show={showZoneLabels && !actionLoading} envConfig={envConfig} />
@@ -1198,21 +1134,14 @@ export function PetGameScene() {
         />
       ))}
 
-      {/* ========== PET CHARACTER (CENTER) ========== */}
-      <div className="absolute inset-0 flex items-center justify-center" style={{ paddingTop: '5%' }}>
+      {/* ========== PET VISUAL (CENTER) ========== */}
+      <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 2, paddingTop: '5%' }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3, type: 'spring', damping: 15 }}
         >
-          <PetCharacter
-            species={petSpecies}
-            mood={currentMood}
-            name={petName}
-            level={stats?.level}
-            isActing={actionLoading !== null}
-            lastAction={lastAction}
-          />
+          <PetVisual petType={petType} />
         </motion.div>
       </div>
 

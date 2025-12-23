@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="pet-body">
+  <!-- Panda body -->
+  <ellipse cx="100" cy="145" rx="65" ry="50" fill="#FFFFFF" opacity="0.95"/>
+  <!-- Panda chest -->
+  <ellipse cx="100" cy="135" rx="45" ry="35" fill="#F5F5F5"/>
+  <!-- Panda head -->
+  <circle cx="100" cy="75" r="55" fill="#FFFFFF"/>
+  <!-- Panda snout -->
+  <ellipse cx="100" cy="88" rx="22" ry="16" fill="#F5F5F5"/>
+  <!-- Panda nose -->
+  <ellipse cx="100" cy="93" rx="7" ry="5" fill="#2C2C2C"/>
+  <!-- Panda ears -->
+  <circle cx="70" cy="50" r="20" fill="#2C2C2C"/>
+  <circle cx="130" cy="50" r="20" fill="#2C2C2C"/>
+  <!-- Panda eye patches -->
+  <ellipse cx="80" cy="68" rx="18" ry="22" fill="#2C2C2C"/>
+  <ellipse cx="120" cy="68" rx="18" ry="22" fill="#2C2C2C"/>
+</svg>
+
