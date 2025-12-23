@@ -1,0 +1,86 @@
+/**
+ * PetGameScene Component Styles
+ * Visual polish for game environment - depth, shadows, affordances
+ */
+
+/* ============================================================================
+   INTERACTIVE OBJECT STYLING
+   ============================================================================ */
+
+.object-container {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Contact shadow for interactive objects */
+.object-contact-shadow {
+  will-change: transform, opacity;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Enhanced shadow on hover */
+.group:hover .object-contact-shadow {
+  transform: translateX(-50%) scale(1.15);
+  opacity: 0.35;
+}
+
+/* ============================================================================
+   DEPTH LAYERING FOR OBJECTS
+   ============================================================================ */
+
+/* Objects have slight vertical offsets for depth */
+.object-container {
+  position: relative;
+}
+
+/* Zone-based depth variation */
+[data-zone="feed"] {
+  transform: translateZ(8px);
+}
+
+[data-zone="rest"] {
+  transform: translateZ(6px);
+}
+
+[data-zone="play"] {
+  transform: translateZ(10px);
+}
+
+[data-zone="clean"] {
+  transform: translateZ(7px);
+}
+
+/* ============================================================================
+   IDLE ANIMATIONS (soft affordances)
+   ============================================================================ */
+
+/* Note: Idle animations are handled by framer-motion in the component */
+/* This CSS provides fallback and enhancement */
+
+/* Subtle glow on hover for interactables */
+.group:hover .object-container {
+  filter: brightness(1.08);
+  transition: filter 0.2s ease;
+}
+
+/* Cursor hint - only on interactables */
+.group {
+  cursor: pointer;
+}
+
+.group:disabled {
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   ACCESSIBILITY: REDUCED MOTION
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .object-container,
+  .object-contact-shadow {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+

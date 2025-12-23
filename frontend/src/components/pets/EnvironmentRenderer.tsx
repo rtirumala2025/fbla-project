@@ -78,6 +78,74 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
         }}
       />
 
+      {/* Subtle Zone Tints - Visual grouping only, no visible UI */}
+      <div className="zone-tints">
+        {/* Feeding Zone - bottom left */}
+        <div 
+          className="zone-tint zone-tint-feed"
+          style={{
+            position: 'absolute',
+            left: '10%',
+            bottom: '20%',
+            width: '25%',
+            height: '30%',
+            background: `radial-gradient(ellipse, ${environment.floorHighlights.feed} 0%, transparent 70%)`,
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            zIndex: 2,
+            opacity: 0.4,
+          }}
+        />
+        {/* Resting Zone - bottom right */}
+        <div 
+          className="zone-tint zone-tint-rest"
+          style={{
+            position: 'absolute',
+            right: '10%',
+            bottom: '20%',
+            width: '25%',
+            height: '30%',
+            background: `radial-gradient(ellipse, ${environment.floorHighlights.rest} 0%, transparent 70%)`,
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            zIndex: 2,
+            opacity: 0.4,
+          }}
+        />
+        {/* Play Zone - top right */}
+        <div 
+          className="zone-tint zone-tint-play"
+          style={{
+            position: 'absolute',
+            right: '10%',
+            top: '35%',
+            width: '25%',
+            height: '30%',
+            background: `radial-gradient(ellipse, ${environment.floorHighlights.play} 0%, transparent 70%)`,
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            zIndex: 2,
+            opacity: 0.4,
+          }}
+        />
+        {/* Clean Zone - top left */}
+        <div 
+          className="zone-tint zone-tint-clean"
+          style={{
+            position: 'absolute',
+            left: '10%',
+            top: '35%',
+            width: '25%',
+            height: '30%',
+            background: `radial-gradient(ellipse, ${environment.floorHighlights.clean} 0%, transparent 70%)`,
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            zIndex: 2,
+            opacity: 0.4,
+          }}
+        />
+      </div>
+
       {/* Window (if enabled) */}
       {environment.window.show && (
         <div className="window-container">
@@ -115,6 +183,22 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
             zIndex: 2,
           }}
         >
+          {/* Contact shadow for decoration */}
+          <div 
+            className="decoration-shadow"
+            style={{
+              position: 'absolute',
+              bottom: '-8px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '60%',
+              height: '12px',
+              background: 'radial-gradient(ellipse, rgba(0,0,0,0.2) 0%, transparent 70%)',
+              borderRadius: '50%',
+              pointerEvents: 'none',
+              zIndex: -1,
+            }}
+          />
           {decoration.imagePath ? (
             <img
               src={decoration.imagePath}

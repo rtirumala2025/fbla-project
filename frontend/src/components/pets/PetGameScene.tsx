@@ -21,6 +21,7 @@ import {
   getZoneLabels,
   type EnvironmentConfig,
 } from './environmentConfig';
+import './PetGameScene.css';
 
 // ============================================================================
 // TYPES
@@ -280,11 +281,49 @@ const InteractiveObject: React.FC<{
         scale: [1, 1.12, 1],
         rotate: [0, -5, 5, 0],
         y: [0, -4, 0],
+      } : !disabled ? {
+        y: [0, -2, 0],
+        scale: [1, 1.01, 1],
       } : {}}
-      transition={isActive ? { duration: 0.5, repeat: Infinity } : { type: 'spring', stiffness: 300, damping: 20 }}
+      transition={isActive ? { duration: 0.5, repeat: Infinity } : !disabled ? { 
+        duration: 4, 
+        repeat: Infinity, 
+        ease: 'easeInOut',
+        type: 'spring',
+        stiffness: 80,
+        damping: 20,
+      } : { type: 'spring', stiffness: 300, damping: 20 }}
     >
+      {/* Contact shadow - grounded on floor */}
+      <div 
+        className="object-contact-shadow"
+        style={{
+          position: 'absolute',
+          bottom: '-16px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '70%',
+          height: '20px',
+          background: 'radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%)',
+          borderRadius: '50%',
+          pointerEvents: 'none',
+          zIndex: -1,
+          filter: 'blur(4px)',
+        }}
+      />
       {/* Main image/emoji with secondary companion - placed directly in world */}
-      <div className="relative" style={{ width: object.size, height: object.size, minWidth: object.size, minHeight: object.size }}>
+      <div 
+        className="relative object-container" 
+        data-zone={object.zone}
+        style={{ 
+          width: object.size, 
+          height: object.size, 
+          minWidth: object.size, 
+          minHeight: object.size,
+          // Subtle depth with transform
+          transform: 'translateZ(0)',
+        }}
+      >
         {object.imagePath ? (
           <img
             src={object.imagePath}
@@ -595,11 +634,12 @@ const PetCharacter: React.FC<{
       )}
       </motion.div>
 
-      {/* Shadow on ground */}
+      {/* Shadow on ground - enhanced contact shadow */}
       <div 
         className="w-32 h-6 rounded-full mt-2"
         style={{
-          background: 'radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.15) 40%, transparent 70%)',
+          filter: 'blur(6px)',
         }}
       />
 

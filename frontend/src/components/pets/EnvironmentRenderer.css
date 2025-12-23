@@ -179,6 +179,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transform-style: preserve-3d;
 }
 
 .decoration-image {
@@ -239,6 +240,71 @@
   height: 60%;
   pointer-events: none;
   z-index: 6;
+}
+
+/* ============================================================================
+   ZONE TINTS (subtle visual grouping)
+   ============================================================================ */
+
+.zone-tints {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.zone-tint {
+  will-change: opacity;
+  transition: opacity 0.3s ease;
+}
+
+/* ============================================================================
+   DEPTH & PARALLAX EFFECTS
+   ============================================================================ */
+
+/* Subtle parallax on background layers */
+.environment-renderer {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.floor-pattern {
+  transform: translateZ(-10px) scale(1.01);
+  will-change: transform;
+}
+
+/* Decoration depth layering */
+.decoration {
+  transform-style: preserve-3d;
+}
+
+.decoration:nth-child(1) {
+  transform: translateZ(5px);
+}
+
+.decoration:nth-child(2) {
+  transform: translateZ(3px);
+}
+
+.decoration:nth-child(3) {
+  transform: translateZ(7px);
+}
+
+.decoration:nth-child(4) {
+  transform: translateZ(2px);
+}
+
+/* Contact shadows for decorations */
+.decoration-shadow {
+  will-change: transform, opacity;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.decoration:hover ~ .decoration-shadow,
+.decoration:hover .decoration-shadow {
+  transform: translateX(-50%) scale(1.1);
+  opacity: 0.3;
 }
 
 /* ============================================================================
