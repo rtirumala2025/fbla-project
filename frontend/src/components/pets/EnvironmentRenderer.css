@@ -1,0 +1,259 @@
+/**
+ * EnvironmentRenderer Component Styles
+ * Pure CSS styling for environment rendering
+ * 
+ * Z-Index Layering (bottom to top):
+ * - 1: Background gradient
+ * - 2: Floor pattern
+ * - 3: Zone highlights (on floor)
+ * - 4: Window
+ * - 5: Decorations
+ * - 6: Spotlight (overlay)
+ */
+
+/* ============================================================================
+   CONSTANTS
+   ============================================================================ */
+
+:root {
+  --floor-height: 50%;
+  --window-width-desktop: 40%;
+  --window-width-tablet: 50%;
+  --window-width-mobile: 60%;
+  --window-height-desktop: 30%;
+  --window-height-tablet: 25%;
+  --window-height-mobile: 20%;
+  --window-top: 10%;
+  --sun-size: 40px;
+  --sun-top: 20%;
+  --decoration-size-desktop: 1.5rem;
+  --decoration-size-tablet: 1.25rem;
+  --zone-highlight-size-desktop: 80px;
+  --zone-highlight-size-mobile: 60px;
+  --zone-pulse-duration: 3s;
+  --zone-pulse-delay: 0.75s;
+  --sun-pulse-duration: 4s;
+  --decoration-float-duration: 6s;
+  --decoration-float-distance: 10px;
+  --decoration-float-rotate: 5deg;
+}
+
+/* ============================================================================
+   ENVIRONMENT CONTAINER
+   ============================================================================ */
+
+.environment-renderer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* ============================================================================
+   FLOOR PATTERN
+   ============================================================================ */
+
+.floor-pattern {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--floor-height);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ============================================================================
+   ZONE HIGHLIGHTS (on floor level)
+   ============================================================================ */
+
+.zone-highlights {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.zone-highlight {
+  position: absolute;
+  width: var(--zone-highlight-size-desktop);
+  height: var(--zone-highlight-size-desktop);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.3;
+  animation: zonePulse var(--zone-pulse-duration) ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.zone-highlight:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.zone-highlight:nth-child(2) {
+  animation-delay: var(--zone-pulse-delay);
+}
+
+.zone-highlight:nth-child(3) {
+  animation-delay: calc(var(--zone-pulse-delay) * 2);
+}
+
+.zone-highlight:nth-child(4) {
+  animation-delay: calc(var(--zone-pulse-delay) * 3);
+}
+
+@keyframes zonePulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* ============================================================================
+   WINDOW
+   ============================================================================ */
+
+.window-container {
+  position: absolute;
+  top: var(--window-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--window-width-desktop);
+  height: var(--window-height-desktop);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
+  border: 3px solid rgba(139, 139, 139, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.sun {
+  position: absolute;
+  top: var(--sun-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--sun-size);
+  height: var(--sun-size);
+  border-radius: 50%;
+  animation: sunPulse var(--sun-pulse-duration) ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes sunPulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1);
+  }
+}
+
+/* ============================================================================
+   DECORATIVE ELEMENTS
+   ============================================================================ */
+
+.decoration {
+  position: absolute;
+  font-size: var(--decoration-size-desktop);
+  pointer-events: none;
+  animation: decorationFloat var(--decoration-float-duration) ease-in-out infinite;
+  filter: blur(0.5px);
+  z-index: 5;
+  will-change: transform;
+}
+
+.decoration:nth-child(odd) {
+  animation-delay: -2s;
+  animation-duration: 8s;
+}
+
+.decoration:nth-child(even) {
+  animation-delay: -4s;
+  animation-duration: 7s;
+}
+
+@keyframes decorationFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(calc(var(--decoration-float-distance) * -1)) rotate(var(--decoration-float-rotate));
+  }
+}
+
+/* ============================================================================
+   SPOTLIGHT (overlay effect)
+   ============================================================================ */
+
+.spotlight {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 60%;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* ============================================================================
+   ACCESSIBILITY: REDUCED MOTION
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .zone-highlight,
+  .sun,
+  .decoration {
+    animation: none;
+  }
+  
+  .zone-highlight {
+    opacity: 0.3;
+  }
+  
+  .sun {
+    opacity: 0.9;
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .window-container {
+    width: var(--window-width-tablet);
+    height: var(--window-height-tablet);
+  }
+
+  .decoration {
+    font-size: var(--decoration-size-tablet);
+  }
+}
+
+@media (max-width: 480px) {
+  .window-container {
+    width: var(--window-width-mobile);
+    height: var(--window-height-mobile);
+  }
+
+  .zone-highlight {
+    width: var(--zone-highlight-size-mobile);
+    height: var(--zone-highlight-size-mobile);
+  }
+}
+

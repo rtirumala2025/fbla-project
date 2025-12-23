@@ -37,9 +37,11 @@ import { shopService } from '../services/shopService';
 import { earnService, type Chore } from '../services/earnService';
 
 // Lazy load heavy components
-const Pet3DVisualization = lazy(() => import('../components/pets/Pet3DVisualization'));
 const ExpensePieChart = lazy(() => import('../components/analytics/ExpensePieChart'));
 const TrendChart = lazy(() => import('../components/analytics/TrendChart'));
+import { PetVisual } from '../components/pets/PetVisual';
+import { EnvironmentRenderer } from '../components/pets/EnvironmentRenderer';
+import type { PetType } from '../components/pets/PetVisual';
 
 type FoodOption = {
   id: string;
@@ -662,20 +664,31 @@ export function DashboardPage() {
         <div className="space-y-6">
           {/* Top Row - Pet View and Stats Side by Side */}
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* 3D Pet Visualization */}
+            {/* Pet Visualization */}
             <div className="rounded-2xl bg-white p-6 shadow-lg" style={{ contain: 'layout style paint' }}>
-              <h2 className="mb-4 text-xl font-semibold text-gray-800">3D Pet View</h2>
-              <React.Suspense fallback={
-                <div className="flex h-[500px] items-center justify-center">
-                  <LoadingSpinner />
-                </div>
-              }>
-                <Pet3DVisualization
-                  pet={pet}
-                  accessories={equippedAccessories}
-                  size="lg"
-                />
-              </React.Suspense>
+              <h2 className="mb-4 text-xl font-semibold text-gray-800">Pet View</h2>
+              <div className="relative h-[500px] overflow-hidden rounded-xl">
+                {(() => {
+                  // Map pet species to petType ('dog' | 'cat' | 'panda')
+                  // pet_type is canonical, species is fallback
+                  const species = (pet as any).pet_type || pet.species || 'dog';
+                  const petType: PetType = 
+                    species === 'dog' || species === 'cat' || species === 'panda' 
+                      ? species 
+                      : 'dog';
+                  
+                  return (
+                    <>
+                      <div className="absolute inset-0" style={{ zIndex: 1 }}>
+                        <EnvironmentRenderer petType={petType} />
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 2 }}>
+                        <PetVisual petType={petType} />
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
             </div>
 
             {/* Pet Stats */}
