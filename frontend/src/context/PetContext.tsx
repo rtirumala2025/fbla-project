@@ -75,18 +75,20 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         logger.error('Error loading pet', { userId, errorCode: error.code }, error);
         setError(getErrorMessage(error, 'Failed to load pet data'));
       } else if (data) {
-        // Validate required fields
-        if (!data.id || !data.name || !data.species) {
+        // Validate required fields - pet_type is canonical, species is fallback
+        const petType = data.pet_type || data.species;
+        if (!data.id || !data.name || !petType) {
           logger.error('Invalid pet data from database', { userId, data });
           setError('Invalid pet data received');
           setLoading(false);
           return;
         }
         
-        logger.debug('Pet loaded', { userId, petId: data.id, petName: data.name });
+        logger.debug('Pet loaded', { userId, petId: data.id, petName: data.name, petType: data.pet_type || data.species });
         // Map DB fields to Pet type with null safety
         // Note: age, level, and xp are computed fields (not in DB schema)
         // birthday may not exist in the actual schema
+        // pet_type is canonical source of truth, species is fallback for backward compatibility
         let age = 0;
         if (data.birthday) {
           try {
@@ -99,10 +101,13 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           }
         }
         
+        // Use pet_type as canonical, fallback to species for backward compatibility
+        const canonicalSpecies = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
+        
         const loadedPet: Pet = {
           id: data.id,
           name: data.name,
-          species: data.species as Pet['species'],
+          species: canonicalSpecies,
           breed: data.breed || 'Mixed',
           age: age, // Default to 0 if birthday doesn't exist
           level: 1, // Default level (not stored in DB)
@@ -167,10 +172,13 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
               }
             }
             
+            // Use pet_type as canonical, fallback to species for backward compatibility
+            const canonicalSpecies = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
+            
             const loadedPet: Pet = {
               id: data.id,
               name: data.name,
-              species: data.species as 'dog' | 'cat' | 'bird' | 'rabbit',
+              species: canonicalSpecies,
               breed: data.breed || 'Mixed',
               age: age, // Default to 0 if birthday doesn't exist
               level: 1, // Default level (not stored in DB)
@@ -313,30 +321,47 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         throw new Error('Supabase client not initialized');
       }
       
-      // Normalize species to valid database values
-      // Valid species: dog, cat, bird, rabbit, fox, dragon, panda
-      const normalizeSpecies = (species: string): string => {
-        const normalized = species.toLowerCase().trim();
-        const validSpecies = ['dog', 'cat', 'bird', 'rabbit', 'fox', 'dragon', 'panda'];
+      // Normalize pet type to valid database values
+      // pet_type is canonical and must be one of: 'dog', 'cat', 'panda'
+      // species is kept for backward compatibility
+      const normalizePetType = (type: string): 'dog' | 'cat' | 'panda' => {
+        const normalized = type.toLowerCase().trim();
+        const validPetTypes: ('dog' | 'cat' | 'panda')[] = ['dog', 'cat', 'panda'];
         
-        if (validSpecies.includes(normalized)) {
-          return normalized;
+        if (validPetTypes.includes(normalized as 'dog' | 'cat' | 'panda')) {
+          return normalized as 'dog' | 'cat' | 'panda';
         }
         
-        // Fallback to dog if unknown species
-        logger.warn(`Unknown species "${species}", defaulting to "dog"`);
+        // Map other species to valid pet_type values
+        const speciesToPetType: Record<string, 'dog' | 'cat' | 'panda'> = {
+          'bird': 'dog',    // Map bird to dog
+          'rabbit': 'cat',  // Map rabbit to cat
+          'fox': 'dog',     // Map fox to dog
+          'dragon': 'panda', // Map dragon to panda
+        };
+        
+        const mappedType = speciesToPetType[normalized];
+        if (mappedType) {
+          logger.info(`Mapped species "${type}" to pet_type "${mappedType}"`);
+          return mappedType;
+        }
+        
+        // Fallback to dog if unknown
+        logger.warn(`Unknown species "${type}", defaulting pet_type to "dog"`);
         return 'dog';
       };
       
-      const normalizedSpecies = normalizeSpecies(type);
+      const normalizedPetType = normalizePetType(type);
+      const normalizedSpecies = normalizedPetType; // Keep species same as pet_type for consistency
       
-      // Build pet data with only fields that definitely exist in the schema
-      // Based on the error, birthday doesn't exist in the actual schema
-      // Only include fields that are confirmed to exist
+      // Build pet data with pet_type as canonical source of truth
+      // pet_type is required and must be 'dog', 'cat', or 'panda'
+      // species is kept for backward compatibility with legacy code
       const petData: any = {
         user_id: userId,
         name,
-        species: normalizedSpecies,
+        pet_type: normalizedPetType, // Canonical source of truth
+        species: normalizedSpecies,  // Backward compatibility (trigger will sync from this if needed)
         breed: breed,
         health: 100,
         hunger: 75,
@@ -419,10 +444,13 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         }
       }
       
+      // Use pet_type as canonical, fallback to species for backward compatibility
+      const canonicalSpecies = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
+      
       const newPet: Pet = {
         id: data.id,
         name: data.name,
-        species: data.species as Pet['species'],
+        species: canonicalSpecies,
         breed: data.breed,
         age: age, // Default to 0 if birthday doesn't exist
         level: 1, // Default level (not stored in DB)

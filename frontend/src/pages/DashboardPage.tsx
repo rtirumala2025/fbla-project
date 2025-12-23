@@ -37,9 +37,7 @@ import { shopService } from '../services/shopService';
 import { earnService, type Chore } from '../services/earnService';
 
 // Lazy load heavy components
-const Pet3DVisualization = lazy(() => 
-  import('../components/pets/Pet3DVisualization').then(m => ({ default: m.Pet3DVisualization }))
-);
+const Pet3DVisualization = lazy(() => import('../components/pets/Pet3DVisualization'));
 const ExpensePieChart = lazy(() => import('../components/analytics/ExpensePieChart'));
 const TrendChart = lazy(() => import('../components/analytics/TrendChart'));
 

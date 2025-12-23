@@ -108,11 +108,14 @@ async function fetchPetFromSupabase(): Promise<Pet> {
   const now = new Date();
   const ageInDays = Math.floor((now.getTime() - birthday.getTime()) / (1000 * 60 * 60 * 24));
 
+  // Use pet_type as canonical source of truth, fallback to species for backward compatibility
+  const canonicalSpecies = (petData.pet_type || petData.species || 'dog').toLowerCase() as Pet['species'];
+  
   // Map Supabase pet to Pet type
   const pet: Pet = {
     id: petData.id,
     name: petData.name,
-    species: petData.species as Pet['species'],
+    species: canonicalSpecies,
     breed: petData.breed,
     age: ageInDays,
     level: 1, // Default level if not stored separately

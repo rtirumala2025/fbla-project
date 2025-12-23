@@ -1,10 +1,95 @@
 import { defineConfig, splitVendorChunkPlugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+
+// Plugin to patch react-reconciler constants.mjs with missing exports
+const patchReactReconciler = () => {
+  const patchConstantsFile = () => {
+    try {
+      const constantsMjsPath = resolve(__dirname, 'node_modules/react-reconciler/constants.mjs');
+      if (existsSync(constantsMjsPath)) {
+        let mjsContent = readFileSync(constantsMjsPath, 'utf-8');
+        
+        // Always ensure the exports are present (don't check, just append if not there)
+        if (!mjsContent.includes('ContinuousEventPriority')) {
+          mjsContent += `
+// Additional exports for React 18+ compatibility (patched for Vite)
+export const ContinuousEventPriority = 4;
+export const DiscreteEventPriority = 1;
+export const DefaultEventPriority = 16;
+export const IdleEventPriority = 536870912;
+`;
+          writeFileSync(constantsMjsPath, mjsContent, 'utf-8');
+          console.log('✅ Patched react-reconciler constants.mjs to export event priorities');
+        } else {
+          console.log('✅ react-reconciler constants.mjs already patched');
+        }
+      } else {
+        console.warn('⚠️ constants.mjs file not found at expected path');
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not patch react-reconciler constants.mjs:', error);
+    }
+  };
+
+  // Patch immediately when plugin is defined (synchronous execution)
+  // This runs before Vite processes any modules
+  patchConstantsFile();
+
+  return {
+    name: 'patch-react-reconciler',
+    enforce: 'pre' as const,
+    configResolved() {
+      // Patch again when config is resolved (before optimizeDeps runs)
+      patchConstantsFile();
+    },
+    buildStart() {
+      // Also patch in buildStart as backup
+      patchConstantsFile();
+    },
+    // Intercept the module resolution to ensure our patch is used
+    resolveId(id) {
+      if (id === 'react-reconciler/constants') {
+        // Return the actual path to trigger our load hook
+        return id;
+      }
+      return null;
+    },
+    load(id) {
+      // Intercept loading of react-reconciler/constants
+      if (id === 'react-reconciler/constants') {
+        try {
+          const constantsMjsPath = resolve(__dirname, 'node_modules/react-reconciler/constants.mjs');
+          if (existsSync(constantsMjsPath)) {
+            let content = readFileSync(constantsMjsPath, 'utf-8');
+            
+            // Ensure exports are present
+            if (!content.includes('ContinuousEventPriority')) {
+              content += `
+// Additional exports for React 18+ compatibility (patched for Vite)
+export const ContinuousEventPriority = 4;
+export const DiscreteEventPriority = 1;
+export const DefaultEventPriority = 16;
+export const IdleEventPriority = 536870912;
+`;
+            }
+            
+            return content;
+          }
+        } catch (error) {
+          console.warn('⚠️ Could not load patched constants:', error);
+        }
+      }
+      return null;
+    },
+  };
+};
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    patchReactReconciler(),
     react({
       // Use automatic JSX runtime
       jsxRuntime: 'automatic',
@@ -18,7 +103,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
+      // Alias react-reconciler/constants to ensure it uses our patched version
+      'react-reconciler/constants': resolve(__dirname, './node_modules/react-reconciler/constants.mjs'),
     },
+    // Dedupe to ensure single version of react-reconciler
+    dedupe: ['react', 'react-dom', 'react-reconciler'],
   },
   
   // Environment variable prefix (migrate from REACT_APP_ to VITE_)
@@ -104,7 +193,7 @@ export default defineConfig({
   
   // Development server configuration
   server: {
-    port: 3000,
+    port: 3005,
     strictPort: false,
     open: true,
     
@@ -125,7 +214,7 @@ export default defineConfig({
   
   // Preview server (production build preview)
   preview: {
-    port: 3000,
+    port: 3005,
   },
   
   // Optimize dependencies
@@ -141,14 +230,18 @@ export default defineConfig({
       'lucide-react',
       'dayjs',
       'classnames',
+      '@react-three/fiber',
+      '@react-three/drei',
     ],
     // Exclude heavy dependencies that are lazy-loaded
     exclude: [
       'three',
-      '@react-three/fiber',
-      '@react-three/drei',
       '@react-three/xr',
     ],
+    // Force resolution of React dependencies to prevent version conflicts
+    esbuildOptions: {
+      target: 'es2020',
+    },
   },
   
   // CSS configuration
