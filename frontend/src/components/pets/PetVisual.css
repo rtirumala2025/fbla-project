@@ -1,0 +1,272 @@
+/**
+ * PetVisual Component Styles
+ * Pure CSS animations and styling for pet visual grounding
+ */
+
+.pet-visual-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  overflow: hidden;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* ============================================================================
+   ENVIRONMENT RENDERER
+   ============================================================================ */
+
+.environment-renderer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Floor Pattern */
+.floor-pattern {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Window */
+.window-container {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 30%;
+  pointer-events: none;
+}
+
+.window {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
+  border: 3px solid rgba(139, 139, 139, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.sun {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  animation: sunPulse 4s ease-in-out infinite;
+}
+
+@keyframes sunPulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.1);
+  }
+}
+
+/* Decorative Elements */
+.decoration {
+  position: absolute;
+  font-size: 1.5rem;
+  pointer-events: none;
+  animation: decorationFloat 6s ease-in-out infinite;
+  filter: blur(0.5px);
+}
+
+.decoration:nth-child(odd) {
+  animation-delay: -2s;
+  animation-duration: 8s;
+}
+
+.decoration:nth-child(even) {
+  animation-delay: -4s;
+  animation-duration: 7s;
+}
+
+@keyframes decorationFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(5deg);
+  }
+}
+
+/* Zone Highlights */
+.zone-highlights {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.zone-highlight {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.3;
+  animation: zonePulse 3s ease-in-out infinite;
+}
+
+.zone-highlight:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.zone-highlight:nth-child(2) {
+  animation-delay: 0.75s;
+}
+
+.zone-highlight:nth-child(3) {
+  animation-delay: 1.5s;
+}
+
+.zone-highlight:nth-child(4) {
+  animation-delay: 2.25s;
+}
+
+@keyframes zonePulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* Spotlight */
+.spotlight {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 60%;
+  pointer-events: none;
+}
+
+/* ============================================================================
+   PET SPRITE
+   ============================================================================ */
+
+.pet-sprite-container {
+  position: absolute;
+  bottom: 35%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.pet-sprite {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: petIdle 3s ease-in-out infinite;
+}
+
+.pet-emoji {
+  font-size: 5rem;
+  line-height: 1;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  animation: petBreathe 2.5s ease-in-out infinite;
+}
+
+@keyframes petIdle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-3px) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-3px) rotate(1deg);
+  }
+}
+
+@keyframes petBreathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Pet Shadow */
+.pet-shadow {
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  filter: blur(8px);
+  animation: shadowPulse 3s ease-in-out infinite;
+}
+
+@keyframes shadowPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateX(-50%) scale(1.1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pet-emoji {
+    font-size: 4rem;
+  }
+
+  .window-container {
+    width: 50%;
+    height: 25%;
+  }
+
+  .decoration {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pet-emoji {
+    font-size: 3rem;
+  }
+
+  .window-container {
+    width: 60%;
+    height: 20%;
+  }
+
+  .zone-highlight {
+    width: 60px;
+    height: 60px;
+  }
+}
+
