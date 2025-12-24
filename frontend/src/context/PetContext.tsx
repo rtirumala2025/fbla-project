@@ -611,20 +611,32 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       // Refresh auth state to update hasPet flag
       // This ensures route guards recognize the user has completed onboarding
       console.log('🔄 Refreshing auth state after pet creation...');
-      try {
-        await refreshUserState();
-        console.log('✅ Auth state refreshed successfully');
-      } catch (refreshError) {
-        console.error('❌ Error refreshing auth state:', refreshError);
-        // Retry once after error
+      
+      // Wait a moment for the database write to be fully committed
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Refresh state with retries to ensure hasPet is updated
+      let refreshSuccess = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          await new Promise(resolve => setTimeout(resolve, 300));
           await refreshUserState();
-          console.log('✅ Auth state refreshed on retry');
-        } catch (retryError) {
-          console.error('❌ Auth state refresh retry also failed:', retryError);
-          console.warn('⚠️ Auth state refresh failed - state may be stale');
+          console.log(`✅ Auth state refreshed successfully (attempt ${attempt + 1})`);
+          
+          // Wait a bit for state to propagate
+          await new Promise(resolve => setTimeout(resolve, 300));
+          refreshSuccess = true;
+          break;
+        } catch (refreshError) {
+          console.error(`❌ Error refreshing auth state (attempt ${attempt + 1}):`, refreshError);
+          if (attempt < 2) {
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
         }
+      }
+      
+      if (!refreshSuccess) {
+        console.warn('⚠️ Auth state refresh failed after retries - state may be stale');
       }
     } catch (err: any) {
       console.error('❌ Error creating pet:', err);

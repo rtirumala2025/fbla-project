@@ -900,7 +900,12 @@ export function PetGameScene() {
   // Zone labels remain hidden by default for immersion
   // They can be shown temporarily if needed for teaching, but should not be visible normally
 
-  // Sync stats from pet context
+  // Chosen: Option 2 — stats is updated independently from API responses (updateFromAction),
+  // so local state is needed. Changed dependency from pet?.stats to pet?.id to prevent
+  // infinite render loop from object reference churn. Stats syncs only when pet changes,
+  // not when stats object reference changes. Option 1 rejected: stats is not a mirror.
+  // Option 3 rejected: JSON.stringify is a workaround that masks architectural issues.
+  // Sync stats from pet context (only when pet changes, not on stats reference changes)
   useEffect(() => {
     if (pet?.stats) {
       setStats(pet.stats);
@@ -908,7 +913,7 @@ export function PetGameScene() {
     } else if (!petLoading && !pet) {
       setDataLoading(false);
     }
-  }, [pet?.stats, pet, petLoading]);
+  }, [pet?.id, petLoading]);
 
   // Timeout to prevent infinite loading
   useEffect(() => {

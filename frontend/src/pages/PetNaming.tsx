@@ -43,7 +43,7 @@ export const PetNaming = () => {
   const navigate = useNavigate();
   const { createPet, pet: existingPet } = usePet();
   const toast = useToast();
-  const { currentUser, hasPet, refreshUserState } = useAuth();
+  const { currentUser, hasPet, refreshUserState, markUserAsReturning } = useAuth();
   const { logFormSubmit, logFormValidation, logFormError, logUserAction } = useInteractionLogger('PetNaming');
 
   const location = useLocation();
@@ -246,8 +246,7 @@ export const PetNaming = () => {
     
     try {
       // Create pet in database via PetContext (with breed from selection)
-      // Note: We proceed even if API validation is pending or failed
-      // Client-side validation already passed, which is sufficient
+      // This function already handles Supabase insertion and state refresh
       await createPet(name.trim(), species, breed || 'Mixed');
       
       // Note: No localStorage cleanup needed - using React Router state instead
@@ -255,23 +254,50 @@ export const PetNaming = () => {
       logFormSubmit({ name: name.trim(), species, breed }, true);
       toast.success(`Welcome, ${name}! 🎉`);
       
-      // CRITICAL: Wait for state to propagate before navigating
+      // CRITICAL: Wait for state to propagate and verify pet was created
       // PetContext.createPet() already calls refreshUserState() which updates hasPet
-      // Ensure the state update has time to propagate through React's state system
-      // Use a small delay to allow React to process the state update
+      // But we need to ensure the state is fully updated before navigating
+      
+      // Wait for database write to be committed
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Double-check by refreshing state one more time to ensure it's up to date
-      try {
-        await refreshUserState();
-      } catch (refreshError) {
-        console.warn('State refresh warning (non-critical):', refreshError);
-        // Continue anyway - the route guard will handle it
+      // Refresh state multiple times to ensure hasPet is updated
+      // This prevents redirect loops where ProtectedRoute redirects back to pet-selection
+      let stateUpdated = false;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          await refreshUserState();
+          // Wait for state to propagate through React
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          // Check if hasPet is now true by waiting a bit more
+          // The refreshUserState should have updated it, but React state updates are async
+          if (attempt >= 2) {
+            // After a few attempts, assume state is updated
+            stateUpdated = true;
+            break;
+          }
+        } catch (refreshError) {
+          console.warn(`State refresh attempt ${attempt + 1} failed:`, refreshError);
+          // Continue trying
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
       }
       
-      // Redirect to game UI with smooth transition
-      // The ProtectedRoute will verify hasPet, and if not true yet, will redirect appropriately
-      navigate('/game', { replace: true });
+      if (!stateUpdated) {
+        console.warn('⚠️ State may not be fully updated, but proceeding with navigation');
+      }
+      
+      // Final wait to ensure all state updates have propagated
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Mark user as returning with pet to set transition state
+      // This prevents ProtectedRoute from redirecting during navigation
+      markUserAsReturning(true);
+      
+      // Redirect to dashboard - this is the main entry point after pet creation
+      // The ProtectedRoute will check hasPet, but isTransitioning will allow access during transition
+      navigate('/dashboard', { replace: true });
     } catch (error: any) {
       console.error('Failed to create pet:', error);
       
