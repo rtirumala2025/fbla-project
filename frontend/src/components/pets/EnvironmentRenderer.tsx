@@ -21,6 +21,9 @@ export interface EnvironmentRendererProps {
   petType: PetType;
 }
 
+// REMOVED: All decoration idle animations to fix performance regression
+// Decorations remain static for stability
+
 /**
  * EnvironmentRenderer Component
  * Renders the environment (room/background) based on environment config
@@ -62,127 +65,172 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
         position: 'absolute',
         top: 0,
         left: 0,
-        background: `linear-gradient(to bottom, ${environment.room.wallTop} 0%, ${environment.room.wallBottom} 50%, ${environment.room.floor} 50%, ${environment.room.floorLight} 100%)`,
+        // Soft gradient transition: sky ~55-60%, ground ~40-45%, no hard split
+        background: `linear-gradient(to bottom, ${environment.room.wallTop} 0%, ${environment.room.wallBottom} 40%, ${environment.room.wallBottom} 55%, ${environment.room.floor} 60%, ${environment.room.floorLight} 100%)`,
       }}
     >
-      {/* Floor Pattern */}
+      {/* Background Layer - distant decorative elements with reduced saturation and blur */}
       <div 
-        className="floor-pattern"
+        className="background-layer"
         style={{
-          background: `repeating-linear-gradient(
-            90deg,
-            ${environment.room.floor} 0px,
-            ${environment.room.floorAccent} 2px,
-            ${environment.room.floor} 4px
-          )`,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `radial-gradient(ellipse at center 30%, ${environment.room.wallTop} 0%, transparent 60%)`,
+          opacity: 0.25,
+          filter: 'blur(50px) saturate(0.7)',
+          pointerEvents: 'none',
+          zIndex: 1,
         }}
       />
+      
+      {/* Midground Layer - floor pattern and zone tints */}
+      <div 
+        className="midground-layer"
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '45%',
+          zIndex: 2,
+        }}
+      >
+        {/* Floor Pattern */}
+        <div 
+          className="floor-pattern"
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '100%',
+            background: `repeating-linear-gradient(
+              90deg,
+              ${environment.room.floor} 0px,
+              ${environment.room.floorAccent} 2px,
+              ${environment.room.floor} 4px
+            )`,
+            opacity: 0.6,
+            pointerEvents: 'none',
+          }}
+        />
 
-      {/* Subtle Zone Tints - Visual grouping only, no visible UI */}
-      <div className="zone-tints">
-        {/* Feeding Zone - bottom left */}
-        <div 
-          className="zone-tint zone-tint-feed"
-          style={{
-            position: 'absolute',
-            left: '10%',
-            bottom: '20%',
-            width: '25%',
-            height: '30%',
-            background: `radial-gradient(ellipse, ${environment.floorHighlights.feed} 0%, transparent 70%)`,
-            borderRadius: '50%',
-            pointerEvents: 'none',
-            zIndex: 2,
-            opacity: 0.4,
-          }}
-        />
-        {/* Resting Zone - bottom right */}
-        <div 
-          className="zone-tint zone-tint-rest"
-          style={{
-            position: 'absolute',
-            right: '10%',
-            bottom: '20%',
-            width: '25%',
-            height: '30%',
-            background: `radial-gradient(ellipse, ${environment.floorHighlights.rest} 0%, transparent 70%)`,
-            borderRadius: '50%',
-            pointerEvents: 'none',
-            zIndex: 2,
-            opacity: 0.4,
-          }}
-        />
-        {/* Play Zone - top right */}
-        <div 
-          className="zone-tint zone-tint-play"
-          style={{
-            position: 'absolute',
-            right: '10%',
-            top: '35%',
-            width: '25%',
-            height: '30%',
-            background: `radial-gradient(ellipse, ${environment.floorHighlights.play} 0%, transparent 70%)`,
-            borderRadius: '50%',
-            pointerEvents: 'none',
-            zIndex: 2,
-            opacity: 0.4,
-          }}
-        />
-        {/* Clean Zone - top left */}
-        <div 
-          className="zone-tint zone-tint-clean"
-          style={{
-            position: 'absolute',
-            left: '10%',
-            top: '35%',
-            width: '25%',
-            height: '30%',
-            background: `radial-gradient(ellipse, ${environment.floorHighlights.clean} 0%, transparent 70%)`,
-            borderRadius: '50%',
-            pointerEvents: 'none',
-            zIndex: 2,
-            opacity: 0.4,
-          }}
-        />
+        {/* Subtle Zone Tints - Visual grouping only, no visible UI */}
+        <div className="zone-tints">
+          {/* Feeding Zone - bottom left */}
+          <div 
+            className="zone-tint zone-tint-feed"
+            style={{
+              position: 'absolute',
+              left: '10%',
+              bottom: '20%',
+              width: '25%',
+              height: '30%',
+              background: `radial-gradient(ellipse, ${environment.floorHighlights.feed} 0%, transparent 70%)`,
+              borderRadius: '50%',
+              pointerEvents: 'none',
+              opacity: 0.3,
+            }}
+          />
+          {/* Resting Zone - bottom right */}
+          <div 
+            className="zone-tint zone-tint-rest"
+            style={{
+              position: 'absolute',
+              right: '10%',
+              bottom: '20%',
+              width: '25%',
+              height: '30%',
+              background: `radial-gradient(ellipse, ${environment.floorHighlights.rest} 0%, transparent 70%)`,
+              borderRadius: '50%',
+              pointerEvents: 'none',
+              opacity: 0.3,
+            }}
+          />
+          {/* Play Zone - top right */}
+          <div 
+            className="zone-tint zone-tint-play"
+            style={{
+              position: 'absolute',
+              right: '10%',
+              top: '35%',
+              width: '25%',
+              height: '30%',
+              background: `radial-gradient(ellipse, ${environment.floorHighlights.play} 0%, transparent 70%)`,
+              borderRadius: '50%',
+              pointerEvents: 'none',
+              opacity: 0.3,
+            }}
+          />
+          {/* Clean Zone - top left */}
+          <div 
+            className="zone-tint zone-tint-clean"
+            style={{
+              position: 'absolute',
+              left: '10%',
+              top: '35%',
+              width: '25%',
+              height: '30%',
+              background: `radial-gradient(ellipse, ${environment.floorHighlights.clean} 0%, transparent 70%)`,
+              borderRadius: '50%',
+              pointerEvents: 'none',
+              opacity: 0.3,
+            }}
+          />
+        </div>
       </div>
 
-      {/* Window (if enabled) */}
-      {environment.window.show && (
-        <div className="window-container">
-          <div 
-            className="window"
+      {/* Midground Layer - Window and decorative elements */}
+      <div 
+        className="midground-layer"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 3,
+          pointerEvents: 'none',
+        }}
+      >
+        {/* Window (if enabled) - midground with slight blur */}
+        {environment.window.show && (
+          <div className="window-container">
+            <div 
+              className="window"
+              style={{
+                background: environment.window.style === 'outdoor' 
+                  ? 'radial-gradient(circle, rgba(135, 206, 250, 0.3), rgba(176, 224, 230, 0.1))'
+                  : 'linear-gradient(to bottom, rgba(135, 206, 250, 0.2), rgba(255, 255, 255, 0.1))',
+                filter: 'blur(1px) saturate(0.9)',
+              }}
+            >
+              <div 
+                className="sun"
+                style={{
+                  background: environment.window.sunColor,
+                  boxShadow: `0 0 20px ${environment.window.sunColor}`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Decorative Elements - midground with reduced saturation */}
+        {environment.decorations.map((decoration, index) => (
+          <div
+            key={`decoration-${index}`}
+            className="decoration"
             style={{
-              background: environment.window.style === 'outdoor' 
-                ? 'radial-gradient(circle, rgba(135, 206, 250, 0.3), rgba(176, 224, 230, 0.1))'
-                : 'linear-gradient(to bottom, rgba(135, 206, 250, 0.2), rgba(255, 255, 255, 0.1))',
+              ...decoration.position,
+              opacity: decoration.opacity,
+              width: decoration.size || '64px',
+              height: decoration.size || '64px',
+              minWidth: decoration.size || '64px',
+              minHeight: decoration.size || '64px',
+              zIndex: 2,
             }}
           >
-            <div 
-              className="sun"
-              style={{
-                background: environment.window.sunColor,
-                boxShadow: `0 0 20px ${environment.window.sunColor}`,
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Decorative Elements */}
-      {environment.decorations.map((decoration, index) => (
-        <div
-          key={`decoration-${index}`}
-          className="decoration"
-          style={{
-            ...decoration.position,
-            opacity: decoration.opacity,
-            width: decoration.size || '64px',
-            height: decoration.size || '64px',
-            minWidth: decoration.size || '64px',
-            minHeight: decoration.size || '64px',
-            zIndex: 2,
-          }}
-        >
           {/* Contact shadow for decoration */}
           <div 
             className="decoration-shadow"
@@ -193,10 +241,11 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
               transform: 'translateX(-50%)',
               width: '60%',
               height: '12px',
-              background: 'radial-gradient(ellipse, rgba(0,0,0,0.2) 0%, transparent 70%)',
+              background: 'radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%)',
               borderRadius: '50%',
               pointerEvents: 'none',
               zIndex: -1,
+              filter: 'blur(4px)',
             }}
           />
           {decoration.imagePath ? (
@@ -211,7 +260,7 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
                 minHeight: '100%',
                 objectFit: 'contain',
                 display: 'block',
-                filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.35)) brightness(1.05)',
+                filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.35)) brightness(1.05) saturate(0.85) blur(0.5px)',
                 pointerEvents: 'none',
               }}
               onError={(e) => {
@@ -238,6 +287,7 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
             style={{
               display: decoration.imagePath ? 'none' : 'block',
               fontSize: decoration.size || '48px',
+              filter: 'saturate(0.85) blur(0.5px)',
             }}
             aria-hidden={!!decoration.imagePath}
           >
@@ -245,15 +295,22 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
           </span>
         </div>
       ))}
+      </div>
 
-      {/* Zone highlights removed - items now sit directly in world without visible background indicators */}
-
-      {/* Spotlight Effect */}
+      {/* Spotlight Effect - background layer */}
       <div 
         className="spotlight"
         style={{
+          position: 'absolute',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '80%',
+          height: '60%',
           background: `radial-gradient(ellipse at center, ${environment.spotlight.color} 0%, transparent 70%)`,
           opacity: environment.spotlight.opacity,
+          pointerEvents: 'none',
+          zIndex: 1,
         }}
       />
     </div>

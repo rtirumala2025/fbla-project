@@ -135,13 +135,15 @@ const ParticleBurst: React.FC<{
         <motion.div
           key={p.id}
           className="fixed pointer-events-none z-50 text-3xl"
-          style={{ left: p.x, top: p.y }}
-          initial={{ opacity: 0, scale: 0, y: 0 }}
+          style={{ 
+            left: p.x, 
+            top: p.y,
+            transform: `translate3d(${(Math.random() - 0.5) * 60}px, -80px, 0)`,
+          }}
+          initial={{ opacity: 0, scale: 0 }}
           animate={{ 
             opacity: [0, 1, 1, 0],
             scale: [0.5, 1.2, 1, 0.8],
-            y: -80,
-            x: (Math.random() - 0.5) * 60,
           }}
           transition={{ 
             duration: 1.2, 
@@ -182,18 +184,15 @@ const SuccessToast: React.FC<{
         background: style.bg,
         boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
       }}
-      initial={{ opacity: 0, y: -25, scale: 0.85 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -15, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
       transition={{ type: 'spring', damping: 18, stiffness: 250 }}
     >
       <div className="flex items-center gap-2">
-        <motion.span
-          animate={{ rotate: [0, -10, 10, 0] }}
-          transition={{ duration: 0.4, repeat: 2 }}
-        >
+        <span>
           {style.emoji}
-        </motion.span>
+        </span>
         <span>{indicator.message}</span>
       </div>
     </motion.div>
@@ -216,26 +215,24 @@ const StatBar: React.FC<{
       className="flex items-center gap-2 group" 
       title={`${label}: ${Math.round(clampedValue)}%`}
     >
-      {/* Emoji icon with pulse when low */}
-      <motion.span 
-        className="text-base select-none"
-        animate={isCritical ? { scale: [1, 1.2, 1] } : {}}
-        transition={isCritical ? { duration: 0.5, repeat: Infinity } : {}}
-      >
+      {/* Emoji icon - static for performance */}
+      <span className="text-base select-none">
         {emoji}
-      </motion.span>
+      </span>
       
       {/* Bar container */}
       <div className="w-16 h-2 bg-white/10 rounded-full overflow-hidden relative">
-        {/* Fill bar with smooth transition */}
+        {/* Fill bar - using transform for performance */}
           <motion.div
           className="h-full rounded-full"
           style={{ 
             backgroundColor: isLow ? '#F87171' : color,
             boxShadow: isLow ? '0 0 8px rgba(248, 113, 113, 0.5)' : 'none',
+            transformOrigin: 'left center',
+            width: '100%',
           }}
-            initial={{ width: 0 }}
-          animate={{ width: `${clampedValue}%` }}
+            initial={{ scaleX: 0 }}
+          animate={{ scaleX: clampedValue / 100 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
           />
         </div>
@@ -249,8 +246,12 @@ const InteractiveObject: React.FC<{
   onClick: () => void;
   disabled: boolean;
   isActive: boolean;
-}> = ({ object, onClick, disabled, isActive }) => {
+  prefersReducedMotion?: boolean;
+}> = ({ object, onClick, disabled, isActive, prefersReducedMotion = false }) => {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // REMOVED: All idle animations to fix performance regression
+  // Objects remain static for stability
 
   return (
     <motion.button
@@ -275,43 +276,33 @@ const InteractiveObject: React.FC<{
         border: 'none',
         padding: '20px',
       }}
-      whileHover={!disabled ? { scale: 1.15, y: -8 } : {}}
+      whileHover={!disabled ? { scale: 1.15 } : {}}
       whileTap={!disabled ? { scale: 0.95 } : {}}
       animate={isActive ? { 
         scale: [1, 1.12, 1],
-        rotate: [0, -5, 5, 0],
-        y: [0, -4, 0],
-      } : !disabled ? {
-        y: [0, -2, 0],
-        scale: [1, 1.01, 1],
       } : {}}
-      transition={isActive ? { duration: 0.5, repeat: Infinity } : !disabled ? { 
-        duration: 4, 
-        repeat: Infinity, 
-        ease: 'easeInOut',
-        type: 'spring',
-        stiffness: 80,
-        damping: 20,
-      } : { type: 'spring', stiffness: 300, damping: 20 }}
+      transition={isActive 
+        ? { duration: 0.5, repeat: Infinity, ease: 'easeInOut' } 
+        : { type: 'spring', stiffness: 300, damping: 20 }}
     >
-      {/* Contact shadow - grounded on floor */}
+      {/* Contact shadow - grounded on floor, subtle and blurred */}
       <div 
         className="object-contact-shadow"
         style={{
           position: 'absolute',
-          bottom: '-16px',
+          bottom: '-18px',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '70%',
-          height: '20px',
-          background: 'radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%)',
+          width: '75%',
+          height: '24px',
+          background: 'radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.15) 40%, transparent 70%)',
           borderRadius: '50%',
           pointerEvents: 'none',
           zIndex: -1,
-          filter: 'blur(4px)',
+          filter: 'blur(6px)',
         }}
       />
-      {/* Main image/emoji with secondary companion - placed directly in world */}
+      {/* Main image/emoji with secondary companion - foreground layer */}
       <div 
         className="relative object-container" 
         data-zone={object.zone}
@@ -320,8 +311,9 @@ const InteractiveObject: React.FC<{
           height: object.size, 
           minWidth: object.size, 
           minHeight: object.size,
-          // Subtle depth with transform
+          // Foreground layer - full clarity
           transform: 'translateZ(0)',
+          filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.4))',
         }}
       >
         {object.imagePath ? (
@@ -338,10 +330,10 @@ const InteractiveObject: React.FC<{
               filter: isHovered 
                 ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.5)) brightness(1.1)' 
                 : 'drop-shadow(0 6px 16px rgba(0,0,0,0.4))',
-              transition: 'filter 0.3s ease, transform 0.3s ease',
+              transition: 'transform 0.3s ease',
               display: 'block',
               pointerEvents: 'none',
-              transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+              transform: isHovered ? 'scale(1.05) translateZ(0)' : 'scale(1) translateZ(0)',
             }}
             onError={(e) => {
               console.error(`[PetGameScene] Failed to load object asset: ${object.imagePath}`);
@@ -374,9 +366,9 @@ const InteractiveObject: React.FC<{
             filter: isHovered 
               ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.5)) brightness(1.1)' 
               : 'drop-shadow(0 6px 16px rgba(0,0,0,0.4))',
-            transition: 'filter 0.3s ease, transform 0.3s ease',
+            transition: 'transform 0.3s ease',
             lineHeight: 1,
-            transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+            transform: isHovered ? 'scale(1.05) translateZ(0)' : 'scale(1) translateZ(0)',
           }}
           aria-hidden={!!object.imagePath}
         >
@@ -401,7 +393,7 @@ const InteractiveObject: React.FC<{
                   filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
                   display: 'block',
                   pointerEvents: 'none',
-                  transform: isHovered ? 'scale(1.1) rotate(5deg)' : 'scale(1)',
+                  transform: isHovered ? 'scale(1.1) translateZ(0)' : 'scale(1) translateZ(0)',
                   transition: 'transform 0.3s ease',
                 }}
                 onError={(e) => {
@@ -439,9 +431,9 @@ const InteractiveObject: React.FC<{
         {isHovered && (
           <motion.div
             className="absolute -top-14 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none z-30"
-            initial={{ opacity: 0, y: 8, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.15 }}
           >
             <span 
@@ -471,7 +463,7 @@ const InteractiveObject: React.FC<{
               background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
             }}
             animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.1, 0.3] }}
-            transition={{ duration: 0.8, repeat: Infinity }}
+            transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
           />
         </motion.div>
       )}
@@ -492,11 +484,11 @@ const PetCharacter: React.FC<{
   const sprite = PET_SPRITES[species.toLowerCase()] || PET_SPRITES.default;
   const moodData = MOOD_EXPRESSIONS[mood] || MOOD_EXPRESSIONS.default;
   
-  // Idle breathing animation
+  // Idle breathing animation - using translate3d for performance
   useEffect(() => {
     if (!isActing) {
       controls.start({
-        y: [0, -8, 0],
+        scale: [1, 1.02, 1],
         transition: {
           duration: 2.5,
           repeat: Infinity,
@@ -506,27 +498,25 @@ const PetCharacter: React.FC<{
     }
   }, [controls, isActing]);
 
-  // Action-specific animations
+  // Action-specific animations - using only transform (translate3d/scale) and opacity
   useEffect(() => {
     if (isActing && lastAction) {
       switch (lastAction) {
         case 'feed':
           controls.start({
             scale: [1, 1.15, 1.05, 1.15, 1],
-            rotate: [0, -3, 3, -3, 0],
             transition: { duration: 0.6, ease: 'easeOut' },
           });
           break;
         case 'play':
           controls.start({
-            y: [0, -40, 0, -25, 0],
-            rotate: [0, 360],
+            scale: [1, 1.2, 1, 1.1, 1],
             transition: { duration: 0.8, ease: 'easeOut' },
           });
           break;
         case 'bathe':
           controls.start({
-            x: [0, -8, 8, -8, 8, 0],
+            scale: [1, 1.05, 1, 1.05, 1],
             transition: { duration: 0.4, ease: 'easeOut' },
           });
           break;
@@ -542,11 +532,9 @@ const PetCharacter: React.FC<{
 
   return (
     <div className="relative flex flex-col items-center">
-      {/* Mood bubble above pet */}
-      <motion.div
+      {/* Mood bubble above pet - static for performance */}
+      <div
         className="absolute -top-6 left-1/2 -translate-x-1/2 z-10"
-        animate={{ y: [0, -4, 0] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
       >
         <div 
           className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 border-white/50"
@@ -554,7 +542,7 @@ const PetCharacter: React.FC<{
         >
           <span className="text-lg">{moodData.emoji}</span>
         </div>
-      </motion.div>
+      </div>
 
       {/* Pet sprite */}
       <motion.div
@@ -580,24 +568,25 @@ const PetCharacter: React.FC<{
         {sprite}
         </span>
 
-      {/* Z's for sleeping */}
+      {/* Z's for sleeping - using only opacity for performance */}
       {(mood === 'sleepy' || mood === 'tired') && (
           <div className="absolute -top-4 right-0">
           {[0, 1, 2].map((i) => (
             <motion.span
               key={i}
                 className="absolute text-2xl font-bold text-purple-400"
-              initial={{ opacity: 0, x: 0, y: 0 }}
+              initial={{ opacity: 0 }}
               animate={{ 
                 opacity: [0, 1, 0],
-                  x: [0, 15 + i * 8],
-                  y: [0, -15 - i * 12],
               }}
               transition={{
                   duration: 1.8,
                 repeat: Infinity,
                   delay: i * 0.4,
                 ease: 'easeOut',
+              }}
+              style={{
+                transform: `translate3d(${15 + i * 8}px, ${-15 - i * 12}px, 0)`,
               }}
             >
               Z
@@ -606,7 +595,7 @@ const PetCharacter: React.FC<{
         </div>
       )}
 
-      {/* Hearts for happy */}
+      {/* Hearts for happy - using only opacity and scale for performance */}
       {(mood === 'happy' || mood === 'excited') && (
           <div className="absolute -top-2 left-0 right-0">
           {[0, 1, 2].map((i) => (
@@ -614,10 +603,9 @@ const PetCharacter: React.FC<{
               key={i}
                 className="absolute text-xl"
                 style={{ left: `${25 + i * 25}%` }}
-              initial={{ opacity: 0, y: 0, scale: 0 }}
+              initial={{ opacity: 0, scale: 0 }}
               animate={{ 
                 opacity: [0, 1, 0],
-                  y: [0, -25],
                 scale: [0.5, 1, 0.5],
               }}
               transition={{
@@ -634,12 +622,14 @@ const PetCharacter: React.FC<{
       )}
       </motion.div>
 
-      {/* Shadow on ground - enhanced contact shadow */}
+      {/* Shadow on ground - soft, blurred, centered anchor shadow */}
       <div 
-        className="w-32 h-6 rounded-full mt-2"
+        className="w-40 h-8 rounded-full mt-2"
         style={{
-          background: 'radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.15) 40%, transparent 70%)',
-          filter: 'blur(6px)',
+          background: 'radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.18) 45%, transparent 75%)',
+          filter: 'blur(8px)',
+          position: 'relative',
+          zIndex: 0,
         }}
       />
 
@@ -651,8 +641,8 @@ const PetCharacter: React.FC<{
           border: '1px solid rgba(255,255,255,0.15)',
           boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
         }}
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.4, type: 'spring', stiffness: 150 }}
       >
         <span className="text-white font-bold text-base">{name}</span>
@@ -679,22 +669,20 @@ const ZoneLabels: React.FC<{ show: boolean; envConfig: EnvironmentConfig }> = ({
           key={zone.label}
           className="absolute z-10 pointer-events-none"
           style={zone.position}
-          initial={{ opacity: 0, scale: 0.8, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.8 + index * 0.15, duration: 0.4 }}
         >
-          <motion.div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs font-bold shadow-lg"
-            style={{ 
-              background: `linear-gradient(135deg, ${zone.color}ee, ${zone.color}cc)`,
-              border: '1px solid rgba(255,255,255,0.3)',
-            }}
-            animate={{ y: [0, -2, 0] }}
-            transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
-          >
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-xs font-bold shadow-lg"
+              style={{ 
+                background: `linear-gradient(135deg, ${zone.color}ee, ${zone.color}cc)`,
+                border: '1px solid rgba(255,255,255,0.3)',
+              }}
+            >
             <span>{zone.emoji}</span>
             <span>{zone.label}</span>
-          </motion.div>
+          </div>
         </motion.div>
       ))}
     </>
@@ -716,12 +704,10 @@ const RoomDecorations: React.FC<{ envConfig: EnvironmentConfig }> = ({ envConfig
                 <div className="bg-sky-100/30 rounded-tl-lg" />
                 <div className="bg-sky-100/30 rounded-tr-lg" />
               </div>
-              {/* Sun - color from config */}
-              <motion.div
+              {/* Sun - color from config - static for performance */}
+              <div
                 className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full"
-                style={{ backgroundColor: envConfig.window.sunColor }}
-                animate={{ opacity: [0.6, 0.9, 0.6] }}
-                transition={{ duration: 3, repeat: Infinity }}
+                style={{ backgroundColor: envConfig.window.sunColor, opacity: 0.8 }}
               />
             </div>
             {/* Window sill */}
@@ -798,13 +784,9 @@ const DiaryPanel: React.FC<{
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {diary.length === 0 ? (
                   <div className="text-center py-10">
-                    <motion.span 
-                      className="text-5xl mb-4 block"
-                      animate={{ rotate: [0, 5, -5, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
+                    <span className="text-5xl mb-4 block">
                       📝
-                    </motion.span>
+                    </span>
                     <p className="text-white/70 font-medium mb-1">No memories yet!</p>
                     <p className="text-white/40 text-sm">Care for your pet to write new entries~</p>
                   </div>
@@ -813,8 +795,8 @@ const DiaryPanel: React.FC<{
                     <motion.div
                       key={entry.id}
                       className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xl">
@@ -849,9 +831,9 @@ const ReactionBubble: React.FC<{
   return (
     <motion.div
       className="absolute bottom-[45%] right-[10%] max-w-[200px] z-30"
-      initial={{ opacity: 0, scale: 0.8, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.8, y: 20 }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
       transition={{ type: 'spring', damping: 20, stiffness: 200 }}
     >
       <div className="bg-white/95 backdrop-blur-xl border-2 border-slate-200 rounded-2xl rounded-bl-sm p-3 shadow-xl">
@@ -874,15 +856,28 @@ export function PetGameScene() {
   const { pet, loading: petLoading, error: petError } = usePet();
   const { balance, refreshBalance } = useFinancial();
 
-  // Debug logging
-  useEffect(() => {
-    console.log('[PetGameScene] Render state:', {
-      petLoading,
-      hasPet: !!pet,
-      petType: pet ? ((pet as any)?.pet_type || pet?.species) : 'none',
-      petError,
-    });
-  }, [petLoading, pet, petError]);
+  // Memoize prefers-reduced-motion check to avoid repeated window.matchMedia calls
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // TEMPORARY: Disable all animations to debug performance issues
+  const animationsEnabled = false; // Temporarily disabled to fix crashes
+
+  // Debug logging disabled for performance
+  // useEffect(() => {
+  //   console.log('[PetGameScene] Render state:', {
+  //     petLoading,
+  //     hasPet: !!pet,
+  //     petType: pet ? ((pet as any)?.pet_type || pet?.species) : 'none',
+  //     petError,
+  //   });
+  // }, [petLoading, pet, petError]);
 
   // State
   const [stats, setStats] = useState<PetStats | null>(null);
@@ -898,17 +893,12 @@ export function PetGameScene() {
   const [particles, setParticles] = useState<FloatingParticle[]>([]);
   const [screenShake, setScreenShake] = useState(false);
   const [successIndicator, setSuccessIndicator] = useState<SuccessIndicator | null>(null);
-  const [showZoneLabels, setShowZoneLabels] = useState(true);
+  const [showZoneLabels, setShowZoneLabels] = useState(false); // Hidden by default for immersion
   
   const sceneRef = useRef<HTMLDivElement>(null);
 
-  // Hide zone labels after first interaction (they're just for teaching)
-  useEffect(() => {
-    if (lastAction) {
-      const timer = setTimeout(() => setShowZoneLabels(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [lastAction]);
+  // Zone labels remain hidden by default for immersion
+  // They can be shown temporarily if needed for teaching, but should not be visible normally
 
   // Sync stats from pet context
   useEffect(() => {
@@ -937,10 +927,8 @@ export function PetGameScene() {
   const petType: PetType = useMemo(() => {
     const normalized = petTypeRaw.toLowerCase().trim();
     if (normalized === 'dog' || normalized === 'cat' || normalized === 'panda') {
-      console.log(`[PetGameScene] Using petType: ${normalized}`);
       return normalized;
     }
-    console.warn(`[PetGameScene] Unknown petType "${petTypeRaw}", defaulting to "dog"`);
     return 'dog';
   }, [petTypeRaw]);
   const petName = pet?.name || 'Your Pet';
@@ -948,35 +936,12 @@ export function PetGameScene() {
 
   // Get environment config based on pet type
   const envConfig = useMemo(() => {
-    const config = getEnvironmentConfig(petType);
-    console.log(`[PetGameScene] Environment config for ${petType}:`, {
-      id: config.id,
-      name: config.name,
-      propsWithImages: {
-        feed: !!config.props.feed.imagePath,
-        rest: !!config.props.rest.imagePath,
-        play: !!config.props.play.imagePath,
-        bathe: !!config.props.bathe.imagePath,
-      },
-      decorationsWithImages: config.decorations.filter(d => d.imagePath).length,
-    });
-    return config;
+    return getEnvironmentConfig(petType);
   }, [petType]);
   
   // Get world objects for this environment
   const worldObjects = useMemo(() => {
-    const objects = getWorldObjects(envConfig);
-    // Debug: Log world objects with image paths
-    objects.forEach(obj => {
-      console.log(`[PetGameScene] World object ${obj.id}:`, {
-        hasImagePath: !!obj.imagePath,
-        imagePath: obj.imagePath,
-        hasSecondaryImagePath: !!obj.secondaryImagePath,
-        secondaryImagePath: obj.secondaryImagePath,
-        size: obj.size,
-      });
-    });
-    return objects;
+    return getWorldObjects(envConfig);
   }, [envConfig]);
 
   // Helper functions
@@ -1038,29 +1003,31 @@ export function PetGameScene() {
     setReaction(response.reaction || '');
   }, [stats, checkEvolution]);
 
-  // Load diary data
+  // Load diary data - memoized to prevent infinite loops
   const loadDiaryData = useCallback(async () => {
     try {
       setError(null);
       const fetchedDiary = await getPetDiary();
       setDiary(fetchedDiary);
       setDataLoading(false);
-      await refreshBalance();
+      // Refresh balance separately to avoid dependency issues
+      refreshBalance().catch(() => {});
     } catch (err: any) {
       console.error('Failed to load diary data:', err);
       setDataLoading(false);
     }
-  }, [refreshBalance]);
+  }, []); // Removed refreshBalance from deps to prevent loops
 
   useEffect(() => {
     if (pet) {
       loadDiaryData();
-      const refreshInterval = setInterval(() => {
-        loadDiaryData().catch(() => {});
-      }, 60000);
-      return () => clearInterval(refreshInterval);
+      // Disabled auto-refresh to prevent performance issues
+      // const refreshInterval = setInterval(() => {
+      //   loadDiaryData().catch(() => {});
+      // }, 60000);
+      // return () => clearInterval(refreshInterval);
     }
-  }, [pet, loadDiaryData]);
+  }, [pet]); // Removed loadDiaryData from deps to prevent loops
 
   useEffect(() => {
     if (petError) {
@@ -1164,21 +1131,13 @@ export function PetGameScene() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <motion.div
-            className="text-7xl mb-4"
-            animate={{ y: [0, -15, 0], rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          >
+          <div className="text-7xl mb-4">
             🐾
-          </motion.div>
+          </div>
           <LoadingSpinner size="lg" />
-          <motion.p 
-            className="mt-4 text-slate-700 font-medium"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
+          <p className="mt-4 text-slate-700 font-medium">
             Waking up your pet...
-          </motion.p>
+          </p>
         </motion.div>
       </div>
     );
@@ -1206,28 +1165,22 @@ export function PetGameScene() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <motion.div
-            className="text-7xl mb-4"
-            animate={{ y: [0, -8, 0], scale: [1, 1.05, 1] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-          >
+          <div className="text-7xl mb-4">
             🥚
-          </motion.div>
+          </div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">Ready to meet your pet?</h2>
           <p className="text-slate-600 text-sm mb-5">Create your companion and start your adventure!</p>
-          <motion.a
+          <a
             href="/pet-selection"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-bold shadow-lg"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-bold shadow-lg transition-transform hover:scale-105 active:scale-98"
             style={{
               background: 'linear-gradient(135deg, #FF6B9D, #FFB347)',
               boxShadow: '0 4px 15px rgba(255, 107, 157, 0.35)',
             }}
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.98 }}
           >
             <span>🎉</span>
             Create My Pet
-          </motion.a>
+          </a>
         </motion.div>
       </div>
     );
@@ -1247,7 +1200,9 @@ export function PetGameScene() {
         backgroundColor: '#f0f0f0', // Fallback background color
         zIndex: 1, // Above background but below header (z-50)
       }}
-      animate={screenShake ? { x: [0, -2, 2, -2, 0] } : {}}
+      animate={screenShake ? { 
+        x: [-2, 2, -2, 2, 0],
+      } : {}}
       transition={{ duration: 0.15 }}
     >
       {/* ========== ENVIRONMENT RENDERER ========== */}
@@ -1291,26 +1246,25 @@ export function PetGameScene() {
         )}
       </AnimatePresence>
 
-      {/* ========== INTERACTIVE WORLD OBJECTS (placed directly in world) ========== */}
-      {worldObjects.map((obj) => (
-        <InteractiveObject
-          key={obj.id}
-          object={obj}
-          onClick={(e?: any) => handleAction(obj.id, e)}
-          disabled={actionLoading !== null}
-          isActive={actionLoading === obj.id}
-        />
-      ))}
+      {/* ========== FOREGROUND LAYER: INTERACTIVE WORLD OBJECTS ========== */}
+      <div className="absolute inset-0" style={{ zIndex: 4 }}>
+        {worldObjects.map((obj) => (
+          <InteractiveObject
+            key={obj.id}
+            object={obj}
+            onClick={(e?: any) => handleAction(obj.id, e)}
+            disabled={actionLoading !== null}
+            isActive={actionLoading === obj.id}
+            prefersReducedMotion={prefersReducedMotion || !animationsEnabled}
+          />
+        ))}
+      </div>
 
-      {/* ========== PET VISUAL (CENTER) ========== */}
-      <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 2, paddingTop: '5%' }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, type: 'spring', damping: 15 }}
-        >
+      {/* ========== FOREGROUND LAYER: PET VISUAL (CENTER) ========== */}
+      <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 5, paddingTop: '5%' }}>
+        <div style={{ opacity: 1 }}>
           <PetVisual petType={petType} />
-        </motion.div>
+        </div>
       </div>
 
       {/* ========== AI REACTION BUBBLE ========== */}
@@ -1328,8 +1282,8 @@ export function PetGameScene() {
           border: `1px solid ${UI_COLORS.hudBorder}`,
           boxShadow: `0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 ${UI_COLORS.hudGlow}`,
         }}
-        initial={{ opacity: 0, x: -30 }}
-        animate={{ opacity: 1, x: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.3, type: 'spring', stiffness: 150 }}
       >
         <div className="space-y-1.5">
@@ -1363,8 +1317,8 @@ export function PetGameScene() {
       {/* ========== TOP-RIGHT HUD: COINS & ACTIONS ========== */}
       <motion.div
         className="absolute top-3 right-3 z-30"
-        initial={{ opacity: 0, x: 30 }}
-        animate={{ opacity: 1, x: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.4, type: 'spring', stiffness: 150 }}
       >
         <div className="flex items-center gap-2">
@@ -1394,50 +1348,21 @@ export function PetGameScene() {
             }}
             whileHover={{ scale: 1.04 }}
           >
-            <motion.span
-              className="text-lg"
-              animate={{ rotateY: [0, 360] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            >
+            <span className="text-lg">
               🪙
-            </motion.span>
-            <motion.span
+            </span>
+            <span
               key={balance}
               className="text-base font-bold text-amber-400 tabular-nums"
-              initial={{ scale: 1.2, color: '#86EFAC' }}
-              animate={{ scale: 1, color: '#FBBF24' }}
-              transition={{ duration: 0.4 }}
             >
               {balance.toLocaleString()}
-            </motion.span>
+            </span>
           </motion.div>
         </div>
       </motion.div>
 
       {/* ========== BOTTOM INSTRUCTION HINT ========== */}
-      <AnimatePresence>
-        {showZoneLabels && (
-        <motion.div
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20"
-            initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ delay: 1.2, duration: 0.4 }}
-          >
-            <motion.div 
-              className="px-4 py-2 rounded-full text-white text-sm font-semibold backdrop-blur-sm"
-              style={{ 
-                background: 'linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9))',
-                boxShadow: '0 4px 15px rgba(99,102,241,0.3)',
-              }}
-              animate={{ y: [0, -3, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              Tap the objects to care for your pet! 🐾
-      </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Removed for immersion - no UI labels visible by default */}
 
       {/* ========== DIARY PANEL ========== */}
       <DiaryPanel
@@ -1455,9 +1380,9 @@ export function PetGameScene() {
               background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9))',
               border: '1px solid rgba(255,255,255,0.2)',
             }}
-            initial={{ opacity: 0, y: -15, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
           >
             <div className="flex items-center gap-2 text-white">
               <span className="text-base">😿</span>

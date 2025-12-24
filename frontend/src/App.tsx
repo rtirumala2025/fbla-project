@@ -56,7 +56,7 @@ const HabitPredictionPage = lazy(() => import('./pages/habits/HabitPredictionPag
 const FinanceSimulatorPage = lazy(() => import('./pages/finance_sim/FinanceSimulatorPage').then(m => ({ default: m.FinanceSimulatorPage })));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage').then(m => ({ default: m.ReportsPage })));
 const PetGameScreen = lazy(() => 
-  import('./components/pets/PetGameScreen')
+  import('./pages/PetGameScreen')
     .catch(err => {
       console.error('Failed to load PetGameScreen:', err);
       // Return a fallback component

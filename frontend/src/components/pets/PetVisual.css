@@ -87,11 +87,11 @@
   transform-origin: center center;
 }
 
-/* Body layer - breathing animation */
+/* Body layer - breathing animation, foreground clarity */
 .pet-body-layer {
   z-index: 3;
   animation: petBreathe var(--pet-breathe-duration) ease-in-out infinite;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
   will-change: transform;
 }
 
@@ -113,45 +113,45 @@
   will-change: transform;
 }
 
-/* Combined idle animation: subtle float with gentle rotation */
+/* Combined idle animation: subtle float with gentle rotation - using translate3d for performance */
 @keyframes petIdle {
   0%, 100% {
-    transform: translateY(0) rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
   25% {
-    transform: translateY(calc(var(--pet-idle-float) * -0.6)) rotate(calc(var(--pet-idle-rotate) * -1));
+    transform: translate3d(0, calc(var(--pet-idle-float) * -0.6), 0) rotate(calc(var(--pet-idle-rotate) * -1));
   }
   50% {
-    transform: translateY(calc(var(--pet-idle-float) * -1)) rotate(0deg);
+    transform: translate3d(0, calc(var(--pet-idle-float) * -1), 0) rotate(0deg);
   }
   75% {
-    transform: translateY(calc(var(--pet-idle-float) * -0.6)) rotate(var(--pet-idle-rotate));
+    transform: translate3d(0, calc(var(--pet-idle-float) * -0.6), 0) rotate(var(--pet-idle-rotate));
   }
 }
 
-/* Breathing animation: subtle scale on body */
+/* Breathing animation: subtle scale on body - using translate3d for performance */
 @keyframes petBreathe {
   0%, 100% {
-    transform: scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: scale(var(--pet-breathe-scale));
+    transform: translate3d(0, 0, 0) scale(var(--pet-breathe-scale));
   }
 }
 
-/* Tail sway animation */
+/* Tail sway animation - using translate3d for performance */
 @keyframes petTailSway {
   0%, 100% {
-    transform: rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
   25% {
-    transform: rotate(calc(var(--pet-tail-sway-angle) * -1));
+    transform: translate3d(0, 0, 0) rotate(calc(var(--pet-tail-sway-angle) * -1));
   }
   50% {
-    transform: rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
   75% {
-    transform: rotate(var(--pet-tail-sway-angle));
+    transform: translate3d(0, 0, 0) rotate(var(--pet-tail-sway-angle));
   }
 }
 
@@ -188,26 +188,15 @@
   bottom: calc(var(--pet-shadow-offset) * -1);
   left: 50%;
   transform: translateX(-50%);
-  width: var(--pet-shadow-width);
-  height: var(--pet-shadow-height);
-  background: rgba(0, 0, 0, 0.2);
+  width: calc(var(--pet-shadow-width) * 1.2);
+  height: calc(var(--pet-shadow-height) * 1.2);
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.18) 45%, transparent 75%);
   border-radius: 50%;
-  filter: blur(8px);
+  filter: blur(10px);
   z-index: 10;
-  /* Shadow pulse animation */
-  animation: shadowPulse var(--pet-shadow-duration) ease-in-out infinite;
+  /* Subtle shadow pulse animation - removed for performance, keeping static */
+  /* animation: shadowPulse var(--pet-shadow-duration) ease-in-out infinite; */
   will-change: opacity, transform;
-}
-
-@keyframes shadowPulse {
-  0%, 100% {
-    opacity: 0.3;
-    transform: translateX(-50%) scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: translateX(-50%) scale(1.1);
-  }
 }
 
 /* ============================================================================

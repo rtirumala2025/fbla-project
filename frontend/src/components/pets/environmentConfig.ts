@@ -117,11 +117,15 @@ export interface EnvironmentConfig {
 // SHARED DEFAULTS
 // ============================================================================
 
+// Anchored cluster layout:
+// Left cluster: feed (nature zone) + clean (bamboo/pond/plants)
+// Center: pet only (breathing space)
+// Right cluster: rest + play (bed, rock, flowers)
 const DEFAULT_LAYOUT: ZoneLayout = {
-  feed: { x: '18%', y: '78%' },
-  rest: { x: '82%', y: '78%' },
-  play: { x: '82%', y: '48%' },
-  clean: { x: '18%', y: '48%' },
+  feed: { x: '18%', y: '78%' },      // Left cluster - nature zone
+  clean: { x: '12%', y: '55%' },     // Left cluster - slightly offset from feed
+  rest: { x: '78%', y: '82%' },      // Right cluster - rest/play zone
+  play: { x: '82%', y: '48%' },      // Right cluster - slightly offset from rest
 };
 
 const OBJECT_SIZE = '180px'; // Extra large for submission-ready prominence
