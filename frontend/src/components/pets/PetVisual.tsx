@@ -12,7 +12,8 @@
  * - Pet only (environment is handled separately by EnvironmentRenderer)
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { LazyImage } from './LazyImage';
 import './PetVisual.css';
 
 export type PetType = 'dog' | 'cat' | 'panda';
@@ -47,36 +48,35 @@ export const PetVisual: React.FC<PetVisualProps> = ({ petType }) => {
       <div className="pet-sprite-container">
         <figure className={`pet pet-${normalizedPetType}`}>
           {/* Body layer - animates with breathing */}
-          <img 
+          <LazyImage 
             src={assetPaths.body} 
             alt={`${normalizedPetType} body`}
             className="pet-body-layer"
-            onError={(e) => {
+            fallback=""
+            onError={() => {
               console.error(`Failed to load pet body asset: ${assetPaths.body}`);
-              // Fallback: hide broken image
-              (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
           {/* Eyes layer - animates with blinking */}
-          <img 
+          <LazyImage 
             src={assetPaths.eyes} 
             alt=""
             className="pet-eyes-layer"
             aria-hidden="true"
-            onError={(e) => {
+            fallback=""
+            onError={() => {
               console.error(`Failed to load pet eyes asset: ${assetPaths.eyes}`);
-              (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
           {/* Tail layer - animates with sway */}
-          <img 
+          <LazyImage 
             src={assetPaths.tail} 
             alt=""
             className="pet-tail-layer"
             aria-hidden="true"
-            onError={(e) => {
+            fallback=""
+            onError={() => {
               console.error(`Failed to load pet tail asset: ${assetPaths.tail}`);
-              (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
         </figure>

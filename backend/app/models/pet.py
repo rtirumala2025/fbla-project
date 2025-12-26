@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 
 
-@dataclass(slots=True)
+@dataclass
 class PetStats:
     hunger: int
     hygiene: int
@@ -19,7 +19,7 @@ class PetStats:
     is_sick: bool
 
 
-@dataclass(slots=True)
+@dataclass
 class PetDiaryEntry:
     id: str
     mood: str
@@ -27,7 +27,7 @@ class PetDiaryEntry:
     created_at: datetime
 
 
-@dataclass(slots=True)
+@dataclass
 class Pet:
     id: str
     user_id: str

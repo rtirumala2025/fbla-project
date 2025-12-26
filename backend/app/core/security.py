@@ -11,7 +11,7 @@ from fastapi import HTTPException, status
 from app.core.config import get_settings
 
 
-@dataclass(slots=True)
+@dataclass
 class AuthClaims:
     """Subset of Supabase JWT claims used by the application."""
 

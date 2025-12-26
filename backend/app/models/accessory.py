@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 
-@dataclass(slots=True)
+@dataclass
 class Accessory:
     """Represents an accessory in the catalog."""
 
@@ -21,7 +21,7 @@ class Accessory:
     updated_at: Optional[datetime] = None
 
 
-@dataclass(slots=True)
+@dataclass
 class EquippedAccessory:
     """Represents a user's equipped accessory state."""
 
@@ -34,7 +34,7 @@ class EquippedAccessory:
     updated_at: datetime
 
 
-@dataclass(slots=True)
+@dataclass
 class PetArtCacheEntry:
     """Represents a cached pet art generation result."""
 

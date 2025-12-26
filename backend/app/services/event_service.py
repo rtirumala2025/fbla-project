@@ -11,7 +11,7 @@ from fastapi import HTTPException, status
 from app.models import Event, EventEffect, EventParticipation
 
 
-@dataclass(slots=True)
+@dataclass
 class ParticipationRecord:
     """Internal representation of a participation row."""
 

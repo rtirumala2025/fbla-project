@@ -1,7 +1,7 @@
+@import './design-system.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import './design-system.css';
 
 :root {
   --background-color: #ffffff;

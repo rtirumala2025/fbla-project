@@ -856,6 +856,15 @@ export function PetGameScene() {
   const { pet, loading: petLoading, error: petError } = usePet();
   const { balance, refreshBalance } = useFinancial();
 
+  // Debug logging
+  console.log('PetGameScene state:', { 
+    petLoading, 
+    hasPet: !!pet, 
+    petError,
+    petId: pet?.id,
+    petName: pet?.name 
+  });
+
   // Memoize prefers-reduced-motion check to avoid repeated window.matchMedia calls
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -879,7 +888,7 @@ export function PetGameScene() {
   //   });
   // }, [petLoading, pet, petError]);
 
-  // State
+  // State - optimized with fewer re-renders
   const [stats, setStats] = useState<PetStats | null>(null);
   const [diary, setDiary] = useState<PetDiaryEntry[]>([]);
   const [reaction, setReaction] = useState<string>('');
@@ -893,7 +902,7 @@ export function PetGameScene() {
   const [particles, setParticles] = useState<FloatingParticle[]>([]);
   const [screenShake, setScreenShake] = useState(false);
   const [successIndicator, setSuccessIndicator] = useState<SuccessIndicator | null>(null);
-  const [showZoneLabels, setShowZoneLabels] = useState(false); // Hidden by default for immersion
+  const [showZoneLabels, setShowZoneLabels] = useState(false);
   
   const sceneRef = useRef<HTMLDivElement>(null);
 
@@ -926,6 +935,20 @@ export function PetGameScene() {
   }, [dataLoading]);
 
   const loading = petLoading;
+  
+  // Force exit loading after 10 seconds if stuck
+  const [forceExitLoading, setForceExitLoading] = useState(false);
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.log('PetGameScene: Loading timeout, forcing exit');
+        setForceExitLoading(true);
+      }, 10000);
+      return () => clearTimeout(timeout);
+    }
+  }, [loading]);
+  
+  const finalLoading = loading && !forceExitLoading;
   const petSpecies = (pet?.species || 'default').toLowerCase();
   // Use pet_type as canonical, fallback to species
   const petTypeRaw = ((pet as any)?.pet_type || pet?.species || 'dog').toLowerCase();
@@ -1008,31 +1031,38 @@ export function PetGameScene() {
     setReaction(response.reaction || '');
   }, [stats, checkEvolution]);
 
-  // Load diary data - memoized to prevent infinite loops
+  // Custom debounce implementation to avoid external dependency
+  const useDebounce = useCallback((func: Function, delay: number) => {
+    const timeoutRef = useRef<NodeJS.Timeout>();
+    return useCallback((...args: any[]) => {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => func(...args), delay);
+    }, [func, delay]);
+  }, []);
+
+  // Optimized diary loading with debouncing
   const loadDiaryData = useCallback(async () => {
     try {
       setError(null);
       const fetchedDiary = await getPetDiary();
       setDiary(fetchedDiary);
       setDataLoading(false);
-      // Refresh balance separately to avoid dependency issues
       refreshBalance().catch(() => {});
     } catch (err: any) {
       console.error('Failed to load diary data:', err);
       setDataLoading(false);
     }
-  }, []); // Removed refreshBalance from deps to prevent loops
+  }, []);
 
+  // Debounced diary loading to prevent excessive calls
+  const debouncedLoadDiary = useDebounce(loadDiaryData, 1000);
+
+  // Simplified effect for diary loading
   useEffect(() => {
     if (pet) {
-      loadDiaryData();
-      // Disabled auto-refresh to prevent performance issues
-      // const refreshInterval = setInterval(() => {
-      //   loadDiaryData().catch(() => {});
-      // }, 60000);
-      // return () => clearInterval(refreshInterval);
+      debouncedLoadDiary();
     }
-  }, [pet]); // Removed loadDiaryData from deps to prevent loops
+  }, [pet?.id]); // Only depend on pet ID to prevent excessive calls
 
   useEffect(() => {
     if (petError) {
@@ -1115,7 +1145,7 @@ export function PetGameScene() {
   }, [stats, pet?.stats]);
 
   // Loading state - polished for competition (uses default environment)
-  if (loading) {
+  if (finalLoading) {
     const defaultEnv = getEnvironmentConfig('dog'); // Use 'dog' instead of 'default'
     return (
       <div 

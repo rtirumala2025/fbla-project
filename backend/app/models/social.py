@@ -14,7 +14,7 @@ class FriendStatus(str, Enum):
     DECLINED = "declined"
 
 
-@dataclass(slots=True)
+@dataclass
 class Friendship:
     """Represents a friendship relationship between two users."""
     id: str
@@ -27,7 +27,7 @@ class Friendship:
     updated_at: Optional[datetime] = None
 
 
-@dataclass(slots=True)
+@dataclass
 class FriendRequest:
     """Represents a friend request."""
     id: str
@@ -38,7 +38,7 @@ class FriendRequest:
     responded_at: Optional[datetime] = None
 
 
-@dataclass(slots=True)
+@dataclass
 class BlockedUser:
     """Represents a blocked user relationship."""
     id: str

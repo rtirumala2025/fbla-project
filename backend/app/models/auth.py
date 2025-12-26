@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 
-@dataclass(slots=True)
+@dataclass
 class AuthenticatedUser:
     id: str
     email: Optional[str] = None

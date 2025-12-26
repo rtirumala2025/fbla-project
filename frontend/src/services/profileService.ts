@@ -166,6 +166,15 @@ export const profileService = {
 
     logger.debug('Authenticated user found', { userId: user.id, email: user.email });
 
+    // Check if profile already exists to prevent duplicate key violation
+    logger.debug('Checking for existing profile', { userId: user.id });
+    const existingProfile = await this.getProfile(user.id, false); // Don't use cache
+    
+    if (existingProfile) {
+      logger.info('Profile already exists', { userId: user.id, profileId: existingProfile.id });
+      return existingProfile;
+    }
+
     // Use the authenticated user's ID for the insert
     const profileData = {
       user_id: user.id,
@@ -196,6 +205,16 @@ export const profileService = {
           errorDetails: error.details,
           errorHint: error.hint,
         }, error);
+        
+        // Handle duplicate key violation specifically
+        if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('profiles_user_id_unique')) {
+          logger.warn('Duplicate profile detected, fetching existing profile', { userId: user.id });
+          const existingProfile = await this.getProfile(user.id, false);
+          if (existingProfile) {
+            return existingProfile;
+          }
+        }
+        
         throw new Error(getErrorMessage(error, `Failed to create profile: ${error.message}`));
       }
 

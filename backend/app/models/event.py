@@ -6,7 +6,7 @@ from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 
-@dataclass(slots=True)
+@dataclass
 class EventEffect:
     """Describe the effect an event has on a pet's mood and stats."""
 
@@ -15,7 +15,7 @@ class EventEffect:
     visual_overlays: Dict[str, Any]
 
 
-@dataclass(slots=True)
+@dataclass
 class Event:
     """Represent a seasonal event or festival."""
 
@@ -38,7 +38,7 @@ class Event:
         return today < self.start_date
 
 
-@dataclass(slots=True)
+@dataclass
 class EventParticipation:
     """Store a user's participation metadata for an event."""
 
@@ -52,7 +52,7 @@ class EventParticipation:
     last_interacted_at: datetime
 
 
-@dataclass(slots=True)
+@dataclass
 class WeatherSnapshot:
     """Captures the current weather condition for the dashboard."""
 

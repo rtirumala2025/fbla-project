@@ -21,6 +21,12 @@ export const useAccessoriesRealtime = (
 ): void => {
   const callbackRef = useRef(callback);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const isSettingUpRef = useRef(false);
+  const fetchInFlightRef = useRef(false);
+  const lastFetchAtRef = useRef(0);
+  const pendingFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep callback ref up to date
   useEffect(() => {
@@ -35,20 +41,64 @@ export const useAccessoriesRealtime = (
     let isActive = true;
     let channel: RealtimeChannel | null = null;
 
-    const setupRealtime = async () => {
+    const cleanup = () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (pendingFetchRef.current) {
+        clearTimeout(pendingFetchRef.current);
+        pendingFetchRef.current = null;
+      }
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
+      isSettingUpRef.current = false;
+      fetchInFlightRef.current = false;
+      reconnectAttemptRef.current = 0;
+    };
+
+    const fetchAccessories = async () => {
+      if (!isActive) return;
+
+      const now = Date.now();
+      const minIntervalMs = 250;
+
+      if (fetchInFlightRef.current) return;
+
+      if (now - lastFetchAtRef.current < minIntervalMs) {
+        if (!pendingFetchRef.current) {
+          pendingFetchRef.current = setTimeout(() => {
+            pendingFetchRef.current = null;
+            fetchAccessories();
+          }, minIntervalMs - (now - lastFetchAtRef.current));
+        }
+        return;
+      }
+
+      fetchInFlightRef.current = true;
+      lastFetchAtRef.current = now;
+
       try {
-        // Get initial data
-        const { data: initialData, error: initialError } = await supabase
+        const { data, error } = await supabase
           .from('user_accessories')
           .select('*')
           .eq('pet_id', petId);
 
-        if (initialError) {
+        if (!isActive) return;
+
+        if (error) {
+          logger.error('Failed to fetch accessories', { petId, errorCode: error.code }, error);
           return;
         }
 
-        if (initialData && isActive) {
-          const accessories: AccessoryEquipResponse[] = initialData.map((item) => ({
+        if (data) {
+          const accessories: AccessoryEquipResponse[] = data.map((item) => ({
             accessory_id: item.accessory_id,
             pet_id: item.pet_id,
             equipped: item.equipped,
@@ -58,6 +108,26 @@ export const useAccessoriesRealtime = (
             updated_at: item.updated_at,
           }));
           callbackRef.current(accessories);
+        }
+      } catch (error) {
+        logger.error(
+          'Error fetching accessories',
+          { petId },
+          error instanceof Error ? error : new Error(String(error))
+        );
+      } finally {
+        fetchInFlightRef.current = false;
+      }
+    };
+
+    const setupRealtime = async () => {
+      if (!isActive || isSettingUpRef.current) return;
+      isSettingUpRef.current = true;
+
+      try {
+        if (channelRef.current) {
+          supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
         }
 
         // Setup realtime subscription
@@ -81,33 +151,7 @@ export const useAccessoriesRealtime = (
                   event: payload.eventType,
                 });
 
-                // Fetch updated accessories
-                const { data, error } = await supabase
-                  .from('user_accessories')
-                  .select('*')
-                  .eq('pet_id', petId);
-
-                if (error) {
-                  logger.error('Failed to fetch updated accessories', { petId, errorCode: error.code }, error);
-                  return;
-                }
-
-                if (data && isActive) {
-                  const accessories: AccessoryEquipResponse[] = data.map((item) => ({
-                    accessory_id: item.accessory_id,
-                    pet_id: item.pet_id,
-                    equipped: item.equipped,
-                    equipped_color: item.equipped_color,
-                    equipped_slot: item.equipped_slot,
-                    applied_mood: item.applied_mood || 'happy',
-                    updated_at: item.updated_at,
-                  }));
-                  callbackRef.current(accessories);
-                  logger.debug('Accessories updated via realtime', {
-                    petId,
-                    count: accessories.length,
-                  });
-                }
+                await fetchAccessories();
               } catch (error) {
                 logger.error('Error in accessories realtime callback', { petId }, error instanceof Error ? error : new Error(String(error)));
               }
@@ -115,25 +159,36 @@ export const useAccessoriesRealtime = (
           )
           .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
+              reconnectAttemptRef.current = 0;
               logger.info('Subscribed to accessories realtime channel', {
                 petId,
                 channel: `accessories-realtime-${petId}`,
               });
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
               logger.error('Accessories realtime channel error', { petId, status });
-              // Attempt to resubscribe after delay
-              setTimeout(() => {
-                if (isActive && channelRef.current) {
-                  logger.info('Attempting to resubscribe to accessories realtime', { petId });
-                  setupRealtime();
-                }
-              }, 5000);
+
+              if (reconnectTimeoutRef.current) return;
+
+              const attempt = reconnectAttemptRef.current;
+              const delayMs = Math.min(30000, 1000 * Math.pow(2, attempt));
+              reconnectAttemptRef.current = attempt + 1;
+
+              reconnectTimeoutRef.current = setTimeout(() => {
+                reconnectTimeoutRef.current = null;
+                if (!isActive) return;
+                logger.info('Attempting to resubscribe to accessories realtime', { petId, attempt: attempt + 1 });
+                setupRealtime();
+              }, delayMs);
             }
           });
 
         channelRef.current = channel;
+
+        await fetchAccessories();
       } catch (error) {
         // Setup error - continue silently
+      } finally {
+        isSettingUpRef.current = false;
       }
     };
 
@@ -141,10 +196,7 @@ export const useAccessoriesRealtime = (
 
     return () => {
       isActive = false;
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      cleanup();
     };
   }, [petId]);
 };

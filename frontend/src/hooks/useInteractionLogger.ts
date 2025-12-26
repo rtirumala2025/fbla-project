@@ -4,7 +4,7 @@
  * FBLA Competition-Level Feature
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 export interface InteractionLog {
   timestamp: number;
@@ -95,13 +95,16 @@ export function useInteractionLogger(componentName: string) {
     [logInteraction]
   );
 
-  return {
-    logInteraction,
-    logFormSubmit,
-    logFormValidation,
-    logFormError,
-    logUserAction,
-  };
+  return useMemo(
+    () => ({
+      logInteraction,
+      logFormSubmit,
+      logFormValidation,
+      logFormError,
+      logUserAction,
+    }),
+    [logFormError, logFormSubmit, logFormValidation, logInteraction, logUserAction]
+  );
 }
 
 export default logger;

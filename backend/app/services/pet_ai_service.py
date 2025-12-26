@@ -20,7 +20,7 @@ except Exception:  # pragma: no cover - MCP optional fallback
     default_context_manager = None  # type: ignore[assignment]
 
 
-@dataclass(slots=True)
+@dataclass
 class ReactionResult:
     reaction: str
     mood: Optional[str]

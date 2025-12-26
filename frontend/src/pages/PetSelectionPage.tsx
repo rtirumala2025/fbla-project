@@ -5,7 +5,7 @@ import { PetTypeSelector, PetType } from '../components/pets/PetTypeSelector';
 import { BreedSelector } from '../components/pets/BreedSelector';
 import { PreviewArea } from '../components/pets/PreviewArea';
 
-export const PetSelectionPage: React.FC = () => {
+const PetSelectionPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedType, setSelectedType] = useState<PetType | null>(null);
   const [selectedBreed, setSelectedBreed] = useState<string | null>(null);
@@ -120,4 +120,6 @@ export const PetSelectionPage: React.FC = () => {
     </div>
   );
 };
+
+export default PetSelectionPage;
 

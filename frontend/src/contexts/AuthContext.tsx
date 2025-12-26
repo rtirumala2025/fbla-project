@@ -196,8 +196,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         try {
           if (mappedUser) {
-            // Check if user has a profile and pet
-            const { isNew, hasPet: petExists } = await checkUserProfile(mappedUser.uid);
+            // Check if user has a profile and pet - with timeout to prevent hanging
+            const profilePromise = checkUserProfile(mappedUser.uid);
+            const { isNew, hasPet: petExists } = await withTimeout(
+              profilePromise,
+              5000, // 5 second timeout for profile check
+              'User profile check'
+            ) as any;
             onboardingLogger.authInit('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
             setIsNewUser(isNew);
             setHasPet(petExists);
@@ -292,8 +297,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       try {
         if (mappedUser) {
-          // Check if user has a profile and pet
-          const { isNew, hasPet: petExists } = await checkUserProfile(mappedUser.uid);
+          // Check if user has a profile and pet - with timeout to prevent hanging
+          const profilePromise = checkUserProfile(mappedUser.uid);
+          const { isNew, hasPet: petExists } = await withTimeout(
+            profilePromise,
+            5000, // 5 second timeout for profile check
+            'Auth state profile check'
+          ) as any;
           onboardingLogger.authStateChange('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
           setIsNewUser(isNew);
           setHasPet(petExists);

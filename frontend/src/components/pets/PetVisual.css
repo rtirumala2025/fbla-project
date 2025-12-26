@@ -18,16 +18,16 @@
   --pet-shadow-width: 80px;
   --pet-shadow-height: 25px;
   --pet-shadow-offset: 20px;
-  --pet-idle-duration: 3s;
-  --pet-breathe-duration: 2.5s;
-  --pet-tail-sway-duration: 2s;
-  --pet-eye-blink-duration: 0.2s;
-  --pet-eye-blink-interval: 3s;
-  --pet-shadow-duration: 3s;
-  --pet-idle-float: 5px;
-  --pet-idle-rotate: 1deg;
-  --pet-breathe-scale: 1.03;
-  --pet-tail-sway-angle: 8deg;
+  --pet-idle-duration: 4s;
+  --pet-breathe-duration: 4s;
+  --pet-tail-sway-duration: 3s;
+  --pet-eye-blink-duration: 0.15s;
+  --pet-eye-blink-interval: 4s;
+  --pet-shadow-duration: 4s;
+  --pet-idle-float: 3px;
+  --pet-idle-rotate: 0.5deg;
+  --pet-breathe-scale: 1.02;
+  --pet-tail-sway-angle: 5deg;
 }
 
 /* ============================================================================
@@ -44,6 +44,8 @@
   /* Position pet on floor (bottom 35% aligns with floor midpoint) */
   padding-bottom: 35%;
   box-sizing: border-box;
+  /* Performance optimization: contain layout and paint */
+  contain: layout style paint;
 }
 
 /* ============================================================================
@@ -68,8 +70,10 @@
   justify-content: center;
   /* Combined idle animation (float + rotate) */
   animation: petIdle var(--pet-idle-duration) ease-in-out infinite;
-  will-change: transform;
+  /* Remove will-change for better performance, only use when animating */
   transform-origin: center center;
+  /* Performance optimization */
+  contain: layout style paint;
 }
 
 /* ============================================================================
@@ -92,7 +96,9 @@
   z-index: 3;
   animation: petBreathe var(--pet-breathe-duration) ease-in-out infinite;
   filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
-  will-change: transform;
+  /* Only use will-change during animation */
+  transform-origin: center center;
+  contain: layout style paint;
 }
 
 /* Eyes layer - blinking animation */
@@ -102,7 +108,8 @@
     petEyeBlink var(--pet-eye-blink-duration) step-end infinite,
     petIdle var(--pet-idle-duration) ease-in-out infinite;
   animation-delay: 0s, 0s;
-  will-change: opacity;
+  /* Remove will-change for better performance */
+  contain: layout style paint;
 }
 
 /* Tail layer - swaying animation */
@@ -110,7 +117,8 @@
   z-index: 2;
   animation: petTailSway var(--pet-tail-sway-duration) ease-in-out infinite;
   transform-origin: 35% 70%; /* Tail pivot point (approximate) */
-  will-change: transform;
+  /* Remove will-change for better performance */
+  contain: layout style paint;
 }
 
 /* Combined idle animation: subtle float with gentle rotation - using translate3d for performance */
@@ -190,13 +198,12 @@
   transform: translateX(-50%);
   width: calc(var(--pet-shadow-width) * 1.2);
   height: calc(var(--pet-shadow-height) * 1.2);
-  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.18) 45%, transparent 75%);
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.12) 45%, transparent 75%);
   border-radius: 50%;
-  filter: blur(10px);
+  filter: blur(8px);
   z-index: 10;
-  /* Subtle shadow pulse animation - removed for performance, keeping static */
-  /* animation: shadowPulse var(--pet-shadow-duration) ease-in-out infinite; */
-  will-change: opacity, transform;
+  /* Static shadow for better performance */
+  contain: layout style paint;
 }
 
 /* ============================================================================

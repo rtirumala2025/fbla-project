@@ -632,7 +632,12 @@ export const DashboardPage = React.memo(function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/pet-game')}
+              onClick={() => {
+                console.log('Pet game button clicked!');
+                console.log('Current path before navigation:', window.location.pathname);
+                navigate('/pet-game');
+                console.log('Navigate called, current path after:', window.location.pathname);
+              }}
               className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-white shadow-md transition hover:shadow-lg hover:from-indigo-600 hover:to-purple-600"
             >
               <Gamepad2 className="h-4 w-4" />

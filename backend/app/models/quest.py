@@ -30,7 +30,7 @@ class QuestStatus(str, Enum):
     CLAIMED = "claimed"
 
 
-@dataclass(slots=True)
+@dataclass
 class Quest:
     """Represents a quest definition in the catalog."""
     
@@ -56,7 +56,7 @@ class Quest:
         return True
 
 
-@dataclass(slots=True)
+@dataclass
 class UserQuest:
     """Represents a user's progress on a specific quest."""
     
