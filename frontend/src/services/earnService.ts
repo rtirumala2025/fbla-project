@@ -90,6 +90,25 @@ export const earnService = {
     return defaultChores;
   },
 
+  // Optimized: Get all cooldowns at once (fixes N+1 query pattern)
+  async getAllChoreCooldowns(userId: string | undefined): Promise<Record<string, number>> {
+    if (!userId) return {};
+    
+    const cooldowns = await getCooldowns(userId);
+    const now = Date.now();
+    const result: Record<string, number> = {};
+    
+    for (const [choreId, until] of Object.entries(cooldowns)) {
+      if (typeof until === 'number' && until > now) {
+        result[choreId] = Math.ceil((until - now) / 1000);
+      } else {
+        result[choreId] = 0;
+      }
+    }
+    
+    return result;
+  },
+
   async getChoreCooldown(userId: string | undefined, choreId: string): Promise<number> {
     const cooldowns = await getCooldowns(userId);
     const until = cooldowns[choreId];

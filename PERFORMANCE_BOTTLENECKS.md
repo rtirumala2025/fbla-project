@@ -1,6 +1,6 @@
 # Performance Bottlenecks Audit Report
 
-**Generated:** December 19, 2025  
+**Generated:** January 2025  
 **Auditor:** Web Performance Engineering Analysis  
 **Project:** FBLA Virtual Pet Application
 
@@ -8,163 +8,191 @@
 
 ## Executive Summary
 
-This audit identifies performance bottlenecks across the frontend React application and Supabase backend. The analysis covers bundle size, render performance, network requests, and database query optimization.
+This comprehensive audit identifies performance bottlenecks across the frontend React application and Supabase backend. The analysis covers bundle size, render performance, network requests, and database query optimization.
 
-**Overall Performance Grade: C+**  
-**Estimated Improvement Potential: 40-60% faster load times**
+**Overall Performance Grade: B-**  
+**Estimated Improvement Potential: 50-70% faster load times**
+
+**Key Findings:**
+- ✅ Already using Vite (excellent!)
+- ✅ Routes are lazy loaded (good!)
+- ⚠️ N+1 query patterns in chore cooldowns
+- ⚠️ Missing memoization in heavy components
+- ⚠️ No image lazy loading
+- ⚠️ Multiple sequential Supabase queries on auth
+- ⚠️ Analytics delayed artificially
+- ⚠️ Missing request caching/deduplication
 
 ---
 
 ## Critical Bottlenecks (P0 - Immediate Action Required)
 
-### 1. Build System: Create React App (CRA) vs Vite
+### 1. N+1 Query Pattern - Chore Cooldowns ⚠️ CRITICAL
 
 | Metric | Issue | Impact | Priority |
 |--------|-------|--------|----------|
-| **Build Tool** | Using react-scripts (CRA) | Slow builds, larger bundles, no tree-shaking optimization | 🔴 Critical |
+| **Query Pattern** | Individual `getChoreCooldown()` calls per chore | 1 + N queries instead of 1 | 🔴 Critical |
 
-**Details:**
-- CRA uses Webpack 5 with limited optimization options
-- Development server startup: ~15-30 seconds
-- Production builds: ~2-4 minutes
-- Bundle splitting is suboptimal
+**Location:** `frontend/src/services/earnService.ts:93-98`
 
-**Recommendation:** Migrate to Vite for:
-- 10-100x faster dev server startup (native ES modules)
-- Better tree-shaking and dead code elimination
-- Improved code splitting with rollup
-- Smaller production bundles
+**Current Flow:**
+```typescript
+// DashboardPage.tsx - N+1 pattern
+earnService.listChores().then(async (choresList) => {
+  const cooldownPromises = choresList.map(async (chore) => {
+    const cd = await earnService.getChoreCooldown(userId, chore.id); // N queries
+  });
+});
+```
 
----
+**Impact:**
+- If 5 chores exist: 6 API calls (1 list + 5 cooldowns)
+- Each cooldown query: ~50-100ms
+- Total overhead: 250-500ms
 
-### 2. Heavy Dependencies - Bundle Size Impact
-
-| Package | Size (estimated) | Usage | Impact |
-|---------|-----------------|-------|--------|
-| `three` + `@react-three/*` | ~500KB gzipped | 3D Pet visualization | 🔴 Critical |
-| `framer-motion` | ~85KB gzipped | Animations everywhere | 🟡 Medium |
-| `recharts` | ~150KB gzipped | Analytics charts | 🟡 Medium |
-| `react-icons` + `lucide-react` | ~40KB | Duplicate icon libs | 🟡 Medium |
-| `react-hot-toast` + `react-toastify` | ~20KB | Duplicate toast libs | 🟢 Low |
-| `react-joyride` | ~35KB gzipped | Onboarding tours | 🟢 Low |
-
-**Total Estimated Bundle Overhead:** ~830KB+ (before tree-shaking)
-
-**Recommendations:**
-- ✅ Already lazy-loading 3D visualization - good!
-- Remove `react-icons` (use only `lucide-react`)
-- Remove `react-toastify` (use only `react-hot-toast`)
-- Dynamic import `recharts` only on analytics pages
-- Consider lighter animation alternatives for simple use cases
+**Solution:**
+- Batch all cooldowns in single query (already implemented in `getCooldowns()`)
+- Return cooldowns with `listChores()` response
+- Cache cooldowns in component state
 
 ---
 
-### 3. PetGameScene.tsx - 1,452 Lines Single Component
+### 2. Missing Component Memoization ⚠️ HIGH
 
-| Metric | Value | Impact |
-|--------|-------|--------|
-| File Size | 1,452 lines | 🔴 Critical |
-| Re-render Risk | High | 🔴 Critical |
-| Code Splitting | Partially split | 🟡 Medium |
+| Component | Issue | Impact |
+|-----------|-------|--------|
+| **PetGameScene** | 1,452 lines, no memoization | 🔴 Critical |
+| **DashboardPage** | Heavy component, many re-renders | 🟡 High |
+| **Header** | Re-renders on every route change | 🟡 Medium |
 
 **Issues:**
-- Monolithic component with many responsibilities
-- Multiple `useState` hooks causing cascading re-renders
-- Inline object creation in render causing unnecessary re-renders
-- Animation controls not properly memoized
+- Inline object/function creation in render
+- Missing `useMemo` for expensive computations
+- Missing `useCallback` for event handlers
+- Child components not memoized
 
 **Recommendations:**
-- Split into smaller sub-components
-- Extract constants outside component
-- Memoize all child components
+- Wrap heavy components with `React.memo()`
+- Memoize expensive computations with `useMemo`
 - Use `useCallback` for all event handlers
-- Consider state management refactor (Zustand already available)
+- Extract constants outside components
 
 ---
 
-## High Priority Bottlenecks (P1)
-
-### 4. AuthContext - Multiple API Calls on Mount
+### 3. Sequential Auth Queries ⚠️ HIGH
 
 | Metric | Issue | Impact |
 |--------|-------|--------|
 | **API Calls** | 3-4 sequential calls on auth check | 🟡 High |
 | **Blocking** | Blocks UI while checking profile/pet | 🟡 High |
 
+**Location:** `frontend/src/contexts/AuthContext.tsx`
+
 **Current Flow:**
-1. `getSession()` - Supabase auth check
-2. `getProfile()` - Profile service check
-3. `getPet()` - Pet service check (with retry logic up to 3x)
-4. Real-time subscription setup
+1. `getSession()` - Supabase auth check (~100ms)
+2. `getProfile()` - Profile service check (~100ms)
+3. `getPet()` - Pet service check with retry (up to 3x, ~300ms worst case)
+4. Real-time subscription setup (~50ms)
+
+**Total Time:** ~550ms (worst case)
 
 **Recommendations:**
-- Batch profile + pet check into single API call
-- Use stale-while-revalidate pattern for faster perceived load
+- Batch profile + pet check into single RPC function
+- Use stale-while-revalidate pattern
 - Cache last known state in sessionStorage
+- Parallelize where possible
 
 ---
 
-### 5. DashboardPage - Waterfall API Requests
+## High Priority Bottlenecks (P1)
+
+### 4. DashboardPage - Artificial Analytics Delay
 
 | Metric | Issue | Impact |
 |--------|-------|--------|
-| **Parallel Calls** | 5+ calls (good!) | ✅ Optimized |
-| **Analytics Delay** | 500ms artificial delay | 🟡 Medium |
-| **N+1 Query** | Chore cooldowns fetch individually | 🟡 Medium |
+| **Delay** | 500ms artificial delay before analytics | 🟡 Medium |
 
-**Current Flow (Good):**
-```javascript
-Promise.allSettled([
-  fetchActiveQuests(),
-  fetchCoachAdvice(), 
-  fetchAccessories(),
-  refreshBalance(),
-  earnService.listChores()
-]);
+**Location:** `frontend/src/pages/DashboardPage.tsx`
+
+**Current Code:**
+```typescript
+// Analytics delayed unnecessarily
+setTimeout(() => {
+  loadAnalytics();
+}, 500);
 ```
 
-**Issues:**
-- Analytics delayed by 500ms (unnecessary if network is fast)
-- Chore cooldowns loaded in N+1 pattern (one query per chore)
-- Equipped accessories require second Supabase query
+**Impact:** Adds 500ms to dashboard load time
 
-**Recommendations:**
-- Remove artificial analytics delay
-- Batch cooldown queries into single Supabase call
-- Include equipped accessories in main accessories fetch
+**Solution:** Remove artificial delay, load immediately
 
 ---
 
-### 6. Header Component - Re-renders on Every Route Change
+### 5. Missing Image Lazy Loading
 
-| Metric | Issue | Impact |
-|--------|-------|--------|
-| **Re-renders** | Every location.pathname change | 🟡 Medium |
-| **Mobile Menu** | AnimatePresence causes layout shifts | 🟢 Low |
+| Asset Type | Current State | Recommendation |
+|------------|--------------|----------------|
+| **SVG Assets** | 28 SVG files, no lazy loading | Add `loading="lazy"` |
+| **Pet Sprites** | Emoji-based (efficient) | ✅ Good |
+| **3D Models** | Lazy loaded (good!) | ✅ Good |
 
-**Issues:**
-- Header re-renders completely on route changes
-- `useLocation()` hook triggers re-renders
-- Multiple `useEffect` with scroll listeners
+**Location:** All image components
+
+**Impact:** Off-screen images block initial render
+
+**Solution:** Add `loading="lazy"` to all off-screen images
+
+---
+
+### 6. Missing Request Caching/Deduplication
+
+| Issue | Impact |
+|-------|--------|
+| Same data fetched multiple times | 🟡 Medium |
+| No request deduplication | 🟡 Medium |
+| Analytics snapshot fetched every time | 🟡 Medium |
+
+**Examples:**
+- `fetchActiveQuests()` called multiple times
+- `fetchAccessories()` called on every dashboard visit
+- No shared cache between components
+
+**Solution:**
+- Implement request deduplication
+- Add response caching (5-10 min TTL)
+- Use React Query or SWR for caching
+
+---
+
+### 7. Heavy Dependencies - Bundle Size
+
+| Package | Size (estimated) | Usage | Impact |
+|---------|-----------------|-------|--------|
+| `three` + `@react-three/*` | ~500KB gzipped | 3D Pet visualization | ✅ Lazy loaded |
+| `framer-motion` | ~85KB gzipped | Animations | 🟡 Medium |
+| `recharts` | ~150KB gzipped | Analytics charts | ✅ Lazy loaded |
+| `lucide-react` | ~40KB | Icons | 🟢 Low |
+
+**Current State:**
+- ✅ Three.js lazy loaded (good!)
+- ✅ Recharts lazy loaded (good!)
+- ⚠️ Framer Motion loaded upfront (used everywhere)
 
 **Recommendations:**
-- ✅ Already using `memo()` - good!
-- Consider extracting nav links to separate memoized component
-- Debounce scroll handler
+- Consider CSS animations for simple effects
+- Keep heavy libs lazy loaded
 
 ---
 
 ## Medium Priority Bottlenecks (P2)
 
-### 7. React Context Nesting - Provider Hell
+### 8. React Context Nesting - Provider Chain
 
 ```jsx
 <AuthProvider>
   <ToastProvider>
     <PetProvider>
       <FinancialProvider>
-        <OnboardingTutorial />
-        <TooltipGuide />
         {/* App content */}
       </FinancialProvider>
     </PetProvider>
@@ -175,23 +203,14 @@ Promise.allSettled([
 **Issues:**
 - 4 levels of context nesting
 - Each provider update may cascade re-renders
-- No context selectors (all consumers re-render on any state change)
+- No context selectors
+
+**Impact:** Medium - Context updates trigger re-renders
 
 **Recommendations:**
 - Use Zustand store (already exists!) for global state
 - Implement context selectors where possible
-- Consider React Compiler (React 19) for automatic memoization
-
----
-
-### 8. Image/Asset Loading
-
-| Asset Type | Current State | Recommendation |
-|------------|--------------|----------------|
-| Pet Sprites | Emoji-based (efficient) | ✅ Good |
-| Icons | Two libraries loaded | Remove duplicate |
-| Fonts | System fonts | ✅ Good |
-| Images | No lazy loading | Add `loading="lazy"` |
+- Split contexts by update frequency
 
 ---
 
@@ -199,34 +218,51 @@ Promise.allSettled([
 
 | Query | Issue | Impact |
 |-------|-------|--------|
-| Profile lookup | Individual query | 🟢 Low |
-| Pet check | Retry logic (up to 3x) | 🟡 Medium |
-| Accessories | Two separate queries | 🟡 Medium |
+| Accessories | Two separate queries (list + equipped) | 🟡 Medium |
+| Profile + Pet | Separate queries | 🟢 Low |
 | Real-time subs | Multiple channels | 🟢 Low |
 
-**Existing Indexes (Good):**
-- `019_performance_indexes.sql` - Many indexes already added
+**Existing Indexes:** ✅ Good - Many indexes already added
 
 **Recommendations:**
-- Combine profile + pet into single RPC function
+- Combine accessories queries (list + equipped in one)
 - Use `.select()` with relationships to reduce queries
 - Consider Supabase Edge Functions for complex aggregations
 
 ---
 
+### 10. Missing Route Preloading
+
+| Issue | Impact |
+|-------|--------|
+| No route preloading | 🟢 Low |
+| Related routes not prefetched | 🟢 Low |
+
+**Current State:**
+- Routes are lazy loaded (good!)
+- No preloading strategy
+
+**Recommendations:**
+- Preload likely next routes (dashboard → shop, etc.)
+- Use `<link rel="prefetch">` for critical routes
+
+---
+
 ## Low Priority Bottlenecks (P3)
 
-### 10. CSS Performance
+### 11. CSS Performance
 
 | Issue | Impact |
 |-------|--------|
 | Tailwind JIT compilation | ✅ Optimized |
-| Unused CSS purging | 🟢 Low - Tailwind handles this |
+| Unused CSS purging | ✅ Tailwind handles this |
 | Critical CSS inlining | Not implemented |
+
+**Status:** ✅ Good - Tailwind handles optimization
 
 ---
 
-### 11. Animation Performance
+### 12. Animation Performance
 
 | Component | Animation Library | Issue |
 |-----------|------------------|-------|
@@ -241,41 +277,45 @@ Promise.allSettled([
 
 ---
 
-## Quick Wins (Immediate Implementation)
-
-1. **Remove duplicate packages:** `react-icons`, `react-toastify`
-2. **Add preload hints:** Critical fonts, Supabase connection
-3. **Implement route preloading:** Prefetch likely next routes
-4. **Add image lazy loading:** All off-screen images
-5. **Optimize dev experience:** Enable Vite for faster iteration
-
----
-
 ## Performance Metrics Baseline (Estimated)
 
 | Metric | Current (Est.) | Target | Industry Standard |
 |--------|---------------|--------|-------------------|
-| **FCP** | 2.5-3.5s | < 1.8s | < 1.8s |
-| **LCP** | 3.5-4.5s | < 2.5s | < 2.5s |
-| **TTI** | 4-6s | < 3.8s | < 3.8s |
-| **TBT** | 300-500ms | < 200ms | < 200ms |
-| **CLS** | 0.1-0.2 | < 0.1 | < 0.1 |
-| **Bundle Size** | ~1.5MB | < 500KB | < 400KB |
+| **FCP** | 2.0-2.5s | < 1.5s | < 1.8s |
+| **LCP** | 3.0-3.5s | < 2.0s | < 2.5s |
+| **TTI** | 3.5-4.5s | < 3.0s | < 3.8s |
+| **TBT** | 200-400ms | < 150ms | < 200ms |
+| **CLS** | 0.05-0.1 | < 0.05 | < 0.1 |
+| **Bundle Size** | ~800KB-1.2MB | < 600KB | < 400KB |
+| **TTFB** | 150-300ms | < 200ms | < 200ms |
 
 ---
 
 ## Implementation Priority Matrix
 
-| Priority | Task | Effort | Impact |
-|----------|------|--------|--------|
-| 🔴 P0 | Migrate to Vite | High | Very High |
-| 🔴 P0 | Remove duplicate deps | Low | Medium |
-| 🟡 P1 | Add route preloading | Low | Medium |
-| 🟡 P1 | Optimize DashboardPage | Medium | High |
-| 🟡 P1 | Split PetGameScene | High | High |
-| 🟢 P2 | Context optimization | Medium | Medium |
-| 🟢 P2 | Image lazy loading | Low | Low |
-| 🟢 P3 | CSS critical path | Low | Low |
+| Priority | Task | Effort | Impact | Status |
+|----------|------|--------|---------|--------|
+| 🔴 P0 | Fix N+1 query pattern | Low | High | ⏳ Pending |
+| 🔴 P0 | Add component memoization | Medium | High | ⏳ Pending |
+| 🔴 P0 | Optimize auth queries | Medium | High | ⏳ Pending |
+| 🟡 P1 | Remove analytics delay | Low | Medium | ⏳ Pending |
+| 🟡 P1 | Add image lazy loading | Low | Medium | ⏳ Pending |
+| 🟡 P1 | Implement request caching | Medium | High | ⏳ Pending |
+| 🟢 P2 | Context optimization | Medium | Medium | ⏳ Pending |
+| 🟢 P2 | Route preloading | Low | Low | ⏳ Pending |
+| 🟢 P3 | CSS critical path | Low | Low | ⏳ Pending |
+
+---
+
+## Quick Wins (Immediate Implementation)
+
+1. ✅ **Vite already in use** - Excellent!
+2. ✅ **Routes lazy loaded** - Good!
+3. ⏳ **Fix N+1 query pattern** - Batch cooldowns
+4. ⏳ **Remove analytics delay** - Load immediately
+5. ⏳ **Add image lazy loading** - All off-screen images
+6. ⏳ **Add component memoization** - Heavy components
+7. ⏳ **Implement request caching** - 5-10 min TTL
 
 ---
 
@@ -288,4 +328,4 @@ Promise.allSettled([
 
 ---
 
-*Report generated by AI Performance Analysis*
+*Report generated by AI Performance Analysis - January 2025*

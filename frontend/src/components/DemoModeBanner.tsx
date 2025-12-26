@@ -8,7 +8,7 @@ import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getEnv } from '../utils/env';
 
-export const DemoModeBanner = memo(() => {
+export const DemoModeBanner = memo(function DemoModeBanner() {
   const { currentUser } = useAuth();
   
   // Check if we're in demo mode (no Supabase configured)
@@ -53,7 +53,7 @@ export const DemoModeBanner = memo(() => {
       </div>
     </div>
   );
-};
+});
 
 DemoModeBanner.displayName = 'DemoModeBanner';
 

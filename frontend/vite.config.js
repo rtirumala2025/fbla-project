@@ -7,21 +7,10 @@ var patchReactReconciler = function () {
     var patchConstantsFile = function () {
         try {
             var constantsMjsPath = resolve(__dirname, 'node_modules/react-reconciler/constants.mjs');
-            if (existsSync(constantsMjsPath)) {
-                var mjsContent = readFileSync(constantsMjsPath, 'utf-8');
-                // Always ensure the exports are present (don't check, just append if not there)
-                if (!mjsContent.includes('ContinuousEventPriority')) {
-                    mjsContent += "\n// Additional exports for React 18+ compatibility (patched for Vite)\nexport const ContinuousEventPriority = 4;\nexport const DiscreteEventPriority = 1;\nexport const DefaultEventPriority = 16;\nexport const IdleEventPriority = 536870912;\n";
-                    writeFileSync(constantsMjsPath, mjsContent, 'utf-8');
-                    console.log('✅ Patched react-reconciler constants.mjs to export event priorities');
-                }
-                else {
-                    console.log('✅ react-reconciler constants.mjs already patched');
-                }
-            }
-            else {
-                console.warn('⚠️ constants.mjs file not found at expected path');
-            }
+            var constantsContent = "// ES Module version of react-reconciler constants\n// Created to support @react-three/fiber ESM imports\n\nexport const ConcurrentRoot = 1;\nexport const ContinuousEventPriority = 8;\nexport const DefaultEventPriority = 32;\nexport const DiscreteEventPriority = 2;\nexport const IdleEventPriority = 268435456;\nexport const LegacyRoot = 0;\nexport const NoEventPriority = 0;\n";
+            // Always create/overwrite the file to ensure it exists
+            writeFileSync(constantsMjsPath, constantsContent, 'utf-8');
+            console.log('✅ Created/patched react-reconciler constants.mjs');
         }
         catch (error) {
             console.warn('⚠️ Could not patch react-reconciler constants.mjs:', error);
@@ -44,8 +33,11 @@ var patchReactReconciler = function () {
         // Intercept the module resolution to ensure our patch is used
         resolveId: function (id) {
             if (id === 'react-reconciler/constants') {
-                // Return the actual path to trigger our load hook
-                return id;
+                var constantsMjsPath = resolve(__dirname, 'node_modules/react-reconciler/constants.mjs');
+                // Ensure file exists before resolving
+                patchConstantsFile();
+                // Return the actual file path so esbuild can find it
+                return constantsMjsPath;
             }
             return null;
         },
@@ -78,8 +70,7 @@ export default defineConfig({
         react({
             // Use automatic JSX runtime
             jsxRuntime: 'automatic',
-            // Enable Fast Refresh
-            fastRefresh: true,
+            // Fast Refresh is enabled by default
         }),
         // Automatically split vendor chunks for better caching
         splitVendorChunkPlugin(),
@@ -105,14 +96,9 @@ export default defineConfig({
         outDir: 'build',
         // Enable source maps in production for debugging
         sourcemap: false,
-        // Minification settings
-        minify: 'terser',
-        terserOptions: {
-            compress: {
-                drop_console: true,
-                drop_debugger: true,
-            },
-        },
+        // Minification settings - use esbuild for faster builds
+        minify: 'esbuild', // Faster than terser, good enough for production
+        // terserOptions removed - using esbuild instead
         // Chunk splitting for better caching
         rollupOptions: {
             // Explicitly set entry point to index.html (which loads main.tsx)
@@ -157,6 +143,9 @@ export default defineConfig({
         cssCodeSplit: true,
         // Target modern browsers for smaller bundles
         target: 'esnext',
+        // Additional optimizations
+        reportCompressedSize: true, // Report gzipped sizes
+        cssMinify: 'esbuild', // Fast CSS minification
     },
     // Development server configuration
     server: {
@@ -193,17 +182,33 @@ export default defineConfig({
             'lucide-react',
             'dayjs',
             'classnames',
-            '@react-three/fiber',
             '@react-three/drei',
         ],
         // Exclude heavy dependencies that are lazy-loaded
         exclude: [
             'three',
             '@react-three/xr',
+            '@react-three/fiber', // Exclude to avoid react-reconciler/constants.mjs issue
         ],
         // Force resolution of React dependencies to prevent version conflicts
         esbuildOptions: {
             target: 'es2020',
+            plugins: [
+                {
+                    name: 'fix-react-reconciler-constants',
+                    setup: function (build) {
+                        build.onResolve({ filter: /^react-reconciler\/constants$/ }, function (args) {
+                            var constantsPath = resolve(__dirname, 'node_modules/react-reconciler/constants.mjs');
+                            // Ensure file exists
+                            if (!existsSync(constantsPath)) {
+                                var content = "// ES Module version of react-reconciler constants\nexport const ConcurrentRoot = 1;\nexport const ContinuousEventPriority = 8;\nexport const DefaultEventPriority = 32;\nexport const DiscreteEventPriority = 2;\nexport const IdleEventPriority = 268435456;\nexport const LegacyRoot = 0;\nexport const NoEventPriority = 0;\n";
+                                writeFileSync(constantsPath, content, 'utf-8');
+                            }
+                            return { path: constantsPath };
+                        });
+                    },
+                },
+            ],
         },
     },
     // CSS configuration

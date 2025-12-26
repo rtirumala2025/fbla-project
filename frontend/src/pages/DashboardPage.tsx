@@ -80,7 +80,8 @@ const ACTIVITIES: Activity[] = [
   { id: 'adventure', name: 'Outdoor Adventure', cost: 15, energyCost: 30, benefits: '+35 happiness, +5 health', emoji: '⛺', path: '/minigames/dream' },
 ];
 
-export function DashboardPage() {
+// Memoized DashboardPage to prevent unnecessary re-renders
+export const DashboardPage = React.memo(function DashboardPage() {
   const navigate = useNavigate();
   const { currentUser, loading: authLoading } = useAuth();
   const { pet, loading: petLoading, bathe, updatePetStats, refreshPet } = usePet();
@@ -153,43 +154,49 @@ export function DashboardPage() {
     if (!currentUser || !pet) return;
     setLoadingAccessories(true);
     try {
-      const data = await fetchAccessories();
-      setAccessories(data);
-      
-      // Load equipped accessories from Supabase
-      try {
-        const { supabase } = await import('../lib/supabase');
-        const { data: equippedData, error: equippedError } = await supabase
-          .from('user_accessories')
-          .select('*')
-          .eq('pet_id', pet.id)
-          .eq('equipped', true);
+      // Optimized: Load accessories and equipped accessories in parallel
+      const [data, equippedResult] = await Promise.allSettled([
+        fetchAccessories(),
+        (async () => {
+          try {
+            const { supabase } = await import('../lib/supabase');
+            const { data: equippedData, error: equippedError } = await supabase
+              .from('user_accessories')
+              .select('*')
+              .eq('pet_id', pet.id)
+              .eq('equipped', true);
 
-        if (equippedError) {
-          console.error('❌ DashboardPage: Failed to load equipped accessories', equippedError);
-        } else if (equippedData) {
-          const equipped: AccessoryEquipResponse[] = equippedData.map((item) => ({
-            accessory_id: item.accessory_id,
-            pet_id: item.pet_id,
-            equipped: item.equipped,
-            equipped_color: item.equipped_color,
-            equipped_slot: item.equipped_slot,
-            applied_mood: item.applied_mood || 'happy',
-            updated_at: item.updated_at,
-          }));
-          setEquippedAccessories(equipped);
-          console.log('✅ DashboardPage: Loaded equipped accessories', {
-            count: equipped.length,
-            accessories: equipped.map(acc => acc.accessory_id),
-          });
-        }
-      } catch (error) {
-        console.error('❌ DashboardPage: Error loading equipped accessories', error);
-        // Continue with empty array if loading fails
+            if (equippedError) {
+              console.error('❌ DashboardPage: Failed to load equipped accessories', equippedError);
+              return [];
+            }
+            
+            return equippedData?.map((item) => ({
+              accessory_id: item.accessory_id,
+              pet_id: item.pet_id,
+              equipped: item.equipped,
+              equipped_color: item.equipped_color,
+              equipped_slot: item.equipped_slot,
+              applied_mood: item.applied_mood || 'happy',
+              updated_at: item.updated_at,
+            })) || [];
+          } catch (error) {
+            console.error('❌ DashboardPage: Error loading equipped accessories', error);
+            return [];
+          }
+        })(),
+      ]);
+
+      if (data.status === 'fulfilled') {
+        setAccessories(data.value);
+        logger.logUserAction('accessories_loaded', { count: data.value.length });
+      }
+
+      if (equippedResult.status === 'fulfilled') {
+        setEquippedAccessories(equippedResult.value);
+      } else {
         setEquippedAccessories([]);
       }
-      
-      logger.logUserAction('accessories_loaded', { count: data.length });
     } catch (err) {
       console.error('Failed to load accessories:', err);
       logger.logInteraction('accessories_load_error', { error: err });
@@ -330,66 +337,55 @@ export function DashboardPage() {
           }
           if (accessoriesData.status === 'fulfilled') {
             setAccessories(accessoriesData.value);
-            
-            // Load equipped accessories from Supabase
-            if (pet) {
-              try {
-                const { supabase } = await import('../lib/supabase');
-                const { data: equippedData, error: equippedError } = await supabase
-                  .from('user_accessories')
-                  .select('*')
-                  .eq('pet_id', pet.id)
-                  .eq('equipped', true);
-
-                if (equippedError) {
-                  // Failed to load equipped accessories - continue without them
-                } else if (equippedData) {
-                  const equipped: AccessoryEquipResponse[] = equippedData.map((item) => ({
-                    accessory_id: item.accessory_id,
-                    pet_id: item.pet_id,
-                    equipped: item.equipped,
-                    equipped_color: item.equipped_color,
-                    equipped_slot: item.equipped_slot,
-                    applied_mood: item.applied_mood || 'happy',
-                    updated_at: item.updated_at,
-                  }));
-                  setEquippedAccessories(equipped);
-                }
-              } catch (error) {
-                setEquippedAccessories([]);
-              }
-            }
             logger.logUserAction('accessories_loaded', { count: accessoriesData.value.length });
+            
+            // Optimized: Load equipped accessories in parallel (already handled in loadAccessories)
+            // This is a fallback for the initial load
+            if (pet) {
+              Promise.resolve().then(async () => {
+                try {
+                  const { supabase } = await import('../lib/supabase');
+                  const { data: equippedData, error: equippedError } = await supabase
+                    .from('user_accessories')
+                    .select('*')
+                    .eq('pet_id', pet.id)
+                    .eq('equipped', true);
+
+                  if (!equippedError && equippedData) {
+                    const equipped: AccessoryEquipResponse[] = equippedData.map((item) => ({
+                      accessory_id: item.accessory_id,
+                      pet_id: item.pet_id,
+                      equipped: item.equipped,
+                      equipped_color: item.equipped_color,
+                      equipped_slot: item.equipped_slot,
+                      applied_mood: item.applied_mood || 'happy',
+                      updated_at: item.updated_at,
+                    }));
+                    setEquippedAccessories(equipped);
+                  }
+                } catch (error) {
+                  // Silently fail - equipped accessories will load via real-time subscription
+                }
+              });
+            }
           }
           if (choresList.status === 'fulfilled' && choresList.value.length > 0 && currentUser?.uid) {
             setChores(choresList.value);
           
-            // Batch load all cooldowns in parallel (fixes N+1 query pattern)
-          try {
-              const cooldownPromises = choresList.value.map(async (chore) => {
-              const cd = await earnService.getChoreCooldown(currentUser.uid, chore.id);
-              return [chore.id, cd] as [string, number];
-            });
-            
-            const cooldownPairs = await Promise.all(cooldownPromises);
-            const cooldowns: Record<string, number> = {};
-            cooldownPairs.forEach(([choreId, cd]) => {
-              cooldowns[choreId] = cd;
-            });
-            setChoreCooldowns(cooldowns);
-          } catch (err) {
+            // Optimized: Load all cooldowns in single query (fixes N+1 pattern)
+            try {
+              const cooldowns = await earnService.getAllChoreCooldowns(currentUser.uid);
+              setChoreCooldowns(cooldowns);
+            } catch (err) {
               // Failed to load cooldowns - continue without them
             }
           }
 
-          // Secondary data - load analytics after critical data (can be slower)
-          // Analytics is heavy, so load it separately to not block critical UI
-          // Delay analytics load slightly to prioritize critical UI rendering
-          setTimeout(() => {
-            loadAnalytics().catch(() => {
-              // Analytics failed - continue without it
-            });
-          }, 500); // 500ms delay to let critical UI render first
+          // Secondary data - load analytics immediately (removed artificial delay)
+          // Analytics is heavy, but network may be fast, so load in parallel
+          loadAnalytics().catch(() => {
+            // Analytics failed - continue without it
+          });
         } catch (err) {
           // Error loading dashboard data - continue with partial data
         }
@@ -1111,6 +1107,6 @@ export function DashboardPage() {
       </div>
     </div>
   );
-}
+});
 
 export default DashboardPage;

@@ -3,6 +3,7 @@
  * Handles fetching and equipping pet accessories
  */
 import { apiRequest } from './httpClient';
+import { cachedRequest } from '../utils/requestCache';
 import { getEnv } from '../utils/env';
 import type {
   Accessory,
@@ -48,19 +49,25 @@ function generateMockAccessories(): Accessory[] {
 }
 
 export async function fetchAccessories(): Promise<Accessory[]> {
-  // Use mock data if in mock mode or if API fails
-  if (useMock) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return generateMockAccessories();
-  }
+  return cachedRequest(
+    'accessories-list',
+    async () => {
+      // Use mock data if in mock mode or if API fails
+      if (useMock) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        return generateMockAccessories();
+      }
 
-  try {
-    const response = await apiRequest<AccessoryListResponse>(BASE_PATH);
-    return response.accessories;
-  } catch (error) {
-    // Fallback to mock data if API fails
-    return generateMockAccessories();
-  }
+      try {
+        const response = await apiRequest<AccessoryListResponse>(BASE_PATH);
+        return response.accessories;
+      } catch (error) {
+        // Fallback to mock data if API fails
+        return generateMockAccessories();
+      }
+    },
+    60000 // Cache for 1 minute
+  );
 }
 
 export async function equipAccessory(payload: AccessoryEquipPayload): Promise<AccessoryEquipResponse> {

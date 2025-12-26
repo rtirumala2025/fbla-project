@@ -44,7 +44,7 @@ export const NoEventPriority = 0;
       patchConstantsFile();
     },
     // Intercept the module resolution to ensure our patch is used
-    resolveId(id) {
+    resolveId(id: string) {
       if (id === 'react-reconciler/constants') {
         const constantsMjsPath = resolve(__dirname, 'node_modules/react-reconciler/constants.mjs');
         // Ensure file exists before resolving
@@ -54,7 +54,7 @@ export const NoEventPriority = 0;
       }
       return null;
     },
-    load(id) {
+    load(id: string) {
       // Intercept loading of react-reconciler/constants
       if (id === 'react-reconciler/constants') {
         try {
@@ -91,8 +91,7 @@ export default defineConfig({
     react({
       // Use automatic JSX runtime
       jsxRuntime: 'automatic',
-      // Enable Fast Refresh
-      fastRefresh: true,
+      // Fast Refresh is enabled by default
     }),
     // Automatically split vendor chunks for better caching
     splitVendorChunkPlugin(),
@@ -124,14 +123,9 @@ export default defineConfig({
     // Enable source maps in production for debugging
     sourcemap: false,
     
-    // Minification settings
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    // Minification settings - use esbuild for faster builds
+    minify: 'esbuild', // Faster than terser, good enough for production
+    // terserOptions removed - using esbuild instead
     
     // Chunk splitting for better caching
     rollupOptions: {
@@ -187,6 +181,10 @@ export default defineConfig({
     
     // Target modern browsers for smaller bundles
     target: 'esnext',
+    
+    // Additional optimizations
+    reportCompressedSize: true, // Report gzipped sizes
+    cssMinify: 'esbuild', // Fast CSS minification
   },
   
   // Development server configuration

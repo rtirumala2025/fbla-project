@@ -593,7 +593,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Clear any cached data
       const { requestCache } = await import('../utils/requestCache');
-      requestCache.clearAll();
+      requestCache.clear();
     } catch (error) {
       // Ensure state is cleared even if there's an error
       setCurrentUser(null);
