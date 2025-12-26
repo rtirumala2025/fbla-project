@@ -1,22 +1,5 @@
-/**
- * EnvironmentRenderer Component Styles
- * Pure CSS styling for environment rendering
- * 
- * Z-Index Layering (bottom to top):
- * - 1: Background gradient
- * - 2: Floor pattern
- * - 3: Zone highlights (on floor)
- * - 4: Window
- * - 5: Decorations
- * - 6: Spotlight (overlay)
- */
-
-/* ============================================================================
-   CONSTANTS
-   ============================================================================ */
-
 :root {
-  --floor-height: 50%;
+  --floor-height: 38%;
   --window-width-desktop: 40%;
   --window-width-tablet: 50%;
   --window-width-mobile: 60%;
@@ -26,90 +9,48 @@
   --window-top: 10%;
   --sun-size: 40px;
   --sun-top: 20%;
-  --decoration-size-desktop: 1.5rem;
-  --decoration-size-tablet: 1.25rem;
-  --zone-highlight-size-desktop: 80px;
-  --zone-highlight-size-mobile: 60px;
-  --zone-pulse-duration: 3s;
-  --zone-pulse-delay: 0.75s;
-  --sun-pulse-duration: 4s;
-  --decoration-float-duration: 6s;
-  --decoration-float-distance: 10px;
-  --decoration-float-rotate: 5deg;
 }
-
-/* ============================================================================
-   ENVIRONMENT CONTAINER
-   ============================================================================ */
 
 .environment-renderer {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 100vh;
   overflow: hidden;
-  z-index: 1;
-  background: #B4D7E8; /* Fallback background color */
+  background: #B4D7E8;
 }
 
-/* ============================================================================
-   LAYER DEFINITIONS
-   ============================================================================ */
-
-/* Background layer: z-index 1 - distant elements, reduced saturation, blur */
 .background-layer {
+  position: absolute;
+  inset: 0;
   z-index: 1;
 }
 
-/* Midground layer: z-index 2-3 - floor, decorations, window */
 .midground-layer {
+  position: absolute;
+  inset: 0;
   z-index: 2;
 }
-
-/* Foreground layer: z-index 4-5 - interactive objects, pet (handled in component) */
-
-/* ============================================================================
-   FLOOR PATTERN
-   ============================================================================ */
 
 .floor-pattern {
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
   height: var(--floor-height);
-  opacity: 0.6;
-  pointer-events: none;
-  z-index: 2;
+  width: 100%;
+  opacity: 0.65;
+  box-shadow: inset 0 12px 18px rgba(0, 0, 0, 0.12);
 }
 
-/* ============================================================================
-   ZONE HIGHLIGHTS (on floor level)
-   ============================================================================ */
-
-.zone-highlights {
+.zone-tints {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 3;
 }
 
-.zone-highlight {
+.zone-tint {
   position: absolute;
-  width: var(--zone-highlight-size-desktop);
-  height: var(--zone-highlight-size-desktop);
   border-radius: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.3;
-  /* REMOVED: zonePulse animation for performance */
 }
-
-/* REMOVED: zonePulse keyframes and animation delays for performance */
-
-/* ============================================================================
-   WINDOW
-   ============================================================================ */
 
 .window-container {
   position: absolute;
@@ -118,8 +59,7 @@
   transform: translateX(-50%);
   width: var(--window-width-desktop);
   height: var(--window-height-desktop);
-  pointer-events: none;
-  z-index: 4;
+  z-index: 3;
 }
 
 .window {
@@ -127,7 +67,9 @@
   height: 100%;
   border-radius: 0.5rem;
   border: 3px solid rgba(139, 139, 139, 0.3);
-  position: relative;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.2),
+    0 12px 24px rgba(0, 0, 0, 0.25);
   overflow: hidden;
 }
 
@@ -139,48 +81,31 @@
   width: var(--sun-size);
   height: var(--sun-size);
   border-radius: 50%;
-  opacity: 0.9;
-  /* REMOVED: sunPulse animation for performance */
 }
-
-/* REMOVED: sunPulse keyframes for performance */
-
-/* ============================================================================
-   DECORATIVE ELEMENTS
-   ============================================================================ */
 
 .decoration {
   position: absolute;
-  font-size: var(--decoration-size-desktop);
-  pointer-events: none;
-  /* REMOVED: decorationFloat animation for performance */
-  filter: blur(0.5px);
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform-style: preserve-3d;
+  z-index: 4;
+  filter: saturate(0.9);
 }
 
 .decoration-image {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
 }
 
-.decoration-emoji-fallback {
-  display: block;
-  line-height: 1;
+.decoration-shadow {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 12px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.25) 0%, transparent 70%);
+  filter: blur(4px);
 }
-
-/* REMOVED: decoration animation delays and keyframes for performance */
-
-/* REMOVED: decorationImageBob animation for performance */
-
-/* ============================================================================
-   SPOTLIGHT (overlay effect)
-   ============================================================================ */
 
 .spotlight {
   position: absolute;
@@ -189,91 +114,14 @@
   transform: translateX(-50%);
   width: 80%;
   height: 60%;
+  z-index: 5;
   pointer-events: none;
-  z-index: 6;
 }
-
-/* ============================================================================
-   ZONE TINTS (subtle visual grouping)
-   ============================================================================ */
-
-.zone-tints {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
-  overflow: hidden;
-}
-
-.zone-tint {
-  /* REMOVED: will-change and transition for performance */
-}
-
-/* ============================================================================
-   DEPTH & PARALLAX EFFECTS
-   ============================================================================ */
-
-/* Subtle parallax on background layers */
-.environment-renderer {
-  perspective: 1000px;
-  transform-style: preserve-3d;
-}
-
-.floor-pattern {
-  transform: translateZ(-10px) scale(1.01);
-  /* REMOVED: will-change for performance */
-}
-
-/* Decoration depth layering */
-.decoration {
-  transform-style: preserve-3d;
-}
-
-.decoration:nth-child(1) {
-  transform: translateZ(5px);
-}
-
-.decoration:nth-child(2) {
-  transform: translateZ(3px);
-}
-
-.decoration:nth-child(3) {
-  transform: translateZ(7px);
-}
-
-.decoration:nth-child(4) {
-  transform: translateZ(2px);
-}
-
-/* Contact shadows for decorations */
-.decoration-shadow {
-  /* REMOVED: will-change and transition for performance */
-}
-
-.decoration:hover ~ .decoration-shadow,
-.decoration:hover .decoration-shadow {
-  transform: translateX(-50%) scale(1.1);
-  opacity: 0.3;
-}
-
-/* ============================================================================
-   ACCESSIBILITY: REDUCED MOTION
-   ============================================================================ */
-
-/* REMOVED: prefers-reduced-motion media query - all animations already removed for performance */
-
-/* ============================================================================
-   RESPONSIVE DESIGN
-   ============================================================================ */
 
 @media (max-width: 768px) {
   .window-container {
     width: var(--window-width-tablet);
     height: var(--window-height-tablet);
-  }
-
-  .decoration {
-    font-size: var(--decoration-size-tablet);
   }
 }
 
@@ -282,10 +130,4 @@
     width: var(--window-width-mobile);
     height: var(--window-height-mobile);
   }
-
-  .zone-highlight {
-    width: var(--zone-highlight-size-mobile);
-    height: var(--zone-highlight-size-mobile);
-  }
 }
-
