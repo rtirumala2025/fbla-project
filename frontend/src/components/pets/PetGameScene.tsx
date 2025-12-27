@@ -10,7 +10,10 @@ import { X } from 'lucide-react';
 import { bathePetAction, feedPetAction, getPetDiary, playWithPet, restPetAction } from '../../api/pets';
 import type { PetActionResponse, PetDiaryEntry, PetStats } from '../../types/pet';
 import { usePet } from '../../context/PetContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useFinancial } from '../../context/FinancialContext';
+import { inventoryService } from '../../services/inventoryService';
+import type { InventoryEntry } from '../../types/finance';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EvolutionAnimation } from './EvolutionAnimation';
 import { EnvironmentRenderer } from './EnvironmentRenderer';
@@ -28,6 +31,8 @@ import './PetGameScene.css';
 // ============================================================================
 
 type CareAction = 'feed' | 'play' | 'bathe' | 'rest';
+
+type InventoryDropTarget = 'pet' | 'scene';
 
 interface FloatingParticle {
   id: string;
@@ -247,11 +252,11 @@ const InteractiveObject: React.FC<{
   disabled: boolean;
   isActive: boolean;
   prefersReducedMotion?: boolean;
-}> = ({ object, onClick, disabled, isActive, prefersReducedMotion = false }) => {
+  effectsEnabled?: boolean;
+}> = ({ object, onClick, disabled, isActive, prefersReducedMotion = false, effectsEnabled = true }) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  // REMOVED: All idle animations to fix performance regression
-  // Objects remain static for stability
+  const allowIdleMotion = effectsEnabled && !prefersReducedMotion && !disabled;
 
   return (
     <motion.button
@@ -275,13 +280,18 @@ const InteractiveObject: React.FC<{
         background: 'transparent',
         border: 'none',
         padding: '20px',
+        filter: isHovered && allowIdleMotion ? 'drop-shadow(0 10px 18px rgba(99,102,241,0.25))' : undefined,
       }}
       whileHover={!disabled ? { scale: 1.15 } : {}}
       whileTap={!disabled ? { scale: 0.95 } : {}}
-      animate={isActive ? { 
-        scale: [1, 1.12, 1],
-      } : {}}
-      transition={isActive 
+      animate={{
+        scale: isActive ? [1, 1.12, 1] : 1,
+        y: allowIdleMotion ? (isActive ? [0, -2, 0] : [0, -1.5, 0]) : 0,
+        rotate: allowIdleMotion ? (isActive ? [0, -1.2, 1.2, 0] : [0, -0.5, 0.5, 0]) : 0,
+      }}
+      transition={allowIdleMotion
+        ? { duration: isActive ? 0.8 : 2.8, repeat: Infinity, ease: 'easeInOut' }
+        : isActive 
         ? { duration: 0.5, repeat: Infinity, ease: 'easeInOut' } 
         : { type: 'spring', stiffness: 300, damping: 20 }}
     >
@@ -853,17 +863,9 @@ const ReactionBubble: React.FC<{
 // ============================================================================
 
 export function PetGameScene() {
-  const { pet, loading: petLoading, error: petError } = usePet();
+  const { pet, loading: petLoading, error: petError, refreshPet } = usePet();
+  const { currentUser } = useAuth();
   const { balance, refreshBalance } = useFinancial();
-
-  // Debug logging
-  console.log('PetGameScene state:', { 
-    petLoading, 
-    hasPet: !!pet, 
-    petError,
-    petId: pet?.id,
-    petName: pet?.name 
-  });
 
   // Memoize prefers-reduced-motion check to avoid repeated window.matchMedia calls
   const prefersReducedMotion = useMemo(() => {
@@ -877,6 +879,8 @@ export function PetGameScene() {
 
   // TEMPORARY: Disable all animations to debug performance issues
   const animationsEnabled = true;
+
+  const effectsEnabled = animationsEnabled && !prefersReducedMotion;
 
   // Debug logging disabled for performance
   // useEffect(() => {
@@ -904,10 +908,20 @@ export function PetGameScene() {
   const [successIndicator, setSuccessIndicator] = useState<SuccessIndicator | null>(null);
   const [showZoneLabels, setShowZoneLabels] = useState(false);
   const [petAnimation, setPetAnimation] = useState<PetAnimationState>('idle');
+  const [inventory, setInventory] = useState<InventoryEntry[]>([]);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
+  const [inventoryUsingId, setInventoryUsingId] = useState<string | null>(null);
+  const [inventoryDraggingId, setInventoryDraggingId] = useState<string | null>(null);
+  const [inventoryQtyBumpKey, setInventoryQtyBumpKey] = useState<Record<string, number>>({});
+  const [dropTarget, setDropTarget] = useState<InventoryDropTarget | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   
   const sceneRef = useRef<HTMLDivElement>(null);
   const petAnimationTimeoutRef = useRef<number | null>(null);
   const idleWalkIntervalRef = useRef<number | null>(null);
+  const petDropRef = useRef<HTMLDivElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   // Zone labels remain hidden by default for immersion
   // They can be shown temporarily if needed for teaching, but should not be visible normally
@@ -976,6 +990,87 @@ export function PetGameScene() {
     };
   }, [stats, pet?.stats]);
 
+  const playUiTone = useCallback((kind: 'feed' | 'play' | 'bathe' | 'use') => {
+    if (!soundEnabled) return;
+    if (!effectsEnabled) return;
+    try {
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextCtor) return;
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContextCtor();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const now = ctx.currentTime;
+
+      const freqByKind: Record<typeof kind, number> = {
+        feed: 440,
+        play: 523.25,
+        bathe: 392,
+        use: 659.25,
+      };
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freqByKind[kind], now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.14);
+      osc.onended = () => {
+        try {
+          osc.disconnect();
+          gain.disconnect();
+        } catch {
+          // ignore
+        }
+      };
+    } catch {
+      // ignore
+    }
+  }, [effectsEnabled, soundEnabled]);
+
+  useEffect(() => {
+    if (!effectsEnabled && soundEnabled) {
+      setSoundEnabled(false);
+    }
+  }, [effectsEnabled, soundEnabled]);
+
+  const loadInventory = useCallback(async () => {
+    if (!currentUser?.uid) return;
+    try {
+      setInventoryLoading(true);
+      setInventoryError(null);
+      const rows = await inventoryService.listInventory(currentUser.uid);
+      const items: InventoryEntry[] = rows
+        .filter((row) => (row.quantity || 0) > 0)
+        .map((row) => ({
+          item_id: row.item_id,
+          item_name: row.item_name,
+          category: row.category,
+          quantity: row.quantity,
+          shop_item_id: row.shop_item_id,
+        }));
+      setInventory(items);
+    } catch (err: any) {
+      setInventoryError(err instanceof Error ? err.message : 'Failed to load inventory');
+    } finally {
+      setInventoryLoading(false);
+    }
+  }, [currentUser?.uid]);
+
+  useEffect(() => {
+    loadInventory();
+  }, [loadInventory]);
+
   // Get environment config based on pet type
   const envConfig = useMemo(() => {
     return getEnvironmentConfig(petType);
@@ -1043,6 +1138,128 @@ export function PetGameScene() {
       petAnimationTimeoutRef.current = null;
     }, durationMs);
   }, [clearPetAnimationTimeout]);
+
+  const createItemUseBurst = useCallback((item: InventoryEntry, centerX: number, centerY: number) => {
+    const category = (item.category || 'other').toLowerCase();
+    const emojiByCategory: Record<string, string[]> = {
+      food: ['✨', '🍎', '🍪', '💖'],
+      toy: ['✨', '🎾', '🎉', '⭐'],
+      medicine: ['✨', '💊', '💚', '⭐'],
+      energy: ['✨', '⚡', '⭐', '💛'],
+      other: ['✨', '⭐', '💫', '💖'],
+    };
+    const emojis = emojiByCategory[category] || emojiByCategory.other;
+    const newParticles: FloatingParticle[] = emojis.map((emoji, i) => ({
+      id: `${Date.now()}-inv-${i}`,
+      emoji,
+      x: centerX + (Math.random() - 0.5) * 40,
+      y: centerY,
+      delay: i * 0.08,
+    }));
+    setParticles(newParticles);
+  }, []);
+
+  const mapItemToPetAnim = useCallback((item: InventoryEntry): PetAnimationState => {
+    const category = (item.category || 'other').toLowerCase();
+    if (category === 'food') return 'eat';
+    if (category === 'toy') return 'play';
+    if (category === 'medicine') return 'idle';
+    if (category === 'energy') return 'play';
+    return 'idle';
+  }, []);
+
+  const applyLocalItemUse = useCallback((itemId: string) => {
+    setInventory((prev) => {
+      const next = prev
+        .map((it) => (it.item_id === itemId ? { ...it, quantity: Math.max(0, it.quantity - 1) } : it))
+        .filter((it) => it.quantity > 0);
+      return next;
+    });
+    setInventoryQtyBumpKey((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) + 1 }));
+  }, []);
+
+  const handleInventoryUseVisual = useCallback((item: InventoryEntry, target: InventoryDropTarget, clientX: number, clientY: number) => {
+    if (!pet) return;
+    setInventoryDraggingId(null);
+    setInventoryUsingId(item.item_id);
+    window.setTimeout(() => setInventoryUsingId(null), 420);
+
+    if (!prefersReducedMotion && animationsEnabled) {
+      runPetAnimation(mapItemToPetAnim(item), 900);
+    }
+
+    createItemUseBurst(item, clientX, clientY);
+    playUiTone('use');
+
+    if (target === 'pet') {
+      setSuccessIndicator({
+        id: `inv-success-${Date.now()}`,
+        action: mapItemToPetAnim(item) === 'eat' ? 'feed' : mapItemToPetAnim(item) === 'play' ? 'play' : 'rest',
+        message: `${item.item_name}!`,
+      });
+    }
+
+    applyLocalItemUse(item.item_id);
+  }, [animationsEnabled, applyLocalItemUse, createItemUseBurst, mapItemToPetAnim, pet, playUiTone, prefersReducedMotion, runPetAnimation]);
+
+  const onDragStartInventoryItem = useCallback((e: React.DragEvent, item: InventoryEntry) => {
+    try {
+      setInventoryDraggingId(item.item_id);
+
+      // Improves perceived smoothness by using the item tile as the drag image (when supported)
+      if (e.dataTransfer && (e.dataTransfer as any).setDragImage) {
+        const el = e.currentTarget as unknown as HTMLElement;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          e.dataTransfer.setDragImage(el, Math.round(rect.width / 2), Math.round(rect.height / 2));
+        }
+      }
+
+      e.dataTransfer.setData('application/x-pet-inventory-item', JSON.stringify(item));
+      e.dataTransfer.effectAllowed = 'copy';
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const onDragEndInventoryItem = useCallback(() => {
+    setInventoryDraggingId(null);
+    setDropTarget(null);
+  }, []);
+
+  const onDragOverDropZone = useCallback((e: React.DragEvent, target: InventoryDropTarget) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    if (effectsEnabled) {
+      setDropTarget(target);
+    }
+  }, [effectsEnabled]);
+
+  const onDragLeaveDropZone = useCallback(() => {
+    setDropTarget(null);
+  }, []);
+
+  const onDropInventoryItem = useCallback((e: React.DragEvent, target: InventoryDropTarget) => {
+    e.preventDefault();
+    setDropTarget(null);
+    if (!pet) return;
+    if (!currentUser?.uid) return;
+
+    const payload = e.dataTransfer.getData('application/x-pet-inventory-item');
+    if (!payload) return;
+    let item: InventoryEntry | null = null;
+    try {
+      item = JSON.parse(payload) as InventoryEntry;
+    } catch {
+      item = null;
+    }
+    if (!item) return;
+
+    const local = inventory.find((it) => it.item_id === item!.item_id);
+    if (!local || local.quantity <= 0) return;
+
+    handleInventoryUseVisual(local, target, e.clientX, e.clientY);
+  }, [currentUser?.uid, handleInventoryUseVisual, inventory, pet]);
 
   const updateFromAction = useCallback((response: PetActionResponse) => {
     if (response.pet && response.pet.stats) {
@@ -1117,6 +1334,10 @@ export function PetGameScene() {
         };
         runPetAnimation(actionToAnim[action], action === 'rest' ? 2600 : 1200);
       }
+
+      if (action === 'feed') playUiTone('feed');
+      if (action === 'play') playUiTone('play');
+      if (action === 'bathe') playUiTone('bathe');
       
       // Get click position for particles
       if (event) {
@@ -1210,6 +1431,10 @@ export function PetGameScene() {
       if (idleWalkIntervalRef.current) {
         window.clearInterval(idleWalkIntervalRef.current);
         idleWalkIntervalRef.current = null;
+      }
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {});
+        audioCtxRef.current = null;
       }
     };
   }, [clearPetAnimationTimeout]);
@@ -1330,6 +1555,14 @@ export function PetGameScene() {
       } : {}}
       transition={{ duration: 0.15 }}
     >
+      <div
+        className={`absolute inset-0 ${effectsEnabled && dropTarget === 'scene' ? 'pet-drop-target-scene' : ''} ${effectsEnabled ? 'pet-effects-enabled' : ''}`}
+        style={{ zIndex: 3 }}
+        onDragOver={(e) => onDragOverDropZone(e, 'scene')}
+        onDragLeave={onDragLeaveDropZone}
+        onDrop={(e) => onDropInventoryItem(e, 'scene')}
+      />
+
       {/* ========== ENVIRONMENT RENDERER ========== */}
       <div className="absolute inset-0" style={{ zIndex: 1 }}>
         <EnvironmentRenderer petType={petType} />
@@ -1381,13 +1614,21 @@ export function PetGameScene() {
             disabled={actionLoading !== null}
             isActive={actionLoading === obj.id}
             prefersReducedMotion={prefersReducedMotion || !animationsEnabled}
+            effectsEnabled={effectsEnabled}
           />
         ))}
       </div>
 
       {/* ========== FOREGROUND LAYER: PET VISUAL (CENTER) ========== */}
       <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 5, paddingTop: '5%' }}>
-        <div style={{ opacity: 1 }}>
+        <div
+          ref={petDropRef}
+          className={effectsEnabled && dropTarget === 'pet' ? 'pet-drop-target-pet' : ''}
+          style={{ opacity: 1, borderRadius: '24px' }}
+          onDragOver={(e) => onDragOverDropZone(e, 'pet')}
+          onDragLeave={onDragLeaveDropZone}
+          onDrop={(e) => onDropInventoryItem(e, 'pet')}
+        >
           <PetVisual petType={petType} animation={petAnimation} mood={currentMood} stats={currentPetStats} />
         </div>
       </div>
@@ -1483,8 +1724,123 @@ export function PetGameScene() {
               {balance.toLocaleString()}
             </span>
           </motion.div>
+
+          <motion.button
+            onClick={() => setSoundEnabled((v) => !v)}
+            className="w-9 h-9 rounded-xl flex items-center justify-center backdrop-blur-sm"
+            style={{
+              backgroundColor: UI_COLORS.hudBg,
+              border: `1px solid ${UI_COLORS.hudBorder}`,
+              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+              color: soundEnabled ? '#4ADE80' : 'rgba(255,255,255,0.75)',
+            }}
+            whileHover={{ scale: 1.06, backgroundColor: 'rgba(30, 41, 59, 0.95)' }}
+            whileTap={{ scale: 0.94 }}
+            title={soundEnabled ? 'Sounds: On' : 'Sounds: Off'}
+          >
+            <span className="text-base select-none">🔊</span>
+          </motion.button>
         </div>
       </motion.div>
+
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-4 z-40" style={{ width: 'min(920px, calc(100% - 24px))' }}>
+        <div className="pet-inventory-dock" style={{
+          background: 'rgba(15, 23, 42, 0.72)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '18px',
+          padding: '10px 12px',
+        }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+            <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.9)' }}>
+              <span className="text-base select-none">🎒</span>
+              <span className="text-sm font-bold">Inventory</span>
+              {inventoryLoading && <span className="text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>Loading…</span>}
+              {!currentUser?.uid && <span className="text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>Sign in to load</span>}
+              {inventoryError && <span className="text-xs" style={{ color: '#FCA5A5' }}>{inventoryError}</span>}
+            </div>
+            <button
+              className="text-xs font-bold"
+              style={{ color: 'rgba(255,255,255,0.75)' }}
+              onClick={() => loadInventory()}
+              disabled={inventoryLoading || !currentUser?.uid}
+              title="Refresh inventory"
+            >
+              ↻
+            </button>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto" style={{ paddingBottom: 2 }}>
+            {inventory.length === 0 && !inventoryLoading ? (
+              <div className="text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>No items yet. Visit the shop!</div>
+            ) : (
+              inventory.map((item) => {
+                const isUsing = inventoryUsingId === item.item_id;
+                const isDragging = inventoryDraggingId === item.item_id;
+                const qtyKey = inventoryQtyBumpKey[item.item_id] || 0;
+                const category = (item.category || 'other').toLowerCase();
+                const icon = category === 'food' ? '🍎' : category === 'toy' ? '🎾' : category === 'medicine' ? '💊' : category === 'energy' ? '⚡' : '⭐';
+                return (
+                  <motion.div
+                    key={item.item_id}
+                    className={`pet-inventory-item ${isUsing ? 'pet-inventory-item-using' : ''} ${isDragging ? 'pet-inventory-item-dragging' : ''}`}
+                    draggable
+                    onDragStartCapture={(e) => onDragStartInventoryItem(e, item)}
+                    onDragEndCapture={onDragEndInventoryItem}
+                    title={`${item.item_name} (x${item.quantity})`}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.96 }}
+                    style={{
+                      minWidth: 130,
+                      padding: '10px 12px',
+                      borderRadius: 14,
+                      border: '1px solid rgba(255,255,255,0.10)',
+                      background: 'rgba(2, 6, 23, 0.55)',
+                      color: 'rgba(255,255,255,0.92)',
+                      cursor: 'grab',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <div className="flex items-center justify-between" style={{ gap: 10 }}>
+                      <div className="flex items-center gap-2" style={{ minWidth: 0 }}>
+                        <span className="text-lg select-none">{icon}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="text-xs font-bold truncate" style={{ maxWidth: 78 }}>{item.item_name}</div>
+                          <div className="text-[10px] uppercase" style={{ color: 'rgba(255,255,255,0.55)' }}>{category}</div>
+                        </div>
+                      </div>
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={`${item.item_id}-${item.quantity}-${qtyKey}`}
+                          initial={{ scale: 1.0, y: 0, opacity: 0.95 }}
+                          animate={{ scale: 1.0, y: 0, opacity: 1 }}
+                          exit={{ scale: 1.2, y: -6, opacity: 0 }}
+                          transition={{ duration: 0.18 }}
+                          className="pet-inventory-qty"
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: 999,
+                            background: 'rgba(99, 102, 241, 0.22)',
+                            border: '1px solid rgba(99, 102, 241, 0.28)',
+                            fontSize: 12,
+                            fontWeight: 800,
+                          }}
+                        >
+                          {item.quantity}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                    <div className="text-[10px] mt-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                      Drag onto pet
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* ========== BOTTOM INSTRUCTION HINT ========== */}
       {/* Removed for immersion - no UI labels visible by default */}

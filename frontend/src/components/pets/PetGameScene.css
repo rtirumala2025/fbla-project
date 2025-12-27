@@ -73,6 +73,68 @@
 }
 
 /* ============================================================================
+  INVENTORY DOCK + DRAG/DROP FEEDBACK
+  ============================================================================ */
+
+.pet-drop-target-scene {
+  outline: 2px dashed rgba(99, 102, 241, 0.35);
+  outline-offset: -12px;
+  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.12), transparent 55%);
+  animation: dropZonePulse 0.9s ease-in-out infinite;
+}
+
+.pet-drop-target-pet {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.45), 0 0 42px rgba(99, 102, 241, 0.22);
+  background: radial-gradient(circle at center, rgba(99, 102, 241, 0.12), transparent 60%);
+  animation: dropZonePulse 0.9s ease-in-out infinite;
+}
+
+@keyframes dropZonePulse {
+  0% { transform: translate3d(0,0,0); filter: brightness(1); }
+  50% { transform: translate3d(0,0,0); filter: brightness(1.08); }
+  100% { transform: translate3d(0,0,0); filter: brightness(1); }
+}
+
+@keyframes inventoryUsePulse {
+  0% { transform: translate3d(0,0,0) scale(1); filter: brightness(1); }
+  40% { transform: translate3d(0,-2px,0) scale(1.02); filter: brightness(1.15); }
+  70% { transform: translate3d(0,0,0) scale(0.99); filter: brightness(1.08); }
+  100% { transform: translate3d(0,0,0) scale(1); filter: brightness(1); }
+}
+
+@keyframes inventoryShake {
+  0% { transform: translate3d(0,0,0); }
+  20% { transform: translate3d(-2px,0,0); }
+  40% { transform: translate3d(2px,0,0); }
+  60% { transform: translate3d(-1px,0,0); }
+  80% { transform: translate3d(1px,0,0); }
+  100% { transform: translate3d(0,0,0); }
+}
+
+.pet-inventory-item {
+  will-change: transform, filter;
+}
+
+.pet-inventory-item-dragging {
+  opacity: 0.75;
+  filter: brightness(1.08);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25), 0 16px 28px rgba(0,0,0,0.28);
+}
+
+.pet-inventory-item:active {
+  cursor: grabbing;
+}
+
+.pet-inventory-item:hover {
+  box-shadow: 0 10px 22px rgba(0,0,0,0.22);
+}
+
+.pet-inventory-item-using {
+  animation: inventoryUsePulse 0.35s ease-out, inventoryShake 0.35s ease-out;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), 0 0 24px rgba(99, 102, 241, 0.22);
+}
+
+/* ============================================================================
    ACCESSIBILITY: REDUCED MOTION
    ============================================================================ */
 
@@ -81,6 +143,18 @@
   .object-contact-shadow {
     animation: none !important;
     transition: none !important;
+  }
+
+  .pet-inventory-item,
+  .pet-inventory-item-dragging,
+  .pet-inventory-item-using {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .pet-drop-target-scene,
+  .pet-drop-target-pet {
+    animation: none !important;
   }
 }
 
