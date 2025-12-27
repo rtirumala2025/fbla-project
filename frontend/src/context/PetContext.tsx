@@ -1,10 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Pet, PetStats } from '@/types/pet';
 import { supabase, isSupabaseMock, withTimeout, withRetry } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/networkUtils';
-import { saveService } from '../services/saveService';
 
 interface PetContextType {
   pet: Pet | null;
@@ -16,6 +15,7 @@ interface PetContextType {
   loading: boolean;
   error: string | null;
   updating: boolean;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
   createPet: (name: string, type: string, breed?: string) => Promise<void>;
   refreshPet: () => Promise<void>;
 }
@@ -38,7 +38,18 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { refreshUserState } = useAuth();
+
+  useEffect(() => {
+    return () => {
+      if (saveStatusTimeoutRef.current) {
+        clearTimeout(saveStatusTimeoutRef.current);
+        saveStatusTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Load pet data from Supabase when userId changes
   const loadPet = useCallback(async () => {
@@ -261,10 +272,8 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     if (!pet || !userId) return;
     
     setUpdating(true);
-    
-    // Store previous state for rollback
-    const previousPet = pet;
-    
+    setSaveStatus('saving');
+
     try {
       const now = new Date();
       const updatedStats: PetStats = {
@@ -279,33 +288,65 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       updatedStats.happiness = Math.max(0, Math.min(100, updatedStats.happiness));
       updatedStats.cleanliness = Math.max(0, Math.min(100, updatedStats.cleanliness));
       updatedStats.energy = Math.max(0, Math.min(100, updatedStats.energy));
-      
-      // Optimistic update
+
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+
+      logger.debug('Persisting pet stats update', { petId: pet.id, updates });
+
+      const query = supabase
+        .from('pets')
+        .update({
+          health: updatedStats.health,
+          hunger: updatedStats.hunger,
+          happiness: updatedStats.happiness,
+          cleanliness: updatedStats.cleanliness,
+          energy: updatedStats.energy,
+          updated_at: now.toISOString(),
+        } as any)
+        .eq('id', pet.id)
+        .eq('user_id', userId)
+        .select('*')
+        .single();
+
+      const { data, error } = await withTimeout(
+        query as unknown as Promise<any>,
+        10000,
+        'Update pet stats'
+      ) as any;
+
+      if (error) {
+        logger.error('Error updating pet stats', { userId, petId: pet.id, errorCode: error.code }, error);
+        throw new Error(getErrorMessage(error, 'Failed to update pet stats'));
+      }
+
+      if (!data) {
+        throw new Error('Pet stats update succeeded but no data returned');
+      }
+
       const updatedPet: Pet = {
         ...pet,
-        stats: updatedStats,
         updatedAt: now,
+        stats: {
+          ...updatedStats,
+          lastUpdated: now,
+        },
       };
+
       setPet(updatedPet);
-      
-      // Queue save using save service (non-blocking, debounced)
-      logger.debug('Queueing pet stats update', { petId: pet.id, updates });
-      
-      await saveService.queueSave('pet', pet.id, {
-        health: updatedStats.health,
-        hunger: updatedStats.hunger,
-        happiness: updatedStats.happiness,
-        cleanliness: updatedStats.cleanliness,
-        energy: updatedStats.energy,
-        updated_at: now.toISOString(),
-      });
-      
-      logger.debug('Pet stats update queued', { petId: pet.id });
+      setSaveStatus('saved');
+      if (saveStatusTimeoutRef.current) {
+        clearTimeout(saveStatusTimeoutRef.current);
+      }
+      saveStatusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 1500);
+      logger.debug('Pet stats update saved', { petId: pet.id });
     } catch (err) {
       console.error('❌ Error updating pet stats:', err);
-      // Rollback on any error
-      setPet(previousPet);
-      throw new Error('Failed to update pet stats');
+      setSaveStatus('error');
+      throw err instanceof Error ? err : new Error('Failed to update pet stats');
     } finally {
       setUpdating(false);
     }
@@ -668,45 +709,110 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const feed = useCallback(async () => {
     if (!pet) return;
     
-    await updatePetStats({
-      hunger: Math.min(pet.stats.hunger + 30, 100),
-      energy: Math.min(pet.stats.energy + 10, 100),
-    });
+    try {
+      await updatePetStats({
+        hunger: Math.min(pet.stats.hunger + 30, 100),
+        energy: Math.min(pet.stats.energy + 10, 100),
+      });
+      
+      // Log transaction for feed action
+      await logTransaction('feed', 5); // Feed costs 5 coins
+    } catch (error) {
+      console.error('Feed action failed:', error);
+      throw error;
+    }
   }, [pet, updatePetStats]);
   
   const play = useCallback(async () => {
     if (!pet) return;
     
-    await updatePetStats({
-      happiness: Math.min(pet.stats.happiness + 30, 100),
-      energy: Math.max(pet.stats.energy - 20, 0),
-      hunger: Math.max(pet.stats.hunger - 10, 0),
-    });
+    try {
+      await updatePetStats({
+        happiness: Math.min(pet.stats.happiness + 30, 100),
+        energy: Math.max(pet.stats.energy - 20, 0),
+        hunger: Math.max(pet.stats.hunger - 10, 0),
+      });
+      
+      // Log transaction for play action
+      await logTransaction('play', 0); // Play is free
+    } catch (error) {
+      console.error('Play action failed:', error);
+      throw error;
+    }
   }, [pet, updatePetStats]);
   
   const bathe = useCallback(async () => {
     if (!pet) return;
     
-    await updatePetStats({
-      cleanliness: 100,
-      happiness: Math.min(pet.stats.happiness + 10, 100),
-    });
+    try {
+      await updatePetStats({
+        cleanliness: 100,
+        happiness: Math.min(pet.stats.happiness + 10, 100),
+      });
+      
+      // Log transaction for bathe action
+      await logTransaction('bathe', 3); // Bathe costs 3 coins
+    } catch (error) {
+      console.error('Bathe action failed:', error);
+      throw error;
+    }
   }, [pet, updatePetStats]);
   
   const rest = useCallback(async () => {
     if (!pet) return;
     
-    await updatePetStats({
-      energy: 100,
-      hunger: Math.max(pet.stats.hunger - 10, 0),
-    });
+    try {
+      await updatePetStats({
+        energy: 100,
+        hunger: Math.max(pet.stats.hunger - 10, 0),
+      });
+      
+      // Log transaction for rest action
+      await logTransaction('rest', 0); // Rest is free
+    } catch (error) {
+      console.error('Rest action failed:', error);
+      throw error;
+    }
   }, [pet, updatePetStats]);
+
+  // Log transaction function for care actions
+  const logTransaction = useCallback(async (action: string, cost: number) => {
+    if (!userId || !supabase) return;
+    
+    try {
+      const query = supabase
+        .from('transactions')
+        .insert({
+          user_id: userId,
+          item_id: action,
+          item_name: action,
+          transaction_type: action,
+          amount: cost,
+        })
+        .select('*')
+        .single();
+
+      const { error } = await withTimeout(
+        query as unknown as Promise<any>,
+        10000,
+        'Log transaction'
+      ) as any;
+        
+      if (error) {
+        console.warn('Failed to log transaction:', error);
+        // Don't throw error - transaction logging is non-critical
+      }
+    } catch (error) {
+      console.warn('Transaction logging error:', error);
+    }
+  }, [userId]);
 
   const value = useMemo(() => ({
     pet,
     loading,
     error,
     updating,
+    saveStatus,
     updatePetStats,
     feed,
     play,
@@ -714,7 +820,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     rest,
     createPet,
     refreshPet: loadPet,
-  }), [pet, loading, error, updating, updatePetStats, feed, play, bathe, rest, createPet, loadPet]);
+  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, createPet, loadPet, logTransaction]);
 
   return (
     <PetContext.Provider value={value}>
