@@ -84,7 +84,7 @@ const ACTIVITIES: Activity[] = [
 export const DashboardPage = React.memo(function DashboardPage() {
   const navigate = useNavigate();
   const { currentUser, loading: authLoading } = useAuth();
-  const { pet, loading: petLoading, bathe, updatePetStats, refreshPet } = usePet();
+  const { pet, loading: petLoading, bathe, updatePetStats, refreshPet, saveStatus } = usePet();
   const { success, error: toastError } = useToast();
   const { balance, refreshBalance } = useFinancial();
   const logger = useInteractionLogger('DashboardPage');
@@ -631,6 +631,26 @@ export const DashboardPage = React.memo(function DashboardPage() {
             <p className="text-sm text-gray-600">Manage your pet and track progress</p>
           </div>
           <div className="flex items-center gap-3">
+            <div
+              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                saveStatus === 'saving'
+                  ? 'border-amber-200 bg-amber-50 text-amber-700'
+                  : saveStatus === 'saved'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : saveStatus === 'error'
+                  ? 'border-rose-200 bg-rose-50 text-rose-700'
+                  : 'border-transparent bg-transparent text-transparent'
+              }`}
+              aria-live="polite"
+            >
+              {saveStatus === 'saving'
+                ? 'Saving...'
+                : saveStatus === 'saved'
+                ? 'Saved ✓'
+                : saveStatus === 'error'
+                ? 'Save failed'
+                : 'Saved'}
+            </div>
             <button
               onClick={() => {
                 console.log('Pet game button clicked!');

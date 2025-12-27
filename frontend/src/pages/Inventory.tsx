@@ -9,7 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { usePet } from '../context/PetContext';
-import { getInventory, useItem as itemAPI } from '../api/finance';
+import { useItem as itemAPI } from '../api/finance';
+import { inventoryService } from '../services/inventoryService';
 import type { InventoryEntry } from '../types/finance';
 
 const categoryIcons: Record<string, React.ReactNode> = {
@@ -43,7 +44,16 @@ export const Inventory = () => {
 
     try {
       setLoading(true);
-      const items = await getInventory();
+      const rows = await inventoryService.listInventory(currentUser.uid);
+      const items: InventoryEntry[] = rows
+        .filter((row) => (row.quantity || 0) > 0)
+        .map((row) => ({
+          item_id: row.item_id,
+          item_name: row.item_name,
+          category: row.category,
+          quantity: row.quantity,
+          shop_item_id: row.shop_item_id,
+        }));
       setInventory(items);
     } catch (error: any) {
       console.error('❌ Inventory: Failed to load inventory:', error);

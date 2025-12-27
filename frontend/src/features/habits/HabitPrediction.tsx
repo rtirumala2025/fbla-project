@@ -56,16 +56,8 @@ export function HabitPrediction() {
   };
 
   useEffect(() => {
-    // Load interaction history from localStorage or context
-    // This is a placeholder - in production, fetch from backend
-    const storedHistory = localStorage.getItem('pet_interactions');
-    if (storedHistory) {
-      try {
-        setInteractionHistory(JSON.parse(storedHistory));
-      } catch (e) {
-        console.error('Failed to parse interaction history', e);
-      }
-    }
+    // Interaction history should come from backend (no localStorage persistence)
+    setInteractionHistory([]);
 
     loadPredictions();
   }, [forecastDays]);

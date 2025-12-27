@@ -281,58 +281,17 @@ class OAuthDiagnostics {
     console.log('\n📋 4. LocalStorage:');
     console.log('─────────────────────────────────────────');
 
-    const supabaseUrl = (typeof process !== 'undefined' && process.env?.REACT_APP_SUPABASE_URL)
-      || (typeof window !== 'undefined' && (window as any).__ENV__?.REACT_APP_SUPABASE_URL)
-      || this.report.environment.supabaseUrl
-      || null;
-    let storageKey: string | null = null;
+    // Phase 2 requirement: do not use localStorage for persistent data.
+    // Skip reading localStorage here and report that it was not inspected.
+    this.report.localStorage = {
+      hasSessionToken: false,
+      storageKey: null,
+      tokenPreview: null,
+      allSupabaseKeys: [],
+    };
 
-    if (supabaseUrl) {
-      try {
-        const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
-        if (projectRef) {
-          storageKey = `sb-${projectRef}-auth-token`;
-        }
-      } catch (e) {
-        console.warn('⚠️  Could not extract project ref from URL');
-      }
-    }
-
-    this.report.localStorage.storageKey = storageKey;
-
-    if (storageKey) {
-      const token = localStorage.getItem(storageKey);
-      this.report.localStorage.hasSessionToken = !!token;
-
-      if (token) {
-        console.log('✅ Session token found in localStorage');
-        console.log('✅ Storage key:', storageKey);
-        try {
-          const tokenData = JSON.parse(token);
-          const preview = JSON.stringify(tokenData).substring(0, 200);
-          console.log('✅ Token preview:', preview + '...');
-          this.report.localStorage.tokenPreview = preview;
-        } catch (e) {
-          console.log('✅ Token exists but could not parse');
-          this.report.localStorage.tokenPreview = token.substring(0, 200);
-        }
-      } else {
-        console.warn('⚠️  No session token in localStorage');
-        this.report.recommendations.push('No session token in localStorage - Supabase may not have processed the hash yet');
-      }
-    } else {
-      console.warn('⚠️  Could not determine storage key');
-      this.report.recommendations.push('Could not determine localStorage key - check REACT_APP_SUPABASE_URL');
-    }
-
-    // Find all Supabase-related keys
-    const allKeys = Object.keys(localStorage);
-    const supabaseKeys = allKeys.filter(key => key.startsWith('sb-'));
-    this.report.localStorage.allSupabaseKeys = supabaseKeys;
-
-    if (supabaseKeys.length > 0) {
-      console.log('✅ Found Supabase keys:', supabaseKeys);
-    }
+    console.log('ℹ️  LocalStorage inspection skipped (localStorage is not used for persistence in this app).');
+    return;
   }
 
   private setupNetworkMonitoring(): void {

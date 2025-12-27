@@ -3,7 +3,7 @@
  * Normalizes pet, inventory, quests, coins, and profile state
  */
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import type { Pet, PetStats } from '../types/pet';
 import type { Quest } from '../types/quests';
 // FinanceSummary type removed - not used in this store
@@ -111,245 +111,224 @@ const initialState = {
 
 export const useAppStore = create<AppState>()(
   devtools(
-    persist(
-      (set, get) => ({
-        ...initialState,
-        
-        // Pet actions
-        setPet: (pet) => set(
-          { 
-            pet, 
-            petStats: pet?.stats || null,
-            errors: { ...get().errors, pet: null },
-          },
-          false,
-          'setPet'
-        ),
-        
-        updatePetStats: (stats) => {
-          const currentPet = get().pet;
-          if (!currentPet) return;
-          
-          const updatedStats: PetStats = {
-            ...currentPet.stats,
-            ...stats,
-            lastUpdated: new Date(),
-          };
-          
-          // Clamp stats to valid range [0, 100]
-          updatedStats.health = Math.max(0, Math.min(100, updatedStats.health));
-          updatedStats.hunger = Math.max(0, Math.min(100, updatedStats.hunger));
-          updatedStats.happiness = Math.max(0, Math.min(100, updatedStats.happiness));
-          updatedStats.cleanliness = Math.max(0, Math.min(100, updatedStats.cleanliness));
-          updatedStats.energy = Math.max(0, Math.min(100, updatedStats.energy));
-          
-          const updatedPet: Pet = {
-            ...currentPet,
-            stats: updatedStats,
-            updatedAt: new Date(),
-          };
-          
-          set(
-            { pet: updatedPet, petStats: updatedStats },
-            false,
-            'updatePetStats'
-          );
+    (set, get) => ({
+      ...initialState,
+      
+      // Pet actions
+      setPet: (pet) => set(
+        { 
+          pet, 
+          petStats: pet?.stats || null,
+          errors: { ...get().errors, pet: null },
         },
+        false,
+        'setPet'
+      ),
+      
+      updatePetStats: (stats) => {
+        const currentPet = get().pet;
+        if (!currentPet) return;
         
-        setPetLoading: (loading) => set(
-          (state) => ({
-            loading: { ...state.loading, pet: loading },
-          }),
+        const updatedStats: PetStats = {
+          ...currentPet.stats,
+          ...stats,
+          lastUpdated: new Date(),
+        };
+        
+        // Clamp stats to valid range [0, 100]
+        updatedStats.health = Math.max(0, Math.min(100, updatedStats.health));
+        updatedStats.hunger = Math.max(0, Math.min(100, updatedStats.hunger));
+        updatedStats.happiness = Math.max(0, Math.min(100, updatedStats.happiness));
+        updatedStats.cleanliness = Math.max(0, Math.min(100, updatedStats.cleanliness));
+        updatedStats.energy = Math.max(0, Math.min(100, updatedStats.energy));
+        
+        const updatedPet: Pet = {
+          ...currentPet,
+          stats: updatedStats,
+          updatedAt: new Date(),
+        };
+        
+        set(
+          { pet: updatedPet, petStats: updatedStats },
           false,
-          'setPetLoading'
-        ),
-        
-        setPetError: (error) => set(
-          (state) => ({
-            errors: { ...state.errors, pet: error },
-          }),
-          false,
-          'setPetError'
-        ),
-        
-        // Profile/Coins actions
-        setCoins: (coins) => set(
-          { coins: Math.max(0, coins) },
-          false,
-          'setCoins'
-        ),
-        
-        addCoins: (amount) => set(
-          (state) => ({ coins: state.coins + amount }),
-          false,
-          'addCoins'
-        ),
-        
-        deductCoins: (amount) => set(
-          (state) => ({ coins: Math.max(0, state.coins - amount) }),
-          false,
-          'deductCoins'
-        ),
-        
-        setXP: (xp) => set(
-          { xp: Math.max(0, xp) },
-          false,
-          'setXP'
-        ),
-        
-        addXP: (amount) => set(
-          (state) => ({ xp: state.xp + amount }),
-          false,
-          'addXP'
-        ),
-        
-        setProfileId: (id) => set(
-          { profileId: id },
-          false,
-          'setProfileId'
-        ),
-        
-        setProfileLoading: (loading) => set(
-          (state) => ({
-            loading: { ...state.loading, profile: loading },
-          }),
-          false,
-          'setProfileLoading'
-        ),
-        
-        setProfileError: (error) => set(
-          (state) => ({
-            errors: { ...state.errors, profile: error },
-          }),
-          false,
-          'setProfileError'
-        ),
-        
-        // Inventory actions
-        setInventory: (inventory) => set(
-          { inventory },
-          false,
-          'setInventory'
-        ),
-        
-        addInventoryItem: (item) => set(
-          (state) => {
-            const existing = state.inventory.findIndex(
-              (i) => i.itemId === item.itemId
-            );
-            
-            if (existing >= 0) {
-              const updated = [...state.inventory];
-              updated[existing] = {
-                ...updated[existing],
-                quantity: updated[existing].quantity + item.quantity,
-              };
-              return { inventory: updated };
-            }
-            
-            return { inventory: [...state.inventory, item] };
-          },
-          false,
-          'addInventoryItem'
-        ),
-        
-        removeInventoryItem: (itemId, quantity = 1) => set(
-          (state) => {
-            const existing = state.inventory.findIndex(
-              (i) => i.itemId === itemId
-            );
-            
-            if (existing < 0) return state;
-            
+          'updatePetStats'
+        );
+      },
+      
+      setPetLoading: (loading) => set(
+        (state) => ({
+          loading: { ...state.loading, pet: loading },
+        }),
+        false,
+        'setPetLoading'
+      ),
+      
+      setPetError: (error) => set(
+        (state) => ({
+          errors: { ...state.errors, pet: error },
+        }),
+        false,
+        'setPetError'
+      ),
+      
+      // Profile/Coins actions
+      setCoins: (coins) => set(
+        { coins: Math.max(0, coins) },
+        false,
+        'setCoins'
+      ),
+      
+      addCoins: (amount) => set(
+        (state) => ({ coins: state.coins + amount }),
+        false,
+        'addCoins'
+      ),
+      
+      deductCoins: (amount) => set(
+        (state) => ({ coins: Math.max(0, state.coins - amount) }),
+        false,
+        'deductCoins'
+      ),
+      
+      setXP: (xp) => set(
+        { xp: Math.max(0, xp) },
+        false,
+        'setXP'
+      ),
+      
+      addXP: (amount) => set(
+        (state) => ({ xp: state.xp + amount }),
+        false,
+        'addXP'
+      ),
+      
+      setProfileId: (id) => set(
+        { profileId: id },
+        false,
+        'setProfileId'
+      ),
+      
+      setProfileLoading: (loading) => set(
+        (state) => ({
+          loading: { ...state.loading, profile: loading },
+        }),
+        false,
+        'setProfileLoading'
+      ),
+      
+      setProfileError: (error) => set(
+        (state) => ({
+          errors: { ...state.errors, profile: error },
+        }),
+        false,
+        'setProfileError'
+      ),
+      
+      // Inventory actions
+      setInventory: (inventory) => set(
+        { inventory },
+        false,
+        'setInventory'
+      ),
+      
+      addInventoryItem: (item) => set(
+        (state) => {
+          const existing = state.inventory.findIndex(
+            (i) => i.itemId === item.itemId
+          );
+          
+          if (existing >= 0) {
             const updated = [...state.inventory];
-            const currentQuantity = updated[existing].quantity;
+            updated[existing] = {
+              ...updated[existing],
+              quantity: updated[existing].quantity + item.quantity,
+            };
+            return { inventory: updated };
+          }
+          
+          return { inventory: [...state.inventory, item] };
+        },
+        false,
+        'addInventoryItem'
+      ),
+      
+      removeInventoryItem: (itemId, quantity = 1) => set(
+        (state) => {
+          const existing = state.inventory.findIndex(
+            (i) => i.itemId === itemId
+          );
+          
+          if (existing >= 0) {
+            const updated = [...state.inventory];
+            const current = updated[existing];
+            const newQty = current.quantity - quantity;
             
-            if (currentQuantity <= quantity) {
+            if (newQty <= 0) {
               updated.splice(existing, 1);
             } else {
               updated[existing] = {
-                ...updated[existing],
-                quantity: currentQuantity - quantity,
+                ...current,
+                quantity: newQty,
               };
             }
             
             return { inventory: updated };
-          },
-          false,
-          'removeInventoryItem'
-        ),
-        
-        setInventoryLoading: (loading) => set(
-          (state) => ({
-            loading: { ...state.loading, inventory: loading },
-          }),
-          false,
-          'setInventoryLoading'
-        ),
-        
-        // Quests actions
-        setActiveQuests: (quests) => set(
-          { activeQuests: quests },
-          false,
-          'setActiveQuests'
-        ),
-        
-        completeQuest: (questId, coinsAwarded, xpAwarded) => set(
-          (state) => {
-            const completedIds = new Set(state.completedQuestIds);
-            completedIds.add(questId);
-            
-            // Update quest status in active quests
-            const updateQuestStatus = (quests: Quest[]) =>
-              quests.map((q) =>
-                q.id === questId ? { ...q, status: 'completed' as const } : q
-              );
-            
-            return {
-              completedQuestIds: completedIds,
-              activeQuests: {
-                daily: updateQuestStatus(state.activeQuests.daily),
-                weekly: updateQuestStatus(state.activeQuests.weekly),
-                event: updateQuestStatus(state.activeQuests.event),
-              },
-              coins: state.coins + coinsAwarded,
-              xp: state.xp + xpAwarded,
-            };
-          },
-          false,
-          'completeQuest'
-        ),
-        
-        setQuestsLoading: (loading) => set(
-          (state) => ({
-            loading: { ...state.loading, quests: loading },
-          }),
-          false,
-          'setQuestsLoading'
-        ),
-        
-        setQuestsError: (error) => set(
-          (state) => ({
-            errors: { ...state.errors, quests: error },
-          }),
-          false,
-          'setQuestsError'
-        ),
-        
-        // Reset
-        reset: () => set(initialState, false, 'reset'),
-      }),
-      {
-        name: 'app-store',
-        partialize: (state) => ({
-          // Only persist non-sensitive state
-          coins: state.coins,
-          xp: state.xp,
-          inventory: state.inventory,
-          completedQuestIds: Array.from(state.completedQuestIds),
+          }
+          
+          return state;
+        },
+        false,
+        'removeInventoryItem'
+      ),
+      
+      setInventoryLoading: (loading) => set(
+        (state) => ({
+          loading: { ...state.loading, inventory: loading },
         }),
-      }
-    ),
+        false,
+        'setInventoryLoading'
+      ),
+
+      // Quests actions
+      setActiveQuests: (quests) => set(
+        { activeQuests: quests },
+        false,
+        'setActiveQuests'
+      ),
+
+      completeQuest: (questId, coinsAwarded, xpAwarded) => set(
+        (state) => ({
+          completedQuestIds: new Set([...state.completedQuestIds, questId]),
+          coins: state.coins + coinsAwarded,
+          xp: state.xp + xpAwarded,
+        }),
+        false,
+        'completeQuest'
+      ),
+
+      setQuestsLoading: (loading) => set(
+        (state) => ({
+          loading: { ...state.loading, quests: loading },
+        }),
+        false,
+        'setQuestsLoading'
+      ),
+
+      setQuestsError: (error) => set(
+        (state) => ({
+          errors: { ...state.errors, quests: error },
+        }),
+        false,
+        'setQuestsError'
+      ),
+
+      // Reset
+      reset: () => set(
+        { ...initialState },
+        false,
+        'reset'
+      ),
+    }),
     { name: 'AppStore' }
   )
 );

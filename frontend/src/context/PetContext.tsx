@@ -786,7 +786,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           user_id: userId,
           item_id: action,
           item_name: action,
-          transaction_type: action,
+          transaction_type: 'expense',
           amount: cost,
         })
         .select('*')
