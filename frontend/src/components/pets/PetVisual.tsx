@@ -12,11 +12,23 @@ import './PetVisual.css';
 
 export type PetType = 'dog' | 'cat' | 'panda';
 
-export interface PetVisualProps {
-  petType: PetType;
+export type PetAnimationState = 'idle' | 'walk' | 'eat' | 'play' | 'bathe' | 'sleep';
+
+export interface PetVisualStats {
+  happiness?: number;
+  energy?: number;
+  cleanliness?: number;
+  hunger?: number;
 }
 
-export const PetVisual: React.FC<PetVisualProps> = ({ petType }) => {
+export interface PetVisualProps {
+  petType: PetType;
+  animation?: PetAnimationState;
+  mood?: string;
+  stats?: PetVisualStats;
+}
+
+export const PetVisual: React.FC<PetVisualProps> = ({ petType, animation = 'idle', mood, stats }) => {
   const normalizedPetType: PetType = useMemo(() => {
     if (petType === 'dog' || petType === 'cat' || petType === 'panda') {
       return petType;
@@ -37,7 +49,15 @@ export const PetVisual: React.FC<PetVisualProps> = ({ petType }) => {
   return (
     <div className="pet-world-anchor">
       <div className="pet-visual-container">
-        <figure className={`pet pet-${normalizedPetType}`}>
+        <figure
+          className={`pet pet-${normalizedPetType} pet-state-${animation} ${mood ? `pet-mood-${mood.toLowerCase()}` : ''}`}
+          style={{
+            ['--pet-happiness' as any]: String(stats?.happiness ?? 50),
+            ['--pet-energy' as any]: String(stats?.energy ?? 50),
+            ['--pet-cleanliness' as any]: String(stats?.cleanliness ?? 50),
+            ['--pet-hunger' as any]: String(stats?.hunger ?? 50),
+          }}
+        >
           <LazyImage
             src={assetPaths.body}
             alt={`${normalizedPetType} body`}

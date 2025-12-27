@@ -14,7 +14,7 @@ import { useFinancial } from '../../context/FinancialContext';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { EvolutionAnimation } from './EvolutionAnimation';
 import { EnvironmentRenderer } from './EnvironmentRenderer';
-import { PetVisual, type PetType } from './PetVisual';
+import { PetVisual, type PetAnimationState, type PetType } from './PetVisual';
 import { 
   getEnvironmentConfig, 
   getWorldObjects, 
@@ -876,7 +876,7 @@ export function PetGameScene() {
   }, []);
 
   // TEMPORARY: Disable all animations to debug performance issues
-  const animationsEnabled = false; // Temporarily disabled to fix crashes
+  const animationsEnabled = true;
 
   // Debug logging disabled for performance
   // useEffect(() => {
@@ -903,8 +903,11 @@ export function PetGameScene() {
   const [screenShake, setScreenShake] = useState(false);
   const [successIndicator, setSuccessIndicator] = useState<SuccessIndicator | null>(null);
   const [showZoneLabels, setShowZoneLabels] = useState(false);
+  const [petAnimation, setPetAnimation] = useState<PetAnimationState>('idle');
   
   const sceneRef = useRef<HTMLDivElement>(null);
+  const petAnimationTimeoutRef = useRef<number | null>(null);
+  const idleWalkIntervalRef = useRef<number | null>(null);
 
   // Zone labels remain hidden by default for immersion
   // They can be shown temporarily if needed for teaching, but should not be visible normally
@@ -962,6 +965,17 @@ export function PetGameScene() {
   const petName = pet?.name || 'Your Pet';
   const currentMood = stats?.mood || pet?.stats?.mood || 'content';
 
+  const currentPetStats = useMemo(() => {
+    const currentStats = stats || pet?.stats;
+    const hygiene = currentStats?.hygiene ?? currentStats?.cleanliness;
+    return {
+      happiness: currentStats?.happiness,
+      energy: currentStats?.energy,
+      cleanliness: hygiene,
+      hunger: currentStats?.hunger,
+    };
+  }, [stats, pet?.stats]);
+
   // Get environment config based on pet type
   const envConfig = useMemo(() => {
     return getEnvironmentConfig(petType);
@@ -1013,6 +1027,22 @@ export function PetGameScene() {
     setScreenShake(true);
     setTimeout(() => setScreenShake(false), 200);
   }, [worldObjects]);
+
+  const clearPetAnimationTimeout = useCallback(() => {
+    if (petAnimationTimeoutRef.current) {
+      window.clearTimeout(petAnimationTimeoutRef.current);
+      petAnimationTimeoutRef.current = null;
+    }
+  }, []);
+
+  const runPetAnimation = useCallback((next: PetAnimationState, durationMs: number) => {
+    clearPetAnimationTimeout();
+    setPetAnimation(next);
+    petAnimationTimeoutRef.current = window.setTimeout(() => {
+      setPetAnimation('idle');
+      petAnimationTimeoutRef.current = null;
+    }, durationMs);
+  }, [clearPetAnimationTimeout]);
 
   const updateFromAction = useCallback((response: PetActionResponse) => {
     if (response.pet && response.pet.stats) {
@@ -1077,6 +1107,16 @@ export function PetGameScene() {
       setLastAction(action);
       setError(null);
       setReaction('');
+
+      if (!prefersReducedMotion && animationsEnabled) {
+        const actionToAnim: Record<CareAction, PetAnimationState> = {
+          feed: 'eat',
+          play: 'play',
+          bathe: 'bathe',
+          rest: 'sleep',
+        };
+        runPetAnimation(actionToAnim[action], action === 'rest' ? 2600 : 1200);
+      }
       
       // Get click position for particles
       if (event) {
@@ -1123,6 +1163,56 @@ export function PetGameScene() {
       setActionLoading(null);
     }
   }, [updateFromAction, refreshBalance, createParticleBurst]);
+
+  useEffect(() => {
+    if (prefersReducedMotion || !animationsEnabled) {
+      setPetAnimation('idle');
+      return;
+    }
+
+    const energy = currentPetStats.energy ?? 50;
+    if (actionLoading === null && energy < 12) {
+      setPetAnimation('sleep');
+      return;
+    }
+
+    if (actionLoading === null && petAnimation === 'sleep' && energy >= 12) {
+      setPetAnimation('idle');
+    }
+  }, [actionLoading, animationsEnabled, currentPetStats.energy, petAnimation, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (prefersReducedMotion || !animationsEnabled) return;
+    if (idleWalkIntervalRef.current) {
+      window.clearInterval(idleWalkIntervalRef.current);
+      idleWalkIntervalRef.current = null;
+    }
+
+    idleWalkIntervalRef.current = window.setInterval(() => {
+      if (actionLoading !== null) return;
+      if (petAnimation !== 'idle') return;
+      const energy = currentPetStats.energy ?? 50;
+      if (energy < 18) return;
+      runPetAnimation('walk', 1100);
+    }, 9000 + Math.round(Math.random() * 6000));
+
+    return () => {
+      if (idleWalkIntervalRef.current) {
+        window.clearInterval(idleWalkIntervalRef.current);
+        idleWalkIntervalRef.current = null;
+      }
+    };
+  }, [actionLoading, animationsEnabled, currentPetStats.energy, petAnimation, prefersReducedMotion, runPetAnimation]);
+
+  useEffect(() => {
+    return () => {
+      clearPetAnimationTimeout();
+      if (idleWalkIntervalRef.current) {
+        window.clearInterval(idleWalkIntervalRef.current);
+        idleWalkIntervalRef.current = null;
+      }
+    };
+  }, [clearPetAnimationTimeout]);
 
   // Computed stats
   const computedStats = useMemo(() => {
@@ -1298,7 +1388,7 @@ export function PetGameScene() {
       {/* ========== FOREGROUND LAYER: PET VISUAL (CENTER) ========== */}
       <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 5, paddingTop: '5%' }}>
         <div style={{ opacity: 1 }}>
-          <PetVisual petType={petType} />
+          <PetVisual petType={petType} animation={petAnimation} mood={currentMood} stats={currentPetStats} />
         </div>
       </div>
 

@@ -60,6 +60,23 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
         )`,
       }}
     >
+      {/* Ambient motion layers */}
+      <div className="environment-ambient" aria-hidden="true">
+        <div className="environment-clouds">
+          <div className="cloud cloud-a" />
+          <div className="cloud cloud-b" />
+          <div className="cloud cloud-c" />
+        </div>
+        <div className="environment-particles">
+          <span className="particle particle-1" />
+          <span className="particle particle-2" />
+          <span className="particle particle-3" />
+          <span className="particle particle-4" />
+          <span className="particle particle-5" />
+          <span className="particle particle-6" />
+        </div>
+      </div>
+
       {/* Background light */}
       <div
         className="background-layer"
@@ -148,6 +165,7 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
                   environment.window.style === 'outdoor'
                     ? 'radial-gradient(circle, rgba(135,206,250,0.35), rgba(176,224,230,0.15))'
                     : 'linear-gradient(to bottom, rgba(135,206,250,0.25), rgba(255,255,255,0.1))',
+                animation: 'window-glow 10s infinite',
               }}
             >
               <div
@@ -155,6 +173,7 @@ export const EnvironmentRenderer: React.FC<EnvironmentRendererProps> = ({ petTyp
                 style={{
                   background: environment.window.sunColor,
                   boxShadow: `0 0 20px ${environment.window.sunColor}`,
+                  animation: 'sun-pulse 5s infinite',
                 }}
               />
             </div>

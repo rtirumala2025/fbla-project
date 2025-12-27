@@ -20,6 +20,93 @@
   background: #B4D7E8;
 }
 
+.environment-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.environment-clouds {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  filter: blur(0.3px);
+}
+
+.cloud {
+  position: absolute;
+  top: 10%;
+  width: 220px;
+  height: 64px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.95), rgba(255,255,255,0.35) 62%, rgba(255,255,255,0) 72%);
+  box-shadow:
+    40px 10px 0 rgba(255,255,255,0.22),
+    90px 4px 0 rgba(255,255,255,0.14),
+    -32px 8px 0 rgba(255,255,255,0.18);
+  opacity: 0.55;
+  transform: translate3d(-30%, 0, 0);
+  will-change: transform;
+}
+
+@keyframes cloudDrift {
+  0% { transform: translate3d(-35%, 0, 0); }
+  100% { transform: translate3d(135%, 0, 0); }
+}
+
+.cloud-a {
+  top: 10%;
+  left: -40%;
+  animation: cloudDrift 56s linear infinite;
+}
+
+.cloud-b {
+  top: 20%;
+  left: -50%;
+  opacity: 0.38;
+  transform: translate3d(-50%, 0, 0) scale(0.85);
+  animation: cloudDrift 72s linear infinite;
+}
+
+.cloud-c {
+  top: 14%;
+  left: -60%;
+  opacity: 0.3;
+  transform: translate3d(-60%, 0, 0) scale(0.75);
+  animation: cloudDrift 88s linear infinite;
+}
+
+.environment-particles {
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+}
+
+.particle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.9), rgba(255,255,255,0));
+  filter: blur(0.4px);
+  will-change: transform, opacity;
+}
+
+@keyframes particleFloat {
+  0% { transform: translate3d(0, 10px, 0) scale(0.95); opacity: 0; }
+  15% { opacity: 0.7; }
+  70% { opacity: 0.35; }
+  100% { transform: translate3d(0, -70px, 0) scale(1.15); opacity: 0; }
+}
+
+.particle-1 { left: 12%; top: 46%; animation: particleFloat 9s ease-in-out infinite; }
+.particle-2 { left: 25%; top: 40%; animation: particleFloat 12s ease-in-out infinite 0.6s; }
+.particle-3 { left: 42%; top: 50%; animation: particleFloat 10s ease-in-out infinite 1.2s; }
+.particle-4 { left: 62%; top: 44%; animation: particleFloat 13s ease-in-out infinite 0.2s; }
+.particle-5 { left: 75%; top: 52%; animation: particleFloat 11s ease-in-out infinite 0.9s; }
+.particle-6 { left: 88%; top: 46%; animation: particleFloat 14s ease-in-out infinite 1.5s; }
+
 .background-layer {
   position: absolute;
   inset: 0;
@@ -87,6 +174,14 @@
   position: absolute;
   z-index: 4;
   filter: saturate(0.9);
+  animation: decorSway 6.5s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes decorSway {
+  0% { transform: translate3d(0, 0, 0) rotate(-0.6deg); }
+  50% { transform: translate3d(0, -2px, 0) rotate(0.8deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(-0.6deg); }
 }
 
 .decoration-image {
@@ -129,5 +224,14 @@
   .window-container {
     width: var(--window-width-mobile);
     height: var(--window-height-mobile);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud,
+  .particle,
+  .decoration {
+    animation: none !important;
+    transition: none !important;
   }
 }
