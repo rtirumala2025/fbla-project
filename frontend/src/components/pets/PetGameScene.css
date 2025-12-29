@@ -129,6 +129,59 @@
   box-shadow: 0 10px 22px rgba(0,0,0,0.22);
 }
 
+/* ============================================================================
+  PHASE A — CLICKABLE ROOM OBJECTS + PET VISUAL FEEDBACK (VISUAL-ONLY)
+  ============================================================================ */
+
+@keyframes roomObjectWiggle {
+  0% { transform: translate3d(0,0,0) rotate(0deg); }
+  25% { transform: translate3d(0,0,0) rotate(-6deg); }
+  50% { transform: translate3d(0,0,0) rotate(6deg); }
+  75% { transform: translate3d(0,0,0) rotate(-3deg); }
+  100% { transform: translate3d(0,0,0) rotate(0deg); }
+}
+
+@keyframes roomObjectBounce {
+  0% { transform: translate3d(0,0,0) scale(1); }
+  40% { transform: translate3d(0,-10px,0) scale(1.03); }
+  70% { transform: translate3d(0,0,0) scale(0.99); }
+  100% { transform: translate3d(0,0,0) scale(1); }
+}
+
+@keyframes roomObjectPulse {
+  0% { transform: translate3d(0,0,0) scale(1); filter: brightness(1); }
+  50% { transform: translate3d(0,0,0) scale(1.04); filter: brightness(1.12); }
+  100% { transform: translate3d(0,0,0) scale(1); filter: brightness(1); }
+}
+
+.pet-interaction-eat { transform: scale(1.05); }
+.pet-interaction-play { animation: roomObjectBounce 0.7s ease-out; }
+.pet-interaction-sleep { opacity: 0.8; }
+.pet-interaction-clean { animation: roomObjectPulse 0.75s ease-out; }
+.pet-interaction-health { transform: scale(1.05); }
+
+.room-object-interact-eat .object-container {
+  animation: roomObjectWiggle 0.7s ease-out;
+}
+
+.room-object-interact-play .object-container {
+  animation: roomObjectBounce 0.75s ease-out;
+}
+
+.room-object-interact-sleep .object-container {
+  transform: scale(0.96);
+  filter: brightness(0.95);
+}
+
+.room-object-interact-clean .object-container {
+  animation: roomObjectPulse 0.75s ease-out;
+}
+
+.room-object-interact-health .object-container {
+  animation: roomObjectPulse 0.75s ease-out;
+  filter: drop-shadow(0 10px 18px rgba(16, 185, 129, 0.28));
+}
+
 .pet-inventory-item-using {
   animation: inventoryUsePulse 0.35s ease-out, inventoryShake 0.35s ease-out;
   box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), 0 0 24px rgba(99, 102, 241, 0.22);
@@ -150,6 +203,15 @@
   .pet-inventory-item-using {
     animation: none !important;
     transition: none !important;
+  }
+
+  .pet-interaction-play,
+  .pet-interaction-clean,
+  .room-object-interact-eat .object-container,
+  .room-object-interact-play .object-container,
+  .room-object-interact-clean .object-container,
+  .room-object-interact-health .object-container {
+    animation: none !important;
   }
 
   .pet-drop-target-scene,
