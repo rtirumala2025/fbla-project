@@ -12,7 +12,7 @@ import { DogModel } from './pets/DogModel.tsx';
 import { CatModel } from './pets/CatModel.tsx';
 import { PandaModel } from './pets/PandaModel.tsx';
 import { SceneVfx } from './core/SceneVfx.tsx';
-import { HUD } from './ui/HUD.tsx';
+import { OverlayHUD } from './ui/OverlayHUD.tsx';
 import type { PetGame2Action } from './core/SceneManager.ts';
 
 function PetModel({ petType, state, onPetTap }: { petType: PetGame2PetType; state: PetGame2State; onPetTap: () => void }) {
@@ -60,6 +60,16 @@ export function PetGame2Scene({
 
   return (
     <div className="w-full h-[calc(100vh-5rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-5rem)] relative">
+      {/* HTML Overlay HUD - positioned above canvas */}
+      <OverlayHUD
+        petName={petName}
+        species={petType}
+        stats={stats}
+        disabled={disabled}
+        onAction={onAction}
+      />
+
+      {/* Three.js Canvas */}
       <Canvas
         shadows
         dpr={dpr}
@@ -88,9 +98,6 @@ export function PetGame2Scene({
           </group>
 
           <SceneVfx vfx={state.vfx} />
-
-          <HUD petName={petName} stats={stats} disabled={disabled} onAction={onAction} />
-
           <CameraController mode={state.cameraMode} target={targetRef.current} />
         </Suspense>
       </Canvas>

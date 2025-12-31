@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { PetGame2State } from '../core/SceneManager';
 import { breathe } from '../animations/idle';
@@ -9,6 +9,7 @@ export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const { camera } = useThree();
 
   const white = useMemo(() => new THREE.Color('#f2f2f2'), []);
   const black = useMemo(() => new THREE.Color('#1b1b1b'), []);
@@ -17,26 +18,50 @@ export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap
     const t = clock.getElapsedTime();
 
     if (root.current) {
-      const b = breathe(t, 1.3);
-      root.current.position.y = 0.02 + b * 0.05;
-      root.current.rotation.y = Math.sin(t * 0.35) * 0.08;
+      // More dramatic breathing
+      const b = breathe(t, 1.2);
+      root.current.position.y = 0.04 + b * 0.12;
+      root.current.rotation.y = Math.sin(t * 0.4) * 0.12;
     }
 
     if (head.current) {
-      head.current.rotation.y = Math.sin(t * 0.3) * 0.18;
-      head.current.rotation.x = Math.sin(t * 0.25) * 0.06;
+      // Camera/head tracking
+      const cameraDirection = new THREE.Vector3();
+      camera.getWorldDirection(cameraDirection);
+
+      // Track camera horizontally
+      const targetRotationY = Math.atan2(cameraDirection.x, cameraDirection.z) * 0.3;
+      head.current.rotation.y = THREE.MathUtils.lerp(
+        head.current.rotation.y,
+        targetRotationY + Math.sin(t * 0.4) * 0.15,
+        0.05
+      );
+
+      // Slight vertical head movement
+      head.current.rotation.x = Math.sin(t * 0.35) * 0.08;
     }
 
+    // Species-specific reaction: Panda bounces and spins
     if (state.interaction.kind !== 'idle') {
       const startedAt = state.interaction.startedAt;
-      const localT = Math.min(1, (performance.now() - startedAt) / 520);
-      const s = 1 + pop(localT) * 0.055;
-      if (root.current) root.current.scale.setScalar(s);
-      if (root.current) root.current.rotation.z = wobble(localT) * 0.05;
+      const localT = Math.min(1, (performance.now() - startedAt) / 600);
+
+      if (state.interaction.kind === 'tap') {
+        const s = 1 + pop(localT) * 0.08;
+        if (root.current) root.current.scale.setScalar(s);
+        if (root.current) root.current.rotation.z = wobble(localT) * 0.08;
+      } else {
+        // Action reactions - bigger bounce
+        const s = 1 + pop(localT) * 0.15;
+        if (root.current) {
+          root.current.scale.setScalar(s);
+          // Panda happy spin
+          root.current.rotation.y += Math.sin(localT * Math.PI) * 0.3;
+        }
+      }
     } else {
       if (root.current) {
-        // Hover state: slightly larger scale
-        const targetScale = isHovered ? 1.03 : 1.0;
+        const targetScale = isHovered ? 1.05 : 1.0;
         root.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         root.current.rotation.z *= 0.85;
       }

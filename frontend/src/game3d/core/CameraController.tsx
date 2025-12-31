@@ -16,15 +16,15 @@ export function CameraController({ mode, target }: { mode: PetGame2CameraMode; t
   useFrame((_, dt) => {
     tRef.current += dt;
 
-    // More subtle sway (reduced from 0.06/0.04 to 0.04/0.03)
-    const swayX = Math.sin(tRef.current * 0.55) * 0.04;
-    const swayY = Math.sin(tRef.current * 0.75) * 0.03;
+    // More noticeable sway - visible within 5 seconds
+    const swayX = Math.sin(tRef.current * 0.7) * 0.08;
+    const swayY = Math.sin(tRef.current * 0.9) * 0.06;
 
-    // Very slow orbital rotation for dynamic feel
-    const orbitAngle = Math.sin(tRef.current * 0.15) * 0.25;
+    // Slow but visible orbital rotation
+    const orbitAngle = Math.sin(tRef.current * 0.25) * 0.4;
 
-    // Secondary vertical bob for variety
-    const verticalBob = Math.sin(tRef.current * 0.3) * 0.02;
+    // Vertical bob for variety
+    const verticalBob = Math.sin(tRef.current * 0.4) * 0.04;
 
     const offset = mode === 'focus' ? focusOffset : followOffset;
 

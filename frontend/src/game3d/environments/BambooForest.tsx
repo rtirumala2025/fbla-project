@@ -5,35 +5,34 @@ import { makeForestFloorTexture } from '../core/AssetLoader';
 
 function Bamboo({ position }: { position: [number, number, number] }) {
   const groupRef = useRef<THREE.Group>(null);
-  // Randomized phase offset for natural variation
   const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
 
   useFrame(() => {
     if (!groupRef.current) return;
     const t = performance.now() * 0.001;
-
-    // Base sway with unique phase
-    const baseSway = Math.sin(t + position[0] * 0.6 + position[2] * 0.3 + phaseOffset) * 0.03;
-
-    // Occasional wind gust for more dynamic feel
-    const windGust = Math.sin(t * 0.2 + phaseOffset) * 0.015;
-
+    const baseSway = Math.sin(t + position[0] * 0.6 + position[2] * 0.3 + phaseOffset) * 0.04;
+    const windGust = Math.sin(t * 0.2 + phaseOffset) * 0.02;
     groupRef.current.rotation.z = baseSway + windGust;
   });
 
   return (
     <group ref={groupRef} position={position}>
       <mesh castShadow>
-        <cylinderGeometry args={[0.07, 0.09, 4.6, 10]} />
-        <meshStandardMaterial color="#3c8a52" roughness={0.8} />
+        <cylinderGeometry args={[0.08, 0.1, 5.5, 12]} />
+        <meshStandardMaterial color="#2d7a45" roughness={0.75} />
       </mesh>
-      <mesh position={[0.06, 1.6, 0]} castShadow>
-        <boxGeometry args={[0.22, 0.06, 0.22]} />
-        <meshStandardMaterial color="#2f6f41" roughness={0.85} />
+      <mesh position={[0.07, 1.8, 0]} castShadow>
+        <boxGeometry args={[0.25, 0.08, 0.25]} />
+        <meshStandardMaterial color="#236336" roughness={0.85} />
       </mesh>
-      <mesh position={[-0.05, 0.2, 0]} castShadow>
-        <boxGeometry args={[0.22, 0.06, 0.22]} />
-        <meshStandardMaterial color="#2f6f41" roughness={0.85} />
+      <mesh position={[-0.06, 0.3, 0]} castShadow>
+        <boxGeometry args={[0.25, 0.08, 0.25]} />
+        <meshStandardMaterial color="#236336" roughness={0.85} />
+      </mesh>
+      {/* Leaves */}
+      <mesh position={[0, 2.5, 0]}>
+        <coneGeometry args={[0.3, 0.6, 8]} />
+        <meshStandardMaterial color="#3f9c5a" roughness={0.8} />
       </mesh>
     </group>
   );
@@ -42,40 +41,62 @@ function Bamboo({ position }: { position: [number, number, number] }) {
 export function BambooForest() {
   const floorTex = useMemo(() => {
     const t = makeForestFloorTexture();
-    t.repeat.set(3, 3);
+    t.repeat.set(4, 4);
     return t;
   }, []);
 
   const hazeRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>>(null);
+  const lightGlowRef = useRef<THREE.PointLight>(null);
 
   useFrame(() => {
     if (!hazeRef.current) return;
     const t = performance.now() * 0.0005;
-    hazeRef.current.material.opacity = 0.08 + Math.sin(t) * 0.01;
+    hazeRef.current.material.opacity = 0.12 + Math.sin(t) * 0.02;
+
+    if (lightGlowRef.current) {
+      lightGlowRef.current.intensity = 0.4 + Math.sin(t * 1.5) * 0.1;
+    }
   });
 
   return (
     <group>
+      {/* Enhanced floor with darker moss color */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[60, 60]} />
-        <meshStandardMaterial map={floorTex} roughness={1} />
+        <planeGeometry args={[70, 70]} />
+        <meshStandardMaterial map={floorTex} color="#2a4a2e" roughness={0.95} />
       </mesh>
 
-      <mesh ref={hazeRef} position={[0, 2.2, -6]}>
-        <sphereGeometry args={[14, 18, 18]} />
-        <meshStandardMaterial color="#d7f3df" transparent opacity={0.08} roughness={1} />
+      {/* Atmospheric haze with green tint */}
+      <mesh ref={hazeRef} position={[0, 2.8, -7]}>
+        <sphereGeometry args={[16, 20, 20]} />
+        <meshStandardMaterial color="#b8e6c9" transparent opacity={0.12} roughness={1} />
       </mesh>
 
-      <Bamboo position={[3.2, 2.3, -3.2]} />
-      <Bamboo position={[-3.4, 2.3, -3.8]} />
-      <Bamboo position={[5.5, 2.3, -1.4]} />
-      <Bamboo position={[-5.6, 2.3, -1.1]} />
-      <Bamboo position={[1.2, 2.3, -5.7]} />
-      <Bamboo position={[-1.4, 2.3, -5.4]} />
+      {/* Bamboo forest - more dramatic placement */}
+      <Bamboo position={[3.5, 2.75, -3.5]} />
+      <Bamboo position={[-3.8, 2.75, -4.2]} />
+      <Bamboo position={[5.8, 2.75, -1.6]} />
+      <Bamboo position={[-6.0, 2.75, -1.3]} />
+      <Bamboo position={[1.5, 2.75, -6.2]} />
+      <Bamboo position={[-1.8, 2.75, -5.8]} />
+      <Bamboo position={[2.2, 2.75, -8.5]} />
+      <Bamboo position={[-2.5, 2.75, -8.0]} />
+      <Bamboo position={[7.2, 2.75, -4.0]} />
+      <Bamboo position={[-7.5, 2.75, -4.5]} />
 
-      <mesh position={[0, 0.2, 3.2]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.8, 1.0, 0.4, 18]} />
-        <meshStandardMaterial color="#3a5f3b" roughness={0.95} />
+      {/* Foreground accent rock */}
+      <mesh position={[0, 0.25, 3.5]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.9, 1.1, 0.5, 20]} />
+        <meshStandardMaterial color="#3d5f42" roughness={0.92} />
+      </mesh>
+
+      {/* Subtle point light for depth */}
+      <pointLight ref={lightGlowRef} position={[0, 3, -5]} intensity={0.4} color="#d4ffde" distance={12} />
+
+      {/* Background depth layer - distant bamboo silhouettes */}
+      <mesh position={[0, 3, -12]} scale={[1.5, 1.5, 1]}>
+        <planeGeometry args={[25, 8]} />
+        <meshStandardMaterial color="#1a3a2a" transparent opacity={0.3} />
       </mesh>
     </group>
   );
