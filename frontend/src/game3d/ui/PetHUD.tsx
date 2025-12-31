@@ -71,7 +71,7 @@ function ActionButton({
     );
 }
 
-export function OverlayHUD({
+export function PetHUD({
     petName,
     species,
     stats,
