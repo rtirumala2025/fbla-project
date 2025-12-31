@@ -36,6 +36,13 @@
     "types": ["vite/client", "node"]
   },
   "include": ["src", "src/vite-env.d.ts"],
-  "exclude": ["node_modules"],
+  "exclude": [
+    "node_modules",
+    "src/__tests__",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

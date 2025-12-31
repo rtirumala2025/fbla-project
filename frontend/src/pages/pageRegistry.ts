@@ -56,6 +56,7 @@ export const Pages = {
   
   // Special case: PetGameScreen with error handling
   PetGameScreen: lazy(() => import('./PetGameScreen')),
+  PetGame2Screen: lazy(() => import('./PetGame2Screen').then(m => ({ default: m.PetGame2Screen }))),
 } as const;
 
 // Type definition for page keys to enable compile-time checking

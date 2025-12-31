@@ -70,6 +70,7 @@ const Header = memo(() => {
   const authenticatedNavLinks = [
     { name: 'Dashboard', to: '/dashboard', icon: <Home size={20} /> },
     { name: 'Pet Game', to: '/pet-game', icon: <Gamepad2 size={20} /> },
+    { name: 'Pet Game 2', to: '/pet-game-2', icon: <Gamepad2 size={20} /> },
     { name: 'Budget', to: '/budget', icon: <BarChart3 size={20} /> },
     { name: 'Shop', to: '/shop', icon: <ShoppingCart size={20} /> },
     { name: 'Inventory', to: '/inventory', icon: <Package size={20} /> },
