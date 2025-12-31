@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { PetGame2State } from '../core/SceneManager';
@@ -9,6 +9,7 @@ export function DogModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
   const tail = useRef<THREE.Group>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   const baseColor = useMemo(() => new THREE.Color('#c7a074'), []);
   const dark = useMemo(() => new THREE.Color('#6a4b35'), []);
@@ -40,17 +41,32 @@ export function DogModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
       if (root.current) root.current.rotation.z = wobble(localT) * 0.07;
     } else {
       if (root.current) {
-        root.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+        const targetScale = isHovered ? 1.03 : 1.0;
+        root.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         root.current.rotation.z *= 0.85;
       }
     }
   });
 
   return (
-    <group ref={root} position={[0, 0, 0]} onPointerDown={(e) => {
-      e.stopPropagation();
-      onPetTap();
-    }}>
+    <group
+      ref={root}
+      position={[0, 0, 0]}
+      onPointerEnter={(e) => {
+        e.stopPropagation();
+        setIsHovered(true);
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerLeave={(e) => {
+        e.stopPropagation();
+        setIsHovered(false);
+        document.body.style.cursor = 'auto';
+      }}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        onPetTap();
+      }}
+    >
       <mesh position={[0, 0.35, 0]} castShadow>
         <capsuleGeometry args={[0.28, 0.55, 8, 16]} />
         <meshStandardMaterial color={baseColor} roughness={0.7} />

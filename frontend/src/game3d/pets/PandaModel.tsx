@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { PetGame2State } from '../core/SceneManager';
@@ -8,6 +8,7 @@ import { pop, wobble } from '../animations/interact';
 export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap: () => void }) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   const white = useMemo(() => new THREE.Color('#f2f2f2'), []);
   const black = useMemo(() => new THREE.Color('#1b1b1b'), []);
@@ -34,17 +35,32 @@ export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap
       if (root.current) root.current.rotation.z = wobble(localT) * 0.05;
     } else {
       if (root.current) {
-        root.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+        // Hover state: slightly larger scale
+        const targetScale = isHovered ? 1.03 : 1.0;
+        root.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         root.current.rotation.z *= 0.85;
       }
     }
   });
 
   return (
-    <group ref={root} onPointerDown={(e) => {
-      e.stopPropagation();
-      onPetTap();
-    }}>
+    <group
+      ref={root}
+      onPointerEnter={(e) => {
+        e.stopPropagation();
+        setIsHovered(true);
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerLeave={(e) => {
+        e.stopPropagation();
+        setIsHovered(false);
+        document.body.style.cursor = 'auto';
+      }}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        onPetTap();
+      }}
+    >
       <mesh position={[0, 0.33, 0]} castShadow>
         <capsuleGeometry args={[0.3, 0.55, 8, 16]} />
         <meshStandardMaterial color={white} roughness={0.65} />

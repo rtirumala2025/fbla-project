@@ -9,41 +9,59 @@ function StatBar({
   label,
   value,
   color,
-  x,
-  y,
 }: {
   label: string;
   value: number;
   color: string;
-  x: number;
-  y: number;
 }) {
   const clamped = Math.min(100, Math.max(0, value));
-  const w = 1.7;
-  const h = 0.14;
+  const w = 1.4;
+  const h = 0.11;
   const fillW = (clamped / 100) * w;
 
-  const bgMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#0b1020', roughness: 0.8 }), []);
-  const fillMat = useMemo(() => new THREE.MeshStandardMaterial({ color, roughness: 0.45 }), [color]);
+  const bgMat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#1a1f2e',
+        transparent: true,
+        opacity: 0.3,
+        roughness: 0.6,
+      }),
+    []
+  );
+  const fillMat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.35,
+        emissive: color,
+        emissiveIntensity: 0.2,
+      }),
+    [color]
+  );
 
   return (
-    <group position={[x, y, 0]}>
-      <Text position={[-0.95, 0.02, 0.1]} fontSize={0.13} color="#e5e7eb" anchorX="left" anchorY="middle">
+    <group>
+      <Text position={[0, 0.08, 0.1]} fontSize={0.1} color="#ffffff" anchorX="left" anchorY="middle">
         {label}
       </Text>
 
-      <RoundedBox args={[w, h, 0.08]} radius={0.06} smoothness={6} position={[0, -0.12, 0]}>
+      <RoundedBox args={[w, h, 0.06]} radius={0.05} smoothness={6} position={[w * 0.5, 0, 0]}>
         <primitive attach="material" object={bgMat} />
       </RoundedBox>
 
       <RoundedBox
-        args={[Math.max(0.02, fillW), h * 0.92, 0.085]}
-        radius={0.06}
+        args={[Math.max(0.02, fillW), h * 0.88, 0.07]}
+        radius={0.05}
         smoothness={6}
-        position={[-(w - fillW) * 0.5, -0.12, 0.02]}
+        position={[fillW * 0.5, 0, 0.01]}
       >
         <primitive attach="material" object={fillMat} />
       </RoundedBox>
+
+      <Text position={[w + 0.15, 0, 0.1]} fontSize={0.09} color="#d1d5db" anchorX="left" anchorY="middle">
+        {Math.round(clamped)}%
+      </Text>
     </group>
   );
 }
@@ -59,7 +77,20 @@ export function HUD({
   disabled: boolean;
   onAction: (action: PetGame2Action) => void;
 }) {
-  const panelMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#111827', roughness: 0.65, metalness: 0.0 }), []);
+  // Glassmorphism panel material - semi-transparent with glow
+  const panelMat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#0f172a',
+        transparent: true,
+        opacity: 0.25,
+        roughness: 0.4,
+        metalness: 0.1,
+        emissive: '#1e293b',
+        emissiveIntensity: 0.15,
+      }),
+    []
+  );
 
   const hunger = stats?.hunger ?? 50;
   const happiness = stats?.happiness ?? 50;
@@ -67,20 +98,41 @@ export function HUD({
 
   return (
     <Hud>
-      <group position={[0, 0, 0]}>
-        <RoundedBox args={[4.3, 1.35, 0.12]} radius={0.18} smoothness={8} position={[0, 1.55, 0]}>
+      {/* Position in top-left corner */}
+      <group position={[-2.8, 2.2, 0]}>
+        {/* Glassmorphic background panel */}
+        <RoundedBox args={[2.6, 1.8, 0.08]} radius={0.15} smoothness={8} position={[1.3, -0.9, 0]}>
           <primitive attach="material" object={panelMat} />
         </RoundedBox>
 
-        <Text position={[-1.95, 1.95, 0.12]} fontSize={0.22} color="#ffffff" anchorX="left" anchorY="middle">
+        {/* Pet name with glow */}
+        <Text
+          position={[0.15, 0, 0.12]}
+          fontSize={0.16}
+          color="#ffffff"
+          anchorX="left"
+          anchorY="middle"
+          outlineWidth={0.01}
+          outlineColor="#000000"
+        >
           {petName}
         </Text>
 
-        <StatBar label="Hunger" value={hunger} color="#f6dfb8" x={-0.15} y={1.76} />
-        <StatBar label="Happiness" value={happiness} color="#cfe0ff" x={-0.15} y={1.38} />
-        <StatBar label="Energy" value={energy} color="#e2f6ea" x={-0.15} y={1.0} />
+        {/* Stat bars - stacked vertically */}
+        <group position={[0.15, -0.35, 0.1]}>
+          <StatBar label="Hunger" value={hunger} color="#fbbf24" />
+        </group>
+        <group position={[0.15, -0.75, 0.1]}>
+          <StatBar label="Happiness" value={happiness} color="#60a5fa" />
+        </group>
+        <group position={[0.15, -1.15, 0.1]}>
+          <StatBar label="Energy" value={energy} color="#34d399" />
+        </group>
 
-        <ActionBar disabled={disabled} onAction={onAction} />
+        {/* Action bar positioned below stats */}
+        <group position={[0, -1.65, 0]}>
+          <ActionBar disabled={disabled} onAction={onAction} />
+        </group>
       </group>
     </Hud>
   );

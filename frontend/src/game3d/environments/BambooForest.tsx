@@ -5,11 +5,20 @@ import { makeForestFloorTexture } from '../core/AssetLoader';
 
 function Bamboo({ position }: { position: [number, number, number] }) {
   const groupRef = useRef<THREE.Group>(null);
+  // Randomized phase offset for natural variation
+  const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
 
   useFrame(() => {
     if (!groupRef.current) return;
     const t = performance.now() * 0.001;
-    groupRef.current.rotation.z = Math.sin(t + position[0] * 0.6 + position[2] * 0.3) * 0.03;
+
+    // Base sway with unique phase
+    const baseSway = Math.sin(t + position[0] * 0.6 + position[2] * 0.3 + phaseOffset) * 0.03;
+
+    // Occasional wind gust for more dynamic feel
+    const windGust = Math.sin(t * 0.2 + phaseOffset) * 0.015;
+
+    groupRef.current.rotation.z = baseSway + windGust;
   });
 
   return (

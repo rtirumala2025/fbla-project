@@ -1,9 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export type LightingPreset = 'park' | 'room' | 'bamboo';
 
 export function Lighting({ preset }: { preset: LightingPreset }) {
+  const ambientRef = useRef<THREE.AmbientLight>(null);
+  const sunRef = useRef<THREE.DirectionalLight>(null);
+  const fillRef = useRef<THREE.DirectionalLight>(null);
+
   const config = useMemo(() => {
     if (preset === 'room') {
       return {
@@ -28,10 +33,31 @@ export function Lighting({ preset }: { preset: LightingPreset }) {
     };
   }, [preset]);
 
+  // Dynamic lighting variation
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+
+    // Subtle intensity variations (±5%)
+    const variation = Math.sin(t * 0.25) * 0.05;
+
+    if (ambientRef.current) {
+      ambientRef.current.intensity = config.ambient.intensity * (1 + variation * 0.5);
+    }
+
+    if (sunRef.current) {
+      sunRef.current.intensity = config.sun.intensity * (1 + variation);
+    }
+
+    if (fillRef.current) {
+      fillRef.current.intensity = config.fill.intensity * (1 + variation * 0.8);
+    }
+  });
+
   return (
     <>
-      <ambientLight intensity={config.ambient.intensity} color={config.ambient.color} />
+      <ambientLight ref={ambientRef} intensity={config.ambient.intensity} color={config.ambient.color} />
       <directionalLight
+        ref={sunRef}
         castShadow
         intensity={config.sun.intensity}
         color={config.sun.color}
@@ -45,7 +71,12 @@ export function Lighting({ preset }: { preset: LightingPreset }) {
         shadow-camera-top={10}
         shadow-camera-bottom={-10}
       />
-      <directionalLight intensity={config.fill.intensity} color={config.fill.color} position={config.fill.position} />
+      <directionalLight
+        ref={fillRef}
+        intensity={config.fill.intensity}
+        color={config.fill.color}
+        position={config.fill.position}
+      />
     </>
   );
 }
