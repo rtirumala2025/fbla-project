@@ -13,15 +13,21 @@ export function CatModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
   const tail = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Enhanced color variation for realistic fur patterns
   const fur = useMemo(() => new THREE.Color('#cfc6b8'), []);
+  const furVariant1 = useMemo(() => new THREE.Color('#dcd4c6'), []);
+  const furVariant2 = useMemo(() => new THREE.Color('#c3baac'), []);
   const stripe = useMemo(() => new THREE.Color('#8a7f70'), []);
+  const stripeVariant = useMemo(() => new THREE.Color('#7d7266'), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
     if (root.current) {
+      // Gentler breathing for feline character
       const b = breathe(t, 1.7);
-      root.current.position.y = 0.02 + b * 0.035;
+      root.current.position.y = 0.02 + b * 0.04;
+      root.current.scale.y = 1.0 + b * 0.015;
     }
 
     if (head.current) {
@@ -36,9 +42,11 @@ export function CatModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
     }
 
     if (earL.current && earR.current) {
-      const twitch = Math.max(0, Math.sin(t * 6.5) - 0.85) * 0.25;
-      earL.current.rotation.z = 0.25 + twitch;
-      earR.current.rotation.z = -0.25 - twitch;
+      // More pronounced ear twitching with asymmetric timing
+      const twitchL = Math.max(0, Math.sin(t * 6.5) - 0.82) * 0.35;
+      const twitchR = Math.max(0, Math.sin(t * 6.8 + 0.3) - 0.82) * 0.35;
+      earL.current.rotation.z = 0.25 + twitchL;
+      earR.current.rotation.z = -0.25 - twitchR;
     }
 
     if (state.interaction.kind !== 'idle') {
@@ -74,36 +82,53 @@ export function CatModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
         onPetTap();
       }}
     >
+      {/* Body with soft fur material */}
       <mesh position={[0, 0.33, 0]} castShadow>
         <capsuleGeometry args={[0.24, 0.5, 8, 16]} />
-        <meshStandardMaterial color={fur} roughness={0.75} />
+        <meshStandardMaterial
+          color={fur}
+          roughness={0.72}
+          metalness={0.04}
+        />
       </mesh>
 
+      {/* Stripe with more matte finish */}
       <mesh position={[0, 0.38, 0.02]} castShadow>
         <boxGeometry args={[0.22, 0.12, 0.65]} />
-        <meshStandardMaterial color={stripe} roughness={0.85} />
+        <meshStandardMaterial
+          color={stripe}
+          roughness={0.88}
+          metalness={0.02}
+        />
       </mesh>
 
       <group ref={head} position={[0, 0.78, 0.2]}>
+        {/* Head with specular highlights on rounded surfaces */}
         <mesh castShadow>
           <sphereGeometry args={[0.23, 18, 18]} />
-          <meshStandardMaterial color={fur} roughness={0.7} />
+          <meshStandardMaterial
+            color={furVariant1}
+            roughness={0.68}
+            metalness={0.06}
+          />
         </mesh>
+        {/* Ears with subtle highlights */}
         <mesh ref={earL} position={[0.16, 0.2, 0]} rotation={[0, 0, 0.25]} castShadow>
           <coneGeometry args={[0.08, 0.16, 10]} />
-          <meshStandardMaterial color={stripe} roughness={0.85} />
+          <meshStandardMaterial color={stripe} roughness={0.75} metalness={0.05} />
         </mesh>
         <mesh ref={earR} position={[-0.16, 0.2, 0]} rotation={[0, 0, -0.25]} castShadow>
           <coneGeometry args={[0.08, 0.16, 10]} />
-          <meshStandardMaterial color={stripe} roughness={0.85} />
+          <meshStandardMaterial color={stripeVariant} roughness={0.75} metalness={0.05} />
         </mesh>
+        {/* Eyes with gloss */}
         <mesh position={[0.11, 0.05, 0.14]} castShadow>
           <sphereGeometry args={[0.04, 12, 12]} />
-          <meshStandardMaterial color="#111111" roughness={0.3} />
+          <meshStandardMaterial color="#0a0a0a" roughness={0.2} metalness={0.1} />
         </mesh>
         <mesh position={[-0.11, 0.05, 0.14]} castShadow>
           <sphereGeometry args={[0.04, 12, 12]} />
-          <meshStandardMaterial color="#111111" roughness={0.3} />
+          <meshStandardMaterial color="#0a0a0a" roughness={0.2} metalness={0.1} />
         </mesh>
         <mesh position={[0, -0.06, 0.17]} castShadow>
           <coneGeometry args={[0.04, 0.07, 10]} />

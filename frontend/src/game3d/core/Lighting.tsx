@@ -13,27 +13,27 @@ export function Lighting({ preset }: { preset: LightingPreset }) {
   const config = useMemo(() => {
     if (preset === 'room') {
       return {
-        ambient: { intensity: 0.8, color: new THREE.Color('#ffd6a6') },
-        sun: { intensity: 1.3, color: new THREE.Color('#fff0d6'), position: new THREE.Vector3(4, 7, 3) },
-        fill: { intensity: 0.4, color: new THREE.Color('#b7c8ff'), position: new THREE.Vector3(-4, 3, -2) },
-        rim: { intensity: 0.6, color: new THREE.Color('#ffecd6'), position: new THREE.Vector3(0, 3, -5) },
+        ambient: { intensity: 0.35, color: new THREE.Color('#ffd6a6') },
+        sun: { intensity: 1.8, color: new THREE.Color('#fff5e0'), position: new THREE.Vector3(4, 7, 3) },
+        fill: { intensity: 0.5, color: new THREE.Color('#a8bcff'), position: new THREE.Vector3(-4, 3, -2) },
+        rim: { intensity: 0.85, color: new THREE.Color('#ffead0'), position: new THREE.Vector3(0, 3, -5) },
       };
     }
 
     if (preset === 'bamboo') {
       return {
-        ambient: { intensity: 0.6, color: new THREE.Color('#cbead3') },
-        sun: { intensity: 1.0, color: new THREE.Color('#e0ffd9'), position: new THREE.Vector3(3, 8, 2) },
-        fill: { intensity: 0.3, color: new THREE.Color('#9fd0c7'), position: new THREE.Vector3(-4, 2.5, -3) },
-        rim: { intensity: 0.5, color: new THREE.Color('#d4ffde'), position: new THREE.Vector3(0, 2, -4) },
+        ambient: { intensity: 0.3, color: new THREE.Color('#cbead3') },
+        sun: { intensity: 1.4, color: new THREE.Color('#dfffcc'), position: new THREE.Vector3(3, 8, 2) },
+        fill: { intensity: 0.4, color: new THREE.Color('#8fc7bd'), position: new THREE.Vector3(-4, 2.5, -3) },
+        rim: { intensity: 0.9, color: new THREE.Color('#c8ffd4'), position: new THREE.Vector3(0, 2, -4) },
       };
     }
 
     return {
-      ambient: { intensity: 0.6, color: new THREE.Color('#cfe6ff') },
-      sun: { intensity: 1.35, color: new THREE.Color('#fff6df'), position: new THREE.Vector3(6, 9, 4) },
-      fill: { intensity: 0.35, color: new THREE.Color('#d6e2ff'), position: new THREE.Vector3(-6, 4, -2) },
-      rim: { intensity: 0.7, color: new THREE.Color('#fff3d6'), position: new THREE.Vector3(0, 4, -6) },
+      ambient: { intensity: 0.4, color: new THREE.Color('#cfe6ff') },
+      sun: { intensity: 1.65, color: new THREE.Color('#ffeecc'), position: new THREE.Vector3(6, 9, 4) },
+      fill: { intensity: 0.45, color: new THREE.Color('#c8d8ff'), position: new THREE.Vector3(-6, 4, -2) },
+      rim: { intensity: 0.95, color: new THREE.Color('#ffe8c0'), position: new THREE.Vector3(0, 4, -6) },
     };
   }, [preset]);
 
@@ -67,14 +67,17 @@ export function Lighting({ preset }: { preset: LightingPreset }) {
         intensity={config.sun.intensity}
         color={config.sun.color}
         position={config.sun.position}
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={4096}
+        shadow-mapSize-height={4096}
         shadow-camera-near={0.5}
-        shadow-camera-far={30}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
+        shadow-camera-far={35}
+        shadow-camera-left={-12}
+        shadow-camera-right={12}
+        shadow-camera-top={12}
+        shadow-camera-bottom={-12}
+        shadow-bias={-0.0001}
+        shadow-normalBias={0.02}
+        shadow-radius={2}
       />
       <directionalLight
         ref={fillRef}

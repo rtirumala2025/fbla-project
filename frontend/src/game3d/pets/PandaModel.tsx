@@ -11,16 +11,20 @@ export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap
   const [isHovered, setIsHovered] = useState(false);
   const { camera } = useThree();
 
-  const white = useMemo(() => new THREE.Color('#f2f2f2'), []);
+  // Enhanced color variation with subtle warm/cool undertones
+  const white = useMemo(() => new THREE.Color('#f5f5f5'), []);
+  const whiteVariant = useMemo(() => new THREE.Color('#faf8f6'), []);
   const black = useMemo(() => new THREE.Color('#1b1b1b'), []);
+  const blackVariant = useMemo(() => new THREE.Color('#252525'), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
     if (root.current) {
-      // More dramatic breathing
+      // Most pronounced breathing for rotund body
       const b = breathe(t, 1.2);
-      root.current.position.y = 0.04 + b * 0.12;
+      root.current.position.y = 0.04 + b * 0.14;
+      root.current.scale.y = 1.0 + b * 0.04;
       root.current.rotation.y = Math.sin(t * 0.4) * 0.12;
     }
 
@@ -86,38 +90,55 @@ export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap
         onPetTap();
       }}
     >
+      {/* White fur body with subtle sheen */}
       <mesh position={[0, 0.33, 0]} castShadow>
         <capsuleGeometry args={[0.3, 0.55, 8, 16]} />
-        <meshStandardMaterial color={white} roughness={0.65} />
+        <meshStandardMaterial
+          color={white}
+          roughness={0.58}
+          metalness={0.08}
+        />
       </mesh>
 
+      {/* Black fur patch - more matte than white */}
       <mesh position={[0, 0.4, 0]} castShadow>
         <sphereGeometry args={[0.22, 16, 16]} />
-        <meshStandardMaterial color={black} roughness={0.7} />
+        <meshStandardMaterial
+          color={black}
+          roughness={0.72}
+          metalness={0.03}
+        />
       </mesh>
 
       <group ref={head} position={[0, 0.82, 0.2]}>
+        {/* White fur head with healthy sheen */}
         <mesh castShadow>
           <sphereGeometry args={[0.27, 18, 18]} />
-          <meshStandardMaterial color={white} roughness={0.6} />
+          <meshStandardMaterial
+            color={whiteVariant}
+            roughness={0.56}
+            metalness={0.09}
+          />
         </mesh>
 
+        {/* Black eye patches with slight variation */}
         <mesh position={[0.14, 0.06, 0.14]} castShadow>
           <sphereGeometry args={[0.06, 14, 14]} />
-          <meshStandardMaterial color={black} roughness={0.7} />
+          <meshStandardMaterial color={black} roughness={0.68} metalness={0.04} />
         </mesh>
         <mesh position={[-0.14, 0.06, 0.14]} castShadow>
           <sphereGeometry args={[0.06, 14, 14]} />
-          <meshStandardMaterial color={black} roughness={0.7} />
+          <meshStandardMaterial color={blackVariant} roughness={0.68} metalness={0.04} />
         </mesh>
 
+        {/* Eyes with gloss */}
         <mesh position={[0.14, 0.08, 0.18]} castShadow>
           <sphereGeometry args={[0.035, 12, 12]} />
-          <meshStandardMaterial color="#0d0d0d" roughness={0.3} />
+          <meshStandardMaterial color="#050505" roughness={0.15} metalness={0.12} />
         </mesh>
         <mesh position={[-0.14, 0.08, 0.18]} castShadow>
           <sphereGeometry args={[0.035, 12, 12]} />
-          <meshStandardMaterial color="#0d0d0d" roughness={0.3} />
+          <meshStandardMaterial color="#050505" roughness={0.15} metalness={0.12} />
         </mesh>
 
         <mesh position={[0, -0.03, 0.2]} castShadow>
@@ -125,31 +146,33 @@ export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap
           <meshStandardMaterial color={black} roughness={0.6} />
         </mesh>
 
+        {/* Black ears with matte finish */}
         <mesh position={[0.16, 0.22, 0]} castShadow>
           <sphereGeometry args={[0.09, 14, 14]} />
-          <meshStandardMaterial color={black} roughness={0.8} />
+          <meshStandardMaterial color={black} roughness={0.78} metalness={0.02} />
         </mesh>
         <mesh position={[-0.16, 0.22, 0]} castShadow>
           <sphereGeometry args={[0.09, 14, 14]} />
-          <meshStandardMaterial color={black} roughness={0.8} />
+          <meshStandardMaterial color={blackVariant} roughness={0.78} metalness={0.02} />
         </mesh>
       </group>
 
+      {/* Black legs with matte finish */}
       <mesh position={[0.2, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.07, 0.2, 6, 12]} />
-        <meshStandardMaterial color={black} roughness={0.8} />
+        <meshStandardMaterial color={black} roughness={0.76} metalness={0.03} />
       </mesh>
       <mesh position={[-0.2, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.07, 0.2, 6, 12]} />
-        <meshStandardMaterial color={black} roughness={0.8} />
+        <meshStandardMaterial color={blackVariant} roughness={0.76} metalness={0.03} />
       </mesh>
       <mesh position={[0.2, 0.1, -0.18]} castShadow>
         <capsuleGeometry args={[0.07, 0.2, 6, 12]} />
-        <meshStandardMaterial color={black} roughness={0.8} />
+        <meshStandardMaterial color={black} roughness={0.76} metalness={0.03} />
       </mesh>
       <mesh position={[-0.2, 0.1, -0.18]} castShadow>
         <capsuleGeometry args={[0.07, 0.2, 6, 12]} />
-        <meshStandardMaterial color={black} roughness={0.8} />
+        <meshStandardMaterial color={blackVariant} roughness={0.76} metalness={0.03} />
       </mesh>
     </group>
   );
