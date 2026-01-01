@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { SoundProvider } from './contexts/SoundContext';
 import { PetProvider } from './context/PetContext';
 import { FinancialProvider } from './context/FinancialContext';
 import { PetAutoSync } from './components/sync/PetAutoSync';
@@ -365,7 +367,11 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <AppContent />
+          <ThemeProvider>
+            <SoundProvider>
+              <AppContent />
+            </SoundProvider>
+          </ThemeProvider>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
