@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { PetGame2State } from '../core/SceneManager';
 import { breathe, subtleNod } from '../animations/idle';
 import { pop, wobble } from '../animations/interact';
+import { ContactShadow } from '../core/ContactShadow';
 
 export function DogModel({ state, onPetTap }: { state: PetGame2State; onPetTap: () => void }) {
   const root = useRef<THREE.Group>(null);
@@ -11,12 +12,14 @@ export function DogModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
   const tail = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Enhanced color variation for realistic fur
-  const baseColor = useMemo(() => new THREE.Color('#c7a074'), []);
-  const baseColorVariant1 = useMemo(() => new THREE.Color('#d4ab81'), []);
-  const baseColorVariant2 = useMemo(() => new THREE.Color('#ba9568'), []);
-  const dark = useMemo(() => new THREE.Color('#6a4b35'), []);
-  const darkVariant = useMemo(() => new THREE.Color('#5d4230'), []);
+  // AAA Color Variation: No uniform surfaces, subtle hue/saturation shifts
+  const baseColor = useMemo(() => new THREE.Color('#c7a074'), []); // Primary fur
+  const baseColorVariant1 = useMemo(() => new THREE.Color('#d4b085'), []); // Lighter patches
+  const baseColorVariant2 = useMemo(() => new THREE.Color('#bb9865'), []); // Darker patches
+  const dark = useMemo(() => new THREE.Color('#5f4228'), []); // Paws/ears primary
+  const darkVariant = useMemo(() => new THREE.Color('#6d4b30'), []); // Slight variation
+  const eyeColor = useMemo(() => new THREE.Color('#0d0d0d'), []); // Deep black with slight warmth
+  const noseColor = useMemo(() => new THREE.Color('#3d2618'), []); // Nose leather
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
