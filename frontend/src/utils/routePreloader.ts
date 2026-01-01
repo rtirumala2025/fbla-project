@@ -9,7 +9,7 @@ const preloadedRoutes = new Set<string>();
 // Route component mappings for preloading
 const routeComponentMap: Record<string, () => Promise<unknown>> = {
   '/dashboard': () => import('../pages/DashboardPage'),
-  '/pet-game': () => import('../components/pets/PetGameScreen'),
+  '/pet-game': () => import('../pages/PetGame2Screen'),
   '/shop': () => import('../pages/Shop'),
   '/budget': () => import('../pages/budget/BudgetDashboard'),
   '/profile': () => import('../pages/ProfilePage'),
@@ -27,7 +27,7 @@ const routeComponentMap: Record<string, () => Promise<unknown>> = {
 export async function preloadRoute(path: string): Promise<void> {
   // Already preloaded
   if (preloadedRoutes.has(path)) return;
-  
+
   const loader = routeComponentMap[path];
   if (loader) {
     try {
@@ -52,9 +52,9 @@ export async function preloadRoutes(paths: string[]): Promise<void> {
  */
 export function preloadCriticalRoutes(): void {
   // Use requestIdleCallback if available, otherwise setTimeout
-  const schedulePreload = (window as any).requestIdleCallback || 
+  const schedulePreload = (window as any).requestIdleCallback ||
     ((cb: () => void) => setTimeout(cb, 1));
-  
+
   schedulePreload(() => {
     // Preload most common routes in priority order
     const criticalRoutes = [
@@ -62,7 +62,7 @@ export function preloadCriticalRoutes(): void {
       '/pet-game',
       '/shop',
     ];
-    
+
     preloadRoutes(criticalRoutes);
   });
 }
@@ -80,7 +80,7 @@ export function preloadRelatedRoutes(currentPath: string): void {
     '/shop': ['/dashboard', '/inventory'],
     '/pet-selection': ['/dashboard'],
   };
-  
+
   const routes = relatedRoutes[currentPath];
   if (routes) {
     // Delay preloading to not interfere with current page load

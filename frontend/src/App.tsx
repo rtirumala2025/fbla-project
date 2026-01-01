@@ -282,23 +282,12 @@ function AppContent() {
                   element={
                     <ProtectedRoute>
                       <PageTransition>
-                        <ErrorBoundary>
-                          <Pages.PetGameScreen />
-                        </ErrorBoundary>
-                      </PageTransition>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/pet-game-2"
-                  element={
-                    <ProtectedRoute>
-                      <PageTransition>
                         <Pages.PetGame2Screen />
                       </PageTransition>
                     </ProtectedRoute>
                   }
                 />
+
                 <Route path="/shop" element={<ProtectedRoute><PageTransition><Pages.Shop /></PageTransition></ProtectedRoute>} />
                 <Route path="/inventory" element={<ProtectedRoute><PageTransition><Pages.Inventory /></PageTransition></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><PageTransition><Pages.ProfilePage /></PageTransition></ProtectedRoute>} />

@@ -10,13 +10,13 @@ const Header = memo(() => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsMoreMenuOpen(false);
   }, [location.pathname]);
-  
+
   // Get auth state
   const { currentUser, signOut, loading } = useAuth();
 
@@ -51,13 +51,13 @@ const Header = memo(() => {
       // Close any open menus
       setIsMobileMenuOpen(false);
       setIsMoreMenuOpen(false);
-      
+
       // Sign out
       await signOut();
-      
+
       // Small delay to ensure state is cleared before navigation
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Navigate to login page
       navigate('/login', { replace: true });
     } catch (error) {
@@ -70,7 +70,7 @@ const Header = memo(() => {
   const authenticatedNavLinks = [
     { name: 'Dashboard', to: '/dashboard', icon: <Home size={20} /> },
     { name: 'Pet Game', to: '/pet-game', icon: <Gamepad2 size={20} /> },
-    { name: 'Pet Game 2', to: '/pet-game-2', icon: <Gamepad2 size={20} /> },
+
     { name: 'Budget', to: '/budget', icon: <BarChart3 size={20} /> },
     { name: 'Shop', to: '/shop', icon: <ShoppingCart size={20} /> },
     { name: 'Inventory', to: '/inventory', icon: <Package size={20} /> },
@@ -94,16 +94,15 @@ const Header = memo(() => {
   ];
 
   return (
-    <header 
-      className={`sticky top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-lg' : 'bg-white/90'
-      } text-black border-b border-gray-100`}
+    <header
+      className={`sticky top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-lg' : 'bg-white/90'
+        } text-black border-b border-gray-100`}
     >
       <div className="w-full max-w-full mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between min-h-[4rem] sm:min-h-[5rem] h-auto py-2 sm:py-3 gap-2 sm:gap-4">
           {/* Left Section - Logo */}
-          <NavLink 
-            to="/" 
+          <NavLink
+            to="/"
             className="flex items-center space-x-1 sm:space-x-2 md:space-x-3 group flex-shrink-0 min-w-0"
           >
             <PawPrint className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-indigo-600 group-hover:text-indigo-700 transition-colors flex-shrink-0" />
@@ -117,14 +116,13 @@ const Header = memo(() => {
             <nav className="hidden xl:flex items-center justify-center flex-1 mx-4 lg:mx-8 min-w-0">
               <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 flex-wrap justify-center max-w-full">
                 {authenticatedNavLinks.map((link) => (
-                  <NavLink 
+                  <NavLink
                     key={link.to}
-                    to={link.to} 
-                    className={({ isActive }) => `flex items-center gap-1 lg:gap-2 px-2 lg:px-3 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
-                      isActive 
-                        ? 'text-white bg-indigo-600 shadow-md' 
+                    to={link.to}
+                    className={({ isActive }) => `flex items-center gap-1 lg:gap-2 px-2 lg:px-3 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold transition-all whitespace-nowrap flex-shrink-0 ${isActive
+                        ? 'text-white bg-indigo-600 shadow-md'
                         : 'text-gray-700 hover:bg-gray-100 hover:text-black'
-                    }`}
+                      }`}
                   >
                     <span className="flex-shrink-0">{link.icon}</span>
                     <span className="truncate max-w-[80px] lg:max-w-[100px] xl:max-w-none">{link.name}</span>
@@ -153,7 +151,7 @@ const Header = memo(() => {
                 </NavLink>
               </div>
             ) : null}
-            
+
             {/* Welcome message with profile link: Only show when logged in */}
             {!loading && currentUser ? (
               <>
@@ -239,7 +237,7 @@ const Header = memo(() => {
                   >
                     Home
                   </NavLink>
-                  
+
                   {/* Public navigation links */}
                   {publicNavLinks.map((link) => (
                     <a
@@ -268,9 +266,9 @@ const Header = memo(() => {
                     >
                       Log in
                     </NavLink>
-                  <NavLink
+                    <NavLink
                       to="/signup"
-                    className="block px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 rounded-lg transition-opacity mx-2 mt-2 text-center truncate"
+                      className="block px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 rounded-lg transition-opacity mx-2 mt-2 text-center truncate"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Get Started

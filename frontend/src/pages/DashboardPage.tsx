@@ -4,9 +4,9 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Sparkles, 
-  TrendingUp, 
+import {
+  Sparkles,
+  TrendingUp,
   // Coins, // Unused
   RefreshCw,
   ShoppingBag,
@@ -39,9 +39,8 @@ import { earnService, type Chore } from '../services/earnService';
 // Lazy load heavy components
 const ExpensePieChart = lazy(() => import('../components/analytics/ExpensePieChart'));
 const TrendChart = lazy(() => import('../components/analytics/TrendChart'));
-import { PetVisual } from '../components/pets/PetVisual';
-import { EnvironmentRenderer } from '../components/pets/EnvironmentRenderer';
-import type { PetType } from '../components/pets/PetVisual';
+
+type PetType = 'dog' | 'cat' | 'panda';
 
 type FoodOption = {
   id: string;
@@ -53,14 +52,14 @@ type FoodOption = {
   emoji: string;
 };
 
-type Activity = { 
-  id: string; 
-  name: string; 
-  cost: number; 
-  energyCost: number; 
-  benefits: string; 
-  emoji: string; 
-  path?: string 
+type Activity = {
+  id: string;
+  name: string;
+  cost: number;
+  energyCost: number;
+  benefits: string;
+  emoji: string;
+  path?: string
 };
 
 type EarnTab = 'chores' | 'minigames' | 'achievements';
@@ -88,15 +87,15 @@ export const DashboardPage = React.memo(function DashboardPage() {
   const { success, error: toastError } = useToast();
   const { balance, refreshBalance } = useFinancial();
   const logger = useInteractionLogger('DashboardPage');
-  
+
   // Feed state
   const [selectedFood, setSelectedFood] = useState<FoodOption | null>(null);
   const [feedLoading, setFeedLoading] = useState(false);
   const [showFeed, setShowFeed] = useState(false);
-  
+
   // Play state
   const [showPlay, setShowPlay] = useState(false);
-  
+
   // Earn state
   const [earnTab, setEarnTab] = useState<EarnTab>('chores');
   const [chores, setChores] = useState<Chore[]>([]);
@@ -170,7 +169,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
               console.error('❌ DashboardPage: Failed to load equipped accessories', equippedError);
               return [];
             }
-            
+
             return equippedData?.map((item) => ({
               accessory_id: item.accessory_id,
               pet_id: item.pet_id,
@@ -250,7 +249,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
   // Memoized analytics data
   const bestInsight = useMemo(() => analytics?.ai_insights[0] ?? 'Consistent care keeps your pet thriving!', [analytics]);
 
-  const summaries = useMemo(() => 
+  const summaries = useMemo(() =>
     analytics
       ? [analytics.daily_summary, analytics.weekly_summary, analytics.monthly_summary]
       : [],
@@ -327,8 +326,8 @@ export const DashboardPage = React.memo(function DashboardPage() {
           // Update state from settled promises
           if (questsData.status === 'fulfilled') {
             setQuests(questsData.value);
-            logger.logUserAction('quests_loaded', { 
-              count: questsData.value.daily.length + questsData.value.weekly.length 
+            logger.logUserAction('quests_loaded', {
+              count: questsData.value.daily.length + questsData.value.weekly.length
             });
           }
           if (coachData.status === 'fulfilled') {
@@ -338,7 +337,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
           if (accessoriesData.status === 'fulfilled') {
             setAccessories(accessoriesData.value);
             logger.logUserAction('accessories_loaded', { count: accessoriesData.value.length });
-            
+
             // Optimized: Load equipped accessories in parallel (already handled in loadAccessories)
             // This is a fallback for the initial load
             if (pet) {
@@ -371,7 +370,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
           }
           if (choresList.status === 'fulfilled' && choresList.value.length > 0 && currentUser?.uid) {
             setChores(choresList.value);
-          
+
             // Optimized: Load all cooldowns in single query (fixes N+1 pattern)
             try {
               const cooldowns = await earnService.getAllChoreCooldowns(currentUser.uid);
@@ -410,19 +409,19 @@ export const DashboardPage = React.memo(function DashboardPage() {
       toastError('Insufficient funds');
       return;
     }
-    
+
     setFeedLoading(true);
     try {
       await shopService.addCoins(currentUser.uid, -selectedFood.cost, `Fed ${selectedFood.name}`);
       await refreshBalance();
-      
+
       await updatePetStats({
         hunger: Math.min(100, pet.stats.hunger + selectedFood.hungerGain),
         happiness: Math.min(100, pet.stats.happiness + (selectedFood.happinessGain || 0)),
         health: Math.min(100, pet.stats.health + (selectedFood.healthGain || 0)),
       });
       await refreshPet();
-      
+
       if (currentUser && pet) {
         await logPetInteraction({
           user_id: currentUser.uid,
@@ -436,7 +435,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
           action_details: { food_type: selectedFood.name },
         });
       }
-      
+
       success(`Yum! ${pet.name} loved the ${selectedFood.name}!`);
       setSelectedFood(null);
       setShowFeed(false);
@@ -456,7 +455,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
   const handlePlay = useCallback(async () => {
     setShowPlay(true);
   }, []);
-  
+
   const handleActivitySelect = useCallback((activity: Activity) => {
     if (activity.path) {
       navigate(activity.path);
@@ -465,13 +464,13 @@ export const DashboardPage = React.memo(function DashboardPage() {
 
   const handleBathe = useCallback(async () => {
     if (!pet || !currentUser || processingAction) return;
-    
+
     setProcessingAction('bathe');
     try {
       const oldCleanliness = pet.stats.cleanliness;
       await bathe();
       await refreshPet();
-      
+
       // bathe() sets cleanliness to 100 and increases happiness by 10
       const statChanges = {
         cleanliness: 100 - oldCleanliness,
@@ -501,7 +500,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
   const handleEarn = useCallback(async () => {
     setShowEarn(true);
   }, []);
-  
+
   const handleChore = useCallback(async (choreId: string) => {
     if (!currentUser) return;
     const cd = await earnService.getChoreCooldown(currentUser.uid, choreId);
@@ -514,30 +513,30 @@ export const DashboardPage = React.memo(function DashboardPage() {
     try {
       const res = await earnService.completeChore(currentUser.uid, choreId);
       await refreshBalance();
-      
+
       // Update cooldowns state after completing chore
       const chore = chores.find(c => c.id === choreId);
       if (chore) {
         const newCooldown = await earnService.getChoreCooldown(currentUser.uid, choreId);
         setChoreCooldowns(prev => ({ ...prev, [choreId]: newCooldown }));
       }
-      
+
       success(`Great job! You earned $${res.reward}!`);
     } catch (err: any) {
       toastError(err.message || 'Failed to complete chore');
     }
   }, [currentUser, success, toastError, refreshBalance, chores]);
-  
+
   const canAffordFood = useCallback((cost: number) => balance >= cost, [balance]);
   const moneyAfterFood = useMemo(() => (selectedFood ? balance - selectedFood.cost : balance), [balance, selectedFood]);
 
   const handleQuestComplete = useCallback(async (quest: Quest) => {
     if (!currentUser || processingQuestId) return;
-    
+
     setProcessingQuestId(quest.id);
     try {
       const response = await completeQuest(quest.id);
-      
+
       // Update quests state
       setQuests(prev => {
         if (!prev) return prev;
@@ -569,7 +568,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
       });
 
       success(`Quest complete! +${response.result.coins_awarded} coins, +${response.result.xp_awarded} XP.`);
-      
+
       // Refresh coach advice after quest completion
       await loadCoachAdvice();
     } catch (err) {
@@ -632,24 +631,23 @@ export const DashboardPage = React.memo(function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             <div
-              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                saveStatus === 'saving'
-                  ? 'border-amber-200 bg-amber-50 text-amber-700'
-                  : saveStatus === 'saved'
+              className={`rounded-full border px-3 py-1 text-xs font-semibold ${saveStatus === 'saving'
+                ? 'border-amber-200 bg-amber-50 text-amber-700'
+                : saveStatus === 'saved'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                   : saveStatus === 'error'
-                  ? 'border-rose-200 bg-rose-50 text-rose-700'
-                  : 'border-transparent bg-transparent text-transparent'
-              }`}
+                    ? 'border-rose-200 bg-rose-50 text-rose-700'
+                    : 'border-transparent bg-transparent text-transparent'
+                }`}
               aria-live="polite"
             >
               {saveStatus === 'saving'
                 ? 'Saving...'
                 : saveStatus === 'saved'
-                ? 'Saved ✓'
-                : saveStatus === 'error'
-                ? 'Save failed'
-                : 'Saved'}
+                  ? 'Saved ✓'
+                  : saveStatus === 'error'
+                    ? 'Save failed'
+                    : 'Saved'}
             </div>
             <button
               onClick={() => {
@@ -693,20 +691,25 @@ export const DashboardPage = React.memo(function DashboardPage() {
                   // Map pet species to petType ('dog' | 'cat' | 'panda')
                   // pet_type is canonical, species is fallback
                   const species = (pet as any).pet_type || pet.species || 'dog';
-                  const petType: PetType = 
-                    species === 'dog' || species === 'cat' || species === 'panda' 
-                      ? species 
+                  const petType: PetType =
+                    species === 'dog' || species === 'cat' || species === 'panda'
+                      ? species
                       : 'dog';
-                  
+
                   return (
-                    <>
-                      <div className="absolute inset-0" style={{ zIndex: 1 }}>
-                        <EnvironmentRenderer petType={petType} />
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-blue-100 to-white/50">
+                      <div className="text-center">
+                        <div className="text-6xl mb-4">
+                          {petType === 'cat' ? '🐱' : petType === 'panda' ? '🐼' : '🐕'}
+                        </div>
+                        <button
+                          onClick={() => navigate('/pet-game')}
+                          className="px-6 py-2 bg-indigo-600 text-white rounded-full font-bold shadow-lg hover:bg-indigo-700 transition"
+                        >
+                          Play in 3D
+                        </button>
                       </div>
-                      <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 2 }}>
-                        <PetVisual petType={petType} />
-                      </div>
-                    </>
+                    </div>
                   );
                 })()}
               </div>
@@ -721,42 +724,42 @@ export const DashboardPage = React.memo(function DashboardPage() {
                 xp={pet.experience}
               />
             </div>
-            </div>
+          </div>
 
           {/* Second Row - Quests and Coach Side by Side */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Quests Section */}
-              <div className="rounded-2xl bg-white p-6 shadow-lg">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
-                    <Sparkles className="h-5 w-5 text-indigo-500" />
-                    Active Quests
-                  </h2>
-                  <button
-                    onClick={loadQuests}
-                    disabled={loadingQuests}
-                    className="text-sm text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
-                  >
-                    {loadingQuests ? 'Loading...' : 'Refresh'}
-                  </button>
-                </div>
-                {loadingQuests ? (
-                  <LoadingSpinner />
-                ) : (
-                  <QuestBoard
-                    quests={questsData}
-                    onComplete={handleQuestComplete}
-                    isProcessingId={processingQuestId}
-                  />
-                )}
+            <div className="rounded-2xl bg-white p-6 shadow-lg">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-xl font-semibold text-gray-800">
+                  <Sparkles className="h-5 w-5 text-indigo-500" />
+                  Active Quests
+                </h2>
+                <button
+                  onClick={loadQuests}
+                  disabled={loadingQuests}
+                  className="text-sm text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
+                >
+                  {loadingQuests ? 'Loading...' : 'Refresh'}
+                </button>
               </div>
-              
-              {/* AI Coach Panel */}
-              <CoachPanel 
-                advice={coachAdvice} 
-                isLoading={loadingCoach} 
-                onRefresh={loadCoachAdvice} 
-              />
+              {loadingQuests ? (
+                <LoadingSpinner />
+              ) : (
+                <QuestBoard
+                  quests={questsData}
+                  onComplete={handleQuestComplete}
+                  isProcessingId={processingQuestId}
+                />
+              )}
+            </div>
+
+            {/* AI Coach Panel */}
+            <CoachPanel
+              advice={coachAdvice}
+              isLoading={loadingCoach}
+              onRefresh={loadCoachAdvice}
+            />
           </div>
 
           {/* Actions Column - Feed, Play, Earn sections */}
@@ -786,13 +789,12 @@ export const DashboardPage = React.memo(function DashboardPage() {
                     <button
                       key={food.id}
                       onClick={() => setSelectedFood(food)}
-                      className={`text-left p-3 rounded-lg border transition ${
-                        selectedFood?.id === food.id
-                          ? 'border-primary bg-primary/10'
-                          : canAffordFood(food.cost)
+                      className={`text-left p-3 rounded-lg border transition ${selectedFood?.id === food.id
+                        ? 'border-primary bg-primary/10'
+                        : canAffordFood(food.cost)
                           ? 'border-gray-200 bg-white hover:shadow-md'
                           : 'border-gray-200 bg-gray-50 opacity-60'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-2xl">{food.emoji}</span>
@@ -884,11 +886,10 @@ export const DashboardPage = React.memo(function DashboardPage() {
                     <button
                       key={t}
                       onClick={() => setEarnTab(t)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                        earnTab === t
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${earnTab === t
+                        ? 'bg-primary text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                       {t.charAt(0).toUpperCase() + t.slice(1)}
                     </button>
@@ -984,12 +985,12 @@ export const DashboardPage = React.memo(function DashboardPage() {
                     </div>
                   ))}
                 </div>
-                  <button
-                    onClick={() => navigate('/avatar')}
+                <button
+                  onClick={() => navigate('/avatar')}
                   className="mt-4 w-full rounded-lg bg-indigo-100 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-200"
-                  >
-                    View All Accessories
-                  </button>
+                >
+                  View All Accessories
+                </button>
               </div>
             )}
           </div>

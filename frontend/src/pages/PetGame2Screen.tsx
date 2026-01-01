@@ -253,9 +253,9 @@ export const PetGame2Screen: React.FC = () => {
         .map((row) => ({
           item_id: row.item_id,
           item_name: row.item_name,
-          category: row.category,
+          category: row.category || '',
           quantity: row.quantity,
-          shop_item_id: row.shop_item_id,
+          shop_item_id: row.shop_item_id || undefined,
         }));
       setInventory(items);
     } catch (err: any) {
