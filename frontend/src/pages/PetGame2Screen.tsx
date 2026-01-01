@@ -75,7 +75,7 @@ export const PetGame2Screen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-[#0b1020]">
+    <div className="flex-1 h-full bg-[#0b1020] overflow-hidden relative font-sans">
       <PetGame2Scene
         petType={petType}
         petName={petName}

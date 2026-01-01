@@ -59,7 +59,7 @@ export function PetGame2Scene({
   }, []);
 
   return (
-    <div className="w-full h-[calc(100vh-5rem)] sm:h-[calc(100vh-5rem)] md:h-[calc(100vh-5rem)] relative">
+    <div className="w-full h-full relative overflow-hidden">
       {/* HTML Overlay HUD - positioned above canvas */}
       <PetHUD
         petName={petName}

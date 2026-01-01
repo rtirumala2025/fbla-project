@@ -51,12 +51,12 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading, hasPet, isTransitioning } = useAuth();
 
-  console.log('ProtectedRoute check:', { 
-    currentUser: !!currentUser, 
-    loading, 
-    hasPet, 
+  console.log('ProtectedRoute check:', {
+    currentUser: !!currentUser,
+    loading,
+    hasPet,
     isTransitioning,
-    currentPath: window.location.pathname 
+    currentPath: window.location.pathname
   });
 
   if (loading) {
@@ -184,16 +184,16 @@ const SetupProfileRoute = ({ children }: { children: React.ReactNode }) => {
 function AppContent() {
   const location = useLocation();
   const { currentUser } = useAuth();
-  
+
   // Start/stop game loop based on auth state
   useGameLoop(currentUser?.uid);
-  
+
   // Apply background color to the root element
   React.useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('background-color', '#ffffff', 'important');
     document.body.style.backgroundColor = '#ffffff';
-    
+
     return () => {
       root.style.removeProperty('background-color');
       document.body.style.removeProperty('background-color');
@@ -259,112 +259,112 @@ function AppContent() {
         {/* UX Enhancement Components */}
         <OnboardingTutorial autoStart={false} />
         <TooltipGuide enabled={true} />
-        <div className="bg-cream text-charcoal">
-        <Header />
-        <main className="bg-cream">
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            {/* Public routes */}
-            <Route path="/" element={<PublicRoute><PageTransition><Pages.LandingPage /></PageTransition></PublicRoute>} />
-            <Route path="/login" element={<PublicRoute><PageTransition><Pages.Login /></PageTransition></PublicRoute>} />
-            <Route path="/signup" element={<PublicRoute><PageTransition><Pages.SignUp /></PageTransition></PublicRoute>} />
-            <Route path="/register" element={<PublicRoute><PageTransition><Pages.Register /></PageTransition></PublicRoute>} />
-            <Route path="/auth/callback" element={<Pages.AuthCallback />} />
-            
-            {/* Setup profile route - accessible to authenticated users */}
-            <Route path="/setup-profile" element={<SetupProfileRoute><PageTransition><Pages.SetupProfile /></PageTransition></SetupProfileRoute>} />
-            
-            {/* Protected routes - require authentication */}
-            <Route path="/dashboard" element={<ProtectedRoute><PageTransition><Pages.DashboardPage /></PageTransition></ProtectedRoute>} />
-            <Route path="/game" element={<ProtectedRoute><PageTransition><Pages.GameUI /></PageTransition></ProtectedRoute>} />
-            <Route 
-              path="/pet-game" 
-              element={
-                <ProtectedRoute>
-                  <PageTransition>
-                    <ErrorBoundary>
-                      <Pages.PetGameScreen />
-                    </ErrorBoundary>
-                  </PageTransition>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/pet-game-2" 
-              element={
-                <ProtectedRoute>
-                  <PageTransition>
-                    <Pages.PetGame2Screen />
-                  </PageTransition>
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/shop" element={<ProtectedRoute><PageTransition><Pages.Shop /></PageTransition></ProtectedRoute>} />
-            <Route path="/inventory" element={<ProtectedRoute><PageTransition><Pages.Inventory /></PageTransition></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><PageTransition><Pages.ProfilePage /></PageTransition></ProtectedRoute>} />
-            <Route path="/budget" element={<ProtectedRoute><PageTransition><Pages.BudgetDashboard /></PageTransition></ProtectedRoute>} />
-            <Route path="/clean" element={<ProtectedRoute><PageTransition><Pages.CleanScreen /></PageTransition></ProtectedRoute>} />
-            <Route path="/rest" element={<ProtectedRoute><PageTransition><Pages.RestScreen /></PageTransition></ProtectedRoute>} />
-            <Route path="/health" element={<ProtectedRoute><PageTransition><Pages.HealthCheckScreen /></PageTransition></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><PageTransition><Pages.SettingsScreen /></PageTransition></ProtectedRoute>} />
-            <Route path="/help" element={<ProtectedRoute><PageTransition><Pages.HelpScreen /></PageTransition></ProtectedRoute>} />
-            <Route path="/events" element={<ProtectedRoute><PageTransition><Pages.EventCalendarPage /></PageTransition></ProtectedRoute>} />
-            <Route path="/social" element={<ProtectedRoute><PageTransition><Pages.SocialHub /></PageTransition></ProtectedRoute>} />
-            <Route path="/social-features" element={<ProtectedRoute><PageTransition><Pages.SocialFeaturesPage /></PageTransition></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><PageTransition><Pages.AnalyticsDashboard /></PageTransition></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><PageTransition><Pages.ReportsPage /></PageTransition></ProtectedRoute>} />
-            {/* Nationals-level features */}
-            <Route path="/ar" element={<ProtectedRoute><PageTransition><Pages.ARPetModePage /></PageTransition></ProtectedRoute>} />
-            <Route path="/habits" element={<ProtectedRoute><PageTransition><Pages.HabitPredictionPage /></PageTransition></ProtectedRoute>} />
-            <Route path="/finance-sim" element={<ProtectedRoute><PageTransition><Pages.FinanceSimulatorPage /></PageTransition></ProtectedRoute>} />
-            {/* Wallet route removed - functionality integrated into Budget page */}
-            {/* Quests route removed - functionality integrated into Dashboard page */}
-            <Route
-              path="/nextgen"
-              element={
-                <ProtectedRoute>
-                  <PageTransition>
-                    <Pages.NextGenHub />
-                  </PageTransition>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/customize/avatar"
-              element={
-                <ProtectedRoute>
-                  <PageTransition>
-                    <Pages.AvatarStudio />
-                  </PageTransition>
-                </ProtectedRoute>
-              }
-            />
+        <div className="bg-cream text-charcoal flex flex-col h-screen overflow-hidden">
+          <Header />
+          <main className="bg-cream flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col">
+            <AnimatePresence mode="wait">
+              <Routes location={location} key={location.pathname}>
+                {/* Public routes */}
+                <Route path="/" element={<PublicRoute><PageTransition><Pages.LandingPage /></PageTransition></PublicRoute>} />
+                <Route path="/login" element={<PublicRoute><PageTransition><Pages.Login /></PageTransition></PublicRoute>} />
+                <Route path="/signup" element={<PublicRoute><PageTransition><Pages.SignUp /></PageTransition></PublicRoute>} />
+                <Route path="/register" element={<PublicRoute><PageTransition><Pages.Register /></PageTransition></PublicRoute>} />
+                <Route path="/auth/callback" element={<Pages.AuthCallback />} />
 
-            {/* Mini-games */}
-            <Route path="/minigames/fetch" element={<ProtectedRoute><PageTransition><Pages.FetchGame /></PageTransition></ProtectedRoute>} />
-            <Route path="/minigames/puzzle" element={<ProtectedRoute><PageTransition><Pages.PuzzleGame /></PageTransition></ProtectedRoute>} />
-            <Route path="/minigames/reaction" element={<ProtectedRoute><PageTransition><Pages.ReactionGame /></PageTransition></ProtectedRoute>} />
-            <Route path="/minigames/dream" element={<ProtectedRoute><PageTransition><Pages.DreamWorld /></PageTransition></ProtectedRoute>} />
-            <Route path="/minigames/memory" element={<ProtectedRoute><PageTransition><Pages.MemoryMatchGame /></PageTransition></ProtectedRoute>} />
-            
-            {/* Protected onboarding flow - only for users without pets */}
-            <Route path="/onboarding/species" element={<OnboardingRoute><PageTransition><Pages.SpeciesSelection /></PageTransition></OnboardingRoute>} />
-            <Route path="/onboarding/breed" element={<OnboardingRoute><PageTransition><Pages.BreedSelection /></PageTransition></OnboardingRoute>} />
-            <Route path="/onboarding/naming" element={<OnboardingRoute><PageTransition><Pages.PetNaming /></PageTransition></OnboardingRoute>} />
-            
-            {/* Pet selection page - only for users without pets */}
-            <Route path="/pet-selection" element={<OnboardingRoute><PageTransition><Pages.PetSelectionPage /></PageTransition></OnboardingRoute>} />
-            {/* Simple pet creation page - alternative simpler flow */}
-            <Route path="/create-pet" element={<OnboardingRoute><PageTransition><Pages.CreatePetPage /></PageTransition></OnboardingRoute>} />
-            {/* Legacy route redirect */}
-            <Route path="/select-pet" element={<Navigate to="/pet-selection" replace />} />
-            
-            {/* Catch all - redirect to home */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AnimatePresence>
-      </main>
-    </div>
+                {/* Setup profile route - accessible to authenticated users */}
+                <Route path="/setup-profile" element={<SetupProfileRoute><PageTransition><Pages.SetupProfile /></PageTransition></SetupProfileRoute>} />
+
+                {/* Protected routes - require authentication */}
+                <Route path="/dashboard" element={<ProtectedRoute><PageTransition><Pages.DashboardPage /></PageTransition></ProtectedRoute>} />
+                <Route path="/game" element={<ProtectedRoute><PageTransition><Pages.GameUI /></PageTransition></ProtectedRoute>} />
+                <Route
+                  path="/pet-game"
+                  element={
+                    <ProtectedRoute>
+                      <PageTransition>
+                        <ErrorBoundary>
+                          <Pages.PetGameScreen />
+                        </ErrorBoundary>
+                      </PageTransition>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/pet-game-2"
+                  element={
+                    <ProtectedRoute>
+                      <PageTransition>
+                        <Pages.PetGame2Screen />
+                      </PageTransition>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/shop" element={<ProtectedRoute><PageTransition><Pages.Shop /></PageTransition></ProtectedRoute>} />
+                <Route path="/inventory" element={<ProtectedRoute><PageTransition><Pages.Inventory /></PageTransition></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><PageTransition><Pages.ProfilePage /></PageTransition></ProtectedRoute>} />
+                <Route path="/budget" element={<ProtectedRoute><PageTransition><Pages.BudgetDashboard /></PageTransition></ProtectedRoute>} />
+                <Route path="/clean" element={<ProtectedRoute><PageTransition><Pages.CleanScreen /></PageTransition></ProtectedRoute>} />
+                <Route path="/rest" element={<ProtectedRoute><PageTransition><Pages.RestScreen /></PageTransition></ProtectedRoute>} />
+                <Route path="/health" element={<ProtectedRoute><PageTransition><Pages.HealthCheckScreen /></PageTransition></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><PageTransition><Pages.SettingsScreen /></PageTransition></ProtectedRoute>} />
+                <Route path="/help" element={<ProtectedRoute><PageTransition><Pages.HelpScreen /></PageTransition></ProtectedRoute>} />
+                <Route path="/events" element={<ProtectedRoute><PageTransition><Pages.EventCalendarPage /></PageTransition></ProtectedRoute>} />
+                <Route path="/social" element={<ProtectedRoute><PageTransition><Pages.SocialHub /></PageTransition></ProtectedRoute>} />
+                <Route path="/social-features" element={<ProtectedRoute><PageTransition><Pages.SocialFeaturesPage /></PageTransition></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><PageTransition><Pages.AnalyticsDashboard /></PageTransition></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><PageTransition><Pages.ReportsPage /></PageTransition></ProtectedRoute>} />
+                {/* Nationals-level features */}
+                <Route path="/ar" element={<ProtectedRoute><PageTransition><Pages.ARPetModePage /></PageTransition></ProtectedRoute>} />
+                <Route path="/habits" element={<ProtectedRoute><PageTransition><Pages.HabitPredictionPage /></PageTransition></ProtectedRoute>} />
+                <Route path="/finance-sim" element={<ProtectedRoute><PageTransition><Pages.FinanceSimulatorPage /></PageTransition></ProtectedRoute>} />
+                {/* Wallet route removed - functionality integrated into Budget page */}
+                {/* Quests route removed - functionality integrated into Dashboard page */}
+                <Route
+                  path="/nextgen"
+                  element={
+                    <ProtectedRoute>
+                      <PageTransition>
+                        <Pages.NextGenHub />
+                      </PageTransition>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/customize/avatar"
+                  element={
+                    <ProtectedRoute>
+                      <PageTransition>
+                        <Pages.AvatarStudio />
+                      </PageTransition>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Mini-games */}
+                <Route path="/minigames/fetch" element={<ProtectedRoute><PageTransition><Pages.FetchGame /></PageTransition></ProtectedRoute>} />
+                <Route path="/minigames/puzzle" element={<ProtectedRoute><PageTransition><Pages.PuzzleGame /></PageTransition></ProtectedRoute>} />
+                <Route path="/minigames/reaction" element={<ProtectedRoute><PageTransition><Pages.ReactionGame /></PageTransition></ProtectedRoute>} />
+                <Route path="/minigames/dream" element={<ProtectedRoute><PageTransition><Pages.DreamWorld /></PageTransition></ProtectedRoute>} />
+                <Route path="/minigames/memory" element={<ProtectedRoute><PageTransition><Pages.MemoryMatchGame /></PageTransition></ProtectedRoute>} />
+
+                {/* Protected onboarding flow - only for users without pets */}
+                <Route path="/onboarding/species" element={<OnboardingRoute><PageTransition><Pages.SpeciesSelection /></PageTransition></OnboardingRoute>} />
+                <Route path="/onboarding/breed" element={<OnboardingRoute><PageTransition><Pages.BreedSelection /></PageTransition></OnboardingRoute>} />
+                <Route path="/onboarding/naming" element={<OnboardingRoute><PageTransition><Pages.PetNaming /></PageTransition></OnboardingRoute>} />
+
+                {/* Pet selection page - only for users without pets */}
+                <Route path="/pet-selection" element={<OnboardingRoute><PageTransition><Pages.PetSelectionPage /></PageTransition></OnboardingRoute>} />
+                {/* Simple pet creation page - alternative simpler flow */}
+                <Route path="/create-pet" element={<OnboardingRoute><PageTransition><Pages.CreatePetPage /></PageTransition></OnboardingRoute>} />
+                {/* Legacy route redirect */}
+                <Route path="/select-pet" element={<Navigate to="/pet-selection" replace />} />
+
+                {/* Catch all - redirect to home */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AnimatePresence>
+          </main>
+        </div>
       </FinancialProvider>
     </PetProvider>
   );
