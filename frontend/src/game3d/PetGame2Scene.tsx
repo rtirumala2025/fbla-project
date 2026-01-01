@@ -41,6 +41,10 @@ export function PetGame2Scene({
   disabled,
   onPetTap,
   onAction,
+  onToggleInventory,
+  onToggleDiary,
+  onToggleSound,
+  soundEnabled,
 }: {
   petType: PetGame2PetType;
   petName: string;
@@ -49,6 +53,10 @@ export function PetGame2Scene({
   disabled: boolean;
   onPetTap: () => void;
   onAction: (action: PetGame2Action) => void;
+  onToggleInventory?: () => void;
+  onToggleDiary?: () => void;
+  onToggleSound?: () => void;
+  soundEnabled?: boolean;
 }) {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0));
   const preset = presetForPet(petType);
@@ -67,6 +75,10 @@ export function PetGame2Scene({
         stats={stats}
         disabled={disabled}
         onAction={onAction}
+        onToggleInventory={onToggleInventory}
+        onToggleDiary={onToggleDiary}
+        onToggleSound={onToggleSound}
+        soundEnabled={soundEnabled}
       />
 
       {/* Three.js Canvas */}

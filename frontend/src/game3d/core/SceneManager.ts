@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 export type PetGame2PetType = 'dog' | 'cat' | 'panda';
 
-export type PetGame2Action = 'feed' | 'play' | 'rest';
+export type PetGame2Action = 'feed' | 'play' | 'rest' | 'bathe';
 
 export type PetGame2Interaction =
   | { kind: 'idle' }
@@ -13,7 +13,9 @@ export type PetGame2Vfx =
   | { id: string; kind: 'sparkleBurst'; startedAt: number; durationMs: number }
   | { id: string; kind: 'foodPuff'; startedAt: number; durationMs: number }
   | { id: string; kind: 'toyBounce'; startedAt: number; durationMs: number }
-  | { id: string; kind: 'sleepZ'; startedAt: number; durationMs: number };
+  | { id: string; kind: 'sleepZ'; startedAt: number; durationMs: number }
+  | { id: string; kind: 'bubbleBurst'; startedAt: number; durationMs: number }
+  | { id: string; kind: 'cleaning'; startedAt: number; durationMs: number };
 
 export type PetGame2CameraMode = 'follow' | 'focus';
 
@@ -84,6 +86,10 @@ export function usePetGame2State() {
       if (action === 'feed') pushVfx({ kind: 'foodPuff', durationMs: 1100 });
       if (action === 'play') pushVfx({ kind: 'toyBounce', durationMs: 1100 });
       if (action === 'rest') pushVfx({ kind: 'sleepZ', durationMs: 1400 });
+      if (action === 'bathe') {
+        pushVfx({ kind: 'bubbleBurst', durationMs: 1200 });
+        pushVfx({ kind: 'cleaning', durationMs: 1200 });
+      }
 
       window.setTimeout(() => {
         setInteraction((prev) => (prev.kind === 'action' && prev.startedAt === startedAt ? { kind: 'idle' } : prev));

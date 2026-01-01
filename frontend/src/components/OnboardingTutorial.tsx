@@ -340,7 +340,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
       {!run && (
         <button
           onClick={restartTutorial}
-          className="fixed bottom-4 right-4 z-50 bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 flex items-center gap-2 group"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 flex items-center gap-2 group whitespace-nowrap"
           title="Restart Tutorial"
           aria-label="Restart Tutorial"
         >

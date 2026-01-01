@@ -1,7 +1,7 @@
 import React from 'react';
 import type { PetStats } from '@/types/pet';
 import type { PetGame2Action } from '../core/SceneManager';
-import { Heart, Sparkles, Zap } from 'lucide-react';
+import { Heart, Sparkles, Zap, Droplets, Book, Backpack, Volume2, VolumeX } from 'lucide-react';
 
 function StatBar({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {
     const clamped = Math.min(100, Math.max(0, value));
@@ -45,7 +45,8 @@ function ActionButton({
     const colors = {
         feed: 'from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400',
         play: 'from-blue-400 to-cyan-500 hover:from-blue-300 hover:to-cyan-400',
-        rest: 'from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400'
+        rest: 'from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400',
+        bathe: 'from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400'
     };
 
     return (
@@ -77,16 +78,25 @@ export function PetHUD({
     stats,
     disabled,
     onAction,
+    onToggleInventory,
+    onToggleDiary,
+    onToggleSound,
+    soundEnabled,
 }: {
     petName: string;
     species: string;
     stats: PetStats | null;
     disabled: boolean;
     onAction: (action: PetGame2Action) => void;
+    onToggleInventory?: () => void;
+    onToggleDiary?: () => void;
+    onToggleSound?: () => void;
+    soundEnabled?: boolean;
 }) {
     const hunger = stats?.hunger ?? 50;
     const happiness = stats?.happiness ?? 50;
     const energy = stats?.energy ?? 50;
+    const cleanliness = stats?.cleanliness ?? stats?.hygiene ?? 50;
 
     const speciesEmoji = species === 'panda' ? '🐼' : species === 'cat' ? '🐱' : '🐶';
 
@@ -103,6 +113,31 @@ export function PetHUD({
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Top-right: Tools */}
+            <div className="absolute top-6 right-6 z-10 pointer-events-auto flex gap-3">
+                <button
+                    onClick={onToggleDiary}
+                    className="p-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/60 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                    title="Diary"
+                >
+                    <Book size={20} />
+                </button>
+                <button
+                    onClick={onToggleInventory}
+                    className="p-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/60 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                    title="Inventory"
+                >
+                    <Backpack size={20} />
+                </button>
+                <button
+                    onClick={onToggleSound}
+                    className="p-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/60 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                    title={soundEnabled ? "Mute" : "Unmute"}
+                >
+                    {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                </button>
             </div>
 
             {/* Bottom-left: Stats */}
@@ -126,6 +161,12 @@ export function PetHUD({
                             value={energy}
                             color="#34d399"
                             icon={<Zap size={16} className="text-emerald-400" />}
+                        />
+                        <StatBar
+                            label="Clean"
+                            value={cleanliness}
+                            color="#38bdf8"
+                            icon={<Droplets size={16} className="text-sky-400" />}
                         />
                     </div>
                 </div>
@@ -154,6 +195,13 @@ export function PetHUD({
                         disabled={disabled}
                         onAction={onAction}
                         icon={<Zap size={20} />}
+                    />
+                    <ActionButton
+                        label="Bathe"
+                        action="bathe"
+                        disabled={disabled}
+                        onAction={onAction}
+                        icon={<Droplets size={20} />}
                     />
                 </div>
             </div>
