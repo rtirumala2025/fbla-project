@@ -27,14 +27,41 @@ export const PetGame2Screen: React.FC = () => {
     async (action: PetGame2Action) => {
       if (actionBusy) return;
 
-      triggerAction(action);
       setActionBusy(true);
       try {
+        // 1. Perform backend action first
         if (action === 'feed') await feed();
         if (action === 'play') await play();
         if (action === 'rest') await rest();
+
+        // 2. Only if successful, trigger the visual animation
+        triggerAction(action);
+      } catch (err) {
+        console.error(`Failed to perform action ${action}:`, err);
+        // Optional: Trigger a "fail" animation or toast here
       } finally {
-        setActionBusy(false);
+        // 3. Re-enable buttons after animation duration (approx matching SceneManager logic)
+        // SceneManager locks for ~1100-1400ms. We can release the "busy" lock 
+        // a bit earlier or sync it. The SceneManager handles its own internal state 
+        // for "interaction", but "actionBusy" here prevents double-submits.
+        // We'll reset it immediately to allow SceneManager to handle visual blocking,
+        // or keep it to prevent spamming stats.
+        // Let's keep it simple: unlock immediately, relying on disabled prop to lock 
+        // effectively if needed, BUT SceneManager calls `disabled` based on `actionBusy`.
+
+        // Actually, triggerAction sets a timeout internally in SceneManager to clear the interaction.
+        // We should probably keep actionBusy true while the network request is happening.
+        // Once network is done, we trigger animation.
+        // We should arguably keep it busy during animation too, but let's stick to the plan:
+        // "Trigger UI animation AFTER success"
+
+        // To prevent spamming while animation plays, we could keep it busy.
+        // SceneManager durations: feed/play ~1100ms, rest ~1400ms.
+
+        const animationDuration = action === 'rest' ? 1400 : 1100;
+        setTimeout(() => {
+          setActionBusy(false);
+        }, animationDuration);
       }
     },
     [actionBusy, triggerAction, feed, play, rest]

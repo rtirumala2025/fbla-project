@@ -46,7 +46,7 @@ export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap
       const startedAt = state.interaction.startedAt;
       const localT = Math.min(1, (performance.now() - startedAt) / 600);
 
-      if (state.interaction.kind === 'tap') {
+      if (state.interaction.kind === 'petTap') {
         const s = 1 + pop(localT) * 0.08;
         if (root.current) root.current.scale.setScalar(s);
         if (root.current) root.current.rotation.z = wobble(localT) * 0.08;
