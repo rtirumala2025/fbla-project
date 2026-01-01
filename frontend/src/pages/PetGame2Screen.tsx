@@ -26,6 +26,7 @@ export const PetGame2Screen: React.FC = () => {
   // -- State --
   const [actionBusy, setActionBusy] = useState(false);
   const [stats, setStats] = useState<PetStats | null>(null);
+  const [devPetOverride, setDevPetOverride] = useState<PetGame2PetType | null>(null);
 
   // UI Toggles
   const [inventoryOpen, setInventoryOpen] = useState(false);
@@ -84,11 +85,12 @@ export const PetGame2Screen: React.FC = () => {
   }, [pet?.id]);
 
   const petType = useMemo<PetGame2PetType>(() => {
+    if (devPetOverride) return devPetOverride;
     const raw = (pet?.species || 'dog').toLowerCase();
     if (raw === 'cat') return 'cat';
     if (raw === 'panda') return 'panda';
     return 'dog';
-  }, [pet?.species]);
+  }, [pet?.species, devPetOverride]);
 
   const petName = useMemo(() => {
     return pet?.name || 'Your Pet';
@@ -350,6 +352,20 @@ export const PetGame2Screen: React.FC = () => {
           }}
         />
       )}
+      {/* Dev Tools */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-2">
+        <button
+          onClick={() => {
+            const types: PetGame2PetType[] = ['dog', 'cat', 'panda'];
+            const currentIdx = types.indexOf(petType);
+            const nextType = types[(currentIdx + 1) % types.length];
+            setDevPetOverride(nextType);
+          }}
+          className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded-full border border-white/20 backdrop-blur-sm transition-colors"
+        >
+          🔄 Change Pet ({petType})
+        </button>
+      </div>
     </div>
   );
 };
