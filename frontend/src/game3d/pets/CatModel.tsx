@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { PetGame2State } from '../core/SceneManager';
 import { breathe, subtleNod } from '../animations/idle';
 import { pop, wobble } from '../animations/interact';
+import { ContactShadow } from '../core/ContactShadow';
 
 export function CatModel({ state, onPetTap }: { state: PetGame2State; onPetTap: () => void }) {
   const root = useRef<THREE.Group>(null);
@@ -13,12 +14,14 @@ export function CatModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
   const tail = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Enhanced color variation for realistic fur patterns
-  const fur = useMemo(() => new THREE.Color('#cfc6b8'), []);
-  const furVariant1 = useMemo(() => new THREE.Color('#dcd4c6'), []);
-  const furVariant2 = useMemo(() => new THREE.Color('#c3baac'), []);
-  const stripe = useMemo(() => new THREE.Color('#8a7f70'), []);
-  const stripeVariant = useMemo(() => new THREE.Color('#7d7266'), []);
+  // AAA Color Variation: Tabby cat with subtle fur patterns
+  const fur = useMemo(() => new THREE.Color('#d1c8ba'), []); // Base fur (warmer)
+  const furVariant1 = useMemo(() => new THREE.Color('#dcd4c6'), []); // Light patches
+  const furVariant2 = useMemo(() => new THREE.Color('#c5bcae'), []); // Shadow areas
+  const stripe = useMemo(() => new THREE.Color('#8a7f70'), []); // Primary stripes
+  const stripeVariant = useMemo(() => new THREE.Color('#7e7366'), []); // Variation
+  const eyeColor = useMemo(() => new THREE.Color('#0e0e0e'), []);
+  const noseColor = useMemo(() => new THREE.Color('#c77d77'), []); // Pink nose
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
@@ -82,83 +85,94 @@ export function CatModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
         onPetTap();
       }}
     >
-      {/* Body with soft fur material */}
+      {/* Body - Cat fur softer than dog but still needs subtle sheen */}
       <mesh position={[0, 0.33, 0]} castShadow>
         <capsuleGeometry args={[0.24, 0.5, 8, 16]} />
         <meshStandardMaterial
           color={fur}
-          roughness={0.72}
-          metalness={0.04}
+          roughness={0.62}
+          metalness={0.03}
         />
       </mesh>
 
-      {/* Stripe with more matte finish */}
+      {/* Stripe - Guard hairs have more directionality, slightly glossier */}
       <mesh position={[0, 0.38, 0.02]} castShadow>
         <boxGeometry args={[0.22, 0.12, 0.65]} />
         <meshStandardMaterial
           color={stripe}
-          roughness={0.88}
+          roughness={0.76}
           metalness={0.02}
         />
       </mesh>
 
       <group ref={head} position={[0, 0.78, 0.2]}>
-        {/* Head with specular highlights on rounded surfaces */}
+        {/* Head - Rounded surfaces catch more light */}
         <mesh castShadow>
           <sphereGeometry args={[0.23, 18, 18]} />
           <meshStandardMaterial
             color={furVariant1}
-            roughness={0.68}
-            metalness={0.06}
+            roughness={0.60}
+            metalness={0.04}
           />
         </mesh>
-        {/* Ears with subtle highlights */}
+        {/* Ears - Cat ears have thin fur, transmit some light */}
         <mesh ref={earL} position={[0.16, 0.2, 0]} rotation={[0, 0, 0.25]} castShadow>
           <coneGeometry args={[0.08, 0.16, 10]} />
-          <meshStandardMaterial color={stripe} roughness={0.75} metalness={0.05} />
+          <meshStandardMaterial color={stripe} roughness={0.66} metalness={0.04} />
         </mesh>
         <mesh ref={earR} position={[-0.16, 0.2, 0]} rotation={[0, 0, -0.25]} castShadow>
           <coneGeometry args={[0.08, 0.16, 10]} />
-          <meshStandardMaterial color={stripeVariant} roughness={0.75} metalness={0.05} />
+          <meshStandardMaterial color={stripeVariant} roughness={0.66} metalness={0.04} />
         </mesh>
-        {/* Eyes with gloss */}
+        {/* Eyes - Wet gloss for feline gaze */}
         <mesh position={[0.11, 0.05, 0.14]} castShadow>
           <sphereGeometry args={[0.04, 12, 12]} />
-          <meshStandardMaterial color="#0a0a0a" roughness={0.2} metalness={0.1} />
+          <meshStandardMaterial color={eyeColor} roughness={0.10} metalness={0.08} />
         </mesh>
         <mesh position={[-0.11, 0.05, 0.14]} castShadow>
           <sphereGeometry args={[0.04, 12, 12]} />
-          <meshStandardMaterial color="#0a0a0a" roughness={0.2} metalness={0.1} />
+          <meshStandardMaterial color={eyeColor} roughness={0.10} metalness={0.08} />
         </mesh>
+        {/* Nose - Pink leather with subtle moisture */}
         <mesh position={[0, -0.06, 0.17]} castShadow>
           <coneGeometry args={[0.04, 0.07, 10]} />
-          <meshStandardMaterial color="#b8736d" roughness={0.8} />
+          <meshStandardMaterial color={noseColor} roughness={0.42} metalness={0.02} />
         </mesh>
       </group>
 
+      {/* Legs - Stripe colored, consistent PBR */}
       <mesh position={[0.16, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.055, 0.18, 6, 12]} />
-        <meshStandardMaterial color={stripe} roughness={0.85} />
+        <meshStandardMaterial color={stripe} roughness={0.68} metalness={0.03} />
       </mesh>
       <mesh position={[-0.16, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.055, 0.18, 6, 12]} />
-        <meshStandardMaterial color={stripe} roughness={0.85} />
+        <meshStandardMaterial color={stripeVariant} roughness={0.68} metalness={0.03} />
       </mesh>
       <mesh position={[0.16, 0.1, -0.16]} castShadow>
         <capsuleGeometry args={[0.055, 0.18, 6, 12]} />
-        <meshStandardMaterial color={stripe} roughness={0.85} />
+        <meshStandardMaterial color={stripe} roughness={0.68} metalness={0.03} />
       </mesh>
       <mesh position={[-0.16, 0.1, -0.16]} castShadow>
         <capsuleGeometry args={[0.055, 0.18, 6, 12]} />
-        <meshStandardMaterial color={stripe} roughness={0.85} />
+        <meshStandardMaterial color={stripeVariant} roughness={0.68} metalness={0.03} />
       </mesh>
 
       <group ref={tail} position={[0, 0.46, -0.32]}>
         <mesh rotation={[0.45, 0, 0]} castShadow>
           <capsuleGeometry args={[0.035, 0.4, 6, 12]} />
-          <meshStandardMaterial color={stripe} roughness={0.85} />
+          <meshStandardMaterial color={stripe} roughness={0.70} metalness={0.03} />
         </mesh>
       </group>
+
+      {/* AAA Ground Contact */}
+      <ContactShadow
+        position={[0, 0.01, 0]}
+        scale={1.3}
+        opacity={0.42}
+        blur={0.55}
+        far={1.1}
+      />
     </group>
   );
 }

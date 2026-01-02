@@ -1,53 +1,44 @@
-import React, { useMemo, useRef } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import React, { useEffect, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { PetGame2CameraMode } from './SceneManager';
 
 export function CameraController({ mode, target }: { mode: PetGame2CameraMode; target: THREE.Vector3 }) {
+  const controlsRef = useRef<any>(null);
   const { camera } = useThree();
-  const tRef = useRef(0);
 
-  const followOffset = useMemo(() => new THREE.Vector3(0, 2.4, 5.2), []);
-  const focusOffset = useMemo(() => new THREE.Vector3(0.2, 1.8, 3.4), []);
+  // Initial camera positioning
+  useEffect(() => {
+    // Set initial position if needed, but OrbitControls usually handles interaction from there
+    // We only force position on mount or drastic mode changes if required
+    // For now, let's just ensure we look at the target
+    if (controlsRef.current) {
+      controlsRef.current.target.copy(target);
+      controlsRef.current.update();
+    }
+  }, []);
 
-  const tmpDesired = useMemo(() => new THREE.Vector3(), []);
-  const tmpLookAt = useMemo(() => new THREE.Vector3(), []);
+  // Update target when pet moves (smoothly ideally, but direct update is fine for OrbitControls target)
+  useEffect(() => {
+    if (controlsRef.current) {
+      // Smoothly interpolate target if we wanted, but direct assignment is standard for controls
+      // damping will handle the camera lag
+      controlsRef.current.target.copy(target);
+    }
+  }, [target]);
 
-  useFrame((_, dt) => {
-    tRef.current += dt;
-
-    // More noticeable sway - visible within 5 seconds
-    const swayX = Math.sin(tRef.current * 0.7) * 0.08;
-    const swayY = Math.sin(tRef.current * 0.9) * 0.06;
-
-    // Slow but visible orbital rotation
-    const orbitAngle = Math.sin(tRef.current * 0.25) * 0.4;
-
-    // Vertical bob for variety
-    const verticalBob = Math.sin(tRef.current * 0.4) * 0.04;
-
-    const offset = mode === 'focus' ? focusOffset : followOffset;
-
-    // Apply orbital rotation to offset
-    const rotatedOffset = offset.clone();
-    const cosA = Math.cos(orbitAngle);
-    const sinA = Math.sin(orbitAngle);
-    const x = rotatedOffset.x * cosA - rotatedOffset.z * sinA;
-    const z = rotatedOffset.x * sinA + rotatedOffset.z * cosA;
-    rotatedOffset.x = x;
-    rotatedOffset.z = z;
-
-    tmpDesired.copy(target).add(rotatedOffset);
-    tmpDesired.x += swayX;
-    tmpDesired.y += swayY + verticalBob;
-
-    const lerpFactor = 1 - Math.pow(0.001, dt);
-    camera.position.lerp(tmpDesired, lerpFactor);
-
-    tmpLookAt.copy(target);
-    tmpLookAt.y += 0.9;
-    camera.lookAt(tmpLookAt);
-  });
-
-  return null;
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      enableDamping={true}
+      dampingFactor={0.05}
+      minDistance={2}
+      maxDistance={10}
+      maxPolarAngle={Math.PI / 2 - 0.05} // Don't go below ground
+      minPolarAngle={0.1}
+      target={target}
+      makeDefault // Critical for interaction to work automatically
+    />
+  );
 }

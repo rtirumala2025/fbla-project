@@ -28,31 +28,31 @@ function Bamboo({ position, variant = 0 }: { position: [number, number, number];
 
   return (
     <group ref={groupRef} position={position}>
-      {/* Main bamboo stalk with color variation */}
-      <mesh castShadow>
+      {/* Main bamboo stalk - Waxy surface with directional gloss */}
+      <mesh castShadow receiveShadow>
         <cylinderGeometry args={[0.08, 0.1, 5.5, 12]} />
         <meshStandardMaterial
           color={mainColor}
-          roughness={0.72}
-          metalness={0.05}
+          roughness={0.64}
+          metalness={0.04}
         />
       </mesh>
-      {/* Joint segments */}
-      <mesh position={[0.07, 1.8, 0]} castShadow>
+      {/* Joint segments - More fibrous, matte finish */}
+      <mesh position={[0.07, 1.8, 0]} castShadow receiveShadow>
         <boxGeometry args={[0.25, 0.08, 0.25]} />
-        <meshStandardMaterial color={jointColor} roughness={0.88} />
+        <meshStandardMaterial color={jointColor} roughness={0.84} metalness={0.01} />
       </mesh>
-      <mesh position={[-0.06, 0.3, 0]} castShadow>
+      <mesh position={[-0.06, 0.3, 0]} castShadow receiveShadow>
         <boxGeometry args={[0.25, 0.08, 0.25]} />
-        <meshStandardMaterial color={jointColor} roughness={0.88} />
+        <meshStandardMaterial color={jointColor} roughness={0.84} metalness={0.01} />
       </mesh>
-      {/* Leaves with slight transparency */}
+      {/* Leaves - Soft matte finish */}
       <mesh position={[0, 2.5, 0]}>
         <coneGeometry args={[0.3, 0.6, 8]} />
         <meshStandardMaterial
           color="#3f9c5a"
-          roughness={0.78}
-          metalness={0.02}
+          roughness={0.82}
+          metalness={0.01}
         />
       </mesh>
     </group>
@@ -82,38 +82,41 @@ export function BambooForest() {
 
   return (
     <group>
-      {/* Enhanced floor with moss color */}
+      {/* Floor - Brightened to avoid black void effect with texture */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[70, 70]} />
         <meshStandardMaterial
           map={floorTex}
-          color="#263f28"
-          roughness={0.98}
+          color="#a8cba8"
+          roughness={0.96}
+          metalness={0}
         />
       </mesh>
 
-      {/* Moss scatter patches */}
+      {/* Moss scatter patches - Lighter for visibility */}
       <mesh position={[-1.5, 0.01, 1.2]} rotation={[-Math.PI / 2, 0, 0.3]} receiveShadow>
         <circleGeometry args={[0.6, 16]} />
-        <meshStandardMaterial color="#1f4a24" roughness={0.95} />
+        <meshStandardMaterial color="#3a6040" roughness={0.96} metalness={0} />
       </mesh>
       <mesh position={[2.2, 0.01, 0.8]} rotation={[-Math.PI / 2, 0, -0.5]} receiveShadow>
         <circleGeometry args={[0.5, 16]} />
-        <meshStandardMaterial color="#1c4521" roughness={0.95} />
+        <meshStandardMaterial color="#36603d" roughness={0.96} metalness={0} />
       </mesh>
       <mesh position={[0.8, 0.01, -1.5]} rotation={[-Math.PI / 2, 0, 0.8]} receiveShadow>
         <circleGeometry args={[0.7, 16]} />
-        <meshStandardMaterial color="#214825" roughness={0.95} />
+        <meshStandardMaterial color="#3c6442" roughness={0.96} metalness={0} />
       </mesh>
 
-      {/* Atmospheric haze with enhanced green tint */}
+      {/* AAA Atmospheric haze - Subtle green tint for depth */}
       <mesh ref={hazeRef} position={[0, 2.8, -7]}>
         <sphereGeometry args={[16, 20, 20]} />
         <meshStandardMaterial
-          color="#b0e6c1"
+          color="#b8e8c8"
           transparent
-          opacity={0.15}
+          opacity={0.12}
           roughness={1}
+          metalness={0}
+          depthWrite={false}
         />
       </mesh>
 
@@ -139,19 +142,19 @@ export function BambooForest() {
       <Bamboo position={[0.5, 2.75, -10.5]} variant={3} />
       <Bamboo position={[-0.8, 2.75, -11.0]} variant={2} />
 
-      {/* Foreground accent rock */}
+      {/* Foreground accent rock - Grounding element */}
       <mesh position={[0, 0.25, 3.5]} castShadow receiveShadow>
         <cylinderGeometry args={[0.9, 1.1, 0.5, 20]} />
-        <meshStandardMaterial color="#3d5f42" roughness={0.92} />
+        <meshStandardMaterial color="#3d5f42" roughness={0.90} metalness={0.01} />
       </mesh>
 
-      {/* Subtle point light for atmospheric depth */}
-      <pointLight ref={lightGlowRef} position={[0, 3, -5]} intensity={0.5} color="#cfffda" distance={12} />
+      {/* Atmospheric glow for dappled light effect */}
+      <pointLight ref={lightGlowRef} position={[0, 3, -5]} intensity={0.5} color="#d4ffde" distance={12} decay={2} />
 
-      {/* Background depth layer - distant bamboo silhouettes */}
+      {/* Background depth layer - Distant bamboo silhouettes */}
       <mesh position={[0, 3, -12]} scale={[1.5, 1.5, 1]}>
         <planeGeometry args={[25, 8]} />
-        <meshStandardMaterial color="#1a3a2a" transparent opacity={0.3} />
+        <meshStandardMaterial color="#1a3a2a" transparent opacity={0.28} depthWrite={false} />
       </mesh>
     </group>
   );

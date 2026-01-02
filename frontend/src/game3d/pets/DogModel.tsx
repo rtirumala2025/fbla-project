@@ -76,73 +76,84 @@ export function DogModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
         onPetTap();
       }}
     >
-      {/* Body with color variation */}
+      {/* Body - AAA PBR: Realistic fur has subtle sheen, not matte toy */}
       <mesh position={[0, 0.35, 0]} castShadow>
         <capsuleGeometry args={[0.28, 0.55, 8, 16]} />
         <meshStandardMaterial
           color={baseColor}
-          roughness={0.68}
-          metalness={0.05}
+          roughness={0.58}
+          metalness={0.04}
         />
       </mesh>
 
       <group ref={head} position={[0, 0.78, 0.22]}>
-        {/* Head with subtle specular highlights */}
+        {/* Head - Lighter fur variant with proper specular response */}
         <mesh castShadow>
           <sphereGeometry args={[0.25, 18, 18]} />
           <meshStandardMaterial
             color={baseColorVariant1}
-            roughness={0.62}
-            metalness={0.06}
+            roughness={0.55}
+            metalness={0.05}
           />
         </mesh>
-        {/* Eyes with gloss */}
+        {/* Eyes - AAA wet gloss (roughness < 0.15 for believable moisture) */}
         <mesh position={[0.14, 0.05, 0.12]} castShadow>
           <sphereGeometry args={[0.05, 12, 12]} />
-          <meshStandardMaterial color="#0a0a0a" roughness={0.2} metalness={0.1} />
+          <meshStandardMaterial color={eyeColor} roughness={0.12} metalness={0.08} />
         </mesh>
         <mesh position={[-0.14, 0.05, 0.12]} castShadow>
           <sphereGeometry args={[0.05, 12, 12]} />
-          <meshStandardMaterial color="#0a0a0a" roughness={0.2} metalness={0.1} />
+          <meshStandardMaterial color={eyeColor} roughness={0.12} metalness={0.08} />
         </mesh>
+        {/* Nose - Matte leather texture */}
         <mesh position={[0, -0.05, 0.18]} castShadow>
           <sphereGeometry args={[0.045, 12, 12]} />
-          <meshStandardMaterial color={dark} roughness={0.6} />
+          <meshStandardMaterial color={noseColor} roughness={0.35} metalness={0.02} />
         </mesh>
-        {/* Ears with variation */}
+        {/* Ears - Thin fur, more directional light response */}
         <mesh position={[0.18, 0.12, 0]} rotation={[0, 0, 0.35]} castShadow>
           <capsuleGeometry args={[0.05, 0.16, 6, 12]} />
-          <meshStandardMaterial color={dark} roughness={0.82} metalness={0.03} />
+          <meshStandardMaterial color={dark} roughness={0.68} metalness={0.04} />
         </mesh>
         <mesh position={[-0.18, 0.12, 0]} rotation={[0, 0, -0.35]} castShadow>
           <capsuleGeometry args={[0.05, 0.16, 6, 12]} />
-          <meshStandardMaterial color={darkVariant} roughness={0.82} metalness={0.03} />
+          <meshStandardMaterial color={darkVariant} roughness={0.68} metalness={0.04} />
         </mesh>
       </group>
 
+      {/* Legs - Slightly glossier dark fur with micro-variation */}
       <mesh position={[0.18, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.06, 0.2, 6, 12]} />
-        <meshStandardMaterial color={dark} roughness={0.85} />
+        <meshStandardMaterial color={dark} roughness={0.65} metalness={0.03} />
       </mesh>
       <mesh position={[-0.18, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.06, 0.2, 6, 12]} />
-        <meshStandardMaterial color={dark} roughness={0.85} />
+        <meshStandardMaterial color={darkVariant} roughness={0.65} metalness={0.03} />
       </mesh>
       <mesh position={[0.18, 0.1, -0.18]} castShadow>
         <capsuleGeometry args={[0.06, 0.2, 6, 12]} />
-        <meshStandardMaterial color={dark} roughness={0.85} />
+        <meshStandardMaterial color={dark} roughness={0.65} metalness={0.03} />
       </mesh>
       <mesh position={[-0.18, 0.1, -0.18]} castShadow>
         <capsuleGeometry args={[0.06, 0.2, 6, 12]} />
-        <meshStandardMaterial color={dark} roughness={0.85} />
+        <meshStandardMaterial color={darkVariant} roughness={0.65} metalness={0.03} />
       </mesh>
 
       <group ref={tail} position={[0, 0.46, -0.34]}>
         <mesh rotation={[0.2, 0, 0]} castShadow>
           <capsuleGeometry args={[0.04, 0.32, 6, 12]} />
-          <meshStandardMaterial color={dark} roughness={0.85} />
+          <meshStandardMaterial color={dark} roughness={0.68} metalness={0.03} />
         </mesh>
       </group>
+
+      {/* AAA Ground Contact: Blob shadow for weight anchoring */}
+      <ContactShadow
+        position={[0, 0.01, 0]}
+        scale={1.4}
+        opacity={0.45}
+        blur={0.6}
+        far={1.2}
+      />
     </group>
   );
 }
