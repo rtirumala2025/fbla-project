@@ -1,8 +1,14 @@
 import React, { useMemo, useRef } from 'react';
-import { Sky, Cloud, Float } from '@react-three/drei';
+import { Sky, Cloud, Float, Text } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { makeGrassTexture, makeWoodTexture, createCanvasTexture } from '../core/AssetLoader';
+import { AgilityFacility } from '../props/AgilityFacility';
+import { VetClinic } from '../props/VetClinic';
+import { PlayPavilion } from '../props/PlayPavilion';
+import { RestShelter } from '../props/RestShelter';
+import { Bench } from '../props/Bench';
+import { LampPost } from '../props/LampPost';
 
 // --- Assets & Helpers ---
 
@@ -143,59 +149,6 @@ function FenceCorner({ position }: { position: [number, number, number] }) {
   );
 }
 
-function Bench({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
-  const woodTex = useMemo(() => makeWoodTexture(), []);
-  return (
-    <group position={position} rotation={[0, rotation, 0]}>
-      {/* Legs */}
-      <mesh position={[-0.8, 0.2, 0.2]} castShadow>
-        <boxGeometry args={[0.1, 0.4, 0.1]} />
-        <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-      </mesh>
-      <mesh position={[0.8, 0.2, 0.2]} castShadow>
-        <boxGeometry args={[0.1, 0.4, 0.1]} />
-        <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-      </mesh>
-      <mesh position={[-0.8, 0.2, -0.2]} castShadow>
-        <boxGeometry args={[0.1, 0.4, 0.1]} />
-        <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-      </mesh>
-      <mesh position={[0.8, 0.2, -0.2]} castShadow>
-        <boxGeometry args={[0.1, 0.4, 0.1]} />
-        <meshStandardMaterial color="#333" metalness={0.8} roughness={0.2} />
-      </mesh>
-
-      {/* Seat */}
-      <mesh position={[0, 0.45, 0]} castShadow receiveShadow>
-        <boxGeometry args={[2, 0.05, 0.6]} />
-        <meshStandardMaterial map={woodTex} color="#a07e5e" roughness={0.6} />
-      </mesh>
-
-      {/* Backrest */}
-      <mesh position={[0, 0.85, -0.28]} rotation={[0.2, 0, 0]} castShadow receiveShadow>
-        <boxGeometry args={[2, 0.6, 0.05]} />
-        <meshStandardMaterial map={woodTex} color="#a07e5e" roughness={0.6} />
-      </mesh>
-    </group>
-  );
-}
-
-function LampPost({ position }: { position: [number, number, number] }) {
-  return (
-    <group position={position}>
-      <mesh position={[0, 2, 0]} castShadow>
-        <cylinderGeometry args={[0.08, 0.12, 4, 8]} />
-        <meshStandardMaterial color="#222" metalness={0.6} roughness={0.4} />
-      </mesh>
-      <mesh position={[0, 4.2, 0]}>
-        <sphereGeometry args={[0.3, 16, 16]} />
-        <meshStandardMaterial color="#fffdba" emissive="#fffdba" emissiveIntensity={2} toneMapped={false} />
-      </mesh>
-      <pointLight position={[0, 4.2, 0]} intensity={1.5} distance={10} color="#fffdba" castShadow />
-    </group>
-  );
-}
-
 // Trail Definitions - Structured "Gate Paths"
 const forestTrails = [
   // North Gate Path (Aligned with Z axis at top)
@@ -260,6 +213,15 @@ export function DogPark() {
         }
       }
       if (onTrail) continue;
+
+      // Exclude Activity Zones (Quadrants)
+      const isInZone = (
+        (x < -12.5 && z < -12.5) || // Agility Zone (NW)
+        (x < -12.5 && z > 12.5) ||  // Care Station (SW)
+        (x > 12.5 && z < -12.5) ||  // Play Area (NE)
+        (x > 12.5 && z > 12.5)      // Rest Area (SE)
+      );
+      if (isInZone) continue;
 
       trees.push({
         pos: [x, 0, z] as [number, number, number],
@@ -362,13 +324,44 @@ export function DogPark() {
 
       {/* --- TERRAIN --- */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[80, 80, 128, 128]} />
+        <planeGeometry args={[120, 120, 256, 256]} />
         <meshStandardMaterial
           map={grassTex}
           roughness={1.0}
           roughnessMap={grassTex}
           color="#98c48a"
         />
+      </mesh>
+
+      {/* --- ZONE GROUND PADS --- */}
+      {/* Zone A: Agility Training (Northwest) - Safety Rubber Flooring */}
+      <mesh position={[-25, 0.03, -25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[25, 25]} />
+        <meshStandardMaterial color="#4a5568" roughness={0.7} />
+      </mesh>
+
+      {/* Zone B: Care Station (Southwest) - Concrete Pad */}
+      <mesh position={[-25, 0.03, 25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[25, 25]} />
+        <meshStandardMaterial color="#d0d5dd" roughness={0.8} />
+      </mesh>
+
+      {/* Zone C: Play Area (Northeast) - Natural Grass (no pad needed) */}
+
+      {/* Zone D: Rest Area (Southeast) - Natural Grass (no pad needed) */}
+
+      {/* Central Path (Cross pattern connecting all zones) */}
+      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[6, 120]} />
+        <meshStandardMaterial map={gravelTex} color="#8a7561" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[120, 6]} />
+        <meshStandardMaterial map={gravelTex} color="#8a7561" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[16, 2.5]} />
+        <meshStandardMaterial map={gravelTex} roughness={1} />
       </mesh>
 
       {/* --- PATHS (Distinct Gravel) --- */}
@@ -501,6 +494,18 @@ export function DogPark() {
         <sphereGeometry args={[0.15, 16, 16]} />
         <meshStandardMaterial color="#ffdd00" roughness={0.2} />
       </mesh>
+
+      {/* ========== ZONE A: AGILITY TRAINING FACILITY (Northwest) ========== */}
+      <AgilityFacility position={[-25, 0, -25]} rotation={[0, Math.PI / 4, 0]} />
+
+      {/* ========== ZONE B: VETERINARY CARE CLINIC (Southwest) ========== */}
+      <VetClinic position={[-25, 0, 25]} rotation={[0, -Math.PI / 4, 0]} />
+
+      {/* ========== ZONE C: PLAY PAVILION (Northeast) ========== */}
+      <PlayPavilion position={[25, 0, -25]} rotation={[0, -Math.PI * 0.75, 0]} />
+
+      {/* ========== ZONE D: REST SHELTER (Southeast) ========== */}
+      <RestShelter position={[25, 0, 25]} rotation={[0, 1.25 * Math.PI, 0]} />
 
       {/* Leash Post near Entrance (Outside on path) */}
       <group position={[3.5, 0, 13]}>
