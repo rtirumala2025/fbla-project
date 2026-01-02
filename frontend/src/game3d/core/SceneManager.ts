@@ -4,7 +4,7 @@ export type PetGame2PetType = 'dog' | 'cat' | 'panda';
 
 export type PetGame2Action = 'feed' | 'play' | 'rest' | 'bathe';
 
-export type ActivityZone = 'agility' | 'vet' | 'play' | 'rest';
+export type ActivityZone = 'agility' | 'vet' | 'play' | 'rest' | 'center';
 
 export type PetGame2Interaction =
   | { kind: 'idle' }
@@ -35,6 +35,7 @@ export interface PetGame2State {
   cameraMode: PetGame2CameraMode;
   vfx: PetGame2Vfx[];
   navigationState: NavigationState;
+  currentPosition: [number, number, number];
 }
 
 // Activity zone positions (matching DogPark.tsx building positions)
@@ -43,6 +44,7 @@ export const ACTIVITY_POSITIONS: Record<ActivityZone, [number, number, number]> 
   vet: [-25, 0, 25],
   play: [25, 0, -25],
   rest: [25, 0, 25],
+  center: [0, 0, 0],
 };
 
 const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -63,6 +65,7 @@ export function usePetGame2State() {
     startPosition: [0, 0, 0],
     endPosition: [0, 0, 0],
   });
+  const [currentPosition, setCurrentPosition] = useState<[number, number, number]>([0, 0, 0]);
 
   const vfxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navAnimRef = useRef<number | null>(null);
@@ -192,8 +195,9 @@ export function usePetGame2State() {
       cameraMode,
       vfx,
       navigationState,
+      currentPosition,
     }),
-    [interaction, cameraMode, vfx, navigationState]
+    [interaction, cameraMode, vfx, navigationState, currentPosition]
   );
 
   return {
@@ -203,6 +207,9 @@ export function usePetGame2State() {
     triggerNavigation,
     setPetPosition: (pos: [number, number, number]) => {
       petPositionRef.current = pos;
+      // Only update state if position changed significantly to avoid over-rendering
+      // Or just update it every frame if we want smooth UI lines
+      setCurrentPosition(pos);
     },
   };
 }

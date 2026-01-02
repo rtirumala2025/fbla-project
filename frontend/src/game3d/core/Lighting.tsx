@@ -33,13 +33,13 @@ export function Lighting({ preset }: { preset: LightingPreset }) {
       };
     }
 
-    // Park: Bright & Inviting Day
-    // Noon sun, strong fill, vibrant ambient
+    // Park: Realistic Early Morning Trail
+    // Low, warm sun Casting long shadows, cool blue ambient fill
     return {
-      ambient: { intensity: 0.4, color: new THREE.Color('#e6f0ff') }, // Lower ambient to keep contrast
-      sun: { intensity: 3.0, color: new THREE.Color('#fff0d4'), position: new THREE.Vector3(5, 8, 3) },
-      fill: { intensity: 0.6, color: new THREE.Color('#dceeff'), position: new THREE.Vector3(-6, 5, -2) },
-      rim: { intensity: 1.2, color: new THREE.Color('#fff8e0'), position: new THREE.Vector3(0, 5, -5) },
+      ambient: { intensity: 0.25, color: new THREE.Color('#b0c4de') }, // Cool dawn ambient (8500K)
+      sun: { intensity: 4.5, color: new THREE.Color('#ffa570'), position: new THREE.Vector3(12, 4, 8) }, // Low, warm morning sun
+      fill: { intensity: 0.8, color: new THREE.Color('#cce0ff'), position: new THREE.Vector3(-10, 5, -5) }, // Blue sky fill
+      rim: { intensity: 1.8, color: new THREE.Color('#ffe0c0'), position: new THREE.Vector3(-5, 4, -8) }, // Sunlight catch
     };
   }, [preset]);
 

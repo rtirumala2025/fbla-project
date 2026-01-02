@@ -1,64 +1,45 @@
-import React, { useState } from 'react';
-import { Box, Text } from '@react-three/drei';
+import React, { useState, useMemo } from 'react';
+import { Box, Cylinder, Text } from '@react-three/drei';
 import { AgilityCourse } from './AgilityCourse';
+import { makeWoodTexture } from '../core/AssetLoader';
 
 export function AgilityFacility(props: any & { onSignClick?: () => void }) {
     const [isHovered, setIsHovered] = useState(false);
+    const woodTex = useMemo(() => makeWoodTexture(), []);
 
     return (
         <group {...props}>
-            {/* ========== EXTERIOR ========== */
+            {/* ========== OUTDOOR AGILITY ZONE ========== */}
 
-                {/* Main Building Structure - Modern Gymnasium (Rescaled to 22x22x6) */ }
-            {/* Back Wall */}
-            <Box args={[22, 6, 0.3]} position={[0, 3, -11]} castShadow receiveShadow>
-                <meshStandardMaterial color="#3a3a3a" roughness={0.7} />
-            </Box>
+            {/* Low Rustic Fence Perimeter */}
+            <group>
+                {/* Back Fence */}
+                <FenceLine position={[0, 0, -11]} length={22} woodTex={woodTex} />
+                {/* Left Fence */}
+                <FenceLine position={[-11, 0, 0]} length={22} rotation={[0, Math.PI / 2, 0]} woodTex={woodTex} />
+                {/* Right Fence */}
+                <FenceLine position={[11, 0, 0]} length={22} rotation={[0, Math.PI / 2, 0]} woodTex={woodTex} />
+                {/* Front Left Fence */}
+                <FenceLine position={[-7.5, 0, 11]} length={7} woodTex={woodTex} />
+                {/* Front Right Fence */}
+                <FenceLine position={[7.5, 0, 11]} length={7} woodTex={woodTex} />
+            </group>
 
-            {/* Side Walls */}
-            <Box args={[0.3, 6, 22]} position={[-11, 3, 0]} castShadow receiveShadow>
-                <meshStandardMaterial color="#3a3a3a" roughness={0.7} />
-            </Box>
-            <Box args={[0.3, 6, 22]} position={[11, 3, 0]} castShadow receiveShadow>
-                <meshStandardMaterial color="#3a3a3a" roughness={0.7} />
-            </Box>
+            {/* Entrance Gate Posts */}
+            <group position={[0, 0, 11]}>
+                <mesh position={[-3, 0.6, 0]} castShadow>
+                    <boxGeometry args={[0.25, 1.4, 0.25]} />
+                    <meshStandardMaterial map={woodTex} color="#5e5044" />
+                </mesh>
+                <mesh position={[3, 0.6, 0]} castShadow>
+                    <boxGeometry args={[0.25, 1.4, 0.25]} />
+                    <meshStandardMaterial map={woodTex} color="#5e5044" />
+                </mesh>
+            </group>
 
-            {/* Front Wall with Glass Windows */}
-            <Box args={[8, 6, 0.3]} position={[-7, 3, 11]} castShadow receiveShadow>
-                <meshStandardMaterial color="#3a3a3a" roughness={0.7} />
-            </Box>
-            <Box args={[8, 6, 0.3]} position={[7, 3, 11]} castShadow receiveShadow>
-                <meshStandardMaterial color="#3a3a3a" roughness={0.7} />
-            </Box>
-
-            {/* Glass Window Panel */}
-            <Box args={[6, 4, 0.1]} position={[0, 4, 11]} castShadow receiveShadow>
-                <meshStandardMaterial color="#87ceeb" transparent opacity={0.3} roughness={0.1} metalness={0.9} />
-            </Box>
-
-            {/* Metal Roof with Slope */}
-            <Box args={[23, 0.2, 23]} position={[0, 6.2, 0]} rotation={[0.03, 0, 0]} castShadow receiveShadow>
-                <meshStandardMaterial color="#555555" roughness={0.4} metalness={0.8} />
-            </Box>
-
-            {/* Entrance Doors (Resized) */}
-            <Box args={[1.5, 4.5, 0.2]} position={[-0.9, 2.25, 11.2]} castShadow>
-                <meshStandardMaterial color="#2a2a2a" roughness={0.5} />
-            </Box>
-            <Box args={[1.5, 4.5, 0.2]} position={[0.9, 2.25, 11.2]} castShadow>
-                <meshStandardMaterial color="#2a2a2a" roughness={0.5} />
-            </Box>
-
-            {/* Exterior Signage - CLICKABLE */}
-            <Text
-                position={[0, 7.2, 11.4]}
-                rotation={[0, 0, 0]}
-                fontSize={isHovered ? 1.35 : 1.2}
-                color={isHovered ? "#ffff00" : "#ffffff"}
-                anchorX="center"
-                anchorY="middle"
-                outlineWidth={0.1}
-                outlineColor="#000000"
+            {/* Weathered Wooden Sign - CLICKABLE */}
+            <group
+                position={[0, 1.2, 11.2]}
                 onPointerEnter={(e) => {
                     e.stopPropagation();
                     setIsHovered(true);
@@ -74,61 +55,92 @@ export function AgilityFacility(props: any & { onSignClick?: () => void }) {
                     props.onSignClick?.();
                 }}
             >
-                AGILITY TRAINING
-            </Text>
+                {/* Sign Board */}
+                <Box args={[3.2, 0.8, 0.15]} castShadow>
+                    <meshStandardMaterial
+                        map={woodTex}
+                        color={isHovered ? "#9e8e7e" : "#7e6d5d"}
+                        roughness={0.9}
+                    />
+                </Box>
 
-            {/* ========== INTERIOR ========== */}
+                {/* Faded Painted Text */}
+                <Text
+                    position={[0, 0, 0.08]}
+                    fontSize={isHovered ? 0.35 : 0.3}
+                    color={isHovered ? "#ffffdd" : "#eeeeee"}
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={0.02}
+                    outlineColor="#000000"
+                >
+                    TRAIL AGILITY
+                </Text>
 
-            {/* Rubber Safety Flooring (Rescaled) */}
-            <Box args={[21, 0.1, 21]} position={[0, 0.05, 0]} receiveShadow>
-                <meshStandardMaterial color="#4a5568" roughness={0.8} />
-            </Box>
+                {/* Scrawled Subtext */}
+                <Text
+                    position={[0, -0.25, 0.08]}
+                    fontSize={0.12}
+                    color="#cccccc"
+                    anchorX="center"
+                    anchorY="middle"
+                    opacity={0.8}
+                >
+                    MAINTAINED BY PARK VOLUNTEERS
+                </Text>
+            </group>
 
-            {/* Agility Equipment (reusing existing component, rescaled to fit) */}
-            <AgilityCourse position={[0, 0, -2]} scale={1.1} />
+            {/* Weathering Details: Scattered "Leaves" on ground */}
+            {Array.from({ length: 15 }).map((_, i) => (
+                <mesh
+                    key={i}
+                    position={[(Math.random() - 0.5) * 20, 0.06, (Math.random() - 0.5) * 20]}
+                    rotation={[-Math.PI / 2, 0, Math.random() * Math.PI]}
+                >
+                    <planeGeometry args={[0.2, 0.2]} />
+                    <meshStandardMaterial color={i % 2 === 0 ? "#8a5a2a" : "#6a7a2a"} transparent opacity={0.6} />
+                </mesh>
+            ))}
 
-            {/* Storage Cabinets - Right Wall */}
-            <Box args={[2, 1.5, 0.8]} position={[9.5, 0.75, -7]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.7} />
-            </Box>
-            <Box args={[2, 1.5, 0.8]} position={[9.5, 0.75, -4]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.7} />
-            </Box>
+            {/* The Actual Agility Equipment */}
+            <AgilityCourse position={[0, 0, 0]} scale={1.2} />
 
-            {/* Trophy Shelf - Back Wall */}
-            <Box args={[6, 0.2, 0.6]} position={[-6, 4, -10.5]} castShadow>
-                <meshStandardMaterial color="#d2691e" roughness={0.6} />
-            </Box>
-
-            {/* Trophies (Smaller) */}
-            <mesh position={[-7.5, 4.35, -10.5]} castShadow>
-                <cylinderGeometry args={[0.15, 0.2, 0.5, 8]} />
-                <meshStandardMaterial color="#ffd700" roughness={0.2} metalness={0.9} />
-            </mesh>
-            <mesh position={[-6, 4.35, -10.5]} castShadow>
-                <cylinderGeometry args={[0.15, 0.2, 0.5, 8]} />
-                <meshStandardMaterial color="#ffd700" roughness={0.2} metalness={0.9} />
-            </mesh>
-            <mesh position={[-4.5, 4.35, -10.5]} castShadow>
-                <cylinderGeometry args={[0.15, 0.2, 0.5, 8]} />
-                <meshStandardMaterial color="#ffd700" roughness={0.2} metalness={0.9} />
-            </mesh>
-
-            {/* Viewing Benches - Left Wall */}
-            <Box args={[0.8, 0.3, 4]} position={[-9.5, 0.4, 4]} castShadow>
-                <meshStandardMaterial color="#654321" roughness={0.7} />
-            </Box>
-            <Box args={[0.8, 0.3, 4]} position={[-9.5, 0.4, -4]} castShadow>
-                <meshStandardMaterial color="#654321" roughness={0.7} />
-            </Box>
-
-            {/* Overhead LED Lighting Strips */}
-            <Box args={[14, 0.15, 0.8]} position={[0, 5.8, 0]} castShadow>
-                <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
-            </Box>
-            <pointLight position={[0, 5, 0]} intensity={1.5} distance={30} color="#ffffff" />
-            <pointLight position={[-6, 5, -6]} intensity={1.2} distance={20} color="#ffffff" />
-            <pointLight position={[6, 5, 6]} intensity={1.2} distance={20} color="#ffffff" />
         </group>
     );
 }
+
+function FenceLine({ position, length, rotation = [0, 0, 0], woodTex }: any) {
+    const segments = Math.floor(length / 2.5);
+    return (
+        <group position={position} rotation={rotation}>
+            {Array.from({ length: segments + 1 }).map((_, i) => {
+                const x = -length / 2 + i * 2.5;
+                if (x > length / 2 + 0.1) return null;
+                return (
+                    <group key={i} position={[x, 0, 0]}>
+                        {/* Post */}
+                        <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+                            <boxGeometry args={[0.15, 1.1, 0.15]} />
+                            <meshStandardMaterial map={woodTex} color="#5e5044" />
+                        </mesh>
+                        {/* Horizontal Rail */}
+                        {i < segments && (
+                            <mesh position={[1.25, 0.8, 0]} castShadow receiveShadow>
+                                <boxGeometry args={[2.5, 0.08, 0.05]} />
+                                <meshStandardMaterial map={woodTex} color="#5e5044" />
+                            </mesh>
+                        )}
+                        {/* Lower Rail */}
+                        {i < segments && (
+                            <mesh position={[1.25, 0.4, 0]} castShadow receiveShadow>
+                                <boxGeometry args={[2.5, 0.08, 0.05]} />
+                                <meshStandardMaterial map={woodTex} color="#5e5044" />
+                            </mesh>
+                        )}
+                    </group>
+                )
+            })}
+        </group>
+    );
+}
+

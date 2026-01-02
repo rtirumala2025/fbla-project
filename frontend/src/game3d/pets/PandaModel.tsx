@@ -6,7 +6,11 @@ import { breathe } from '../animations/idle';
 import { pop, wobble } from '../animations/interact';
 import { ContactShadow } from '../core/ContactShadow';
 
-export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap: () => void }) {
+export function PandaModel({ state, onPetTap, setPetPosition }: {
+  state: PetGame2State;
+  onPetTap: () => void;
+  setPetPosition?: (pos: [number, number, number]) => void;
+}) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -50,8 +54,29 @@ export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap
       head.current.rotation.x = Math.sin(t * 0.35) * 0.08;
     }
 
+    // Navigation: Interpolate position
+    if (state.interaction.kind === 'navigating' && state.navigationState.target) {
+      const { startPosition, endPosition, progress } = state.navigationState;
+      const x = startPosition[0] + (endPosition[0] - startPosition[0]) * progress;
+      const y = startPosition[1] + (endPosition[1] - startPosition[1]) * progress;
+      const z = startPosition[2] + (endPosition[2] - startPosition[2]) * progress;
+      if (root.current) {
+        root.current.position.set(x, y, z);
+        const dx = endPosition[0] - startPosition[0];
+        const dz = endPosition[2] - startPosition[2];
+        root.current.rotation.y = Math.atan2(dx, dz);
+        const walkCycle = Math.sin(progress * Math.PI * 6) * 0.08;
+        root.current.position.y = y + Math.abs(walkCycle);
+      }
+      setPetPosition?.([x, y, z]);
+    }
+    else if (state.interaction.kind === 'atActivity' && state.navigationState.endPosition) {
+      const [x, y, z] = state.navigationState.endPosition;
+      if (root.current) root.current.position.set(x, y, z);
+      setPetPosition?.([x, y, z]);
+    }
     // Species-specific reaction: Panda bounces and spins
-    if (state.interaction.kind !== 'idle') {
+    else if (state.interaction.kind !== 'idle') {
       const startedAt = state.interaction.startedAt;
       const localT = Math.min(1, (performance.now() - startedAt) / 600);
 
@@ -92,7 +117,9 @@ export function PandaModel({ state, onPetTap }: { state: PetGame2State; onPetTap
       }}
       onPointerDown={(e) => {
         e.stopPropagation();
-        onPetTap();
+        if (state.interaction.kind !== 'navigating') {
+          onPetTap();
+        }
       }}
     >
       {/* White fur body - Healthy sheen, not matte plush */}

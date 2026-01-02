@@ -8,35 +8,49 @@ export function NavigationGuide({ navigationState, currentPosition }: {
     currentPosition: [number, number, number];
 }) {
     const markerRef = useRef<THREE.Mesh>(null);
+    const lineRef = useRef<THREE.Line>(null);
+    const { target, endPosition, progress } = navigationState;
 
-    // Only render if actively navigating
-    if (!navigationState.target || navigationState.progress >= 1) {
-        return null;
-    }
-
-    const { startPosition, endPosition, progress } = navigationState;
-
-    // Animate pulsing marker at destination
+    // Animate pulsing marker at destination and update line
     useFrame(({ clock }) => {
+        if (!target || progress >= 1) return;
+
         if (markerRef.current) {
             const pulse = Math.sin(clock.getElapsedTime() * 3) * 0.15 + 1;
             markerRef.current.scale.setScalar(pulse);
         }
+
+        // Update line to start from current position
+        if (lineRef.current) {
+            const positions = lineRef.current.geometry.attributes.position.array as Float32Array;
+            positions[0] = currentPosition[0];
+            positions[1] = currentPosition[1] + 0.1; // Slightly above ground
+            positions[2] = currentPosition[2];
+            positions[3] = endPosition[0];
+            positions[4] = endPosition[1] + 0.1;
+            positions[5] = endPosition[2];
+            lineRef.current.geometry.attributes.position.needsUpdate = true;
+            lineRef.current.computeLineDistances(); // Needed for dashed material
+        }
     });
 
-    // Create dashed line from current position to destination
-    const lineGeometry = useMemo(() => {
-        const points = [
-            new THREE.Vector3(...currentPosition),
-            new THREE.Vector3(...endPosition),
-        ];
-        return new THREE.BufferGeometry().setFromPoints(points);
-    }, [currentPosition, endPosition]);
+    // Only render if actively navigating
+    if (!target || progress >= 1) {
+        return null;
+    }
 
     return (
         <group>
             {/* Dashed path line */}
-            <line geometry={lineGeometry}>
+            <line ref={lineRef}>
+                <bufferGeometry>
+                    <bufferAttribute
+                        attach="attributes-position"
+                        count={2}
+                        array={new Float32Array(6)}
+                        itemSize={3}
+                    />
+                </bufferGeometry>
                 <lineDashedMaterial
                     color="#ffaa00"
                     dashSize={0.5}

@@ -15,16 +15,40 @@ import { SceneVfx } from './core/SceneVfx.tsx';
 import { PetHUD } from './ui/PetHUD.tsx';
 import type { PetGame2Action } from './core/SceneManager.ts';
 
-function PetModel({ petType, state, onPetTap }: { petType: PetGame2PetType; state: PetGame2State; onPetTap: () => void }) {
-  if (petType === 'cat') return <CatModel state={state} onPetTap={onPetTap} />;
-  if (petType === 'panda') return <PandaModel state={state} onPetTap={onPetTap} />;
-  return <DogModel state={state} onPetTap={onPetTap} />;
+function PetModel({
+  petType,
+  state,
+  onPetTap,
+  setPetPosition
+}: {
+  petType: PetGame2PetType;
+  state: PetGame2State;
+  onPetTap: () => void;
+  setPetPosition: (pos: [number, number, number]) => void;
+}) {
+  if (petType === 'cat') return <CatModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} />;
+  if (petType === 'panda') return <PandaModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} />;
+  return <DogModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} />;
 }
 
-function Environment({ petType }: { petType: PetGame2PetType }) {
+function Environment({
+  petType,
+  state,
+  triggerNavigation
+}: {
+  petType: PetGame2PetType;
+  state: PetGame2State;
+  triggerNavigation: (zone: any) => void;
+}) {
   if (petType === 'cat') return <CozyRoom />;
   if (petType === 'panda') return <BambooForest />;
-  return <DogPark />;
+  return (
+    <DogPark
+      state={state}
+      triggerNavigation={triggerNavigation}
+      currentPetPosition={state.currentPosition}
+    />
+  );
 }
 
 function presetForPet(petType: PetGame2PetType): LightingPreset {
@@ -45,6 +69,8 @@ export function PetGame2Scene({
   onToggleDiary,
   onToggleSound,
   soundEnabled,
+  triggerNavigation,
+  setPetPosition,
 }: {
   petType: PetGame2PetType;
   petName: string;
@@ -57,6 +83,8 @@ export function PetGame2Scene({
   onToggleDiary?: () => void;
   onToggleSound?: () => void;
   soundEnabled?: boolean;
+  triggerNavigation: (zone: any) => void;
+  setPetPosition: (pos: [number, number, number]) => void;
 }) {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0));
   const preset = presetForPet(petType);
@@ -104,14 +132,27 @@ export function PetGame2Scene({
           {/* Global Fog - Exclude 'bamboo' (custom fog) and 'park' (custom bright sky) */}
           {(preset !== 'bamboo' && preset !== 'park') && <fog attach="fog" args={['#b9d4ff', 25, 45]} />}
           <Lighting preset={preset} />
-          <Environment petType={petType} />
+          <Environment
+            petType={petType}
+            state={state}
+            triggerNavigation={triggerNavigation}
+          />
 
           <group position={[0, 0, 0]}>
-            <PetModel petType={petType} state={state} onPetTap={onPetTap} />
+            <PetModel
+              petType={petType}
+              state={state}
+              onPetTap={onPetTap}
+              setPetPosition={setPetPosition}
+            />
           </group>
 
           <SceneVfx vfx={state.vfx} />
-          <CameraController mode={state.cameraMode} target={targetRef.current} />
+          <CameraController
+            mode={state.cameraMode}
+            interaction={state.interaction}
+            currentPosition={state.currentPosition}
+          />
         </Suspense>
       </Canvas>
     </div>

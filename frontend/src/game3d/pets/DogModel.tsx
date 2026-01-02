@@ -6,7 +6,11 @@ import { breathe, subtleNod } from '../animations/idle';
 import { pop, wobble } from '../animations/interact';
 import { ContactShadow } from '../core/ContactShadow';
 
-export function DogModel({ state, onPetTap }: { state: PetGame2State; onPetTap: () => void }) {
+export function DogModel({ state, onPetTap, setPetPosition }: {
+  state: PetGame2State;
+  onPetTap: () => void;
+  setPetPosition?: (pos: [number, number, number]) => void;
+}) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
   const tail = useRef<THREE.Group>(null);
@@ -55,7 +59,42 @@ export function DogModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
       tail.current.rotation.z = Math.cos(t * 5.0) * 0.1;
     }
 
-    if (state.interaction.kind !== 'idle') {
+    // Navigation: Interpolate position based on progress
+    if (state.interaction.kind === 'navigating' && state.navigationState.target) {
+      const { startPosition, endPosition, progress } = state.navigationState;
+
+      // Linear interpolation
+      const x = startPosition[0] + (endPosition[0] - startPosition[0]) * progress;
+      const y = startPosition[1] + (endPosition[1] - startPosition[1]) * progress;
+      const z = startPosition[2] + (endPosition[2] - startPosition[2]) * progress;
+
+      if (root.current) {
+        root.current.position.set(x, y, z);
+
+        // Rotate to face destination
+        const dx = endPosition[0] - startPosition[0];
+        const dz = endPosition[2] - startPosition[2];
+        const targetRotation = Math.atan2(dx, dz);
+        root.current.rotation.y = targetRotation;
+
+        // Walking animation: bobbing motion
+        const walkCycle = Math.sin(progress * Math.PI * 8) * 0.08;
+        root.current.position.y = y + Math.abs(walkCycle);
+      }
+
+      // Update pet position in SceneManager
+      setPetPosition?.([x, y, z]);
+    }
+    // At activity: stay at destination
+    else if (state.interaction.kind === 'atActivity' && state.navigationState.endPosition) {
+      const [x, y, z] = state.navigationState.endPosition;
+      if (root.current) {
+        root.current.position.set(x, y, z);
+      }
+      setPetPosition?.([x, y, z]);
+    }
+    // Normal interaction animations
+    else if (state.interaction.kind !== 'idle') {
       const startedAt = state.interaction.startedAt;
       const localT = Math.min(1, (performance.now() - startedAt) / 450);
       const s = SCALE * (1 + pop(localT) * 0.06);
@@ -84,7 +123,10 @@ export function DogModel({ state, onPetTap }: { state: PetGame2State; onPetTap: 
       }}
       onPointerDown={(e) => {
         e.stopPropagation();
-        onPetTap();
+        // Only allow pet tap when not navigating
+        if (state.interaction.kind !== 'navigating') {
+          onPetTap();
+        }
       }}
     >
       {/* 1. MAIN BODY (HORIZONTAL SPINE) */}

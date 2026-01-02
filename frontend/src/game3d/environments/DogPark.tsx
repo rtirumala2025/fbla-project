@@ -9,6 +9,9 @@ import { PlayPavilion } from '../props/PlayPavilion';
 import { RestShelter } from '../props/RestShelter';
 import { Bench } from '../props/Bench';
 import { LampPost } from '../props/LampPost';
+import { SignPost } from '../props/SignPost';
+import { NavigationGuide } from '../ui/NavigationGuide';
+import type { PetGame2State, ActivityZone } from '../core/SceneManager';
 
 // --- Assets & Helpers ---
 
@@ -160,7 +163,15 @@ const forestTrails = [
 ];
 
 
-export function DogPark() {
+export function DogPark({
+  state,
+  triggerNavigation,
+  currentPetPosition
+}: {
+  state: PetGame2State;
+  triggerNavigation: (zone: ActivityZone) => void;
+  currentPetPosition: [number, number, number];
+}) {
   const grassTex = useMemo(() => {
     const t = makeGrassTexture();
     t.repeat.set(24, 24);
@@ -334,10 +345,16 @@ export function DogPark() {
       </mesh>
 
       {/* --- ZONE GROUND PADS --- */}
-      {/* Zone A: Agility Training (Northwest) - Safety Rubber Flooring */}
+      {/* Zone A: Agility Training (Northwest) - Weathered Ground Treatment */}
+      {/* Central compacted dirt/gravel hub for the course */}
       <mesh position={[-25, 0.03, -25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[25, 25]} />
-        <meshStandardMaterial color="#4a5568" roughness={0.7} />
+        <planeGeometry args={[20, 20]} />
+        <meshStandardMaterial map={gravelTex} color="#6e5a4e" roughness={1.0} transparent opacity={0.8} />
+      </mesh>
+      {/* Worn grass edges */}
+      <mesh position={[-25, 0.02, -25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[14, 32]} />
+        <meshStandardMaterial color="#7a8a6a" roughness={1.0} />
       </mesh>
 
       {/* Zone B: Care Station (Southwest) - Concrete Pad */}
@@ -496,16 +513,45 @@ export function DogPark() {
       </mesh>
 
       {/* ========== ZONE A: AGILITY TRAINING FACILITY (Northwest) ========== */}
-      <AgilityFacility position={[-25, 0, -25]} rotation={[0, Math.PI / 4, 0]} />
+      <AgilityFacility
+        position={[-25, 0, -25]}
+        rotation={[0, Math.PI / 4, 0]}
+        onSignClick={() => triggerNavigation('agility')}
+      />
 
       {/* ========== ZONE B: VETERINARY CARE CLINIC (Southwest) ========== */}
-      <VetClinic position={[-25, 0, 25]} rotation={[0, -Math.PI / 4, 0]} />
+      <VetClinic
+        position={[-25, 0, 25]}
+        rotation={[0, -Math.PI / 4, 0]}
+        onSignClick={() => triggerNavigation('vet')}
+      />
 
       {/* ========== ZONE C: PLAY PAVILION (Northeast) ========== */}
-      <PlayPavilion position={[25, 0, -25]} rotation={[0, -Math.PI * 0.75, 0]} />
+      <PlayPavilion
+        position={[25, 0, -25]}
+        rotation={[0, -Math.PI * 0.75, 0]}
+        onSignClick={() => triggerNavigation('play')}
+      />
 
       {/* ========== ZONE D: REST SHELTER (Southeast) ========== */}
-      <RestShelter position={[25, 0, 25]} rotation={[0, 1.25 * Math.PI, 0]} />
+      <RestShelter
+        position={[25, 0, 25]}
+        rotation={[0, 1.25 * Math.PI, 0]}
+        onSignClick={() => triggerNavigation('rest')}
+      />
+
+      {/* Return to Center SignPost */}
+      <SignPost
+        position={[3, 0, 3]}
+        onSignClick={() => triggerNavigation('center')}
+        label="PARK HUB"
+      />
+
+      {/* Navigation Guide */}
+      <NavigationGuide
+        navigationState={state.navigationState}
+        currentPosition={currentPetPosition}
+      />
 
       {/* Leash Post near Entrance (Outside on path) */}
       <group position={[3.5, 0, 13]}>

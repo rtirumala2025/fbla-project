@@ -21,7 +21,13 @@ export const PetGame2Screen: React.FC = () => {
   const { pet, loading, error, refreshPet } = usePet();
   const { currentUser } = useAuth();
   const { refreshBalance } = useFinancial();
-  const { state, triggerPetTap, triggerAction } = usePetGame2State();
+  const {
+    state,
+    triggerPetTap,
+    triggerAction,
+    triggerNavigation,
+    setPetPosition
+  } = usePetGame2State();
 
   // -- State --
   const [actionBusy, setActionBusy] = useState(false);
@@ -311,6 +317,8 @@ export const PetGame2Screen: React.FC = () => {
         onToggleDiary={() => setDiaryOpen(!diaryOpen)}
         onToggleSound={() => setSoundEnabled(!soundEnabled)}
         soundEnabled={soundEnabled}
+        triggerNavigation={triggerNavigation}
+        setPetPosition={setPetPosition}
       />
 
       {/* Overlays */}
