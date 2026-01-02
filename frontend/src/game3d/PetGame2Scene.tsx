@@ -91,7 +91,7 @@ export function PetGame2Scene({
           gl.setClearColor('#0b1020', 1);
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.05;
+          gl.toneMappingExposure = 1.0;
           scene.traverse((obj) => {
             if ((obj as THREE.Mesh).isMesh) {
               (obj as THREE.Mesh).castShadow = true;
@@ -101,7 +101,8 @@ export function PetGame2Scene({
         }}
       >
         <Suspense fallback={null}>
-          {preset !== 'bamboo' && <fog attach="fog" args={['#b9d4ff', 25, 45]} />}
+          {/* Global Fog - Exclude 'bamboo' (custom fog) and 'park' (custom bright sky) */}
+          {(preset !== 'bamboo' && preset !== 'park') && <fog attach="fog" args={['#b9d4ff', 25, 45]} />}
           <Lighting preset={preset} />
           <Environment petType={petType} />
 

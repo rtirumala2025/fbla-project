@@ -10,14 +10,15 @@ function makeGravelTexture() {
   return createCanvasTexture({
     size: 512,
     paint: (ctx, size) => {
-      ctx.fillStyle = '#d4c5b0'; // Light beige base
+      ctx.fillStyle = '#5d4037'; // Dark Brown Base (Mud/Dark Gravel)
       ctx.fillRect(0, 0, size, size);
 
-      // Noise
-      for (let i = 0; i < 8000; i++) {
-        const shade = Math.random() > 0.5 ? 255 : 150;
-        ctx.fillStyle = `rgba(${shade},${shade},${shade},0.15)`;
-        ctx.fillRect(Math.random() * size, Math.random() * size, 2, 2);
+      // Variable Noise for Roughness
+      for (let i = 0; i < 15000; i++) {
+        const shade = Math.random() > 0.5 ? 60 : 120; // Very dark specs
+        ctx.fillStyle = `rgba(${shade},${shade},${shade},0.3)`;
+        const s = 1 + Math.random() * 2;
+        ctx.fillRect(Math.random() * size, Math.random() * size, s, s);
       }
     }
   });
@@ -327,21 +328,36 @@ export function DogPark() {
   }, []);
 
   return (
-    <group>
+    <>
       {/* --- ATMOSPHERE --- */}
-      <Sky
-        sunPosition={[5, 12, 5]}
-        turbidity={2}
-        rayleigh={3}
-        mieCoefficient={0.005}
-        mieDirectionalG={0.8}
-      />
+      {/* Replaced physical Sky with stylized solid color to ensure vibrant blue */}
+      {/* Real Sky Blue: #87CEEB (Standard SkyBlue) for a natural, airy look */}
+      <color attach="background" args={['#87CEEB']} />
 
-      <fog attach="fog" args={['#b0e0ff', 12, 60]} />
+      {/* Matching Fog - Pushed back to ensure Clouds are visible */}
+      <fog attach="fog" args={['#87CEEB', 45, 120]} />
 
-      <group position={[0, 25, -10]}>
-        {/* Reduced clouds significantly to show blue sky */}
-        <Cloud opacity={0.3} speed={0.1} segments={10} bounds={[20, 4, 20]} volume={6} color="#fafafa" />
+      <group position={[0, 30, -10]}>
+        {/* Layer 1: Dense, fluffy Cumulus clouds (Lower & Denser) */}
+        <Cloud
+          opacity={1.0}
+          speed={0.08}
+          segments={60} // More particles
+          bounds={[50, 6, 50]}
+          volume={25} // Very fluffy
+          color="#ffffff"
+        />
+
+        {/* Layer 2: High, wispy clouds (Higher) */}
+        <Cloud
+          position={[0, 20, 0]}
+          opacity={0.5}
+          speed={0.04}
+          segments={20}
+          bounds={[70, 4, 70]}
+          volume={10}
+          color="#e8f4ff" // Slightly blue-tinted
+        />
       </group>
 
       {/* --- TERRAIN --- */}
@@ -510,6 +526,6 @@ export function DogPark() {
         </group>
       </Float>
 
-    </group>
+    </>
   );
 }

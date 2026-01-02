@@ -36,10 +36,10 @@ export function Lighting({ preset }: { preset: LightingPreset }) {
     // Park: Bright & Inviting Day
     // Noon sun, strong fill, vibrant ambient
     return {
-      ambient: { intensity: 0.6, color: new THREE.Color('#e6f0ff') }, // Bright cool ambient
-      sun: { intensity: 3.5, color: new THREE.Color('#fff0d4'), position: new THREE.Vector3(5, 8, 3) }, // High noon sun, slightly warm
-      fill: { intensity: 0.8, color: new THREE.Color('#dceeff'), position: new THREE.Vector3(-6, 5, -2) }, // Strong blue fill
-      rim: { intensity: 1.2, color: new THREE.Color('#fff8e0'), position: new THREE.Vector3(0, 5, -5) }, // Pop rim
+      ambient: { intensity: 0.4, color: new THREE.Color('#e6f0ff') }, // Lower ambient to keep contrast
+      sun: { intensity: 3.0, color: new THREE.Color('#fff0d4'), position: new THREE.Vector3(5, 8, 3) },
+      fill: { intensity: 0.6, color: new THREE.Color('#dceeff'), position: new THREE.Vector3(-6, 5, -2) },
+      rim: { intensity: 1.2, color: new THREE.Color('#fff8e0'), position: new THREE.Vector3(0, 5, -5) },
     };
   }, [preset]);
 
