@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Cylinder, Text } from '@react-three/drei';
 import { CareSupplies } from './CareSupplies';
 
-export function VetClinic(props: any) {
+export function VetClinic(props: any & { onSignClick?: () => void }) {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
         <group {...props}>
             {/* ========== EXTERIOR ========== */}
@@ -58,16 +60,30 @@ export function VetClinic(props: any) {
                 <meshStandardMaterial color="#20b2aa" roughness={0.5} />
             </Box>
 
-            {/* Exterior Signage - MOVED TO FRONT AND FACING OUTWARD */}
+            {/* Exterior Signage - CLICKABLE */}
             <Text
                 position={[0, 6.2, 9.2]}
-                rotation={[0, 0, 0]} // Face outward (Z+)
-                fontSize={1}
-                color="#20b2aa"
+                rotation={[0, 0, 0]}
+                fontSize={isHovered ? 1.15 : 1}
+                color={isHovered ? "#00ffff" : "#20b2aa"}
                 anchorX="center"
                 anchorY="middle"
                 outlineWidth={0.08}
                 outlineColor="#ffffff"
+                onPointerEnter={(e) => {
+                    e.stopPropagation();
+                    setIsHovered(true);
+                    document.body.style.cursor = 'pointer';
+                }}
+                onPointerLeave={(e) => {
+                    e.stopPropagation();
+                    setIsHovered(false);
+                    document.body.style.cursor = 'auto';
+                }}
+                onPointerDown={(e) => {
+                    e.stopPropagation();
+                    props.onSignClick?.();
+                }}
             >
                 VETERINARY CARE
             </Text>

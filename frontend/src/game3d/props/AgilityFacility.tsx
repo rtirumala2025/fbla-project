@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Text } from '@react-three/drei';
 import { AgilityCourse } from './AgilityCourse';
 
-export function AgilityFacility(props: any) {
+export function AgilityFacility(props: any & { onSignClick?: () => void }) {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
         <group {...props}>
-            {/* ========== EXTERIOR ========== */}
+            {/* ========== EXTERIOR ========== */
 
-            {/* Main Building Structure - Modern Gymnasium (Rescaled to 22x22x6) */}
+                {/* Main Building Structure - Modern Gymnasium (Rescaled to 22x22x6) */ }
             {/* Back Wall */}
             <Box args={[22, 6, 0.3]} position={[0, 3, -11]} castShadow receiveShadow>
                 <meshStandardMaterial color="#3a3a3a" roughness={0.7} />
@@ -47,16 +49,30 @@ export function AgilityFacility(props: any) {
                 <meshStandardMaterial color="#2a2a2a" roughness={0.5} />
             </Box>
 
-            {/* Exterior Signage - MOVED TO FRONT AND FACING OUTWARDS */}
+            {/* Exterior Signage - CLICKABLE */}
             <Text
                 position={[0, 7.2, 11.4]}
-                rotation={[0, 0, 0]} // Face outwards (Z+)
-                fontSize={1.2}
-                color="#ffffff"
+                rotation={[0, 0, 0]}
+                fontSize={isHovered ? 1.35 : 1.2}
+                color={isHovered ? "#ffff00" : "#ffffff"}
                 anchorX="center"
                 anchorY="middle"
                 outlineWidth={0.1}
                 outlineColor="#000000"
+                onPointerEnter={(e) => {
+                    e.stopPropagation();
+                    setIsHovered(true);
+                    document.body.style.cursor = 'pointer';
+                }}
+                onPointerLeave={(e) => {
+                    e.stopPropagation();
+                    setIsHovered(false);
+                    document.body.style.cursor = 'auto';
+                }}
+                onPointerDown={(e) => {
+                    e.stopPropagation();
+                    props.onSignClick?.();
+                }}
             >
                 AGILITY TRAINING
             </Text>

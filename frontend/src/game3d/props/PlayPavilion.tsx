@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Cylinder, Text } from '@react-three/drei';
 
-export function PlayPavilion(props: any) {
+export function PlayPavilion(props: any & { onSignClick?: () => void }) {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
         <group {...props}>
             {/* ========== STRUCTURE ========== */}
@@ -47,16 +49,30 @@ export function PlayPavilion(props: any) {
                 <meshStandardMaterial color="#cd853f" roughness={0.8} />
             </Box>
 
-            {/* Exterior Signage on Front Beam - FACING OUTWARD */}
+            {/* Exterior Signage - CLICKABLE */}
             <Text
                 position={[0, 5.2, 7.6]}
-                rotation={[0, 0, 0]} // Face outward (Z+)
-                fontSize={1}
-                color="#654321"
+                rotation={[0, 0, 0]}
+                fontSize={isHovered ? 1.15 : 1}
+                color={isHovered ? "#ff8c00" : "#654321"}
                 anchorX="center"
                 anchorY="middle"
                 outlineWidth={0.08}
                 outlineColor="#ffffff"
+                onPointerEnter={(e) => {
+                    e.stopPropagation();
+                    setIsHovered(true);
+                    document.body.style.cursor = 'pointer';
+                }}
+                onPointerLeave={(e) => {
+                    e.stopPropagation();
+                    setIsHovered(false);
+                    document.body.style.cursor = 'auto';
+                }}
+                onPointerDown={(e) => {
+                    e.stopPropagation();
+                    props.onSignClick?.();
+                }}
             >
                 PLAY AREA
             </Text>

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Cylinder, Text } from '@react-three/drei';
 import { Bench } from './Bench';
 import { LampPost } from './LampPost';
 
-export function RestShelter(props: any) {
+export function RestShelter(props: any & { onSignClick?: () => void }) {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
         <group {...props}>
             {/* ========== STRUCTURE ========== */}
@@ -47,16 +49,30 @@ export function RestShelter(props: any) {
                 <meshStandardMaterial color="#701717" roughness={0.6} />
             </Box>
 
-            {/* Exterior Signage on Front Roof Beam - FACING OUTWARD */}
+            {/* Exterior Signage - CLICKABLE */}
             <Text
                 position={[0, 5.8, 1.5]}
-                rotation={[0, 0, 0]} // Face outward (Z+)
-                fontSize={1}
-                color="#ffffff"
+                rotation={[0, 0, 0]}
+                fontSize={isHovered ? 1.15 : 1}
+                color={isHovered ? "#ffff99" : "#ffffff"}
                 anchorX="center"
                 anchorY="middle"
                 outlineWidth={0.08}
                 outlineColor="#000000"
+                onPointerEnter={(e) => {
+                    e.stopPropagation();
+                    setIsHovered(true);
+                    document.body.style.cursor = 'pointer';
+                }}
+                onPointerLeave={(e) => {
+                    e.stopPropagation();
+                    setIsHovered(false);
+                    document.body.style.cursor = 'auto';
+                }}
+                onPointerDown={(e) => {
+                    e.stopPropagation();
+                    props.onSignClick?.();
+                }}
             >
                 REST & RELAXATION
             </Text>
