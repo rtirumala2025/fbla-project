@@ -83,8 +83,6 @@ export function CozyRoom() {
         />
       </mesh>
 
-      {/* Decorative vase */}
-
       {/* Side table/stool with cylindrical form */}
       <mesh position={[-3.8, 0.9, 2.6]} castShadow receiveShadow>
         <cylinderGeometry args={[0.45, 0.45, 0.12, 18]} />
@@ -95,6 +93,69 @@ export function CozyRoom() {
         <torusGeometry args={[0.28, 0.08, 12, 24]} />
         <meshStandardMaterial color="#c59e77" roughness={0.48} metalness={0.04} />
       </mesh>
+
+      {/* --- LIVED-IN OBJECTS --- */}
+
+      {/* Ceramic Food Bowl - Worn, off-center */}
+      <group position={[2.8, 0, -2.5]} rotation={[0, 0.5, 0]}>
+        <mesh position={[0, 0.06, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.25, 0.22, 0.12, 24]} />
+          <meshStandardMaterial color="#f0efe9" roughness={0.3} metalness={0.1} />
+        </mesh>
+        {/* Bowl interior recess */}
+        <mesh position={[0, 0.121, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <circleGeometry args={[0.2, 24]} />
+          <meshStandardMaterial color="#e6e4dc" roughness={0.35} metalness={0.05} />
+        </mesh>
+        {/* Few kibbles left */}
+        <mesh position={[0.05, 0.125, -0.05]} castShadow>
+          <dodecahedronGeometry args={[0.03]} />
+          <meshStandardMaterial color="#8b5a2b" roughness={0.8} />
+        </mesh>
+        <mesh position={[-0.08, 0.125, 0.02]} castShadow>
+          <dodecahedronGeometry args={[0.03]} />
+          <meshStandardMaterial color="#8b5a2b" roughness={0.8} />
+        </mesh>
+      </group>
+
+      {/* Stainless Steel Water Bowl - Imperfect */}
+      <group position={[3.6, 0, -2.2]}>
+        <mesh position={[0, 0.05, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.26, 0.26, 0.1, 32]} />
+          <meshStandardMaterial color="#c0c0c0" roughness={0.15} metalness={0.85} />
+        </mesh>
+        {/* Water surface */}
+        <mesh position={[0, 0.09, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.24, 32]} />
+          <meshStandardMaterial color="#224466" roughness={0.05} metalness={0.2} transparent opacity={0.9} />
+        </mesh>
+      </group>
+
+      {/* Scratching Post - Visual Anchor */}
+      <group position={[-4.5, 0, -2.5]} rotation={[0, -0.2, 0]}>
+        {/* Base */}
+        <mesh position={[0, 0.04, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.2, 0.08, 1.2]} />
+          <meshStandardMaterial color="#8d7662" roughness={0.9} />
+        </mesh>
+        {/* Post */}
+        <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.12, 0.12, 1.2, 16]} />
+          <meshStandardMaterial color="#d2b48c" roughness={1.0} />
+        </mesh>
+        {/* Top platform */}
+        <mesh position={[0, 1.2, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.5, 0.5, 0.08, 20]} />
+          <meshStandardMaterial color="#d2b48c" roughness={1.0} />
+        </mesh>
+      </group>
+
+      {/* Abandoned Cloth Toy - Matte, light absorbing */}
+      <mesh position={[1.5, 0.08, -3.5]} rotation={[0.5, 0.5, 0]} castShadow receiveShadow>
+        <dodecahedronGeometry args={[0.12]} />
+        <meshStandardMaterial color="#d65a5a" roughness={1.0} metalness={0} />
+      </mesh>
+
     </group>
   );
 }

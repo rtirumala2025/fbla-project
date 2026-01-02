@@ -156,6 +156,60 @@ export function BambooForest() {
         <planeGeometry args={[25, 8]} />
         <meshStandardMaterial color="#1a3a2a" transparent opacity={0.28} depthWrite={false} />
       </mesh>
+
+      {/* --- LIVED-IN OBJECTS --- */}
+
+      {/* Natural Water Pool - Dark, still, humid */}
+      <group position={[3, 0.02, -2]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.2, 0.9, 1]}>
+        <circleGeometry args={[1.5, 32]} />
+        <meshStandardMaterial
+          color="#1a3b32"
+          roughness={0.1}
+          metalness={0.8}
+          transparent
+          opacity={0.85}
+        />
+        {/* Subtle ground depression rim not needed if water is flat, but let's add a small rim */}
+      </group>
+
+      {/* Broken Bamboo Stalks - Evidence of feeding */}
+      <group position={[-1.5, 0.1, -2.5]} rotation={[0, 0.5, 0]}>
+        {/* Fragment 1 */}
+        <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0.4]} castShadow>
+          <cylinderGeometry args={[0.06, 0.06, 0.8, 8]} />
+          <meshStandardMaterial color="#e0eec0" roughness={0.6} /> {/* Lighter interior color */}
+        </mesh>
+        <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0.4]} scale={[1.02, 0.8, 1.02]}>
+          <cylinderGeometry args={[0.06, 0.06, 0.8, 8, 1, true]} />
+          <meshStandardMaterial color="#4a8558" roughness={0.6} side={THREE.DoubleSide} /> {/* Exterior skin */}
+        </mesh>
+
+        {/* Fragment 2 */}
+        <mesh position={[0.5, 0, 0.4]} rotation={[Math.PI / 2, 0, -1.2]} castShadow>
+          <cylinderGeometry args={[0.05, 0.05, 0.5, 8]} />
+          <meshStandardMaterial color="#e0eec0" roughness={0.6} />
+        </mesh>
+
+        {/* Fragment 3 */}
+        <mesh position={[-0.4, 0, 0.6]} rotation={[Math.PI / 2, 0, 2.1]} castShadow>
+          <cylinderGeometry args={[0.07, 0.06, 0.6, 8]} />
+          <meshStandardMaterial color="#e0eec0" roughness={0.6} />
+        </mesh>
+      </group>
+
+      {/* Fallen Bamboo Trunk - Mossy, part of terrain */}
+      <group position={[-4, 0.25, -2]} rotation={[0, 0.3, 1.57 + 0.1]}>
+        {/* Main trunk */}
+        <mesh castShadow receiveShadow>
+          <cylinderGeometry args={[0.3, 0.35, 6, 16]} />
+          <meshStandardMaterial color="#3e5f42" roughness={0.9} />
+        </mesh>
+        {/* Moss accumulation on top */}
+        <mesh position={[0, 0.2, 0]} scale={[1, 0.5, 1]}>
+          <cylinderGeometry args={[0.31, 0.36, 4, 16, 1, true, 0, 3.14]} />
+          <meshStandardMaterial color="#2d5a33" roughness={1} />
+        </mesh>
+      </group>
     </group>
   );
 }

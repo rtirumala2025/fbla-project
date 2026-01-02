@@ -115,6 +115,51 @@ export function DogPark() {
       <Tree position={[2.2, 0, -7.5]} scale={1.05} rotation={0.8} />
       <Tree position={[-3.0, 0, -6.8]} scale={0.95} rotation={-0.3} />
       <Tree position={[7.5, 0, -5.0]} scale={1.15} rotation={1.5} />
+
+      {/* --- LIVED-IN OBJECTS --- */}
+
+      {/* Metal Water Bowl - Outdoor, dulled */}
+      <group position={[2, 0, -3.5]}>
+        {/* Dirt patch underneath for realism */}
+        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <circleGeometry args={[0.35, 16]} />
+          <meshStandardMaterial color="#5e4b35" roughness={0.9} />
+        </mesh>
+        {/* Bowl */}
+        <mesh position={[0, 0.08, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.25, 0.2, 0.16, 24]} />
+          <meshStandardMaterial color="#9ea7b0" roughness={0.4} metalness={0.6} />
+        </mesh>
+        {/* Water, reflecting sky */}
+        <mesh position={[0, 0.14, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.22, 24]} />
+          <meshStandardMaterial color="#3a5f78" roughness={0.1} metalness={0.5} transparent opacity={0.9} />
+        </mesh>
+      </group>
+
+      {/* Rubber Chew Toy - Scuffed, heavy */}
+      <mesh position={[-1.5, 0.06, -2]} rotation={[0.5, 2, 0]} castShadow receiveShadow>
+        <torusKnotGeometry args={[0.12, 0.04, 64, 8, 2, 3]} />
+        <meshStandardMaterial color="#ff4422" roughness={0.7} />
+      </mesh>
+
+      {/* Tethered Leash Post - Implies human presence */}
+      <group position={[4, 0, -2]}>
+        <mesh position={[0, 0.45, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.04, 0.04, 0.9, 12]} />
+          <meshStandardMaterial color="#5d4037" roughness={0.9} />
+        </mesh>
+        {/* Metal ring at top */}
+        <mesh position={[0, 0.8, 0.05]} rotation={[0, Math.PI / 2, 0]}>
+          <torusGeometry args={[0.06, 0.015, 12, 12]} />
+          <meshStandardMaterial color="#444" roughness={0.5} metalness={0.8} />
+        </mesh>
+        {/* Ground grounding */}
+        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.12, 16]} />
+          <meshStandardMaterial color="#3e2b20" roughness={1.0} />
+        </mesh>
+      </group>
     </group>
   );
 }
