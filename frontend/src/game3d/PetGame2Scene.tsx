@@ -101,7 +101,7 @@ export function PetGame2Scene({
         }}
       >
         <Suspense fallback={null}>
-          <fog attach="fog" args={preset === 'bamboo' ? ['#cfead8', 7, 18] : ['#b9d4ff', 25, 45]} />
+          {preset !== 'bamboo' && <fog attach="fog" args={['#b9d4ff', 25, 45]} />}
           <Lighting preset={preset} />
           <Environment petType={petType} />
 

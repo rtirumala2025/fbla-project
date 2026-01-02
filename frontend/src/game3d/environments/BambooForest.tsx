@@ -1,215 +1,242 @@
 import React, { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, extend, ReactThreeFiber } from '@react-three/fiber';
 import * as THREE from 'three';
 import { makeForestFloorTexture } from '../core/AssetLoader';
+import { shaderMaterial } from '@react-three/drei';
 
-function Bamboo({ position, variant = 0 }: { position: [number, number, number]; variant?: number }) {
+// -- 1. Custom Fog Shader --
+const HeightFogMaterial = shaderMaterial(
+  {
+    color: new THREE.Color('#1a3c2f'),
+    density: 0.15,
+    cameraPosition: new THREE.Vector3(),
+    time: 0,
+  },
+  // Vertex Shader
+  `
+    varying vec3 vWorldPosition;
+    void main() {
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPosition.xyz;
+      gl_Position = projectionMatrix * viewMatrix * worldPosition;
+    }
+  `,
+  // Fragment Shader
+  `
+    uniform vec3 color;
+    uniform float density;
+    uniform float time;
+    uniform vec3 cameraPosition;
+    varying vec3 vWorldPosition;
+
+    void main() {
+      // Height fog calculation
+      float heightFactor = 0.05;
+      float fogStart = -1.0;
+      float fogEnd = 4.0;
+      
+      float dist = distance(cameraPosition, vWorldPosition);
+      
+      // Thicker near bottom (vWorldPosition.y)
+      float hFog = smoothstep(fogEnd, fogStart, vWorldPosition.y);
+      
+      // Distance fog base
+      float dFog = 1.0 - exp(-dist * density * 0.5);
+      
+      // Combine: Height has priority, but distance fades everything out eventually
+      float alpha = clamp((hFog * 0.8 + dFog * 0.5), 0.0, 0.95); // Cap opacity so we can see through slightly
+      
+      // Add subtle drift
+      float drift = sin(vWorldPosition.x * 0.5 + time * 0.2) * 0.05;
+      alpha += drift;
+
+      gl_FragColor = vec4(color, alpha);
+    }
+  `
+);
+
+extend({ HeightFogMaterial });
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      heightFogMaterial: ReactThreeFiber.Object3DNode<THREE.ShaderMaterial, typeof HeightFogMaterial>;
+    }
+  }
+}
+
+// -- 2. Bamboo Component --
+function BambooStalk({ position, height = 6, thickness = 0.08, variant = 0, tilt = 0 }: { position: [number, number, number]; height?: number; thickness?: number; variant?: number; tilt?: number }) {
   const groupRef = useRef<THREE.Group>(null);
-  const phaseOffset = useMemo(() => Math.random() * Math.PI * 2, []);
 
-  // Color variation based on variant
-  const mainColor = useMemo(() => {
-    const colors = ['#2d7a45', '#2a7342', '#307d48', '#2c7644'];
-    return colors[variant % colors.length];
-  }, [variant]);
+  // Random phase for wind
+  const phase = useMemo(() => Math.random() * 100, []);
 
-  const jointColor = useMemo(() => {
-    const colors = ['#236336', '#205e33', '#266639', '#245f35'];
-    return colors[variant % colors.length];
-  }, [variant]);
+  // Colors: 4 variations of bamboo green/brown
+  const colors = useMemo(() => [
+    { stem: '#3e5c41', joint: '#2f4930' }, // Dark Green (Old)
+    { stem: '#5c8a61', joint: '#4a724d' }, // Fresh Green
+    { stem: '#4e6b50', joint: '#3d543e' }, // Muted
+    { stem: '#6b8c42', joint: '#5a7837' }, // Yellowish
+  ], []);
 
-  useFrame(() => {
+  const c = colors[variant % colors.length];
+
+  useFrame((state) => {
     if (!groupRef.current) return;
-    const t = performance.now() * 0.001;
-    const baseSway = Math.sin(t + position[0] * 0.6 + position[2] * 0.3 + phaseOffset) * 0.04;
-    const windGust = Math.sin(t * 0.2 + phaseOffset) * 0.02;
-    groupRef.current.rotation.z = baseSway + windGust;
+    const t = state.clock.getElapsedTime();
+    // Gentle sway, stronger at top
+    // Base sway + Gusts
+    const sway = Math.sin(t * 0.5 + phase) * 0.02 + Math.sin(t * 1.5 + phase * 0.5) * 0.005;
+    groupRef.current.rotation.z = tilt + sway;
+    groupRef.current.rotation.x = sway * 0.5;
   });
 
+  // Segments
+  const segments = 6;
+  const segmentH = height / segments;
+
   return (
-    <group ref={groupRef} position={position}>
-      {/* Main bamboo stalk - Waxy surface with directional gloss */}
-      <mesh castShadow receiveShadow>
-        <cylinderGeometry args={[0.08, 0.1, 5.5, 12]} />
-        <meshStandardMaterial
-          color={mainColor}
-          roughness={0.64}
-          metalness={0.04}
-        />
+    <group ref={groupRef} position={position} rotation={[0, Math.random() * Math.PI, 0]}>
+      {/* Main Stalk */}
+      <mesh castShadow receiveShadow position={[0, height / 2, 0]}>
+        <cylinderGeometry args={[thickness * 0.8, thickness, height, 8]} />
+        <meshStandardMaterial color={c.stem} roughness={0.4} metalness={0.1} />
       </mesh>
-      {/* Joint segments - More fibrous, matte finish */}
-      <mesh position={[0.07, 1.8, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.25, 0.08, 0.25]} />
-        <meshStandardMaterial color={jointColor} roughness={0.84} metalness={0.01} />
-      </mesh>
-      <mesh position={[-0.06, 0.3, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.25, 0.08, 0.25]} />
-        <meshStandardMaterial color={jointColor} roughness={0.84} metalness={0.01} />
-      </mesh>
-      {/* Leaves - Soft matte finish */}
-      <mesh position={[0, 2.5, 0]}>
-        <coneGeometry args={[0.3, 0.6, 8]} />
-        <meshStandardMaterial
-          color="#3f9c5a"
-          roughness={0.82}
-          metalness={0.01}
-        />
-      </mesh>
+
+      {/* Joints */}
+      {Array.from({ length: segments }).map((_, i) => (
+        <mesh key={i} position={[0, i * segmentH + 0.2, 0]} castShadow>
+          <cylinderGeometry args={[thickness * 1.1, thickness * 1.15, 0.04, 8]} />
+          <meshStandardMaterial color={c.joint} roughness={0.6} metalness={0} />
+        </mesh>
+      ))}
+
+      {/* Leaves Cluster - Simplified for performance but layered */}
+      <group position={[0, height * 0.6, 0]}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <mesh key={`l1-${i}`} position={[0, i * 0.8, 0]} rotation={[0.5, i * (Math.PI * 2 / 5), 0]}>
+            <planeGeometry args={[0.8, 0.8]} />
+            <meshStandardMaterial color="#4a7a50" side={THREE.DoubleSide} transparent alphaTest={0.5} opacity={0.9} />
+            {/* Note: Ideally we'd use a leaf texture here with alpha map for shape, keeping it simple geometric for now or proceed with texture gen if requested */}
+          </mesh>
+        ))}
+      </group>
     </group>
   );
 }
 
+// -- 3. Forest Environment --
 export function BambooForest() {
   const floorTex = useMemo(() => {
     const t = makeForestFloorTexture();
-    t.repeat.set(4, 4);
+    t.repeat.set(8, 8);
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
     return t;
   }, []);
 
-  const hazeRef = useRef<THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>>(null);
-  const lightGlowRef = useRef<THREE.PointLight>(null);
+  // Generate Forest Layout
+  const stalks = useMemo(() => {
+    const items = [];
+    // Dense Background
+    for (let i = 0; i < 40; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const r = 5 + Math.random() * 12; // Radius 5-17
+      const x = Math.cos(angle) * r;
+      const z = Math.sin(angle) * r - 4; // Shift back a bit
+      items.push({
+        pos: [x, 0, z] as [number, number, number],
+        h: 5 + Math.random() * 4,
+        thick: 0.06 + Math.random() * 0.08,
+        var: Math.floor(Math.random() * 4),
+        tilt: (Math.random() - 0.5) * 0.1
+      });
+    }
+    // Midground Framing (Avoid center play area: approx +/- 2 x, 0-2 z)
+    for (let i = 0; i < 15; i++) {
+      const side = Math.random() > 0.5 ? 1 : -1;
+      const x = (2.5 + Math.random() * 3) * side;
+      const z = (Math.random() - 0.5) * 4;
+      items.push({
+        pos: [x, 0, z] as [number, number, number],
+        h: 4 + Math.random() * 3,
+        thick: 0.05 + Math.random() * 0.06,
+        var: Math.floor(Math.random() * 4),
+        tilt: (Math.random() - 0.5) * 0.15
+      });
+    }
+    return items;
+  }, []);
 
-  useFrame(() => {
-    if (!hazeRef.current) return;
-    const t = performance.now() * 0.0005;
-    // Enhanced fog with better opacity control
-    hazeRef.current.material.opacity = 0.15 + Math.sin(t) * 0.025;
+  const fogRef = useRef<THREE.ShaderMaterial>(null);
 
-    if (lightGlowRef.current) {
-      lightGlowRef.current.intensity = 0.5 + Math.sin(t * 1.5) * 0.12;
+  useFrame(({ clock, camera }) => {
+    if (fogRef.current) {
+      fogRef.current.uniforms.time.value = clock.getElapsedTime();
+      fogRef.current.uniforms.cameraPosition.value = camera.position;
     }
   });
 
   return (
     <group>
-      {/* Floor - Brightened to avoid black void effect with texture */}
+      {/* Ground Plane - Dark, Damp */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[70, 70]} />
+        <planeGeometry args={[60, 60, 64, 64]} />
         <meshStandardMaterial
           map={floorTex}
-          color="#a8cba8"
-          roughness={0.96}
-          metalness={0}
+          color="#5c6e5c" // Desaturated green-grey
+          roughness={0.8}
+          metalness={0.1}
         />
       </mesh>
 
-      {/* Moss scatter patches - Lighter for visibility */}
-      <mesh position={[-1.5, 0.01, 1.2]} rotation={[-Math.PI / 2, 0, 0.3]} receiveShadow>
-        <circleGeometry args={[0.6, 16]} />
-        <meshStandardMaterial color="#3a6040" roughness={0.96} metalness={0} />
-      </mesh>
-      <mesh position={[2.2, 0.01, 0.8]} rotation={[-Math.PI / 2, 0, -0.5]} receiveShadow>
-        <circleGeometry args={[0.5, 16]} />
-        <meshStandardMaterial color="#36603d" roughness={0.96} metalness={0} />
-      </mesh>
-      <mesh position={[0.8, 0.01, -1.5]} rotation={[-Math.PI / 2, 0, 0.8]} receiveShadow>
-        <circleGeometry args={[0.7, 16]} />
-        <meshStandardMaterial color="#3c6442" roughness={0.96} metalness={0} />
-      </mesh>
-
-      {/* AAA Atmospheric haze - Subtle green tint for depth */}
-      <mesh ref={hazeRef} position={[0, 2.8, -7]}>
-        <sphereGeometry args={[16, 20, 20]} />
+      {/* Water Pool - Reflective patch */}
+      <mesh position={[2, 0.02, 1]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[1.8, 32]} />
         <meshStandardMaterial
-          color="#b8e8c8"
-          transparent
-          opacity={0.12}
-          roughness={1}
-          metalness={0}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Bamboo forest - varied placement with color variation */}
-      <Bamboo position={[3.5, 2.75, -3.5]} variant={0} />
-      <Bamboo position={[-3.8, 2.75, -4.2]} variant={1} />
-      <Bamboo position={[5.8, 2.75, -1.6]} variant={2} />
-      <Bamboo position={[-6.0, 2.75, -1.3]} variant={3} />
-      <Bamboo position={[1.5, 2.75, -6.2]} variant={0} />
-      <Bamboo position={[-1.8, 2.75, -5.8]} variant={1} />
-      <Bamboo position={[2.2, 2.75, -8.5]} variant={2} />
-      <Bamboo position={[-2.5, 2.75, -8.0]} variant={3} />
-      <Bamboo position={[7.2, 2.75, -4.0]} variant={1} />
-      <Bamboo position={[-7.5, 2.75, -4.5]} variant={2} />
-
-      {/* Foreground bamboo for depth (closer, larger) */}
-      <group scale={1.3}>
-        <Bamboo position={[4.5, 2.75, 2.5]} variant={0} />
-        <Bamboo position={[-4.2, 2.75, 2.8]} variant={1} />
-      </group>
-
-      {/* Additional background bamboo */}
-      <Bamboo position={[0.5, 2.75, -10.5]} variant={3} />
-      <Bamboo position={[-0.8, 2.75, -11.0]} variant={2} />
-
-      {/* Foreground accent rock - Grounding element */}
-      <mesh position={[0, 0.25, 3.5]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.9, 1.1, 0.5, 20]} />
-        <meshStandardMaterial color="#3d5f42" roughness={0.90} metalness={0.01} />
-      </mesh>
-
-      {/* Atmospheric glow for dappled light effect */}
-      <pointLight ref={lightGlowRef} position={[0, 3, -5]} intensity={0.5} color="#d4ffde" distance={12} decay={2} />
-
-      {/* Background depth layer - Distant bamboo silhouettes */}
-      <mesh position={[0, 3, -12]} scale={[1.5, 1.5, 1]}>
-        <planeGeometry args={[25, 8]} />
-        <meshStandardMaterial color="#1a3a2a" transparent opacity={0.28} depthWrite={false} />
-      </mesh>
-
-      {/* --- LIVED-IN OBJECTS --- */}
-
-      {/* Natural Water Pool - Dark, still, humid */}
-      <group position={[3, 0.02, -2]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.2, 0.9, 1]}>
-        <circleGeometry args={[1.5, 32]} />
-        <meshStandardMaterial
-          color="#1a3b32"
-          roughness={0.1}
+          color="#0f2b23"
+          roughness={0.15}
           metalness={0.8}
           transparent
-          opacity={0.85}
+          opacity={0.9}
         />
-        {/* Subtle ground depression rim not needed if water is flat, but let's add a small rim */}
+      </mesh>
+
+      {/* Scattered Rocks / Moss */}
+      <mesh position={[-2, 0.2, 2]} castShadow>
+        <dodecahedronGeometry args={[0.4]} />
+        <meshStandardMaterial color="#4a5c4a" roughness={0.9} />
+      </mesh>
+      <mesh position={[2.5, 0.15, -0.5]} castShadow rotation={[0.4, 0.6, 0]}>
+        <dodecahedronGeometry args={[0.3]} />
+        <meshStandardMaterial color="#3d4f3d" roughness={0.9} />
+      </mesh>
+
+      {/* Bamboo Stalks */}
+      {stalks.map((s, i) => (
+        <BambooStalk
+          key={i}
+          position={s.pos}
+          height={s.h}
+          thickness={s.thick}
+          variant={s.var}
+          tilt={s.tilt}
+        />
+      ))}
+
+      {/* Foreground Blurred Elements for Depth */}
+      <group position={[0, 0, 4.5]}>
+        <BambooStalk position={[-1.5, 0, 0]} height={4} thickness={0.1} variant={1} tilt={0.1} />
+        <BambooStalk position={[2.2, 0, 0.5]} height={5} thickness={0.09} variant={0} tilt={-0.1} />
       </group>
 
-      {/* Broken Bamboo Stalks - Evidence of feeding */}
-      <group position={[-1.5, 0.1, -2.5]} rotation={[0, 0.5, 0]}>
-        {/* Fragment 1 */}
-        <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0.4]} castShadow>
-          <cylinderGeometry args={[0.06, 0.06, 0.8, 8]} />
-          <meshStandardMaterial color="#e0eec0" roughness={0.6} /> {/* Lighter interior color */}
-        </mesh>
-        <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0.4]} scale={[1.02, 0.8, 1.02]}>
-          <cylinderGeometry args={[0.06, 0.06, 0.8, 8, 1, true]} />
-          <meshStandardMaterial color="#4a8558" roughness={0.6} side={THREE.DoubleSide} /> {/* Exterior skin */}
-        </mesh>
-
-        {/* Fragment 2 */}
-        <mesh position={[0.5, 0, 0.4]} rotation={[Math.PI / 2, 0, -1.2]} castShadow>
-          <cylinderGeometry args={[0.05, 0.05, 0.5, 8]} />
-          <meshStandardMaterial color="#e0eec0" roughness={0.6} />
-        </mesh>
-
-        {/* Fragment 3 */}
-        <mesh position={[-0.4, 0, 0.6]} rotation={[Math.PI / 2, 0, 2.1]} castShadow>
-          <cylinderGeometry args={[0.07, 0.06, 0.6, 8]} />
-          <meshStandardMaterial color="#e0eec0" roughness={0.6} />
-        </mesh>
-      </group>
-
-      {/* Fallen Bamboo Trunk - Mossy, part of terrain */}
-      <group position={[-4, 0.25, -2]} rotation={[0, 0.3, 1.57 + 0.1]}>
-        {/* Main trunk */}
-        <mesh castShadow receiveShadow>
-          <cylinderGeometry args={[0.3, 0.35, 6, 16]} />
-          <meshStandardMaterial color="#3e5f42" roughness={0.9} />
-        </mesh>
-        {/* Moss accumulation on top */}
-        <mesh position={[0, 0.2, 0]} scale={[1, 0.5, 1]}>
-          <cylinderGeometry args={[0.31, 0.36, 4, 16, 1, true, 0, 3.14]} />
-          <meshStandardMaterial color="#2d5a33" roughness={1} />
-        </mesh>
-      </group>
+      {/* Volumetric Height Fog Box */}
+      <mesh position={[0, 3, 0]}>
+        <boxGeometry args={[40, 8, 40]} />
+        {/* @ts-ignore */}
+        <heightFogMaterial ref={fogRef} transparent depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
     </group>
   );
 }

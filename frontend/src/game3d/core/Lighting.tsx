@@ -14,31 +14,33 @@ export function Lighting({ preset }: { preset: LightingPreset }) {
   // Key principle: Low ambient (0.15-0.25), strong directional sun (5-8× ambient), proper color temperature
   const config = useMemo(() => {
     if (preset === 'room') {
-      // Indoor: Warm tungsten primary, cool window fill
+      // Indoor: Photorealistic Late Afternoon
+      // Low-angle warm sun (Golden Hour), cool indirect bounce (Skylight)
       return {
-        ambient: { intensity: 0.18, color: new THREE.Color('#ffe8d4') }, // Warm ambient (3000K)
-        sun: { intensity: 2.4, color: new THREE.Color('#fff5e6'), position: new THREE.Vector3(4, 7, 3) }, // Key lamp (3200K)
-        fill: { intensity: 0.45, color: new THREE.Color('#d4e3ff'), position: new THREE.Vector3(-4, 3, -2) }, // Window bounce (5600K)
-        rim: { intensity: 1.1, color: new THREE.Color('#ffead0'), position: new THREE.Vector3(0, 3, -5) }, // Edge definition
+        ambient: { intensity: 0.35, color: new THREE.Color('#dbeaf9') }, // Cool/Desaturated bounce (7500K shadows)
+        sun: { intensity: 3.2, color: new THREE.Color('#ffcfa3'), position: new THREE.Vector3(8, 2, 4) }, // Low sun, Golden warmth (2800K)
+        fill: { intensity: 0.4, color: new THREE.Color('#bed7ff'), position: new THREE.Vector3(-4, 3, -4) }, // Blue sky fill from window
+        rim: { intensity: 1.5, color: new THREE.Color('#ffe8d4'), position: new THREE.Vector3(-2, 4, -4) }, // Warm rim catch
       };
     }
 
     if (preset === 'bamboo') {
-      // Forest: Green-tinted ambient, dappled sun, strong rim for silhouette
       return {
-        ambient: { intensity: 0.22, color: new THREE.Color('#d4ead8') }, // Green ambient (forest canopy)
-        sun: { intensity: 2.0, color: new THREE.Color('#fffae6'), position: new THREE.Vector3(3, 8, 2) }, // Sun through leaves (5000K)
-        fill: { intensity: 0.5, color: new THREE.Color('#a8d4c4'), position: new THREE.Vector3(-4, 2.5, -3) }, // Cool fill (reflected sky)
-        rim: { intensity: 1.4, color: new THREE.Color('#ffe8c0'), position: new THREE.Vector3(0, 2, -4) }, // CRITICAL: Panda needs strong rim vs green BG
+        ambient: { intensity: 0.6, color: new THREE.Color('#1a3c2f') }, // Strong deep green ambient
+        sun: { intensity: 0.8, color: new THREE.Color('#cce6d0'), position: new THREE.Vector3(2, 8, 1) }, // Weak, diffused, pale green sun
+        fill: { intensity: 0.3, color: new THREE.Color('#1e4f45') }, // Darker cool green fill
+        rim: { intensity: 0.8, color: new THREE.Color('#a8dbba'), position: new THREE.Vector3(0, 3, -4) }, // Soft rim to separate panda from bg
       };
     }
 
-    // Park: Outdoor daylight (5500K sun, blue sky fill)
+    // Park: Photorealistic Daylight
+    // Park: Early Morning Trail (Golden Hour)
+    // Low sun (long shadows), warm direct light, cool blue ambient/shadows
     return {
-      ambient: { intensity: 0.25, color: new THREE.Color('#e6f2ff') }, // Sky ambient (6000K)
-      sun: { intensity: 2.2, color: new THREE.Color('#fff5e6'), position: new THREE.Vector3(6, 9, 4) }, // Sun (5500K)
-      fill: { intensity: 0.55, color: new THREE.Color('#d4e3ff'), position: new THREE.Vector3(-6, 4, -2) }, // Sky fill (6500K)
-      rim: { intensity: 1.2, color: new THREE.Color('#ffe4b8'), position: new THREE.Vector3(0, 4, -6) }, // Warm rim (sun scatter)
+      ambient: { intensity: 0.3, color: new THREE.Color('#b8cce0') }, // Cool blue-tinted shadows
+      sun: { intensity: 2.8, color: new THREE.Color('#ffdfb0'), position: new THREE.Vector3(8, 1.5, 4) }, // Low, warm golden sun (long shadows)
+      fill: { intensity: 0.5, color: new THREE.Color('#c2d8ff'), position: new THREE.Vector3(-6, 4, -2) }, // Soft cool sky fill
+      rim: { intensity: 1.0, color: new THREE.Color('#fff0d6'), position: new THREE.Vector3(0, 3, -5) }, // Subtle warm rim
     };
   }, [preset]);
 

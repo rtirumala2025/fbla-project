@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { makeWoodTexture } from '../core/AssetLoader';
@@ -6,156 +6,173 @@ import { makeWoodTexture } from '../core/AssetLoader';
 export function CozyRoom() {
   const woodTex = useMemo(() => {
     const t = makeWoodTexture();
-    t.repeat.set(8.0, 8.0); // AAA: Proper scale for wood planks
+    t.repeat.set(4.0, 4.0); // Reduced repeat for larger planks
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
     return t;
   }, []);
 
-  const lampRef = useRef<THREE.PointLight>(null);
-
-  useFrame(() => {
-    if (!lampRef.current) return;
-    const flicker = 1 + Math.sin(performance.now() * 0.0025) * 0.03 + Math.sin(performance.now() * 0.008) * 0.015;
-    lampRef.current.intensity = 25 * flicker;
-  });
-
   return (
     <group>
-      {/* Floor - AAA wood with glossy varnish finish */}
+      {/* --- ARCHITECTURE --- */}
+
+      {/* Floor - Varied tone wood, wear implied by texture + roughness map simulation */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[30, 30]} />
         <meshStandardMaterial
           map={woodTex}
-          roughness={0.62}
-          metalness={0.02}
-          color="#8b7055"
+          roughness={0.7}        // Wood is generally matte/satin
+          roughnessMap={woodTex} // Reuse color map as roughness map for "wear" variation (darker = smoother)
+          metalness={0.0}
+          color="#a08060"        // Base tint
         />
       </mesh>
 
-      {/* Back wall - Subtle matte paint with light falloff */}
-      <mesh position={[0, 2.5, -7]} receiveShadow>
-        <boxGeometry args={[18, 6, 0.4]} />
+      {/* Back Wall - Matte, imperfect paint */}
+      <mesh position={[0, 3, -7]} receiveShadow>
+        <boxGeometry args={[20, 8, 0.5]} />
         <meshStandardMaterial
-          color="#f8f0e6"
-          roughness={0.96}
+          color="#e8e6e1"        // Off-white/Cream
+          roughness={0.9}        // Matte
           metalness={0}
         />
       </mesh>
 
-      {/* Side wall - Slightly cooler tone for depth */}
-      <mesh position={[-8.8, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-        <boxGeometry args={[14, 6, 0.4]} />
+      {/* Side Wall */}
+      <mesh position={[-9, 3, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
+        <boxGeometry args={[16, 8, 0.5]} />
         <meshStandardMaterial
-          color="#f5ebe2"
-          roughness={0.96}
+          color="#eae5dd"
+          roughness={0.95}
           metalness={0}
         />
       </mesh>
 
-      {/* Furniture - Sofa/bench with wood material */}
-      <mesh position={[0, 0.25, 3.5]} castShadow receiveShadow>
-        <boxGeometry args={[6.5, 0.5, 2.2]} />
-        <meshStandardMaterial color="#bda58b" roughness={0.72} metalness={0.01} />
+      {/* Baseboards (Molding) - Adds realism */}
+      <mesh position={[0, 0.25, -6.7]} receiveShadow>
+        <boxGeometry args={[20, 0.5, 0.1]} />
+        <meshStandardMaterial color="#fcfcfc" roughness={0.5} />
+      </mesh>
+      <mesh position={[-8.7, 0.25, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
+        <boxGeometry args={[16, 0.5, 0.1]} />
+        <meshStandardMaterial color="#fcfcfc" roughness={0.5} />
       </mesh>
 
-      {/* Warm point light with realistic decay and flicker */}
-      <pointLight ref={lampRef} position={[2.5, 3.8, 1.5]} color="#ffd199" intensity={25} distance={12} decay={2} castShadow />
-      <mesh position={[2.5, 3.3, 1.5]} castShadow>
-        <sphereGeometry args={[0.12, 16, 16]} />
-        <meshStandardMaterial
-          emissive="#ffd199"
-          emissiveIntensity={3.2}
-          color="#fff5e8"
-          roughness={0.15}
-          metalness={0.05}
-        />
-      </mesh>
 
-      {/* Window fill light simulation */}
-      <pointLight position={[-3, 3.5, 2]} color="#e8f0ff" intensity={8} distance={10} decay={2} />
+      {/* --- FURNITURE --- */}
 
-      {/* Rug - Soft fabric texture under pet */}
+      {/* Modern Sofa - Low, fabric */}
+      <group position={[1.5, 0, 3.5]} rotation={[0, -0.1, 0]}>
+        <mesh position={[0, 0.35, 0]} castShadow receiveShadow>
+          <boxGeometry args={[7, 0.7, 2.5]} />
+          <meshStandardMaterial color="#5e666e" roughness={0.9} />
+        </mesh>
+        <mesh position={[0, 1.0, -0.9]} castShadow receiveShadow>
+          <boxGeometry args={[7, 0.8, 0.6]} />
+          <meshStandardMaterial color="#586068" roughness={0.9} />
+        </mesh>
+      </group>
+
+      {/* Rug - Anchors the center */}
       <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[1.8, 32]} />
+        <circleGeometry args={[2.5, 64]} />
         <meshStandardMaterial
-          color="#a67c52"
-          roughness={0.94}
+          color="#7c8a99"
+          roughness={1.0}
           metalness={0}
         />
       </mesh>
 
-      {/* Side table/stool with cylindrical form */}
-      <mesh position={[-3.8, 0.9, 2.6]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.45, 0.45, 0.12, 18]} />
-        <meshStandardMaterial color="#d1b89d" roughness={0.68} metalness={0.02} />
-      </mesh>
-      {/* Decorative vase-like object */}
-      <mesh position={[-3.8, 1.1, 2.6]} castShadow>
-        <torusGeometry args={[0.28, 0.08, 12, 24]} />
-        <meshStandardMaterial color="#c59e77" roughness={0.48} metalness={0.04} />
-      </mesh>
+      {/* --- PROPS --- */}
 
-      {/* --- LIVED-IN OBJECTS --- */}
+      {/* Ceramic Food Bowl - Worn, slightly rotated */}
+      <group position={[2.5, 0, -2.5]} rotation={[0, 0.4, 0]}>
+        <mesh position={[0, 0.08, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.3, 0.25, 0.16, 32]} />
+          <meshStandardMaterial color="#f2f0eb" roughness={0.4} /> {/* Ceramic */}
+        </mesh>
+        {/* Interior */}
+        <mesh position={[0, 0.15, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <circleGeometry args={[0.25, 32]} />
+          <meshStandardMaterial color="#e8e4dc" roughness={0.5} />
+        </mesh>
+        {/* Kibble */}
+        <group position={[0, 0.12, 0]}>
+          <mesh position={[0.05, 0, 0.05]} castShadow><dodecahedronGeometry args={[0.04]} /><meshStandardMaterial color="#8b5a2b" /></mesh>
+          <mesh position={[-0.08, 0, 0.02]} castShadow><dodecahedronGeometry args={[0.04]} /><meshStandardMaterial color="#8b5a2b" /></mesh>
+          <mesh position={[0.02, 0, -0.07]} castShadow><dodecahedronGeometry args={[0.04]} /><meshStandardMaterial color="#8b5a2b" /></mesh>
+        </group>
+      </group>
 
-      {/* Ceramic Food Bowl - Worn, off-center */}
-      <group position={[2.8, 0, -2.5]} rotation={[0, 0.5, 0]}>
-        <mesh position={[0, 0.06, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.25, 0.22, 0.12, 24]} />
-          <meshStandardMaterial color="#f0efe9" roughness={0.3} metalness={0.1} />
+      {/* Stainless Steel Water Bowl - Specular highlights */}
+      <group position={[3.5, 0, -2.2]} rotation={[0, 0.2, 0]}>
+        <mesh position={[0, 0.07, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.32, 0.3, 0.14, 48]} />
+          <meshStandardMaterial
+            color="#d0d0d0"
+            roughness={0.15}
+            metalness={0.9} // High metalness for stainless steel
+          />
         </mesh>
-        {/* Bowl interior recess */}
-        <mesh position={[0, 0.121, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <circleGeometry args={[0.2, 24]} />
-          <meshStandardMaterial color="#e6e4dc" roughness={0.35} metalness={0.05} />
-        </mesh>
-        {/* Few kibbles left */}
-        <mesh position={[0.05, 0.125, -0.05]} castShadow>
-          <dodecahedronGeometry args={[0.03]} />
-          <meshStandardMaterial color="#8b5a2b" roughness={0.8} />
-        </mesh>
-        <mesh position={[-0.08, 0.125, 0.02]} castShadow>
-          <dodecahedronGeometry args={[0.03]} />
-          <meshStandardMaterial color="#8b5a2b" roughness={0.8} />
+        {/* Water Surface - Micro distortion implied by bump or just high gloss */}
+        <mesh position={[0, 0.12, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.28, 32]} />
+          <meshStandardMaterial
+            color="#1a3b5c"
+            roughness={0.02}
+            metalness={0.2}
+            opacity={0.8}
+            transparent
+          />
         </mesh>
       </group>
 
-      {/* Stainless Steel Water Bowl - Imperfect */}
-      <group position={[3.6, 0, -2.2]}>
-        <mesh position={[0, 0.05, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.26, 0.26, 0.1, 32]} />
-          <meshStandardMaterial color="#c0c0c0" roughness={0.15} metalness={0.85} />
-        </mesh>
-        {/* Water surface */}
-        <mesh position={[0, 0.09, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[0.24, 32]} />
-          <meshStandardMaterial color="#224466" roughness={0.05} metalness={0.2} transparent opacity={0.9} />
-        </mesh>
-      </group>
-
-      {/* Scratching Post - Visual Anchor */}
-      <group position={[-4.5, 0, -2.5]} rotation={[0, -0.2, 0]}>
+      {/* Scratching Post - Fiber breakup */}
+      <group position={[-4.0, 0, -2.0]} rotation={[0, -0.3, 0]}>
         {/* Base */}
-        <mesh position={[0, 0.04, 0]} castShadow receiveShadow>
-          <boxGeometry args={[1.2, 0.08, 1.2]} />
-          <meshStandardMaterial color="#8d7662" roughness={0.9} />
+        <mesh position={[0, 0.05, 0]} castShadow receiveShadow>
+          <boxGeometry args={[1.4, 0.1, 1.4]} />
+          <meshStandardMaterial color="#c2b280" roughness={1.0} /> {/* Carpet base */}
         </mesh>
         {/* Post */}
-        <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.12, 0.12, 1.2, 16]} />
-          <meshStandardMaterial color="#d2b48c" roughness={1.0} />
+        <mesh position={[0, 0.7, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.15, 0.15, 1.4, 24]} />
+          <meshStandardMaterial
+            color="#e0cda8" // Sisal rope color
+            roughness={0.9}
+          // In a real app we'd load a normal map, here we simulate with color/roughness
+          />
         </mesh>
-        {/* Top platform */}
-        <mesh position={[0, 1.2, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.5, 0.5, 0.08, 20]} />
-          <meshStandardMaterial color="#d2b48c" roughness={1.0} />
+        {/* Worn area near base */}
+        <mesh position={[0, 0.3, 0.16]} rotation={[0.2, 0, 0]}>
+          {/* Simple visual fluff mesh */}
+          <sphereGeometry args={[0.08, 6, 6]} />
+          <meshStandardMaterial color="#e8dec0" roughness={1} />
         </mesh>
       </group>
 
-      {/* Abandoned Cloth Toy - Matte, light absorbing */}
-      <mesh position={[1.5, 0.08, -3.5]} rotation={[0.5, 0.5, 0]} castShadow receiveShadow>
-        <dodecahedronGeometry args={[0.12]} />
-        <meshStandardMaterial color="#d65a5a" roughness={1.0} metalness={0} />
-      </mesh>
+      {/* Fabric Toy - Soft, casual placement */}
+      <group position={[1.2, 0.08, -3.2]} rotation={[0.4, 0.6, 0.2]}>
+        <mesh castShadow receiveShadow>
+          <capsuleGeometry args={[0.1, 0.3, 4, 8]} />
+          <meshStandardMaterial color="#ff6b6b" roughness={1.0} />
+        </mesh>
+      </group>
 
+      {/* Accent Lamp (Non-flickering, off in day or subtle warm glow)
+          User said "illuminated by a low-angle warm sun", so maybe lamp is off or very dim.
+          I'll leave a physical lamp object but minimal emission.
+       */}
+      <group position={[-5, 0, 2]}>
+        <mesh position={[0, 2.5, 0]} castShadow>
+          <coneGeometry args={[0.6, 1.5, 32, 1, true]} />
+          <meshStandardMaterial color="#f0f0f0" side={THREE.DoubleSide} />
+        </mesh>
+        <mesh position={[0, 1.25, 0]} castShadow>
+          <cylinderGeometry args={[0.04, 0.06, 2.5]} />
+          <meshStandardMaterial color="#333" />
+        </mesh>
+      </group>
     </group>
   );
 }
