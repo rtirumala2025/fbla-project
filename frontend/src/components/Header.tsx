@@ -74,8 +74,7 @@ const Header = memo(() => {
     { name: 'Budget', to: '/budget', icon: <BarChart3 size={20} /> },
     { name: 'Shop', to: '/shop', icon: <ShoppingCart size={20} /> },
     { name: 'Inventory', to: '/inventory', icon: <Package size={20} /> },
-    { name: 'Analytics', to: '/analytics', icon: <Sparkles size={20} /> },
-    { name: 'Reports', to: '/reports', icon: <FileText size={20} /> },
+
     { name: 'Events', to: '/events', icon: <Calendar size={20} /> },
     { name: 'Social', to: '/social', icon: <Users size={20} /> },
     // Wallet menu item removed - functionality integrated into Budget page
@@ -120,8 +119,8 @@ const Header = memo(() => {
                     key={link.to}
                     to={link.to}
                     className={({ isActive }) => `flex items-center gap-1 lg:gap-2 px-2 lg:px-3 xl:px-5 py-2 lg:py-2.5 xl:py-3 rounded-lg text-xs lg:text-sm xl:text-base font-semibold transition-all whitespace-nowrap flex-shrink-0 ${isActive
-                        ? 'text-white bg-indigo-600 shadow-md'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-black'
+                      ? 'text-white bg-indigo-600 shadow-md'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-black'
                       }`}
                   >
                     <span className="flex-shrink-0">{link.icon}</span>

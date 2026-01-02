@@ -21,6 +21,64 @@ import type {
   InventoryEntry,
 } from '../types/finance';
 
+export type DateRange = 'today' | 'week' | 'month' | 'all';
+
+async function getTransactionsFromSupabase(userId: string, range: DateRange): Promise<TransactionRecord[]> {
+  let query = supabase
+    .from('finance_transactions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  const now = new Date();
+  let startDate: Date;
+
+  switch (range) {
+    case 'today':
+      startDate = new Date(now.setHours(0, 0, 0, 0));
+      query = query.gte('created_at', startDate.toISOString());
+      break;
+    case 'week':
+      startDate = new Date(now.setDate(now.getDate() - 7));
+      query = query.gte('created_at', startDate.toISOString());
+      break;
+    case 'month':
+      startDate = new Date(now.setMonth(now.getMonth() - 1));
+      query = query.gte('created_at', startDate.toISOString());
+      break;
+    case 'all':
+      // limit to last 1000 for performance if 'all'
+      query = query.limit(1000);
+      break;
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+
+  return (data || []).map(tx => ({
+    id: tx.id,
+    amount: tx.amount,
+    transaction_type: tx.transaction_type === 'income' || tx.amount > 0 ? 'income' : 'expense',
+    category: tx.category,
+    description: tx.description,
+    created_at: tx.created_at,
+    balance_after: tx.balance_after,
+    related_goal_id: tx.related_goal_id,
+    related_shop_item_id: tx.related_shop_item_id,
+  }));
+}
+
+export async function getTransactions(userId: string, range: DateRange): Promise<TransactionRecord[]> {
+  return cachedRequest(
+    `finance-transactions-${userId}-${range}`,
+    async () => {
+      return await getTransactionsFromSupabase(userId, range);
+    },
+    10000
+  );
+}
+
 const API_BASE = '/api/finance';
 
 async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {

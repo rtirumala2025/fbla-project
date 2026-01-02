@@ -90,7 +90,7 @@ export function DogPark() {
 
       {/* Distant Clouds */}
       <group position={[0, 15, -20]}>
-        <Cloud opacity={0.5} speed={0.2} width={20} depth={5} segments={10} />
+        <Cloud opacity={0.5} speed={0.2} segments={10} />
       </group>
 
       {/* --- TERRAIN --- */}

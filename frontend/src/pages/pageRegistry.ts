@@ -48,11 +48,11 @@ export const Pages = {
   AvatarStudio: lazy(() => import('./pets/AvatarStudio').then(m => ({ default: m.AvatarStudio }))),
   SocialHub: lazy(() => import('./social/SocialHub').then(m => ({ default: m.SocialHub }))),
   SocialFeaturesPage: lazy(() => import('./social/SocialFeaturesPage').then(m => ({ default: m.SocialFeaturesPage }))),
-  AnalyticsDashboard: lazy(() => import('./analytics/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard }))),
+
+  // Nationals-level features
   ARPetModePage: lazy(() => import('./ar/ARPetModePage').then(m => ({ default: m.ARPetModePage }))),
-  HabitPredictionPage: lazy(() => import('./habits/HabitPredictionPage').then(m => ({ default: m.HabitPredictionPage }))),
   FinanceSimulatorPage: lazy(() => import('./finance_sim/FinanceSimulatorPage').then(m => ({ default: m.FinanceSimulatorPage }))),
-  ReportsPage: lazy(() => import('./reports/ReportsPage').then(m => ({ default: m.ReportsPage }))),
+
 
   // Special case: PetGameScreen with error handling
   PetGame2Screen: lazy(() => import('./PetGame2Screen').then(m => ({ default: m.PetGame2Screen }))),

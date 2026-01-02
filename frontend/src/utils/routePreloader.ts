@@ -16,7 +16,7 @@ const routeComponentMap: Record<string, () => Promise<unknown>> = {
   '/login': () => import('../pages/Login'),
   '/signup': () => import('../pages/Signup'),
   '/pet-selection': () => import('../pages/PetSelectionPage'),
-  '/analytics': () => import('../pages/analytics/AnalyticsDashboard'),
+
   '/inventory': () => import('../pages/Inventory'),
   '/settings': () => import('../pages/settings/SettingsScreen'),
 };

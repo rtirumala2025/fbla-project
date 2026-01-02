@@ -302,11 +302,9 @@ function AppContent() {
                 <Route path="/events" element={<ProtectedRoute><PageTransition><Pages.EventCalendarPage /></PageTransition></ProtectedRoute>} />
                 <Route path="/social" element={<ProtectedRoute><PageTransition><Pages.SocialHub /></PageTransition></ProtectedRoute>} />
                 <Route path="/social-features" element={<ProtectedRoute><PageTransition><Pages.SocialFeaturesPage /></PageTransition></ProtectedRoute>} />
-                <Route path="/analytics" element={<ProtectedRoute><PageTransition><Pages.AnalyticsDashboard /></PageTransition></ProtectedRoute>} />
-                <Route path="/reports" element={<ProtectedRoute><PageTransition><Pages.ReportsPage /></PageTransition></ProtectedRoute>} />
                 {/* Nationals-level features */}
                 <Route path="/ar" element={<ProtectedRoute><PageTransition><Pages.ARPetModePage /></PageTransition></ProtectedRoute>} />
-                <Route path="/habits" element={<ProtectedRoute><PageTransition><Pages.HabitPredictionPage /></PageTransition></ProtectedRoute>} />
+
                 <Route path="/finance-sim" element={<ProtectedRoute><PageTransition><Pages.FinanceSimulatorPage /></PageTransition></ProtectedRoute>} />
                 {/* Wallet route removed - functionality integrated into Budget page */}
                 {/* Quests route removed - functionality integrated into Dashboard page */}

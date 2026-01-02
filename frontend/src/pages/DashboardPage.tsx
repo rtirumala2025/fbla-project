@@ -2,16 +2,13 @@
  * DashboardPage - Comprehensive Dashboard
  * Integrates 3D pet visualization, stats, quests, actions, analytics, and accessories
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Sparkles,
-  TrendingUp,
-  // Coins, // Unused
-  RefreshCw,
   ShoppingBag,
   ChevronUp,
-  Gamepad2
+  Gamepad2,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePet } from '../context/PetContext';
@@ -23,12 +20,11 @@ import { CoachPanel } from '../components/coach/CoachPanel';
 import { fetchActiveQuests, completeQuest, fetchCoachAdvice } from '../api/quests';
 import type { CoachAdviceResponse } from '../types/quests';
 import { fetchAccessories } from '../api/accessories';
-import { fetchSnapshot, exportReports } from '../api/analytics';
+
 import { logPetInteraction } from '../utils/petInteractionLogger';
 import { useInteractionLogger } from '../hooks/useInteractionLogger';
 import type { ActiveQuestsResponse, Quest } from '../types/quests';
 import type { Accessory, AccessoryEquipResponse } from '../types/accessories';
-import type { AnalyticsSnapshot, SnapshotNotification, SnapshotSummary, TrendSeries } from '../types/analytics';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { DailyChallengeCard } from '../components/minigames/DailyChallengeCard';
 import { useAccessoriesRealtime } from '../hooks/useAccessoriesRealtime';
@@ -37,8 +33,7 @@ import { shopService } from '../services/shopService';
 import { earnService, type Chore } from '../services/earnService';
 
 // Lazy load heavy components
-const ExpensePieChart = lazy(() => import('../components/analytics/ExpensePieChart'));
-const TrendChart = lazy(() => import('../components/analytics/TrendChart'));
+
 
 type PetType = 'dog' | 'cat' | 'panda';
 
@@ -107,15 +102,11 @@ export const DashboardPage = React.memo(function DashboardPage() {
   const [coachAdvice, setCoachAdvice] = useState<CoachAdviceResponse | null>(null);
   const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [equippedAccessories, setEquippedAccessories] = useState<AccessoryEquipResponse[]>([]);
-  const [analytics, setAnalytics] = useState<AnalyticsSnapshot | null>(null);
-  const [loadingQuests, setLoadingQuests] = useState(false);
   const [loadingCoach, setLoadingCoach] = useState(false);
+  const [loadingQuests, setLoadingQuests] = useState(false);
   const [, setLoadingAccessories] = useState(false);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [processingQuestId, setProcessingQuestId] = useState<string | null>(null);
-  const isLoadingAnalyticsRef = useRef(false);
 
   // Load data
   // Individual load functions for manual refresh (keep for refresh buttons)
@@ -204,90 +195,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
     }
   }, [currentUser, pet, logger]);
 
-  const loadAnalytics = useCallback(async () => {
-    if (!currentUser || isLoadingAnalyticsRef.current) return;
-    try {
-      isLoadingAnalyticsRef.current = true;
-      setLoadingAnalytics(true);
-      const data = await fetchSnapshot();
-      setAnalytics(data);
-      logger.logUserAction('analytics_loaded');
-    } catch (err) {
-      logger.logInteraction('analytics_load_error', { error: err });
-    } finally {
-      setLoadingAnalytics(false);
-      isLoadingAnalyticsRef.current = false;
-    }
-  }, [currentUser, logger]);
 
-  const handleExport = useCallback(async () => {
-    if (!analytics || exporting) return;
-    setExporting(true);
-    try {
-      const start = analytics.weekly_trend.points[0]?.timestamp.slice(0, 10);
-      const end = analytics.weekly_trend.points.at(-1)?.timestamp.slice(0, 10);
-      if (!start || !end) {
-        throw new Error('Unable to determine date range for export');
-      }
-      const exportData = await exportReports(start, end);
-      const blob = new Blob([exportData.content], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = exportData.filename;
-      anchor.click();
-      URL.revokeObjectURL(url);
-      success('CSV exported successfully.');
-    } catch (err: any) {
-      console.error('Export failed', err);
-      toastError(err?.message || 'Unable to export CSV');
-    } finally {
-      setExporting(false);
-    }
-  }, [analytics, exporting, success, toastError]);
-
-  // Memoized analytics data
-  const bestInsight = useMemo(() => analytics?.ai_insights[0] ?? 'Consistent care keeps your pet thriving!', [analytics]);
-
-  const summaries = useMemo(() =>
-    analytics
-      ? [analytics.daily_summary, analytics.weekly_summary, analytics.monthly_summary]
-      : [],
-    [analytics]
-  );
-
-  const formattedSeries = useMemo(() => {
-    if (!analytics) {
-      return {
-        weekly: null,
-        monthly: null,
-        health: null,
-      };
-    }
-    const renameSeries = (series: TrendSeries, label: string): TrendSeries => ({
-      ...series,
-      label,
-    });
-    return {
-      weekly: renameSeries(analytics.weekly_trend, 'Weekly Net Coins'),
-      monthly: renameSeries(analytics.monthly_trend, 'Monthly Net Coins'),
-      health: renameSeries(analytics.health_progression, 'Health Average'),
-    };
-  }, [analytics]);
-
-  const notificationStyles = useCallback((notification: SnapshotNotification) => {
-    const base = 'rounded-2xl px-3 py-2 text-sm shadow-soft';
-    switch (notification.severity) {
-      case 'critical':
-        return `${base} border border-rose-200 bg-rose-50 text-rose-700`;
-      case 'warning':
-        return `${base} border border-amber-200 bg-amber-50 text-amber-700`;
-      case 'success':
-        return `${base} border border-emerald-200 bg-emerald-50 text-emerald-700`;
-      default:
-        return `${base} border border-slate-200 bg-slate-50 text-slate-600`;
-    }
-  }, []);
 
   useEffect(() => {
     if (!authLoading && !currentUser) {
@@ -380,19 +288,14 @@ export const DashboardPage = React.memo(function DashboardPage() {
             }
           }
 
-          // Secondary data - load analytics immediately (removed artificial delay)
-          // Analytics is heavy, but network may be fast, so load in parallel
-          loadAnalytics().catch(() => {
-            // Analytics failed - continue without it
-          });
         } catch (err) {
-          // Error loading dashboard data - continue with partial data
+          console.error(err);
         }
       };
 
       loadAllData();
     }
-  }, [currentUser, pet, loadAnalytics, logger]);
+  }, [currentUser, pet, logger]);
 
   // Subscribe to real-time accessory updates
   useAccessoriesRealtime(pet?.id || null, (updatedAccessories) => {
@@ -668,14 +571,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
               <ShoppingBag className="h-4 w-4" />
               <span>Shop</span>
             </button>
-            <button
-              onClick={loadAnalytics}
-              disabled={loadingAnalytics}
-              className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-md transition hover:shadow-lg disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${loadingAnalytics ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
-            </button>
+
           </div>
         </header>
 
@@ -996,140 +892,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
           </div>
         </div>
 
-        {/* Analytics Section - Full Width */}
-        {analytics && (
-          <div className="mt-6 space-y-6" style={{ contain: 'layout style paint' }}>
-            {/* Analytics Header */}
-            <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="flex items-center gap-2 text-2xl font-bold text-gray-800">
-                  <TrendingUp className="h-6 w-6 text-indigo-500" />
-                  Care Analytics
-                </h2>
-                <p className="mt-1 text-sm text-gray-600">
-                  Track your pet&apos;s wellbeing, spending, and care trends with AI-guided insights.
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={loadAnalytics}
-                  disabled={loadingAnalytics}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:border-indigo-500 hover:text-indigo-600 disabled:opacity-50"
-                >
-                  {loadingAnalytics ? 'Loading...' : 'Refresh'}
-                </button>
-                <button
-                  onClick={handleExport}
-                  disabled={exporting || !analytics}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-60"
-                >
-                  {exporting ? 'Exporting…' : 'Export Weekly CSV'}
-                </button>
-              </div>
-            </div>
 
-            {/* Today's Stats Cards */}
-            {analytics.end_of_day && (
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-                  <p className="text-xs font-semibold uppercase text-emerald-600">Coins earned</p>
-                  <p className="mt-2 text-2xl font-bold text-emerald-800">{analytics.end_of_day.coins_earned}</p>
-                  <p className="text-xs text-emerald-700">Spent: {analytics.end_of_day.coins_spent}</p>
-                </div>
-                <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4">
-                  <p className="text-xs font-semibold uppercase text-indigo-600">Happiness gain</p>
-                  <p className="mt-2 text-2xl font-bold text-indigo-800">+{analytics.end_of_day.happiness_gain}</p>
-                  <p className="text-xs text-indigo-700">Health change: {analytics.end_of_day.health_change}</p>
-                </div>
-                <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-                  <p className="text-xs font-semibold uppercase text-amber-600">AI insight</p>
-                  <p className="mt-2 text-sm text-amber-800">{bestInsight}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Summary Cards */}
-            {summaries.length > 0 && (
-              <div className="grid gap-4 md:grid-cols-3">
-                {summaries.map((summary: SnapshotSummary) => (
-                  <div key={summary.period} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-lg">
-                    <p className="text-xs font-semibold uppercase text-slate-500">{summary.period} snapshot</p>
-                    <p className="mt-2 text-2xl font-bold text-slate-900">{summary.net_coins >= 0 ? '+' : ''}{summary.net_coins} coins</p>
-                    <div className="mt-3 space-y-2 text-xs text-slate-600">
-                      <p>Avg health: {summary.avg_health.toFixed(0)} • Avg happiness: {summary.avg_happiness.toFixed(0)}</p>
-                      <p>Games played: {summary.games_played} • Pet actions: {summary.pet_actions}</p>
-                      {summary.ai_summary && <p className="rounded-xl bg-slate-50 p-2 text-slate-600">{summary.ai_summary}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Charts */}
-            <div className="grid gap-6 lg:grid-cols-2" style={{ contain: 'layout style paint' }}>
-              <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200" />}>
-                {formattedSeries.weekly && <TrendChart series={formattedSeries.weekly} color="#6366f1" />}
-              </Suspense>
-              <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200" />}>
-                {formattedSeries.health && <TrendChart series={formattedSeries.health} color="#10b981" />}
-              </Suspense>
-              <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200" />}>
-                {formattedSeries.monthly && <TrendChart series={formattedSeries.monthly} color="#f97316" />}
-              </Suspense>
-              <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200" />}>
-                {analytics.expenses && <ExpensePieChart expenses={analytics.expenses} />}
-              </Suspense>
-            </div>
-
-            {/* Daily Challenge Card */}
-            {analytics.end_of_day && (
-              <DailyChallengeCard
-                challengeText="Keep a positive coin flow for the next three days to unlock a savings bonus."
-                progress={`Daily coins: ${analytics.end_of_day.coins_earned - analytics.end_of_day.coins_spent} • Games played: ${analytics.end_of_day.games_played}`}
-              />
-            )}
-
-            {/* AI Recommendations */}
-            {analytics.ai_insights && analytics.ai_insights.length > 0 && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-slate-800">AI Recommendations</h3>
-                <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                  {analytics.ai_insights.map((insight) => (
-                    <li key={insight} className="rounded-xl bg-slate-50 px-3 py-2">
-                      {insight}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Notifications */}
-            {analytics.notifications && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-slate-800">Recent Notifications</h3>
-                  <span className="text-xs font-semibold text-slate-500">{analytics.notifications.length} alerts</span>
-                </div>
-                <div className="mt-4 space-y-3">
-                  {analytics.notifications.length === 0 && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                      All clear! No critical changes detected.
-                    </div>
-                  )}
-                  {analytics.notifications.map((notification) => (
-                    <div key={notification.id} className={notificationStyles(notification)}>
-                      <div className="flex items-center justify-between text-xs uppercase tracking-wide">
-                        <span>{notification.period_type}</span>
-                        <span>{new Date(notification.reference_date).toLocaleDateString()}</span>
-                      </div>
-                      <p className="mt-2 text-sm">{notification.message}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

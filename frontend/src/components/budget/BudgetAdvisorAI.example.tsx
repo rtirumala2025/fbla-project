@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import BudgetAdvisorAI, { TransactionInput } from './BudgetAdvisorAI';
 import { useAuth } from '../../contexts/AuthContext';
-import { analyticsService } from '../../services/analyticsService';
+import { getTransactions } from '../../api/finance';
 
 /**
  * Example: Integrating BudgetAdvisorAI with BudgetDashboard
@@ -24,8 +24,8 @@ export const BudgetDashboardWithAI: React.FC = () => {
 
       try {
         // Fetch transactions from your analytics service
-        const data = await analyticsService.getTransactions(currentUser.uid, 'month');
-        
+        const data = await getTransactions(currentUser.uid, 'month');
+
         // Transform to BudgetAdvisorAI format
         const formattedTransactions: TransactionInput[] = data.map((txn: any) => ({
           amount: Math.abs(txn.amount), // Budget advisor expects positive amounts
@@ -52,7 +52,7 @@ export const BudgetDashboardWithAI: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Budget Dashboard with AI</h1>
-      
+
       <BudgetAdvisorAI
         transactions={transactions}
         monthlyBudget={2000} // Optional: set monthly budget
@@ -109,7 +109,7 @@ export const BudgetAdvisorExample: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Budget Advisor AI</h1>
-      
+
       <BudgetAdvisorAI
         transactions={sampleTransactions}
         monthlyBudget={1500}

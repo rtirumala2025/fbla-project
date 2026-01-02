@@ -18,8 +18,7 @@ import {
   sendSocialInteraction,
   sendVoiceCommand,
 } from '../../api/nextGen';
-import { fetchSnapshot } from '../../api/analytics';
-import type { AnalyticsSnapshot } from '../../types/analytics';
+
 import type {
   ARSessionResponse,
   HabitPredictionResponse,
@@ -33,8 +32,8 @@ import { minigameService } from '../../services/minigameService';
 
 declare global {
   interface Window {
-    SpeechRecognition?: { new (): unknown };
-    webkitSpeechRecognition?: { new (): unknown };
+    SpeechRecognition?: { new(): unknown };
+    webkitSpeechRecognition?: { new(): unknown };
   }
 }
 
@@ -60,7 +59,7 @@ export const NextGenHub: React.FC = () => {
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [snapshot, setSnapshot] = useState<AnalyticsSnapshot | null>(null);
+
   const [arSession, setArSession] = useState<ARSessionResponse | null>(null);
   const [weather, setWeather] = useState<WeatherReactionResponse | null>(null);
   const [habits, setHabits] = useState<string | null>(null);
@@ -85,23 +84,21 @@ export const NextGenHub: React.FC = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const [snapshotData, ar, habitPrediction, seasonalEvent, leaderboardEntries] = await Promise.all([
-          fetchSnapshot(),
+        const [ar, habitPrediction, seasonalEvent, leaderboardEntries] = await Promise.all([
           fetchARSession(),
           fetchHabitPrediction(),
           fetchSeasonalEvent(),
           minigameService.fetchLeaderboard('fetch').catch(() => []), // Fallback to empty array
         ]);
-        setSnapshot(snapshotData);
         setArSession(ar);
         setHabitPrediction(habitPrediction);
-        
+
         // Enhanced habit prediction display with AI suggestions
         const habitText = habitPrediction.preferred_actions.length > 0
           ? `${habitPrediction.preferred_actions.join(', ')} around ${habitPrediction.next_best_time}`
           : 'No prediction yet. Keep interacting with your pet!';
         setHabits(habitText);
-        
+
         // Show habit prediction notification if available
         if (habitPrediction.notification_message) {
           setNotifications((prev) => [
@@ -114,7 +111,7 @@ export const NextGenHub: React.FC = () => {
             ...prev,
           ]);
         }
-        
+
         setSeasonal(seasonalEvent);
         setLeaderboard(leaderboardEntries);
       } catch (error: any) {
@@ -132,8 +129,8 @@ export const NextGenHub: React.FC = () => {
     if (!supportsSpeech) return;
     const SpeechRecognitionCtor =
       (window.SpeechRecognition || window.webkitSpeechRecognition) as
-        | (new () => SpeechRecognitionType)
-        | undefined;
+      | (new () => SpeechRecognitionType)
+      | undefined;
     if (!SpeechRecognitionCtor) {
       return;
     }
@@ -147,7 +144,7 @@ export const NextGenHub: React.FC = () => {
       try {
         const response = await sendVoiceCommand({ transcript });
         setVoiceResult(response);
-        
+
         // Enhanced notification with action feedback
         const notificationType = response.confidence > 0.7 ? 'success' : response.confidence > 0.5 ? 'info' : 'warning';
         setNotifications((prev) => [
@@ -159,11 +156,11 @@ export const NextGenHub: React.FC = () => {
           },
           ...prev,
         ]);
-        
+
         // Show success toast if action was executed
         if (response.action && response.confidence > 0.7) {
           toast.success(response.feedback || 'Voice command executed successfully!');
-          
+
           // Navigate based on action
           if (response.action === 'open_analytics') {
             navigate('/analytics');
@@ -211,19 +208,7 @@ export const NextGenHub: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestWeather]);
 
-  const snapshotHighlights = useMemo(() => {
-    if (!snapshot) return [];
-    const { daily_summary: summary } = snapshot;
-    const formatNumber = (value: number) => value.toLocaleString();
-    return [
-      { label: 'Coins earned', value: `${formatNumber(summary.coins_earned)} 🪙` },
-      { label: 'Pet actions', value: `${formatNumber(summary.pet_actions)} 🐾` },
-      { label: 'Avg happiness', value: `${Math.round(summary.avg_happiness)}% 😊` },
-      { label: 'Avg health', value: `${Math.round(summary.avg_health)}% ❤️` },
-    ];
-  }, [snapshot]);
 
-  const aiSummary = snapshot?.daily_summary.ai_summary ?? null;
 
   const handleCloudSave = async () => {
     if (!pet || !currentUser?.uid) return;
@@ -353,24 +338,7 @@ export const NextGenHub: React.FC = () => {
             </div>
           )}
 
-          {snapshotHighlights.length > 0 && (
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-              <h2 className="text-lg font-semibold text-slate-800">Today&apos;s care snapshot</h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {snapshotHighlights.map((item) => (
-                  <div key={item.label} className="rounded-2xl bg-slate-50 p-4 shadow-inner">
-                    <p className="text-xs font-semibold uppercase text-slate-500">{item.label}</p>
-                    <p className="mt-2 text-xl font-bold text-slate-900">{item.value}</p>
-                  </div>
-                ))}
-              </div>
-              {aiSummary && (
-                <p className="mt-4 text-sm text-slate-600">
-                  {aiSummary}
-                </p>
-              )}
-            </div>
-          )}
+
 
           <div className="grid gap-6 lg:grid-cols-2">
             <form
@@ -422,9 +390,8 @@ export const NextGenHub: React.FC = () => {
               </div>
               <button
                 onClick={toggleListening}
-                className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold shadow ${
-                  isListening ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
-                }`}
+                className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold shadow ${isListening ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
+                  }`}
                 disabled={!supportsSpeech}
               >
                 {isListening ? 'Listening… tap to stop' : 'Tap to speak'}
