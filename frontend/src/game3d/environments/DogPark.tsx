@@ -17,11 +17,17 @@ function makeGravelTexture() {
   return createCanvasTexture({
     size: 512,
     paint: (ctx, size) => {
-      ctx.fillStyle = '#6a5a4e';
+      ctx.fillStyle = '#eaddcf'; // Light beige base
       ctx.fillRect(0, 0, size, size);
       for (let i = 0; i < 15000; i++) {
-        const shade = Math.random() > 0.5 ? 80 : 130;
-        ctx.fillStyle = `rgba(${shade},${shade},${shade},0.3)`;
+        const shade = Math.random() > 0.5 ? 180 : 220; // Lighter noise
+        ctx.fillStyle = `rgba(${shade},${shade},${shade},0.2)`;
+        const s = 1 + Math.random() * 2;
+        ctx.fillRect(Math.random() * size, Math.random() * size, s, s);
+      }
+      // Add some warm speckles
+      for (let i = 0; i < 5000; i++) {
+        ctx.fillStyle = 'rgba(160, 120, 90, 0.15)';
         const s = 1 + Math.random() * 2;
         ctx.fillRect(Math.random() * size, Math.random() * size, s, s);
       }
@@ -141,7 +147,7 @@ export function DogPark({
       {/* --- CENTRAL PLAZA (Organic Shape) --- */}
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[14, 64]} />
-        <meshStandardMaterial map={gravelTex} color="#998877" transparent opacity={0.95} />
+        <meshStandardMaterial map={gravelTex} color="#ffffff" transparent opacity={0.95} roughness={0.9} />
       </mesh>
 
       {/* Decorative Circular Planter in Central Plaza */}
@@ -159,11 +165,11 @@ export function DogPark({
       {/* Path Spokes */}
       <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[5, 100]} />
-        <meshStandardMaterial map={gravelTex} color="#998877" />
+        <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
       </mesh>
       <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[100, 5]} />
-        <meshStandardMaterial map={gravelTex} color="#998877" />
+        <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
       </mesh>
 
       {/* --- BUILDINGS IN ORGANIC LAYOUT --- */}

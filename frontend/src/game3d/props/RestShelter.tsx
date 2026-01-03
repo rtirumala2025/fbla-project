@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Text } from '@react-three/drei';
+import { Box, Text, Cylinder } from '@react-three/drei';
 import { Bench } from './Bench';
 import { makeWoodTexture, makeShingleTexture, makeStoneTexture } from '../core/AssetLoader';
 
@@ -8,97 +8,119 @@ export function RestShelter(props: any & { onSignClick?: () => void }) {
 
     const woodTex = useMemo(() => {
         const t = makeWoodTexture();
-        t.repeat.set(2, 2);
+        t.repeat.set(2, 4);
         return t;
     }, []);
     const shingleTex = useMemo(() => {
         const t = makeShingleTexture();
-        t.repeat.set(3, 3);
+        t.repeat.set(3, 2);
         return t;
     }, []);
     const stoneTex = useMemo(() => makeStoneTexture(), []);
 
-    const woodColor = "#8b4513";
-    const postColor = "#5d4037";
+    const woodColor = "#8d6e63"; // Warm medium brown
+    const postColor = "#5d4037"; // Darker structural wood
 
     return (
         <group {...props}>
-            {/* ========== DECK FOUNDATION ========== */}
-            <Box args={[10.2, 0.4, 10.2]} position={[0, 0.2, 0]} castShadow receiveShadow>
-                <meshStandardMaterial map={stoneTex} color="#999999" />
+            {/* ========== STONE PLINTH FOUNDATION ========== */}
+            <Box args={[11, 0.6, 8]} position={[0, 0.3, 0]} castShadow receiveShadow>
+                <meshStandardMaterial map={stoneTex} color="#a1887f" />
             </Box>
-            <Box args={[10, 0.2, 10]} position={[0, 0.5, 0]} castShadow receiveShadow>
-                <meshStandardMaterial map={woodTex} color={woodColor} />
+            {/* Decking detail */}
+            <Box args={[10.6, 0.05, 7.6]} position={[0, 0.61, 0]} receiveShadow>
+                <meshStandardMaterial map={woodTex} color="#a1887f" />
             </Box>
 
-            {/* ========== STRUCTURE ========== */}
-            {/* Back Privacy Wall (Slatted) */}
-            <group position={[0, 0.6, -4.8]}>
-                {Array.from({ length: 12 }).map((_, i) => (
-                    <Box key={i} args={[0.6, 3.2, 0.1]} position={[-4 + i * 0.72, 1.6, 0]} castShadow>
-                        <meshStandardMaterial map={woodTex} color={woodColor} />
-                    </Box>
+            {/* ========== TIMBER FRAME STRUCTURE ========== */}
+            <group position={[0, 0.6, 0]}>
+                {/* 4 Corner Posts */}
+                {[[-4.8, -3.5], [4.8, -3.5], [-4.8, 3.5], [4.8, 3.5]].map((pos, i) => (
+                    <group key={i} position={[pos[0], 0, pos[1]]}>
+                        {/* Stone Base */}
+                        <Box args={[0.6, 0.8, 0.6]} position={[0, 0.4, 0]} castShadow>
+                            <meshStandardMaterial map={stoneTex} color="#795548" />
+                        </Box>
+                        {/* Wood Column */}
+                        <Box args={[0.35, 3.2, 0.35]} position={[0, 2.4, 0]} castShadow>
+                            <meshStandardMaterial map={woodTex} color={postColor} />
+                        </Box>
+                        {/* Fancy Angled Bracing */}
+                        <Box args={[0.2, 1.2, 0.2]} position={[0.5, 3.4, 0]} rotation={[0, 0, -0.7]} castShadow>
+                            <meshStandardMaterial color={postColor} />
+                        </Box>
+                        <Box args={[0.2, 1.2, 0.2]} position={[0, 3.4, 0.5]} rotation={[0.7, 0, 0]} castShadow>
+                            <meshStandardMaterial color={postColor} />
+                        </Box>
+                    </group>
                 ))}
             </group>
 
-            {/* Support Posts */}
-            {[[-4.8, -4.8], [4.8, -4.8], [-4.8, 4.8], [4.8, 4.8], [0, 4.8], [0, -4.8]].map((pos, i) => (
-                <Box key={i} args={[0.3, 3.8, 0.3]} position={[pos[0], 2, pos[1]]} castShadow>
-                    <meshStandardMaterial color={postColor} />
-                </Box>
-            ))}
-
-            {/* Railings */}
-            <group position={[0, 0.6, 4.8]}>
-                <Box args={[10, 0.1, 0.1]} position={[0, 1, 0]} castShadow><meshStandardMaterial color={postColor} /></Box>
-                {Array.from({ length: 10 }).map((_, i) => (
-                    <Box key={i} args={[0.1, 1, 0.1]} position={[-4.5 + i * 1, 0.5, 0]} castShadow>
-                        <meshStandardMaterial color={postColor} />
-                    </Box>
-                ))}
-            </group>
-
-            {/* ========== ROOF (Pitched) ========== */}
+            {/* ========== ROOF (Open Gable Pavilion) ========== */}
             <group position={[0, 4.4, 0]}>
-                <Box args={[11, 0.25, 6]} position={[0, 0.8, -2.8]} rotation={[0.45, 0, 0]} castShadow receiveShadow>
-                    <meshStandardMaterial map={shingleTex} color="#7a4a4a" />
+                {/* Main Ridge Beam */}
+                <Box args={[12, 0.4, 0.2]} position={[0, 1.5, 0]} castShadow><meshStandardMaterial color={postColor} /></Box>
+
+                {/* Pitched Roof Panels */}
+                <group rotation={[0, 0, 0]}>
+                    <Box args={[12, 0.15, 6]} position={[0, 0.6, -2.5]} rotation={[0.45, 0, 0]} castShadow receiveShadow>
+                        <meshStandardMaterial map={shingleTex} color="#5d4037" />
+                    </Box>
+                    <Box args={[12, 0.15, 6]} position={[0, 0.6, 2.5]} rotation={[-0.45, 0, 0]} castShadow receiveShadow>
+                        <meshStandardMaterial map={shingleTex} color="#5d4037" />
+                    </Box>
+                </group>
+
+                {/* Decorative End Trusses */}
+                <group position={[-5.8, 0.8, 0]}>
+                    <Box args={[0.1, 1.4, 0.1]} position={[0, 0, 0]}><meshStandardMaterial color={postColor} /></Box>
+                    <Box args={[0.1, 1.4, 4]} rotation={[0.45, 0, 0]} position={[0, 0, -1]}><meshStandardMaterial color={postColor} /></Box>
+                </group>
+                <group position={[5.8, 0.8, 0]}>
+                    <Box args={[0.1, 1.4, 0.1]} position={[0, 0, 0]}><meshStandardMaterial color={postColor} /></Box>
+                </group>
+            </group>
+
+            {/* ========== INTERIOR ========== */}
+            {/* Back Wall (Partial for privacy but open air) */}
+            <group position={[0, 0.6, -3.5]}>
+                <Box args={[6, 2.5, 0.2]} position={[0, 1.25, 0]} castShadow>
+                    <meshStandardMaterial map={woodTex} color={woodColor} />
                 </Box>
-                <Box args={[11, 0.25, 6]} position={[0, 0.8, 2.8]} rotation={[-0.45, 0, 0]} castShadow receiveShadow>
-                    <meshStandardMaterial map={shingleTex} color="#7a4a4a" />
-                </Box>
-                <Box args={[11.1, 0.2, 0.4]} position={[0, 1.7, 0]} castShadow>
-                    <meshStandardMaterial color={postColor} />
+                {/* Notice Board on Wall */}
+                <Box args={[2, 1.2, 0.05]} position={[0, 1.5, 0.15]} castShadow>
+                    <meshStandardMaterial color="#d7ccc8" />
                 </Box>
             </group>
+
+            {/* Benches */}
+            <Bench position={[-2.5, 0.7, -1]} rotation={0.5} />
+            <Bench position={[2.5, 0.7, 1]} rotation={-2.5} />
 
             {/* ========== SIGNAGE ========== */}
             <group
-                position={[0, 5, 5.2]}
+                position={[4.2, 2.5, 3.8]} // Hanging sign on corner
                 onPointerEnter={() => setIsHovered(true)}
                 onPointerLeave={() => setIsHovered(false)}
                 onPointerDown={(e) => { e.stopPropagation(); props.onSignClick?.(); }}
             >
-                <Box args={[3.5, 0.8, 0.2]} castShadow>
-                    <meshStandardMaterial color={isHovered ? "#8b4513" : "#5d4037"} />
+                <Box args={[0.1, 0.8, 0.1]} position={[0, 0.5, 0]}><meshStandardMaterial color="#333" /></Box>
+                <Box args={[3, 0.8, 0.15]} castShadow>
+                    <meshStandardMaterial map={woodTex} color={isHovered ? "#5d4037" : "#8d6e63"} />
                 </Box>
                 <Text
-                    position={[0, 0, 0.12]}
-                    fontSize={0.4}
+                    position={[0, 0, 0.1]}
+                    fontSize={0.35}
                     color="#ffffff"
                     anchorX="center"
                     anchorY="middle"
-                    outlineWidth={0.04}
-                    outlineColor="#000000"
+                    outlineWidth={0.03}
                 >
                     REST AREA
                 </Text>
             </group>
 
-            {/* ========== PROPS ========== */}
-            <Bench position={[-2.5, 0.6, -3]} rotation={0} />
-            <Bench position={[2.5, 0.6, -3]} rotation={0} />
-
-            <pointLight position={[0, 3, 0]} intensity={1.5} color="#ffd" distance={10} />
+            <pointLight position={[0, 3.5, 0]} intensity={1.5} color="#fff8e1" distance={10} />
         </group>
     );
 }
