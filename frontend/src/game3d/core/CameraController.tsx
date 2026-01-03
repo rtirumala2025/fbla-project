@@ -61,7 +61,7 @@ export function CameraController({
           maxPolarAngle={Math.PI / 2 - 0.05}
           minPolarAngle={0.1}
           makeDefault
-          enabled={mode !== 'drone'}
+          enabled={true}
         />
       )}
       <DroneControls

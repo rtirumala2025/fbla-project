@@ -189,28 +189,28 @@ export function PetHUD({
                     <ActionButton
                         label="Feed"
                         action="feed"
-                        disabled={disabled || droneActive}
+                        disabled={!!(disabled || droneActive)}
                         onAction={onAction}
                         icon={<Heart size={20} />}
                     />
                     <ActionButton
                         label="Play"
                         action="play"
-                        disabled={disabled || droneActive}
+                        disabled={!!(disabled || droneActive)}
                         onAction={onAction}
                         icon={<Sparkles size={20} />}
                     />
                     <ActionButton
                         label="Rest"
                         action="rest"
-                        disabled={disabled || droneActive}
+                        disabled={!!(disabled || droneActive)}
                         onAction={onAction}
                         icon={<Zap size={20} />}
                     />
                     <ActionButton
                         label="Bathe"
                         action="bathe"
-                        disabled={disabled || droneActive}
+                        disabled={!!(disabled || droneActive)}
                         onAction={onAction}
                         icon={<Droplets size={20} />}
                     />
