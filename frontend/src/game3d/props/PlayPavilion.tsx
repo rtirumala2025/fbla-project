@@ -6,59 +6,32 @@ export function PlayPavilion(props: any & { onSignClick?: () => void }) {
 
     return (
         <group {...props}>
-            {/* ========== STRUCTURE ========== */}
+            {/* ========== RUSTIC PLAY AREA (OPEN) ========== */}
 
-            {/* 4 Corner Support Pillars (Resized to 15x15x4.5) */}
-            <Cylinder args={[0.2, 0.2, 4.5, 16]} position={[-7.5, 2.25, -7.5]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.8} />
-            </Cylinder>
-            <Cylinder args={[0.2, 0.2, 4.5, 16]} position={[7.5, 2.25, -7.5]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.8} />
-            </Cylinder>
-            <Cylinder args={[0.2, 0.2, 4.5, 16]} position={[-7.5, 2.25, 7.5]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.8} />
-            </Cylinder>
-            <Cylinder args={[0.2, 0.2, 4.5, 16]} position={[7.5, 2.25, 7.5]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.8} />
-            </Cylinder>
+            {/* Support Pillars (Weathered Corner Logs) - Downsized to 10x10x3.5 */}
+            {[[-5, 5], [5, 5], [-5, -5], [5, -5]].map(([x, z], i) => (
+                <Cylinder key={i} args={[0.12, 0.12, 3.5, 8]} position={[x, 1.75, z]} castShadow>
+                    <meshStandardMaterial color="#5e5044" roughness={0.9} />
+                </Cylinder>
+            ))}
 
-            {/* Wooden Beam Roof Structure - Cross Beams */}
-            <Box args={[15, 0.3, 0.3]} position={[0, 4.5, -7.5]} rotation={[0, 0, 0.04]} castShadow>
-                <meshStandardMaterial color="#a0522d" roughness={0.7} />
+            {/* Rustic Beam Structure (No solid roof, just cross-beams for vines/hanging toys) */}
+            <Box args={[10, 0.12, 0.12]} position={[0, 3.4, 5]} castShadow>
+                <meshStandardMaterial color="#5e5044" roughness={0.9} />
             </Box>
-            <Box args={[15, 0.3, 0.3]} position={[0, 4.5, 0]} rotation={[0, 0, -0.04]} castShadow>
-                <meshStandardMaterial color="#a0522d" roughness={0.7} />
+            <Box args={[10, 0.12, 0.12]} position={[0, 3.4, -5]} castShadow>
+                <meshStandardMaterial color="#5e5044" roughness={0.9} />
             </Box>
-            <Box args={[15, 0.3, 0.3]} position={[0, 4.5, 7.5]} rotation={[0, 0, 0.04]} castShadow>
-                <meshStandardMaterial color="#a0522d" roughness={0.7} />
+            <Box args={[0.12, 0.12, 10]} position={[5, 3.4, 0]} castShadow>
+                <meshStandardMaterial color="#5e5044" roughness={0.9} />
+            </Box>
+            <Box args={[0.12, 0.12, 10]} position={[-5, 3.4, 0]} castShadow>
+                <meshStandardMaterial color="#5e5044" roughness={0.9} />
             </Box>
 
-            {/* Perpendicular Beams */}
-            <Box args={[0.3, 0.3, 15]} position={[-7.5, 4.5, 0]} castShadow>
-                <meshStandardMaterial color="#a0522d" roughness={0.7} />
-            </Box>
-            <Box args={[0.3, 0.3, 15]} position={[0, 4.5, 0]} castShadow>
-                <meshStandardMaterial color="#a0522d" roughness={0.7} />
-            </Box>
-            <Box args={[0.3, 0.3, 15]} position={[7.5, 4.5, 0]} castShadow>
-                <meshStandardMaterial color="#a0522d" roughness={0.7} />
-            </Box>
-
-            {/* Roof Covering - Wood Planks */}
-            <Box args={[15.5, 0.15, 15.5]} position={[0, 4.8, 0]} castShadow receiveShadow>
-                <meshStandardMaterial color="#cd853f" roughness={0.8} />
-            </Box>
-
-            {/* Exterior Signage - CLICKABLE */}
-            <Text
-                position={[0, 5.2, 7.6]}
-                rotation={[0, 0, 0]}
-                fontSize={isHovered ? 1.15 : 1}
-                color={isHovered ? "#ff8c00" : "#654321"}
-                anchorX="center"
-                anchorY="middle"
-                outlineWidth={0.08}
-                outlineColor="#ffffff"
+            {/* Weathered Wooden Sign - CLICKABLE */}
+            <group
+                position={[0, 3.8, 5.1]}
                 onPointerEnter={(e) => {
                     e.stopPropagation();
                     setIsHovered(true);
@@ -74,43 +47,53 @@ export function PlayPavilion(props: any & { onSignClick?: () => void }) {
                     props.onSignClick?.();
                 }}
             >
-                PLAY AREA
-            </Text>
+                <Box args={[3.2, 0.7, 0.1]} castShadow>
+                    <meshStandardMaterial color={isHovered ? "#9e8e7e" : "#7e6d5d"} roughness={0.9} />
+                </Box>
+                <Text
+                    position={[0, 0, 0.06]}
+                    fontSize={0.3}
+                    color={isHovered ? "#ffffdd" : "#eeeeee"}
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={0.02}
+                    outlineColor="#000000"
+                >
+                    PLAY AREA
+                </Text>
+            </group>
 
-            {/* ========== INTERIOR (Open-Air) ========== */}
+            {/* Scattered Toys (Randomized Cluster) */}
+            <group position={[0, 0, 0]}>
+                {[1, 2, 3, 4, 5].map((_, i) => (
+                    <mesh
+                        key={i}
+                        position={[(Math.random() - 0.5) * 4, 0.15, (Math.random() - 0.5) * 4]}
+                        rotation={[Math.random() * Math.PI, Math.random() * Math.PI, 0]}
+                        castShadow
+                    >
+                        {i % 2 === 0 ? <sphereGeometry args={[0.2 + Math.random() * 0.1, 16, 16]} /> : <boxGeometry args={[0.3, 0.3, 0.3]} />}
+                        <meshStandardMaterial
+                            color={["#ff6b6b", "#4ecdc4", "#ffe66d", "#1a535c", "#f7fff7"][i % 5]}
+                            roughness={0.6}
+                        />
+                    </mesh>
+                ))}
+            </group>
 
-            {/* Natural Grass Floor (No special flooring - leave natural terrain) */}
+            {/* Storage Log (Fallen log used for sitting or toy storage) */}
+            <group position={[-3, 0.25, -3]} rotation={[0, Math.PI / 4, Math.PI / 2]}>
+                <Cylinder args={[0.3, 0.3, 4, 8]} castShadow>
+                    <meshStandardMaterial color="#5e5044" roughness={0.9} />
+                </Cylinder>
+            </group>
 
-            {/* Toy Storage Bins along Pillars (Smaller) */}
-            <Box args={[1.2, 0.8, 1.2]} position={[-7.5, 0.4, -7.5]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.7} />
-            </Box>
-            <Box args={[1.2, 0.8, 1.2]} position={[7.5, 0.4, -7.5]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.7} />
-            </Box>
-            <Box args={[1.2, 0.8, 1.2]} position={[-7.5, 0.4, 7.5]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.7} />
-            </Box>
-            <Box args={[1.2, 0.8, 1.2]} position={[7.5, 0.4, 7.5]} castShadow>
-                <meshStandardMaterial color="#8b4513" roughness={0.7} />
-            </Box>
-
-            {/* Toys on Ground (sample toys - existing toys will be placed by parent) */}
-            <mesh position={[-3, 0.15, -2]} rotation={[0, 0.5, 0]} castShadow receiveShadow>
-                <sphereGeometry args={[0.3, 16, 16]} />
-                <meshStandardMaterial color="#ff6b6b" roughness={0.4} />
-            </mesh>
-            <mesh position={[3, 0.15, 2]} rotation={[0, 1, 0]} castShadow receiveShadow>
-                <sphereGeometry args={[0.3, 16, 16]} />
-                <meshStandardMaterial color="#4ecdc4" roughness={0.4} />
-            </mesh>
-            <mesh position={[0, 0.15, -3]} rotation={[0, 0.3, 0]} castShadow receiveShadow>
-                <sphereGeometry args={[0.3, 16, 16]} />
-                <meshStandardMaterial color="#ffe66d" roughness={0.4} />
-            </mesh>
-
-            {/* Ambient Lighting (natural daylight) */}
-            <pointLight position={[0, 4, 0]} intensity={1.2} distance={20} color="#fffacd" />
+            {/* Subtle Fairy Lights (Replacing point light) */}
+            <group position={[0, 3.2, 0]}>
+                {[[-5, 5], [5, 5], [-5, -5], [5, -5]].map(([x, z], i) => (
+                    <pointLight key={i} position={[x, 0, z]} intensity={0.5} distance={5} color="#fffacd" />
+                ))}
+            </group>
         </group>
     );
 }

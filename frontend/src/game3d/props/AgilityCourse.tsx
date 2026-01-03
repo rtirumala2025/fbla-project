@@ -112,6 +112,75 @@ export function AgilityCourse(props: any) {
                     <meshStandardMaterial color="#443322" roughness={0.6} metalness={0.8} />
                 </Box>
             </group>
+
+            {/* 4. AGILITY TUNNEL (Weathered Fabric/Composite) */}
+            <group position={[-5, 0, 4]} rotation={[0, Math.PI / 4, 0]}>
+                {/* Mud Base */}
+                <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                    <planeGeometry args={[2.5, 6]} />
+                    <meshStandardMaterial color="#3a2a1a" transparent opacity={0.4} />
+                </mesh>
+
+                {/* Tunnel Segments */}
+                <group rotation={[Math.PI / 2, 0, 0]}>
+                    <Cylinder args={[0.9, 0.9, 5, 32, 1, true]} castShadow receiveShadow>
+                        <meshStandardMaterial color="#4a5a4a" side={THREE.DoubleSide} roughness={1.0} />
+                    </Cylinder>
+                    {/* Reinforcing Hoops */}
+                    {[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5].map((z, i) => (
+                        <mesh key={i} position={[0, z, 0]} rotation={[0, 0, 0]}>
+                            <torusGeometry args={[0.95, 0.05, 12, 32]} />
+                            <meshStandardMaterial color="#333333" metalness={0.8} />
+                        </mesh>
+                    ))}
+                </group>
+                {/* Entrance/Exit Dirt buildup */}
+                <mesh position={[0, 0.1, -2.5]} rotation={[-Math.PI / 2, 0, 0]}>
+                    <circleGeometry args={[1.2, 16]} />
+                    <meshStandardMaterial color="#4a3a2a" transparent opacity={0.3} />
+                </mesh>
+                <mesh position={[0, 0.1, 2.5]} rotation={[-Math.PI / 2, 0, 0]}>
+                    <circleGeometry args={[1.2, 16]} />
+                    <meshStandardMaterial color="#4a3a2a" transparent opacity={0.3} />
+                </mesh>
+            </group>
+
+            {/* 5. BALANCE PLATFORM (Low Wooden Deck) */}
+            <group position={[-1, 0, -6]} rotation={[0, -Math.PI / 10, 0]}>
+                {/* Mud Base */}
+                <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                    <planeGeometry args={[4, 4]} />
+                    <meshStandardMaterial color="#3a2a1a" transparent opacity={0.4} />
+                </mesh>
+
+                {/* Support Posts */}
+                {[-1.5, 1.5].map((x) =>
+                    [-1.5, 1.5].map((z) => (
+                        <mesh key={`${x}-${z}`} position={[x, 0.25, z]} castShadow>
+                            <boxGeometry args={[0.2, 0.5, 0.2]} />
+                            <meshStandardMaterial map={woodTex} color="#5e5044" />
+                        </mesh>
+                    ))
+                )}
+
+                {/* Deck Planks */}
+                <group position={[0, 0.55, 0]}>
+                    <Box args={[3.5, 0.1, 3.5]} castShadow receiveShadow>
+                        <meshStandardMaterial map={woodTex} color="#6e5a4e" roughness={0.9} />
+                    </Box>
+                    {/* Scuffed Rubber Center Square */}
+                    <Box args={[2.5, 0.02, 2.5]} position={[0, 0.06, 0]} receiveShadow>
+                        <meshStandardMaterial color="#222222" roughness={0.8} />
+                    </Box>
+                    {/* Corner Nails */}
+                    {[-1.6, 1.6].map(nx => [-1.6, 1.6].map(nz => (
+                        <mesh key={`${nx}-${nz}`} position={[nx, 0.06, nz]}>
+                            <circleGeometry args={[0.02, 8]} />
+                            <meshStandardMaterial color="#333333" metalness={0.8} />
+                        </mesh>
+                    )))}
+                </group>
+            </group>
         </group>
     );
 }

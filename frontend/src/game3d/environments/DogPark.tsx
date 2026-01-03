@@ -357,15 +357,66 @@ export function DogPark({
         <meshStandardMaterial color="#7a8a6a" roughness={1.0} />
       </mesh>
 
-      {/* Zone B: Care Station (Southwest) - Concrete Pad */}
+      {/* Zone B: Care Station (Southwest) - Worn Dirt Pad */}
       <mesh position={[-25, 0.03, 25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[25, 25]} />
-        <meshStandardMaterial color="#d0d5dd" roughness={0.8} />
+        <planeGeometry args={[18, 14]} />
+        <meshStandardMaterial map={gravelTex} color="#5e4e3e" roughness={1.0} transparent opacity={0.8} />
+      </mesh>
+      <mesh position={[-25, 0.02, 25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[12, 32]} />
+        <meshStandardMaterial color="#6a7a5a" roughness={1.0} />
       </mesh>
 
-      {/* Zone C: Play Area (Northeast) - Natural Grass (no pad needed) */}
+      {/* Zone C: Play Area (Northeast) - Compacted Mud Pad */}
+      <mesh position={[25, 0.03, -25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[16, 16]} />
+        <meshStandardMaterial map={gravelTex} color="#4a3a2a" roughness={1.0} transparent opacity={0.9} />
+      </mesh>
+      <mesh position={[25, 0.02, -25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[12, 32]} />
+        <meshStandardMaterial color="#5a6a4a" roughness={1.0} />
+      </mesh>
 
-      {/* Zone D: Rest Area (Southeast) - Natural Grass (no pad needed) */}
+      {/* Zone D: Rest Area (Southeast) - Weathered Deck Base */}
+      <mesh position={[25, 0.03, 25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[16, 14]} />
+        <meshStandardMaterial map={gravelTex} color="#5e5044" roughness={1.0} transparent opacity={0.7} />
+      </mesh>
+      <mesh position={[25, 0.02, 25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[12, 32]} />
+        <meshStandardMaterial color="#6e7e5e" roughness={1.0} />
+      </mesh>
+
+      {/* Environmental Clutter - Leaves and Stones Clusters */}
+      {(() => {
+        const clusters = [];
+        for (let i = 0; i < 40; i++) {
+          const x = (Math.random() - 0.5) * 110;
+          const z = (Math.random() - 0.5) * 110;
+          // Skip path areas for cleaner layout
+          if (Math.abs(x) < 5 || Math.abs(z) < 5) continue;
+
+          clusters.push(
+            <group key={i} position={[x, 0.05, z]}>
+              {/* Scattered Leaves */}
+              {Array.from({ length: 3 }).map((_, j) => (
+                <mesh key={j} position={[(Math.random() - 0.5) * 2, 0.01, (Math.random() - 0.5) * 2]} rotation={[-Math.PI / 2, 0, Math.random() * Math.PI]}>
+                  <planeGeometry args={[0.2, 0.2]} />
+                  <meshStandardMaterial color={j % 2 === 0 ? "#8a5a2a" : "#6a7a2a"} transparent opacity={0.6} />
+                </mesh>
+              ))}
+              {/* Small Stones */}
+              {i % 4 === 0 && (
+                <mesh position={[Math.random(), 0, Math.random()]} castShadow>
+                  <sphereGeometry args={[0.08 + Math.random() * 0.1, 4, 4]} />
+                  <meshStandardMaterial color="#7a7a7a" roughness={1.0} />
+                </mesh>
+              )}
+            </group>
+          );
+        }
+        return clusters;
+      })()}
 
       {/* Central Path (Cross pattern connecting all zones) */}
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>

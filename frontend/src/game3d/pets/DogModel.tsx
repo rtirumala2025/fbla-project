@@ -162,8 +162,8 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
           </mesh>
 
           {/* Mouth Line */}
-          <mesh position={[0, -0.12, 0.22]} rotation={[0, 0, 0]} castShadow>
-            <capsuleGeometry args={[0.02, 0.08, 4, 8]} rotation={[0, 0, Math.PI / 2]} />
+          <mesh position={[0, -0.12, 0.22]} rotation={[0, 0, Math.PI / 2]} castShadow>
+            <capsuleGeometry args={[0.02, 0.08, 4, 8]} />
             <meshStandardMaterial color={noseColor} roughness={0.8} />
           </mesh>
 

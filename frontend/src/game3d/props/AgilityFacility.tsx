@@ -84,7 +84,7 @@ export function AgilityFacility(props: any & { onSignClick?: () => void }) {
                     color="#cccccc"
                     anchorX="center"
                     anchorY="middle"
-                    opacity={0.8}
+                    fillOpacity={0.8}
                 >
                     MAINTAINED BY PARK VOLUNTEERS
                 </Text>
