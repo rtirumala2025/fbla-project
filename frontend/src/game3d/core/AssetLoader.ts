@@ -221,3 +221,75 @@ export function makeForestFloorTexture() {
     },
   });
 }
+
+export function makeStoneTexture() {
+  return createCanvasTexture({
+    size: 512,
+    paint: (ctx, size) => {
+      // Base: Cold grey
+      ctx.fillStyle = '#6a6c6e';
+      ctx.fillRect(0, 0, size, size);
+
+      // 1. Larger Rock Shapes
+      for (let i = 0; i < 60; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const w = 40 + Math.random() * 80;
+        const h = 30 + Math.random() * 60;
+        const angle = Math.random() * Math.PI * 2;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.fillStyle = Math.random() > 0.5 ? '#7a7c7e' : '#5a5c5e';
+        ctx.fillRect(-w / 2, -h / 2, w, h);
+
+        // Rock detail
+        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+        ctx.strokeRect(-w / 2, -h / 2, w, h);
+        ctx.restore();
+      }
+
+      // 2. Grout/Cracks
+      ctx.strokeStyle = '#3a3c3e';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 20; i++) {
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * size, 0);
+        ctx.lineTo(Math.random() * size, size);
+        ctx.stroke();
+      }
+    },
+  });
+}
+
+export function makeShingleTexture() {
+  return createCanvasTexture({
+    size: 512,
+    paint: (ctx, size) => {
+      // Base: Slate/Dark Green
+      ctx.fillStyle = '#2d332d';
+      ctx.fillRect(0, 0, size, size);
+
+      const rows = 12;
+      const cols = 8;
+      const h = size / rows;
+      const w = size / cols;
+
+      for (let r = 0; r < rows; r++) {
+        const offset = (r % 2) * (w / 2);
+        for (let c = -1; c < cols + 1; c++) {
+          const x = c * w + offset;
+          const y = r * h;
+
+          ctx.fillStyle = `hsl(120, 10%, ${20 + Math.random() * 10}%)`;
+          ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+
+          // Shingle highlight
+          ctx.fillStyle = 'rgba(255,255,255,0.05)';
+          ctx.fillRect(x + 1, y + 1, w - 2, 2);
+        }
+      }
+    },
+  });
+}

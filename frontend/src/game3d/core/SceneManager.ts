@@ -40,10 +40,10 @@ export interface PetGame2State {
 
 // Activity zone positions (matching DogPark.tsx building positions)
 export const ACTIVITY_POSITIONS: Record<ActivityZone, [number, number, number]> = {
-  agility: [-16, 0, -16],
-  vet: [-16, 0, 16],
-  play: [16, 0, -16],
-  rest: [16, 0, 16],
+  agility: [-16, 0, -14],
+  vet: [-18, 0, 10],
+  play: [14, 0, -18],
+  rest: [16, 0, 14],
   center: [0, 0, 0],
 };
 
