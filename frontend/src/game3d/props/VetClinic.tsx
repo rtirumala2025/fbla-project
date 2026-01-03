@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Text } from '@react-three/drei';
+import { Box, Cylinder, Text } from '@react-three/drei';
 import { CareSupplies } from './CareSupplies';
-import { makeWoodTexture, makeStoneTexture } from '../core/AssetLoader';
+import { makeStoneTexture } from '../core/AssetLoader';
 
 export function VetClinic(props: any & { onSignClick?: () => void }) {
     const [isHovered, setIsHovered] = useState(false);

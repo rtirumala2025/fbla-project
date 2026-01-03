@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Cylinder, Text } from '@react-three/drei';
+import { Box, Text } from '@react-three/drei';
 import { Bench } from './Bench';
 import { makeWoodTexture, makeShingleTexture, makeStoneTexture } from '../core/AssetLoader';
 

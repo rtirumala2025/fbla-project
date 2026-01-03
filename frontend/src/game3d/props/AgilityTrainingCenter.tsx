@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Cylinder, Text } from '@react-three/drei';
+import { Box, Text } from '@react-three/drei';
 import { makeStoneTexture } from '../core/AssetLoader';
 
 export function AgilityTrainingCenter(props: any & { onSignClick?: () => void }) {

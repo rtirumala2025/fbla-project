@@ -1,8 +1,8 @@
 import React, { useMemo, useRef } from 'react';
-import { Cloud, Float, Text } from '@react-three/drei';
+import { Cloud, Float } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { makeGrassTexture, makeWoodTexture, createCanvasTexture } from '../core/AssetLoader';
+import { makeGrassTexture, createCanvasTexture } from '../core/AssetLoader';
 import { AgilityFacility } from '../props/AgilityFacility';
 import { VetClinic } from '../props/VetClinic';
 import { PlayPavilion } from '../props/PlayPavilion';
@@ -63,11 +63,7 @@ function Bush({ position, scale = 1, rotation = 0 }: { position: [number, number
   );
 }
 
-const forestTrails = [
-  { start: { x: 0, z: -8 }, end: { x: 0, z: -25 }, width: 4 },
-  { start: { x: 8, z: 0 }, end: { x: 25, z: 0 }, width: 4 },
-  { start: { x: -8, z: 0 }, end: { x: -25, z: 0 }, width: 4 }
-];
+// --- SCENERY ---
 
 export function DogPark({
   state,

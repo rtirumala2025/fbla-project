@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Box, Cylinder, Text } from '@react-three/drei';
+import { Box, Text } from '@react-three/drei';
 import { AgilityCourse } from './AgilityCourse';
 import { AgilityTrainingCenter } from './AgilityTrainingCenter';
 import { makeWoodTexture } from '../core/AssetLoader';

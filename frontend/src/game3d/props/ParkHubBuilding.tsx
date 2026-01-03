@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { Box, Cylinder, Text } from '@react-three/drei';
-import * as THREE from 'three';
 import { makeWoodTexture, makeStoneTexture, makeShingleTexture } from '../core/AssetLoader';
 
 export function ParkHubBuilding(props: any & { onSignClick?: () => void }) {

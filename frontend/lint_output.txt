@@ -1,0 +1,358 @@
+
+> virtual-pet-app@1.0.0 lint
+> eslint src --ext .ts,.tsx || true
+
+
+/Users/ritvik/fbla-project/frontend/src/App.tsx
+   1:27  warning  'lazy' is defined but never used           @typescript-eslint/no-unused-vars
+  14:10  warning  'ErrorBoundary' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/OnboardingTutorial.test.tsx
+  131:7   error    Avoid using multiple assertions within `waitFor` callback                            testing-library/no-wait-for-multiple-assertions
+  187:21  warning  Function declared in a loop contains unsafe references to variable(s) 'currentStep'  no-loop-func
+  257:7   error    Avoid using multiple assertions within `waitFor` callback                            testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/ProfileIntegration.test.tsx
+  122:7  error  Avoid calling `expect` conditionally`  jest/no-conditional-expect
+  189:7  error  Avoid calling `expect` conditionally`  jest/no-conditional-expect
+  198:7  error  Avoid calling `expect` conditionally`  jest/no-conditional-expect
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/ProfileUpdate.test.tsx
+  6:10  warning  'renderHook' is defined but never used  @typescript-eslint/no-unused-vars
+  6:22  warning  'act' is defined but never used         @typescript-eslint/no-unused-vars
+  6:27  warning  'waitFor' is defined but never used     @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/RouteGuards.test.tsx
+   5:10  warning  'render' is defined but never used          @typescript-eslint/no-unused-vars
+   7:10  warning  'AuthProvider' is defined but never used    @typescript-eslint/no-unused-vars
+   8:10  warning  'ToastProvider' is defined but never used   @typescript-eslint/no-unused-vars
+   9:10  warning  'PetProvider' is defined but never used     @typescript-eslint/no-unused-vars
+  10:31  warning  'mockUserStates' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/TooltipGuide.test.tsx
+    6:10  warning  'BrowserRouter' is defined but never used                  @typescript-eslint/no-unused-vars
+   85:7   error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  134:7   error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  152:7   error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  170:7   error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  237:7   error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/VoiceCommand.test.tsx
+  483:31  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+  483:31  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/api/socialApi.test.ts
+  6:10  warning  'getFriends' is defined but never used      @typescript-eslint/no-unused-vars
+  6:60  warning  'getLeaderboard' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/components/QuestBoard.test.tsx
+    7:37  warning  'waitFor' is defined but never used                                                                  @typescript-eslint/no-unused-vars
+  135:12  error    Avoid using container methods. Prefer using the methods from Testing Library, such as "getByRole()"  testing-library/no-container
+  135:22  error    Avoid direct Node access. Prefer using the methods from Testing Library                              testing-library/no-node-access
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/components/Shop.test.tsx
+  146:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  213:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  305:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/features/social/AddFriendModal.test.tsx
+   70:7   error  Avoid using multiple assertions within `waitFor` callback                testing-library/no-wait-for-multiple-assertions
+  106:50  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+  106:50  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+  111:9   error  Avoid calling `expect` conditionally`                                    jest/no-conditional-expect
+  157:73  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+  157:73  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+  157:92  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+  157:92  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+  160:7   error  Avoid calling `expect` conditionally`                                    jest/no-conditional-expect
+  180:50  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+  180:50  error  Avoid direct Node access. Prefer using the methods from Testing Library  testing-library/no-node-access
+  185:9   error  Avoid calling `expect` conditionally`                                    jest/no-conditional-expect
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/features/social/FriendsList.test.tsx
+  172:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/flows/economyFlow.test.tsx
+  61:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  84:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  85:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/flows/petCareFlow.test.tsx
+   30:9  warning  'mockGetPet' is assigned a value but never used            @typescript-eslint/no-unused-vars
+   75:7  error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+   91:7  error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  119:7  error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/hooks/useOfflineStatus.test.tsx
+   9:9  warning  'originalAddEventListener' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  10:9  warning  'originalRemoveEventListener' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/hooks/useSyncManager.test.tsx
+    8:10  warning  'supabase' is defined but never used                       @typescript-eslint/no-unused-vars
+   94:7   error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  111:7   error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/integration/budgeting.test.tsx
+    4:31  warning  'act' is defined but never used                 @typescript-eslint/no-unused-vars
+  172:15  warning  'result' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  234:13  warning  'totalCost' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/integration/petLifecycle.test.tsx
+   4:10  warning  'render' is defined but never used                @typescript-eslint/no-unused-vars
+   4:18  warning  'screen' is defined but never used                @typescript-eslint/no-unused-vars
+   4:26  warning  'waitFor' is defined but never used               @typescript-eslint/no-unused-vars
+   4:35  warning  'act' is defined but never used                   @typescript-eslint/no-unused-vars
+  10:10  warning  'supabase' is defined but never used              @typescript-eslint/no-unused-vars
+  35:7   warning  'TestWrapper' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/integration/shopPurchase.test.tsx
+   4:8   warning  'React' is defined but never used                          @typescript-eslint/no-unused-vars
+   5:10  warning  'render' is defined but never used                         @typescript-eslint/no-unused-vars
+   5:18  warning  'screen' is defined but never used                         @typescript-eslint/no-unused-vars
+   5:35  warning  'fireEvent' is defined but never used                      @typescript-eslint/no-unused-vars
+   6:10  warning  'BrowserRouter' is defined but never used                  @typescript-eslint/no-unused-vars
+   7:10  warning  'Shop' is defined but never used                           @typescript-eslint/no-unused-vars
+  18:7   warning  'mockProfileService' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  67:7   error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  68:7   error    Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/integration/storeSync.test.tsx
+   98:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+   99:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  151:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  152:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/integration/syncing.test.tsx
+   33:7   warning  'mockSyncService' is assigned a value but never used     @typescript-eslint/no-unused-vars
+   34:7   warning  'mockOfflineStorage' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   46:13  warning  'mockState' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  127:13  warning  'operation' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  239:15  warning  'result' is assigned a value but never used              @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/__tests__/utils/testHelpers.tsx
+  10:10  warning  'supabase' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/components/ARPets.tsx
+   40:9   warning  'xrState' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  132:10  warning  'error' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  132:17  warning  'setError' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/components/BudgetAdvisor.tsx
+  90:6  warning  React Hook useEffect has a missing dependency: 'transactionHistory'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/components/FinanceSimulator.tsx
+  5:27  warning  'useEffect' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/components/HabitDashboard.tsx
+  71:6  warning  React Hook useEffect has missing dependencies: 'interactionHistory' and 'petStatsHistory'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/components/Header.tsx
+  4:77   warning  'Sparkles' is defined but never used  @typescript-eslint/no-unused-vars
+  4:128  warning  'FileText' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/components/PetBehaviorDashboard.tsx
+  99:6  warning  React Hook useEffect has a missing dependency: 'interactionHistory'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/components/PetMoodForecast.tsx
+   6:94  warning  'Cell' is defined but never used                                                                                                            @typescript-eslint/no-unused-vars
+  76:6   warning  React Hook useEffect has missing dependencies: 'currentStats' and 'interactionHistory'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/components/VoiceCommand.tsx
+   86:6  warning  React Hook useEffect has a missing dependency: 'handleCommandSubmit'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  171:6  warning  React Hook useCallback has an unnecessary dependency: 'userId'. Either exclude it or remove the dependency array        react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/components/__tests__/BudgetAdvisor.test.tsx
+  45:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+
+/Users/ritvik/fbla-project/frontend/src/components/__tests__/PetNameInput.test.tsx
+   64:7  error  Avoid using multiple assertions within `waitFor` callback  testing-library/no-wait-for-multiple-assertions
+  115:7  error  Avoid using side effects within `waitFor` callback         testing-library/no-wait-for-side-effects
+
+/Users/ritvik/fbla-project/frontend/src/components/ai/AIChat.tsx
+    2:10  warning  'Button' is defined but never used              @typescript-eslint/no-unused-vars
+    6:65  warning  'AlertCircle' is defined but never used         @typescript-eslint/no-unused-vars
+    9:10  warning  'apiRequest' is defined but never used          @typescript-eslint/no-unused-vars
+  165:9   warning  'isCommand' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/components/ai/PetEmotionCard.tsx
+  3:39  warning  'Activity' is defined but never used  @typescript-eslint/no-unused-vars
+  3:49  warning  'Smile' is defined but never used     @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/components/auth/OAuthConfigStatus.tsx
+  2:23  warning  'CheckCircle' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/components/budget/BudgetAdvisorForm.tsx
+   6:27  warning  'useRef' is defined but never used  @typescript-eslint/no-unused-vars
+  19:3   warning  'Send' is defined but never used    @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/components/pets/PetAIDashboard.tsx
+  150:5  warning  React Hook useCallback has unnecessary dependencies: 'commandTouched' and 'logFormValidation'. Either exclude them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/components/pets/PetCarePanel.tsx
+  143:6  warning  React Hook useCallback has a missing dependency: 'checkEvolution'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/components/pets/PetInteractionPanel.tsx
+  315:33  warning  React Hook useCallback received a function whose dependencies are unknown. Pass an inline function instead  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/components/social/ProfilePage.tsx
+    6:10  warning  'User' is defined but never used                          @typescript-eslint/no-unused-vars
+    6:67  warning  'X' is defined but never used                             @typescript-eslint/no-unused-vars
+    8:70  warning  'FriendListEntry' is defined but never used               @typescript-eslint/no-unused-vars
+   40:24  warning  'setRealtimeData' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  107:9   warning  'handleAcceptRequest' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/components/sync/SyncBridge.tsx
+  88:6  warning  React Hook useEffect has a missing dependency: 'pet'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/components/tooltips/ProgressiveTooltip.tsx
+  174:6  warning  React Hook useEffect has a missing dependency: 'updatePosition'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/config/appNavigation.ts
+   8:3  warning  'UtensilsCrossed' is defined but never used   @typescript-eslint/no-unused-vars
+   9:3  warning  'Gamepad2' is defined but never used          @typescript-eslint/no-unused-vars
+  16:3  warning  'CircleDollarSign' is defined but never used  @typescript-eslint/no-unused-vars
+  17:3  warning  'Sparkles' is defined but never used          @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/context/PetContext.tsx
+    3:49  warning  'withRetry' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+  149:11  warning  'lastError' is assigned a value but never used                                                                        @typescript-eslint/no-unused-vars
+  724:6   warning  React Hook useCallback has a missing dependency: 'logTransaction'. Either include it or remove the dependency array   react-hooks/exhaustive-deps
+  742:6   warning  React Hook useCallback has a missing dependency: 'logTransaction'. Either include it or remove the dependency array   react-hooks/exhaustive-deps
+  759:6   warning  React Hook useCallback has a missing dependency: 'logTransaction'. Either include it or remove the dependency array   react-hooks/exhaustive-deps
+  776:6   warning  React Hook useCallback has a missing dependency: 'logTransaction'. Either include it or remove the dependency array   react-hooks/exhaustive-deps
+  823:7   warning  React Hook useMemo has an unnecessary dependency: 'logTransaction'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/contexts/ThemeContext.tsx
+  161:6  warning  React Hook useCallback has a missing dependency: 'colorBlindMode'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/features/ar/ARPetMode.tsx
+   68:10  warning  'ARPetPlacement' is defined but never used    @typescript-eslint/no-unused-vars
+  123:10  warning  'ARSessionTracker' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/features/finance_sim/FinanceSimulator.tsx
+  67:10  warning  'selectedOption' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/features/habits/HabitPrediction.tsx
+  33:27  warning  'setPetStatsHistory' is assigned a value but never used                                                             @typescript-eslint/no-unused-vars
+  63:6   warning  React Hook useEffect has a missing dependency: 'loadPredictions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/features/onboarding/OnboardingFlow.tsx
+  201:10  warning  'completedSteps' is assigned a value but never used                                                                  @typescript-eslint/no-unused-vars
+  203:11  warning  'currentUser' is assigned a value but never used                                                                     @typescript-eslint/no-unused-vars
+  204:11  warning  'pet' is assigned a value but never used                                                                             @typescript-eslint/no-unused-vars
+  245:6   warning  React Hook useCallback has a missing dependency: 'handleComplete'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/features/quests/DailyChallenge.tsx
+  8:28  warning  'claimQuestReward' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/features/social/AddFriendModal.tsx
+  35:6  warning  React Hook useEffect has a missing dependency: 'searchProfiles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/features/social/FriendsList.tsx
+  11:3  warning  'sendFriendRequest' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/features/voice/VoiceCommandUI.tsx
+  59:6  warning  React Hook useEffect has a missing dependency: 'initializeAudio'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  84:6  warning  React Hook useEffect has a missing dependency: 'animateWaveform'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/game3d/PetGame2Scene.tsx
+  89:9  warning  'targetRef' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/environments/CozyRoom.tsx
+  2:10  warning  'useFrame' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/environments/DogPark.tsx
+   2:24  warning  'Text' is defined but never used                   @typescript-eslint/no-unused-vars
+   5:28  warning  'makeWoodTexture' is defined but never used        @typescript-eslint/no-unused-vars
+  66:7   warning  'forestTrails' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/pets/CatModel.tsx
+  24:9  warning  'furVariant2' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/pets/DogModel.tsx
+   6:15  warning  'wobble' is defined but never used                      @typescript-eslint/no-unused-vars
+  25:9   warning  'baseColorVariant2' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/pets/PandaModel.tsx
+  23:9  warning  'whiteShadow' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/props/AgilityFacility.tsx
+  2:15  warning  'Cylinder' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/props/AgilityTrainingCenter.tsx
+  2:15  warning  'Cylinder' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/props/ParkHubBuilding.tsx
+  3:13  warning  'THREE' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/props/RestShelter.tsx
+  2:15  warning  'Cylinder' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/props/VetClinic.tsx
+   4:10  warning  'makeWoodTexture' is defined but never used  @typescript-eslint/no-unused-vars
+  95:18  error    'Cylinder' is not defined                    react/jsx-no-undef
+
+/Users/ritvik/fbla-project/frontend/src/game3d/ui/NavigationGuide.tsx
+  1:17  warning  'useMemo' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/game3d/ui/PetInventoryDock.tsx
+  2:18  warning  'AnimatePresence' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/hooks/useStoreSync.ts
+  21:5  warning  'setPetLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/hooks/useSyncManager.ts
+   11:10  warning  'captureAppState' is defined but never used     @typescript-eslint/no-unused-vars
+  185:15  warning  'processed' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  185:26  warning  'failed' is assigned a value but never used     @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/hooks/useUserProfile.ts
+  14:10  warning  'supabase' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/pages/DashboardPage.tsx
+    5:50  warning  'useRef' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+   29:10  warning  'DailyChallengeCard' is defined but never used                                                                     @typescript-eslint/no-unused-vars
+  104:10  warning  'equippedAccessories' is assigned a value but never used                                                           @typescript-eslint/no-unused-vars
+  143:9   warning  'loadAccessories' is assigned a value but never used                                                               @typescript-eslint/no-unused-vars
+  213:58  warning  'balanceData' is assigned a value but never used                                                                   @typescript-eslint/no-unused-vars
+  298:6   warning  React Hook useEffect has a missing dependency: 'refreshBalance'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  354:9   warning  'handleFeed' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+  358:9   warning  'handlePlay' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+  368:9   warning  'handleBathe' is assigned a value but never used                                                                   @typescript-eslint/no-unused-vars
+  403:9   warning  'handleEarn' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/pages/PetGame2Screen.tsx
+   21:32  warning  'refreshPet' is assigned a value but never used                                                                      @typescript-eslint/no-unused-vars
+   91:6   warning  React Hook useEffect has a missing dependency: 'pet.stats'. Either include it or remove the dependency array         react-hooks/exhaustive-deps
+  210:6   warning  React Hook useCallback has a missing dependency: 'updateStats'. Either include it or remove the dependency array     react-hooks/exhaustive-deps
+  249:6   warning  React Hook useCallback has a missing dependency: 'refreshBalance'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/pages/PetNaming.tsx
+  46:24  warning  'hasPet' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/pages/nextgen/NextGenHub.tsx
+  184:6  warning  React Hook useEffect has missing dependencies: 'navigate' and 'toast'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/pages/pageRegistry.ts
+  1:8  warning  'React' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/pages/quests/QuestDashboard.tsx
+  121:19  warning  'profileService' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+  122:19  warning  'useAuth' is assigned a value but never used                                                                           @typescript-eslint/no-unused-vars
+  138:5   warning  React Hook useCallback has a missing dependency: 'currentUser?.uid'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/ritvik/fbla-project/frontend/src/services/shopService.ts
+  5:7  warning  'useMock' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/setupTests.ts
+  6:8  warning  'React' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ritvik/fbla-project/frontend/src/utils/authHelpers.ts
+  101:41  warning  Unexpected mix of '||' and '&&'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+  101:73  warning  Unexpected mix of '||' and '&&'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+
+/Users/ritvik/fbla-project/frontend/src/utils/routePreloader.ts
+  98:1  warning  Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+✖ 193 problems (48 errors, 145 warnings)
+
