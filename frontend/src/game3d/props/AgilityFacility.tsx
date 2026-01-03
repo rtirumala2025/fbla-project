@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Box, Cylinder, Text } from '@react-three/drei';
 import { AgilityCourse } from './AgilityCourse';
+import { AgilityTrainingCenter } from './AgilityTrainingCenter';
 import { makeWoodTexture } from '../core/AssetLoader';
 
 export function AgilityFacility(props: any & { onSignClick?: () => void }) {
@@ -9,6 +10,12 @@ export function AgilityFacility(props: any & { onSignClick?: () => void }) {
 
     return (
         <group {...props}>
+            {/* ========== AGILITY TRAINING CENTER BUILDING ========== */}
+            <AgilityTrainingCenter
+                position={[0, 0, -5]}
+                onSignClick={props.onSignClick}
+            />
+
             {/* ========== OUTDOOR AGILITY ZONE ========== */}
 
             {/* Low Rustic Fence Perimeter */}
