@@ -42,24 +42,18 @@ export function NavigationGuide({ navigationState, currentPosition }: {
     return (
         <group>
             {/* Dashed path line */}
-            <line ref={lineRef}>
-                <bufferGeometry>
-                    <bufferAttribute
-                        attach="attributes-position"
-                        count={2}
-                        array={new Float32Array(6)}
-                        itemSize={3}
-                    />
-                </bufferGeometry>
-                <lineDashedMaterial
-                    color="#ffaa00"
-                    dashSize={0.5}
-                    gapSize={0.3}
-                    linewidth={2}
-                    transparent
-                    opacity={0.7}
-                />
-            </line>
+            {/* Dashed path line */}
+            <primitive object={new THREE.Line(
+                new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3)),
+                new THREE.LineDashedMaterial({
+                    color: "#ffaa00",
+                    dashSize: 0.5,
+                    gapSize: 0.3,
+                    linewidth: 2,
+                    transparent: true,
+                    opacity: 0.7
+                })
+            )} ref={lineRef} />
 
             {/* Pulsing marker at destination */}
             <mesh

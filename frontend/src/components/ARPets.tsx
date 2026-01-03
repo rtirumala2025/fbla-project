@@ -8,35 +8,17 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { Hand, Camera, AlertCircle, CheckCircle } from 'lucide-react';
+import { XR, createXRStore, XRButton, useXR } from '@react-three/xr';
 import type { Pet } from '../types/pet';
 
 // #region agent log
-fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ARPets.tsx:13',message:'ARPets module loading started',data:{hasImport:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ARPets.tsx:13', message: 'ARPets module loading started', data: { hasImport: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
 // #endregion
 
-// Conditional import for WebXR
-let ARButton: any = null;
-let useXR: any = null;
-
-// Dynamically import @react-three/xr using ES module syntax
-(async () => {
-  try {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ARPets.tsx:25',message:'Attempting dynamic import() call',data:{moduleName:'@react-three/xr'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-    const xrModule = await import('@react-three/xr');
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ARPets.tsx:28',message:'import() succeeded',data:{hasARButton:!!xrModule.ARButton,hasUseXR:!!xrModule.useXR},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-    ARButton = xrModule.ARButton;
-    useXR = xrModule.useXR;
-  } catch (e) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ARPets.tsx:33',message:'import() failed',data:{errorMessage:e instanceof Error?e.message:String(e),errorName:e instanceof Error?e.name:'Unknown',errorStack:e instanceof Error?e.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-    // WebXR not available, will use fallback
-  }
-})();
+const xrStore = createXRStore({
+  handTracking: true,
+  bounded: true,
+});
 
 interface ARPetsProps {
   pet: Pet;
@@ -53,7 +35,9 @@ const ARPetMesh: React.FC<ARPetMeshProps> = ({ pet, onInteraction }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const { gl } = useThree();
   const [interactionCooldown, setInteractionCooldown] = useState(false);
-  const xrState = useXR ? useXR() : null;
+
+  // In v6, useXR can be used inside <XR> component
+  const xrState = useXR();
 
   // Check for hand tracking and gestures
   useEffect(() => {
@@ -62,13 +46,13 @@ const ARPetMesh: React.FC<ARPetMeshProps> = ({ pet, onInteraction }) => {
     // Handle controller select events through the XR session
     const handleControllerSelect = (event: any) => {
       if (interactionCooldown) return;
-      
+
       // Check if hand/controller is near pet
       if (meshRef.current && event.target) {
         const controllerPosition = event.target.position;
         const petPosition = meshRef.current.position;
         const distance = controllerPosition.distanceTo(petPosition);
-        
+
         if (distance < 2) {
           // Trigger interaction
           onInteraction?.('pet');
@@ -85,14 +69,14 @@ const ARPetMesh: React.FC<ARPetMeshProps> = ({ pet, onInteraction }) => {
       session.addEventListener('inputsourceschange', () => {
         // Controller connections handled here
       });
-      
+
       // Handle select events through input sources
       const handleSelectStart = (event: XRInputSourceEvent) => {
         handleControllerSelect(event);
       };
-      
+
       session.addEventListener('selectstart', handleSelectStart);
-      
+
       return () => {
         session.removeEventListener('selectstart', handleSelectStart);
       };
@@ -167,6 +151,15 @@ export const ARPets: React.FC<ARPetsProps> = ({ pet, onInteraction }) => {
     }
   }, []);
 
+  // Sync session state from xrStore
+  useEffect(() => {
+    const unsubStart = xrStore.subscribe((state: any) => {
+      if (state.session && !isARSessionActive) setIsARSessionActive(true);
+      if (!state.session && isARSessionActive) setIsARSessionActive(false);
+    });
+    return () => unsubStart();
+  }, [isARSessionActive]);
+
   const handleInteraction = (action: 'pet' | 'feed' | 'play') => {
     onInteraction?.(action);
   };
@@ -218,23 +211,21 @@ export const ARPets: React.FC<ARPetsProps> = ({ pet, onInteraction }) => {
       {/* AR Canvas */}
       <div className="relative h-96 w-full rounded-xl overflow-hidden bg-gradient-to-br from-sky-100 to-indigo-100">
         <Canvas>
-          <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={50} />
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 5, 5]} intensity={1} />
-          <ARPetMesh pet={pet} onInteraction={handleInteraction} />
-          {!webXRSupported && (
-            <OrbitControls enableZoom={true} enablePan={false} minDistance={3} maxDistance={10} />
-          )}
+          <XR store={xrStore}>
+            <PerspectiveCamera makeDefault position={[0, 0, 5]} fov={50} />
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[5, 5, 5]} intensity={1} />
+            <ARPetMesh pet={pet} onInteraction={handleInteraction} />
+            {!webXRSupported && (
+              <OrbitControls enableZoom={true} enablePan={false} minDistance={3} maxDistance={10} />
+            )}
+          </XR>
         </Canvas>
-        {webXRSupported && ARButton && (
+        {webXRSupported && xrStore && (
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-            <ARButton
-              sessionInit={{
-                requiredFeatures: ['local-floor', 'bounded-floor'],
-                optionalFeatures: ['hand-tracking'],
-              }}
-              onSessionStart={() => setIsARSessionActive(true)}
-              onSessionEnd={() => setIsARSessionActive(false)}
+            <XRButton
+              store={xrStore}
+              mode="immersive-ar"
             />
           </div>
         )}

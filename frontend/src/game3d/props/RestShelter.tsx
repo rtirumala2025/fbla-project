@@ -80,8 +80,8 @@ export function RestShelter(props: any & { onSignClick?: () => void }) {
             {/* ========== INTERIOR FURNISHINGS ========== */}
 
             {/* Multiple Benches (Slightly downscaled) */}
-            <Bench position={[-6, 0.3, -4]} rotation={[0, 0, 0]} />
-            <Bench position={[6, 0.3, -4]} rotation={[0, Math.PI, 0]} />
+            <Bench position={[-6, 0.3, -4]} rotation={0} />
+            <Bench position={[6, 0.3, -4]} rotation={Math.PI} />
 
             {/* Small Table with Water Bowls */}
             <Box args={[1.5, 0.6, 0.8]} position={[0, 0.6, -2]} castShadow>

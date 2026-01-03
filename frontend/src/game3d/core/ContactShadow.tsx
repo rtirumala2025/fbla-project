@@ -9,7 +9,7 @@ import * as THREE from 'three';
 
 interface ContactShadowProps {
     position?: [number, number, number];
-    scale?: number;
+    scale?: number | [number, number, number];
     opacity?: number;
     blur?: number;
     far?: number;
@@ -66,7 +66,12 @@ export function ContactShadow({
         if (meshRef.current) {
             // Subtle pulsing for organic feel (very subtle)
             const breath = Math.sin(performance.now() * 0.0008) * 0.03;
-            meshRef.current.scale.setScalar(scale * (1 + breath));
+            const s = 1 + breath;
+            if (Array.isArray(scale)) {
+                meshRef.current.scale.set(scale[0] * s, scale[1] * s, scale[2] * s);
+            } else {
+                meshRef.current.scale.setScalar(scale * s);
+            }
         }
     });
 
