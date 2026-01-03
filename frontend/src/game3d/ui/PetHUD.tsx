@@ -189,28 +189,28 @@ export function PetHUD({
                     <ActionButton
                         label="Feed"
                         action="feed"
-                        disabled={disabled}
+                        disabled={disabled || droneActive}
                         onAction={onAction}
                         icon={<Heart size={20} />}
                     />
                     <ActionButton
                         label="Play"
                         action="play"
-                        disabled={disabled}
+                        disabled={disabled || droneActive}
                         onAction={onAction}
                         icon={<Sparkles size={20} />}
                     />
                     <ActionButton
                         label="Rest"
                         action="rest"
-                        disabled={disabled}
+                        disabled={disabled || droneActive}
                         onAction={onAction}
                         icon={<Zap size={20} />}
                     />
                     <ActionButton
                         label="Bathe"
                         action="bathe"
-                        disabled={disabled}
+                        disabled={disabled || droneActive}
                         onAction={onAction}
                         icon={<Droplets size={20} />}
                     />
@@ -226,7 +226,7 @@ export function PetHUD({
                             <p>Click to Lock Mouse & Start Flying</p>
                             <div className="mt-4 flex gap-4 justify-center text-xs text-white/60">
                                 <div className="flex flex-col items-center">
-                                    <span className="px-2 py-1 bg-white/20 rounded mb-1">WASD</span>
+                                    <span className="px-2 py-1 bg-white/20 rounded mb-1">WASD / ARROWS</span>
                                     <span>Move</span>
                                 </div>
                                 <div className="flex flex-col items-center">

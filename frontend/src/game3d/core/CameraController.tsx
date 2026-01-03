@@ -8,18 +8,23 @@ import type { PetGame2CameraMode, PetGame2Interaction } from './SceneManager';
 export function CameraController({
   mode,
   interaction,
-  currentPosition
+  currentPosition,
+  onDroneExit,
 }: {
   mode: PetGame2CameraMode;
   interaction: PetGame2Interaction;
   currentPosition: [number, number, number];
+  onDroneExit?: () => void;
 }) {
   const controlsRef = useRef<any>(null);
   const { camera } = useThree();
   const targetVec = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((state, delta) => {
-    if (mode === 'drone') return; // Skip orbit logic in drone mode
+    if (mode === 'drone') {
+      // console.log('[CameraController] Drone mode active');
+      return;
+    }
     if (!controlsRef.current) return;
 
     // 1. Update look-at target to pet position
@@ -56,9 +61,13 @@ export function CameraController({
           maxPolarAngle={Math.PI / 2 - 0.05}
           minPolarAngle={0.1}
           makeDefault
+          enabled={mode !== 'drone'}
         />
       )}
-      <DroneControls active={mode === 'drone'} />
+      <DroneControls
+        active={mode === 'drone'}
+        onExit={onDroneExit}
+      />
     </>
   );
 }

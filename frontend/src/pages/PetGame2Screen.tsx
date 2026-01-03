@@ -318,7 +318,10 @@ export const PetGame2Screen: React.FC = () => {
         onToggleDiary={() => setDiaryOpen(!diaryOpen)}
         onToggleSound={() => setSoundEnabled(!soundEnabled)}
         soundEnabled={soundEnabled}
-        triggerNavigation={triggerNavigation}
+        triggerNavigation={(zone) => {
+          if (state.cameraMode === 'drone') return;
+          triggerNavigation(zone);
+        }}
         setPetPosition={setPetPosition}
         onToggleDrone={() => {
           setCameraMode(prev => prev === 'drone' ? 'follow' : 'drone');

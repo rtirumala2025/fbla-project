@@ -103,10 +103,19 @@ export function PetGame2Scene({
         petName={petName}
         species={petType}
         stats={stats}
-        disabled={disabled}
-        onAction={onAction}
-        onToggleInventory={onToggleInventory}
-        onToggleDiary={onToggleDiary}
+        disabled={disabled || state.cameraMode === 'drone'}
+        onAction={(action) => {
+          if (state.cameraMode === 'drone') return;
+          onAction(action);
+        }}
+        onToggleInventory={() => {
+          if (state.cameraMode === 'drone') return;
+          onToggleInventory?.();
+        }}
+        onToggleDiary={() => {
+          if (state.cameraMode === 'drone') return;
+          onToggleDiary?.();
+        }}
         onToggleSound={onToggleSound}
         soundEnabled={soundEnabled}
         onToggleDrone={onToggleDrone}
@@ -146,7 +155,10 @@ export function PetGame2Scene({
             <PetModel
               petType={petType}
               state={state}
-              onPetTap={onPetTap}
+              onPetTap={() => {
+                if (state.cameraMode === 'drone') return;
+                onPetTap();
+              }}
               setPetPosition={setPetPosition}
             />
           </group>
@@ -156,6 +168,7 @@ export function PetGame2Scene({
             mode={state.cameraMode}
             interaction={state.interaction}
             currentPosition={state.currentPosition}
+            onDroneExit={onToggleDrone}
           />
         </Suspense>
       </Canvas>

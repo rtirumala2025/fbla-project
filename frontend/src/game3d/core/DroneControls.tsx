@@ -3,8 +3,9 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { PointerLockControls } from '@react-three/drei';
 import * as THREE from 'three';
 
-export function DroneControls({ active }: { active: boolean }) {
-    const { camera } = useThree();
+export function DroneControls({ active, onExit }: { active: boolean; onExit?: () => void }) {
+    console.log('[DroneControls] active:', active);
+    const { camera, gl } = useThree();
     const moveState = useRef({
         forward: false,
         backward: false,
@@ -29,6 +30,10 @@ export function DroneControls({ active }: { active: boolean }) {
                 case 'KeyD': moveState.current.right = true; break;
                 case 'Space': moveState.current.up = true; break;
                 case 'ShiftLeft': moveState.current.down = true; break;
+                case 'ArrowUp': moveState.current.up = true; break;
+                case 'ArrowDown': moveState.current.down = true; break;
+                case 'ArrowLeft': moveState.current.left = true; break;
+                case 'ArrowRight': moveState.current.right = true; break;
             }
         };
 
@@ -40,6 +45,13 @@ export function DroneControls({ active }: { active: boolean }) {
                 case 'KeyD': moveState.current.right = false; break;
                 case 'Space': moveState.current.up = false; break;
                 case 'ShiftLeft': moveState.current.down = false; break;
+                case 'ArrowUp': moveState.current.up = false; break;
+                case 'ArrowDown': moveState.current.down = false; break;
+                case 'ArrowLeft': moveState.current.left = false; break;
+                case 'ArrowRight': moveState.current.right = false; break;
+                case 'Escape':
+                    // Optional: could exit here, but onUnlock handles visually
+                    break;
             }
         };
 
@@ -61,10 +73,15 @@ export function DroneControls({ active }: { active: boolean }) {
         const side = new THREE.Vector3(Number(moveState.current.left) - Number(moveState.current.right), 0, 0);
         const up = new THREE.Vector3(0, Number(moveState.current.up) - Number(moveState.current.down), 0);
 
-        acceleration.subVectors(front, side).normalize();
-        acceleration.applyQuaternion(camera.quaternion);
+        acceleration.subVectors(front, side);
 
-        // Add vertical world movement
+        // ONLY NORMALIZE IF MOVING
+        if (acceleration.lengthSq() > 0) {
+            acceleration.normalize();
+            acceleration.applyQuaternion(camera.quaternion);
+        }
+
+        // Add vertical world movement (Space/Shift)
         acceleration.y += up.y;
 
         velocity.current.add(acceleration.multiplyScalar(speed * 2 * delta));
@@ -73,5 +90,16 @@ export function DroneControls({ active }: { active: boolean }) {
         camera.position.add(velocity.current.clone().multiplyScalar(delta));
     });
 
-    return active ? <PointerLockControls /> : null;
+    const handleCanvasClick = (e: any) => {
+        if (!active) return;
+        // Re-lock if clicked while active
+        const el = gl.domElement;
+        if (document.pointerLockElement !== el) {
+            el.requestPointerLock();
+        }
+    };
+
+    return active ? <PointerLockControls onUnlock={() => {
+        console.log('[DroneControls] Mouse unlocked');
+    }} /> : null;
 }

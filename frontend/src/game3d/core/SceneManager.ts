@@ -97,52 +97,67 @@ export function usePetGame2State() {
   );
 
   const triggerPetTap = useCallback(() => {
-    const startedAt = nowMs();
-    setInteraction({ kind: 'petTap', startedAt });
-    setCameraMode('focus');
-    pushVfx({ kind: 'sparkleBurst', durationMs: 900 });
+    // PREVENT: Don't allow camera jumps/interactions if we are in drone mode
+    setCameraMode((m) => {
+      if (m === 'drone') return 'drone';
 
-    window.setTimeout(() => {
-      setInteraction((prev) => (prev.kind === 'petTap' && prev.startedAt === startedAt ? { kind: 'idle' } : prev));
-      setCameraMode((m) => (m === 'focus' ? 'follow' : m));
-    }, 900);
+      const startedAt = nowMs();
+      setInteraction({ kind: 'petTap', startedAt });
+
+      window.setTimeout(() => {
+        setInteraction((prev) => (prev.kind === 'petTap' && prev.startedAt === startedAt ? { kind: 'idle' } : prev));
+        setCameraMode((curr) => (curr === 'focus' ? 'follow' : curr));
+      }, 900);
+
+      return 'focus';
+    });
+    pushVfx({ kind: 'sparkleBurst', durationMs: 900 });
   }, [pushVfx]);
 
   const triggerAction = useCallback(
     (action: PetGame2Action) => {
-      const startedAt = nowMs();
-      setInteraction({ kind: 'action', action, startedAt });
-      setCameraMode('focus');
+      setCameraMode((m) => {
+        if (m === 'drone') return 'drone';
 
-      if (action === 'feed') pushVfx({ kind: 'foodPuff', durationMs: 1100 });
-      if (action === 'play') pushVfx({ kind: 'toyBounce', durationMs: 1100 });
-      if (action === 'rest') pushVfx({ kind: 'sleepZ', durationMs: 1400 });
-      if (action === 'bathe') {
-        pushVfx({ kind: 'bubbleBurst', durationMs: 1200 });
-        pushVfx({ kind: 'cleaning', durationMs: 1200 });
-      }
+        const startedAt = nowMs();
+        setInteraction({ kind: 'action', action, startedAt });
 
-      window.setTimeout(() => {
-        setInteraction((prev) => (prev.kind === 'action' && prev.startedAt === startedAt ? { kind: 'idle' } : prev));
-        setCameraMode((m) => (m === 'focus' ? 'follow' : m));
-      }, 1100);
+        if (action === 'feed') pushVfx({ kind: 'foodPuff', durationMs: 1100 });
+        if (action === 'play') pushVfx({ kind: 'toyBounce', durationMs: 1100 });
+        if (action === 'rest') pushVfx({ kind: 'sleepZ', durationMs: 1400 });
+        if (action === 'bathe') {
+          pushVfx({ kind: 'bubbleBurst', durationMs: 1200 });
+          pushVfx({ kind: 'cleaning', durationMs: 1200 });
+        }
+
+        window.setTimeout(() => {
+          setInteraction((prev) => (prev.kind === 'action' && prev.startedAt === startedAt ? { kind: 'idle' } : prev));
+          setCameraMode((curr) => (curr === 'focus' ? 'follow' : curr));
+        }, 1100);
+
+        return 'focus';
+      });
     },
     [pushVfx]
   );
 
   const triggerNavigation = useCallback((zone: ActivityZone) => {
-    const startedAt = nowMs();
-    const endPosition = ACTIVITY_POSITIONS[zone];
+    setCameraMode(m => {
+      if (m === 'drone') return 'drone';
 
-    setNavigationState({
-      target: zone,
-      progress: 0,
-      startPosition: petPositionRef.current,
-      endPosition,
+      const startedAt = nowMs();
+      const endPosition = ACTIVITY_POSITIONS[zone];
+
+      setNavigationState({
+        target: zone,
+        progress: 0,
+        startPosition: petPositionRef.current,
+        endPosition,
+      });
+
+      setInteraction({ kind: 'navigating', zone, startedAt });
+      return 'follow';
     });
-
-    setInteraction({ kind: 'navigating', zone, startedAt });
-    setCameraMode('follow');
   }, []);
 
   // Navigation animation loop
