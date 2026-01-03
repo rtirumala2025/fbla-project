@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from 'react';
-import { Cloud, Float } from '@react-three/drei';
+import { Cloud, Float, Box, Cylinder, Sphere } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { makeGrassTexture, createCanvasTexture } from '../core/AssetLoader';
@@ -139,11 +139,22 @@ export function DogPark({
       </mesh>
 
       {/* --- CENTRAL PLAZA (Organic Shape) --- */}
-      {/* A large central circle with gravel */}
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[12, 64]} />
+        <circleGeometry args={[14, 64]} />
         <meshStandardMaterial map={gravelTex} color="#998877" transparent opacity={0.95} />
       </mesh>
+
+      {/* Decorative Circular Planter in Central Plaza */}
+      <group position={[0, 0.02, 0]}>
+        <Box args={[4, 0.6, 4]} position={[0, 0.3, 0]} castShadow receiveShadow>
+          <meshStandardMaterial color="#666" metalness={0.2} roughness={0.8} />
+        </Box>
+        <mesh position={[0, 0.6, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[1.8, 32]} />
+          <meshStandardMaterial map={grassTex} color="#7ba66d" />
+        </mesh>
+        <Tree position={[0, 0.6, 0]} scale={0.7} />
+      </group>
 
       {/* Path Spokes */}
       <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -184,14 +195,27 @@ export function DogPark({
         <Bush position={[5, 0, 0]} scale={0.8} />
       </group>
 
-      {/* Central Hub - Facing the entrance */}
-      <ParkHubBuilding position={[0, 0, -7.5]} rotation={[0, 0, 0]} onSignClick={() => triggerNavigation('center')} />
+      {/* Central Hub - Facing the entrance plaza */}
+      <ParkHubBuilding position={[0, 0, -10]} rotation={[0, 0, 0]} onSignClick={() => triggerNavigation('center')} />
 
       {/* --- DECORATIVE NATURE --- */}
       {scenery.trees.map((t, i) => <Tree key={`t-${i}`} position={t.pos} scale={t.scale} rotation={t.rot} lean={t.lean} />)}
       {scenery.bushes.map((b, i) => <Bush key={`b-${i}`} position={b.pos} scale={b.scale} rotation={b.rot} />)}
 
       <NavigationGuide navigationState={state.navigationState} currentPosition={currentPetPosition} />
+
+      {/* Decorative Lamp Posts to unify the park */}
+      {[[-12, -8], [12, -8], [-12, 8], [12, 8]].map((pos, i) => (
+        <group key={`lamp-${i}`} position={[pos[0], 0, pos[1]]}>
+          <Cylinder args={[0.1, 0.15, 3.5, 8]} position={[0, 1.75, 0]} castShadow>
+            <meshStandardMaterial color="#333" />
+          </Cylinder>
+          <Sphere args={[0.25]} position={[0, 3.5, 0]}>
+            <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={1} />
+          </Sphere>
+          <pointLight position={[0, 3.5, 0]} intensity={1.5} distance={10} color="#fff1d0" />
+        </group>
+      ))}
 
       {/* --- ATMOSPHERE --- */}
       <Float speed={1.5} floatIntensity={0.3}>
