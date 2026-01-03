@@ -1,7 +1,7 @@
 import React from 'react';
 import type { PetStats } from '@/types/pet';
 import type { PetGame2Action } from '../core/SceneManager';
-import { Heart, Sparkles, Zap, Droplets, Book, Backpack, Volume2, VolumeX } from 'lucide-react';
+import { Heart, Sparkles, Zap, Droplets, Book, Backpack, Volume2, VolumeX, Plane } from 'lucide-react';
 
 function StatBar({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {
     const clamped = Math.min(100, Math.max(0, value));
@@ -82,6 +82,8 @@ export function PetHUD({
     onToggleDiary,
     onToggleSound,
     soundEnabled,
+    onToggleDrone,
+    droneActive,
 }: {
     petName: string;
     species: string;
@@ -92,6 +94,8 @@ export function PetHUD({
     onToggleDiary?: () => void;
     onToggleSound?: () => void;
     soundEnabled?: boolean;
+    onToggleDrone?: () => void;
+    droneActive?: boolean;
 }) {
     const hunger = stats?.hunger ?? 50;
     const happiness = stats?.happiness ?? 50;
@@ -130,6 +134,13 @@ export function PetHUD({
                     title="Inventory"
                 >
                     <Backpack size={20} />
+                </button>
+                <button
+                    onClick={onToggleDrone}
+                    className={`p-3 rounded-xl backdrop-blur-md border border-white/10 text-white transition-all hover:scale-105 active:scale-95 shadow-lg ${droneActive ? 'bg-amber-500/60' : 'bg-slate-900/40 hover:bg-slate-800/60'}`}
+                    title={droneActive ? "Exit Drone Mode" : "Enter Drone Mode"}
+                >
+                    <Plane size={20} className={droneActive ? "animate-[pulse_2s_infinite]" : ""} />
                 </button>
                 <button
                     onClick={onToggleSound}
@@ -205,6 +216,36 @@ export function PetHUD({
                     />
                 </div>
             </div>
+
+            {/* Drone Instructions Overlay */}
+            {droneActive && (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
+                    <div className="bg-black/60 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-2xl">
+                        <h3 className="text-xl font-bold text-amber-400 mb-2">DRONE MODE ACTIVE</h3>
+                        <div className="flex flex-col gap-1 text-white/90 text-sm">
+                            <p>Click to Lock Mouse & Start Flying</p>
+                            <div className="mt-4 flex gap-4 justify-center text-xs text-white/60">
+                                <div className="flex flex-col items-center">
+                                    <span className="px-2 py-1 bg-white/20 rounded mb-1">WASD</span>
+                                    <span>Move</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="px-2 py-1 bg-white/20 rounded mb-1">MOUSE</span>
+                                    <span>Look</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="px-2 py-1 bg-white/20 rounded mb-1">SPACE/SHIFT</span>
+                                    <span>Up/Down</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="px-2 py-1 bg-white/20 rounded mb-1">ESC</span>
+                                    <span>Unlock Mouse</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

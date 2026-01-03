@@ -28,7 +28,7 @@ export type PetGame2Vfx =
   | { id: string; kind: 'bubbleBurst'; startedAt: number; durationMs: number }
   | { id: string; kind: 'cleaning'; startedAt: number; durationMs: number };
 
-export type PetGame2CameraMode = 'follow' | 'focus';
+export type PetGame2CameraMode = 'follow' | 'focus' | 'drone';
 
 export interface PetGame2State {
   interaction: PetGame2Interaction;
@@ -207,9 +207,8 @@ export function usePetGame2State() {
     triggerNavigation,
     setPetPosition: (pos: [number, number, number]) => {
       petPositionRef.current = pos;
-      // Only update state if position changed significantly to avoid over-rendering
-      // Or just update it every frame if we want smooth UI lines
       setCurrentPosition(pos);
     },
+    setCameraMode,
   };
 }
