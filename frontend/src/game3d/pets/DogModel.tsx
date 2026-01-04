@@ -354,11 +354,11 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
     metalness: 0.12
   }), []);
 
-  // Eyes - Wet glass, high specular
+  // Eyes - Sclera (White)
   const matEye = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#080808',
-    roughness: 0.05, // Very wet
-    metalness: 0.35  // High spec
+    color: '#ffffff',
+    roughness: 0.1,  // Glossy
+    metalness: 0.1,  // Not metallic
   }), []);
 
   const matTongue = useMemo(() => new THREE.MeshStandardMaterial({
@@ -607,8 +607,8 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
               <sphereGeometry args={[0.045, 12, 12]} />
             </mesh>
             {/* Pupil Detail */}
-            <mesh position={[0, 0, 0.04]} material={new THREE.MeshBasicMaterial({ color: '#000000' })}>
-              <circleGeometry args={[0.015, 8]} />
+            <mesh position={[0, 0, 0.046]} material={new THREE.MeshBasicMaterial({ color: '#000000' })}>
+              <circleGeometry args={[0.02, 12]} />
             </mesh>
             {/* Eyelid (Upper) */}
             <mesh
@@ -626,8 +626,8 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
               <sphereGeometry args={[0.045, 12, 12]} />
             </mesh>
             {/* Pupil Detail */}
-            <mesh position={[0, 0, 0.04]} material={new THREE.MeshBasicMaterial({ color: '#000000' })}>
-              <circleGeometry args={[0.015, 8]} />
+            <mesh position={[0, 0, 0.046]} material={new THREE.MeshBasicMaterial({ color: '#000000' })}>
+              <circleGeometry args={[0.02, 12]} />
             </mesh>
             {/* Eyelid (Upper) */}
             <mesh
