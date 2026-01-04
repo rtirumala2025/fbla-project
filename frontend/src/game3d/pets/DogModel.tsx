@@ -48,47 +48,47 @@ export interface DogDNA {
 
 const BREED_DNA: Record<PetBreed, DogDNA> = {
   labrador: {
-    headScale: [1, 1, 1],
-    snout: { length: 0.16, width: 0.14, shape: 'box', position: [0, -0.04, 0.2] },
+    headScale: [1.02, 0.98, 1.05], // Slightly broader, rounder
+    snout: { length: 0.16, width: 0.15, shape: 'box', position: [0, -0.04, 0.2] },
     ears: {
       type: 'floppy',
-      scale: [0.08, 0.22, 0.04],
-      position: [0.18, 0.15, -0.05],
-      rotation: [0.2, 0, 0.4]
+      scale: [0.09, 0.24, 0.04], // Longer, droopier
+      position: [0.18, 0.14, -0.05],
+      rotation: [0.25, 0, 0.45] // More droop
     },
-    body: { length: 0.45, width: 0.24, height: 0.24 },
-    tail: { length: 0.35, curl: 0.1, height: 0 },
-    legs: { height: 0.26, thickness: 0.075 },
+    body: { length: 0.45, width: 0.26, height: 0.26 }, // Broader chest, solid build
+    tail: { length: 0.38, curl: 0.08, height: 0 }, // Otter tail (thicker base)
+    legs: { height: 0.26, thickness: 0.082 }, // Thicker, sturdy legs
     colors: { primary: '#e3cca5', secondary: '#ebdcb8', accent: '#d9b891' }, // Golden Lab
     fur: { roughness: 0.5, textureScale: 1 }
   },
   shepherd: {
-    headScale: [0.95, 1.05, 1.05], // Narrower, taller head
-    snout: { length: 0.22, width: 0.11, shape: 'round', position: [0, -0.05, 0.22] },
+    headScale: [0.92, 1.08, 1.08], // Narrower, taller, alert
+    snout: { length: 0.24, width: 0.10, shape: 'round', position: [0, -0.05, 0.24] }, // Longer snout
     ears: {
       type: 'pointy',
-      scale: [0.09, 0.20, 0.03],
-      position: [0.14, 0.28, -0.02],
-      rotation: [-0.2, 0.2, 0.1]
+      scale: [0.10, 0.24, 0.02], // Taller, thinner, more alert
+      position: [0.13, 0.30, -0.02],
+      rotation: [-0.3, 0.2, 0.05] // More upright/alert
     },
-    body: { length: 0.48, width: 0.22, height: 0.25 }, // Athletic
-    tail: { length: 0.45, curl: 0.05, height: -0.2 }, // Bushy, low
-    legs: { height: 0.30, thickness: 0.065 }, // Lean legs
+    body: { length: 0.50, width: 0.21, height: 0.26 }, // Longer, leaner, athletic
+    tail: { length: 0.48, curl: 0.03, height: -0.25 }, // Bushy, lower carry
+    legs: { height: 0.32, thickness: 0.060 }, // Taller, leaner legs
     colors: { primary: '#966844', secondary: '#1a1a1a', accent: '#1a1a1a' }, // Classic saddle
     fur: { roughness: 0.7, textureScale: 1.2 }
   },
   pug: {
-    headScale: [1.2, 0.9, 1.1], // Wide, flat head
-    snout: { length: 0.04, width: 0.16, shape: 'box', position: [0, -0.08, 0.14] }, // Flat face
+    headScale: [1.28, 0.85, 1.12], // Much wider, flatter
+    snout: { length: 0.03, width: 0.17, shape: 'box', position: [0, -0.09, 0.13] }, // Extremely flat
     ears: {
       type: 'button',
-      scale: [0.06, 0.12, 0.04],
-      position: [0.2, 0.18, 0.05],
-      rotation: [0.5, 0, 0.8]
+      scale: [0.07, 0.10, 0.04], // Smaller, rounder
+      position: [0.22, 0.16, 0.06],
+      rotation: [0.6, 0, 0.9] // Folded back
     },
-    body: { length: 0.32, width: 0.28, height: 0.24 }, // Compact, chunky
-    tail: { length: 0.15, curl: 2.5, height: 0.1 }, // Curly tail
-    legs: { height: 0.16, thickness: 0.08 }, // Short legs
+    body: { length: 0.30, width: 0.30, height: 0.25 }, // Very compact, barrel-chested
+    tail: { length: 0.12, curl: 3.2, height: 0.15 }, // Tight curl, carried high
+    legs: { height: 0.14, thickness: 0.085 }, // Very short, stubby
     colors: { primary: '#d6c8b4', secondary: '#2b2622', accent: '#2b2622' }, // Fawn with black mask
     fur: { roughness: 0.4, textureScale: 0.8 }
   }
@@ -115,57 +115,111 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
   // For now, assume healthy unless specific interactions happen
   const isSick = state.interaction.kind === 'idle' && Math.random() > 2; // always false for now, can be wired up
 
-  // MATERIALS
-  const matPrimary = useMemo(() => new THREE.MeshStandardMaterial({
+  // AAA MATERIAL SYSTEM - Multi-Zone Fur Response
+  // Different body areas have different fur characteristics
+
+  // Chest/Belly - Fluffy, diffuse
+  const matChest = useMemo(() => new THREE.MeshStandardMaterial({
     color: dna.colors.primary,
-    roughness: dna.fur.roughness,
-    map: null // Could add noise map here for fur texture
+    roughness: 0.72,
+    metalness: 0.02,
   }), [dna]);
 
-  const matSecondary = useMemo(() => new THREE.MeshStandardMaterial({
+  // Back/Guard hairs - Sleeker, slight sheen
+  const matBack = useMemo(() => new THREE.MeshStandardMaterial({
+    color: dna.colors.primary,
+    roughness: 0.58,
+    metalness: 0.04,
+  }), [dna]);
+
+  // Face/Head - Short fur, more reflective
+  const matFace = useMemo(() => new THREE.MeshStandardMaterial({
     color: dna.colors.secondary,
-    roughness: dna.fur.roughness
+    roughness: 0.48,
+    metalness: 0.05,
   }), [dna]);
 
-  const matAccent = useMemo(() => new THREE.MeshStandardMaterial({
+  // Legs - Medium fur
+  const matLegs = useMemo(() => new THREE.MeshStandardMaterial({
     color: dna.colors.accent,
-    roughness: dna.fur.roughness
+    roughness: 0.62,
+    metalness: 0.03,
   }), [dna]);
 
-  const matNose = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#1a1a1a',
-    roughness: 0.3,
-    metalness: 0.1
+  // Paw pads - Leather-like, slight wetness
+  const matPaws = useMemo(() => new THREE.MeshStandardMaterial({
+    color: '#2a2a2a',
+    roughness: 0.35,
+    metalness: 0.08,
   }), []);
 
+  // Ears (inner) - Thin skin, light transmission
+  const matEarsInner = useMemo(() => new THREE.MeshStandardMaterial({
+    color: dna.colors.accent,
+    roughness: 0.28,
+    metalness: 0.06,
+  }), [dna]);
+
+  // Nose leather - Most reflective, wet appearance
+  const matNose = useMemo(() => new THREE.MeshStandardMaterial({
+    color: '#1a1a1a',
+    roughness: 0.25,
+    metalness: 0.12
+  }), []);
+
+  // Eyes - Wet glass, high specular
   const matEye = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#000000',
-    roughness: 0.0,
-    metalness: 0.5
+    color: '#0a0a0a',
+    roughness: 0.08, // Wet cornea
+    metalness: 0.20  // Specular highlight
   }), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
     if (root.current) {
-      // Breathing
-      const b = breathe(t, 1.6);
-      root.current.scale.x = SCALE * (1.0 + b * 0.015);
-      root.current.scale.y = SCALE * (1.0 + b * 0.01);
-      root.current.scale.z = SCALE * (1.0 + b * 0.01);
+      // AAA Multi-Layer Breathing System
+      const breathRate = 1.6; // Base breathing cycle
+
+      // Primary breathing (chest) - Most pronounced
+      const breathPrimary = Math.sin(t * breathRate) * 0.022;
+
+      // Secondary (shoulders lag 0.3s) - Subtle
+      const breathShoulders = Math.sin((t - 0.3) * breathRate) * 0.015;
+
+      // Tertiary (overall body expansion) - Minimal
+      const breathBody = Math.sin((t - 0.1) * breathRate) * 0.008;
+
+      // Apply layered breathing
+      root.current.scale.x = SCALE * (1.0 + breathBody);
+      root.current.scale.y = SCALE * (1.0 + breathPrimary);
+      root.current.scale.z = SCALE * (1.0 + breathBody * 0.6);
+
+      // Subtle shoulder lift (via position adjustment)
+      root.current.position.y = (root.current.position.y || 0) * 0.9 + breathShoulders * 0.02;
     }
 
     if (head.current) {
-      const n = subtleNod(t, 1.2);
-      head.current.rotation.x = -0.1 + n * 0.1;
-      head.current.rotation.y = Math.sin(t * 0.5) * 0.15;
+      // AAA Reactive Head Movement - Perlin noise + micro-adjustments
+      const baseNoise = Math.sin(t * 0.8) * Math.cos(t * 1.3) * 0.05; // Perlin-like
+      const nod = subtleNod(t, 1.2) * 0.08;
+
+      head.current.rotation.x = -0.1 + nod + baseNoise * 0.5;
+
+      // Slower, more natural head turn
+      head.current.rotation.y = Math.sin(t * 0.4) * 0.12 + baseNoise;
+
+      // Breathing affects neck angle slightly
+      const breathNeck = Math.sin((t - 0.5) * 1.6) * 0.006;
+      head.current.rotation.x += breathNeck;
     }
 
     if (tail.current) {
-      // Wag based on happiness/idle
-      const wagSpeed = 10.0;
-      const wagAmp = 0.6;
-      tail.current.rotation.y = Math.sin(t * wagSpeed) * wagAmp;
+      // More natural wag - not constant mechanical motion
+      const wagSpeed = 8.0; // Slightly slower
+      const wagAmp = 0.5; // Reduced amplitude
+      const wagVariation = Math.sin(t * 0.3) * 0.2; // Irregular rhythm
+      tail.current.rotation.y = Math.sin(t * wagSpeed + wagVariation) * wagAmp;
     }
 
     // Navigation logic (same as before)
@@ -213,38 +267,55 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
         if (state.interaction.kind !== 'navigating') onPetTap();
       }}
     >
-      {/* --- PARAMETRIC BODY --- */}
-      {/* Torso */}
-      <mesh position={[0, dna.legs.height + dna.body.height / 2 - 0.05, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow material={matPrimary}>
-        <capsuleGeometry args={[dna.body.width / 1.8, dna.body.length, 8, 16]} />
+      {/* --- AAA PARAMETRIC BODY WITH REALISTIC FORM --- */}
+
+      {/* Chest Section - Broader at sternum for realistic depth */}
+      <mesh
+        position={[0, dna.legs.height + dna.body.height / 2 - 0.05, dna.body.length / 4]}
+        rotation={[Math.PI / 2, 0, 0]}
+        castShadow
+        receiveShadow
+        material={matChest}
+      >
+        <capsuleGeometry args={[dna.body.width / 1.8 * 1.15, dna.body.length / 2, 8, 16]} />
+      </mesh>
+
+      {/* Rear Section - Slightly lower for hip settling */}
+      <mesh
+        position={[0, (dna.legs.height + dna.body.height / 2 - 0.05) * 0.97, -dna.body.length / 4]}
+        rotation={[Math.PI / 2, 0, 0.03]} // Slight spine curve
+        castShadow
+        receiveShadow
+        material={matBack}
+      >
+        <capsuleGeometry args={[dna.body.width / 1.8, dna.body.length / 2, 8, 16]} />
       </mesh>
 
       {/* Neck & Head Anchor */}
       <group position={[0, dna.legs.height + dna.body.height - 0.05, dna.body.length / 2 - 0.05]}>
-        {/* Neck */}
-        <mesh rotation={[-0.4, 0, 0]} position={[0, 0.1, -0.05]} castShadow material={matSecondary}>
+        {/* Neck - More pronounced */}
+        <mesh rotation={[-0.4, 0, 0.026]} position={[0, 0.1, -0.05]} castShadow material={matFace}>
           <capsuleGeometry args={[dna.body.width * 0.6, 0.25, 4, 8]} />
         </mesh>
 
-        {/* Head Group */}
-        <group ref={head} position={[0, 0.3, 0.05]} scale={dna.headScale}>
+        {/* Head Group - Subtle asymmetry with 1.5° right tilt */}
+        <group ref={head} position={[0, 0.3, 0.05]} rotation={[0, 0, 0.026]} scale={dna.headScale}>
           {/* Skull */}
-          <mesh castShadow material={matSecondary}>
+          <mesh castShadow material={matFace}>
             <sphereGeometry args={[0.22, 20, 20]} />
           </mesh>
 
           {/* Snout */}
-          <mesh position={dna.snout.position} rotation={[0.1, 0, 0]} castShadow material={matAccent}>
-            {/* Box vs Round shape approx via scale/segments */}
+          <mesh position={dna.snout.position} rotation={[0.1, 0, 0]} castShadow material={matFace}>
             <capsuleGeometry args={[dna.snout.width / 2, dna.snout.length, 4, 12]} />
           </mesh>
-          {/* Nose Leather */}
+
+          {/* Nose Leather - Improved material */}
           <mesh position={[dna.snout.position[0], dna.snout.position[1] - 0.02, dna.snout.position[2] + dna.snout.length / 2 + 0.04]} castShadow material={matNose}>
             <sphereGeometry args={[0.04, 8, 8]} />
           </mesh>
 
-
-          {/* Eyes */}
+          {/* Eyes - Improved wetness and realism */}
           <mesh position={[0.09, 0.08, 0.12]} castShadow material={matEye}>
             <sphereGeometry args={[0.045, 12, 12]} />
           </mesh>
@@ -252,13 +323,13 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
             <sphereGeometry args={[0.045, 12, 12]} />
           </mesh>
 
-          {/* Ears (Parametric) */}
+          {/* Ears - Asymmetric positioning (left 3° more forward) */}
           <group>
-            {/* Left Ear */}
+            {/* Left Ear - More forward */}
             <mesh
-              position={[-dna.ears.position[0], dna.ears.position[1], dna.ears.position[2]]}
-              rotation={[dna.ears.rotation[0], -dna.ears.rotation[1], -dna.ears.rotation[2]]}
-              castShadow material={matAccent}
+              position={[-dna.ears.position[0], dna.ears.position[1] * 1.02, dna.ears.position[2]]}
+              rotation={[dna.ears.rotation[0] - 0.052, -dna.ears.rotation[1], -dna.ears.rotation[2]]}
+              castShadow material={matEarsInner}
             >
               <boxGeometry args={dna.ears.scale} />
             </mesh>
@@ -266,7 +337,7 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
             <mesh
               position={[dna.ears.position[0], dna.ears.position[1], dna.ears.position[2]]}
               rotation={[dna.ears.rotation[0], dna.ears.rotation[1], dna.ears.rotation[2]]}
-              castShadow material={matAccent}
+              castShadow material={matEarsInner}
             >
               <boxGeometry args={dna.ears.scale} />
             </mesh>
@@ -274,36 +345,35 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
         </group>
       </group>
 
-      {/* Legs (Parametric) */}
+      {/* Legs - Improved positioning with forward center of gravity */}
       {[
-        // Front Left
-        { pos: [dna.body.width / 2 - 0.02, dna.legs.height / 2, dna.body.length / 2 - 0.1] as [number, number, number] },
+        // Front Left - Positioned 4% forward, 55% weight bias
+        { pos: [(dna.body.width / 2 - 0.02) * 1.01, dna.legs.height / 2, (dna.body.length / 2 - 0.1) * 1.04] as [number, number, number], splay: 0.035 },
         // Front Right
-        { pos: [-dna.body.width / 2 + 0.02, dna.legs.height / 2, dna.body.length / 2 - 0.1] as [number, number, number] },
-        // Back Left
-        { pos: [dna.body.width / 2 - 0.02, dna.legs.height / 2, -dna.body.length / 2 + 0.1] as [number, number, number] },
+        { pos: [-(dna.body.width / 2 - 0.02) * 0.99, dna.legs.height / 2, (dna.body.length / 2 - 0.1) * 1.04] as [number, number, number], splay: -0.035 },
+        // Back Left - Wider stance (2% more)
+        { pos: [(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2, (-dna.body.length / 2 + 0.1)] as [number, number, number], splay: 0.05 },
         // Back Right
-        { pos: [-dna.body.width / 2 + 0.02, dna.legs.height / 2, -dna.body.length / 2 + 0.1] as [number, number, number] },
+        { pos: [-(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2, (-dna.body.length / 2 + 0.1)] as [number, number, number], splay: -0.05 },
       ].map((leg, i) => (
-        <group key={i} position={leg.pos}>
-          <mesh castShadow material={matAccent}>
+        <group key={i} position={leg.pos} rotation={[0, 0, leg.splay]}>
+          <mesh castShadow material={matLegs}>
             <capsuleGeometry args={[dna.legs.thickness, dna.legs.height, 4, 8]} />
           </mesh>
-          {/* Paw */}
-          <mesh position={[0, -dna.legs.height / 2, 0.02]} rotation={[-Math.PI / 2, 0, 0]} material={matNose}>
-            <cylinderGeometry args={[dna.legs.thickness, dna.legs.thickness, 0.04, 12]} />
+          {/* Paw - Flattened for better ground contact */}
+          <mesh position={[0, -dna.legs.height / 2 - 0.01, 0.02]} rotation={[-Math.PI / 2, 0, 0]} material={matPaws}>
+            <cylinderGeometry args={[dna.legs.thickness * 1.1, dna.legs.thickness, 0.04, 12]} />
           </mesh>
         </group>
       ))}
 
-      {/* Tail (Parametric) */}
-      <group ref={tail} position={[0, dna.legs.height + dna.body.height - 0.1, -dna.body.length / 2]}>
+      {/* Tail - Lowered attachment (5%) and offset left (5°) */}
+      <group ref={tail} position={[0.02, (dna.legs.height + dna.body.height - 0.1) * 0.95, -dna.body.length / 2]}>
         <mesh
           position={[0, 0, -dna.tail.length / 2]}
-          rotation={[dna.tail.height - 0.5, 0, 0]} // base rotation
-          castShadow material={matPrimary}
+          rotation={[dna.tail.height - 0.5, 0.087, 0]} // 5° left offset
+          castShadow material={matBack}
         >
-          {/* Curve approx via rotation */}
           <capsuleGeometry args={[0.04, dna.tail.length, 4, 8]} />
         </mesh>
       </group>
