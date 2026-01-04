@@ -345,27 +345,77 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
         </group>
       </group>
 
-      {/* Legs - Improved positioning with forward center of gravity */}
+      {/* Legs - Articulated with visible joints */}
       {[
-        // Front Left - Positioned 4% forward, 55% weight bias
-        { pos: [(dna.body.width / 2 - 0.02) * 1.01, dna.legs.height / 2, (dna.body.length / 2 - 0.1) * 1.04] as [number, number, number], splay: 0.035 },
-        // Front Right
-        { pos: [-(dna.body.width / 2 - 0.02) * 0.99, dna.legs.height / 2, (dna.body.length / 2 - 0.1) * 1.04] as [number, number, number], splay: -0.035 },
-        // Back Left - Wider stance (2% more)
-        { pos: [(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2, (-dna.body.length / 2 + 0.1)] as [number, number, number], splay: 0.05 },
+        // Front Left - Right shoulder lower (weight bias), 8° paw rotation
+        {
+          pos: [(dna.body.width / 2 - 0.02) * 1.01, dna.legs.height / 2 * 0.97, (dna.body.length / 2 - 0.1) * 1.04] as [number, number, number],
+          splay: 0.14,  // 8° outward
+          shoulderY: 0.97, // 3% lower (weight bias)
+          elbowBend: -0.14 // Forward bend
+        },
+        // Front Right - Higher shoulder
+        {
+          pos: [-(dna.body.width / 2 - 0.02) * 0.99, dna.legs.height / 2, (dna.body.length / 2 - 0.1) * 1.04] as [number, number, number],
+          splay: -0.087, // 5° outward
+          shoulderY: 1.0,
+          elbowBend: -0.14
+        },
+        // Back Left - Wider stance, settled hip
+        {
+          pos: [(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2 * 0.98, (-dna.body.length / 2 + 0.1) * 0.92] as [number, number, number],
+          splay: 0.087,
+          shoulderY: 0.98,
+          elbowBend: 0.09 // Rear angle
+        },
         // Back Right
-        { pos: [-(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2, (-dna.body.length / 2 + 0.1)] as [number, number, number], splay: -0.05 },
-      ].map((leg, i) => (
-        <group key={i} position={leg.pos} rotation={[0, 0, leg.splay]}>
-          <mesh castShadow material={matLegs}>
-            <capsuleGeometry args={[dna.legs.thickness, dna.legs.height, 4, 8]} />
-          </mesh>
-          {/* Paw - Flattened for better ground contact */}
-          <mesh position={[0, -dna.legs.height / 2 - 0.01, 0.02]} rotation={[-Math.PI / 2, 0, 0]} material={matPaws}>
-            <cylinderGeometry args={[dna.legs.thickness * 1.1, dna.legs.thickness, 0.04, 12]} />
-          </mesh>
-        </group>
-      ))}
+        {
+          pos: [-(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2 * 0.98, (-dna.body.length / 2 + 0.1) * 0.92] as [number, number, number],
+          splay: -0.087,
+          shoulderY: 0.98,
+          elbowBend: 0.09
+        },
+      ].map((leg, i) => {
+        const isFront = i < 2;
+        return (
+          <group key={i} position={leg.pos} rotation={[leg.elbowBend, 0, leg.splay]}>
+            {/* Shoulder landmark (front legs only) */}
+            {isFront && (
+              <mesh
+                position={[0, dna.legs.height / 2 * 0.82, 0]}
+                castShadow
+                material={matLegs}
+              >
+                <sphereGeometry args={[dna.legs.thickness * 1.15, 8, 8]} />
+              </mesh>
+            )}
+
+            {/* Leg with tapered capsule (elbow visibility) */}
+            <mesh castShadow material={matLegs}>
+              <capsuleGeometry args={[
+                dna.legs.thickness,  // radius
+                dna.legs.height,     // height
+                6,                   // radial segments
+                10                   // height segments
+              ]} />
+            </mesh>
+
+            {/* Ankle/Wrist joint suggestion */}
+            <mesh
+              position={[0, -dna.legs.height / 2 * 0.85, 0.01]}
+              castShadow
+              material={matLegs}
+            >
+              <sphereGeometry args={[dna.legs.thickness * 0.95, 6, 6]} />
+            </mesh>
+
+            {/* Paw - Flattened cone for ground contact */}
+            <mesh position={[0, -dna.legs.height / 2 - 0.01, 0.02]} rotation={[-Math.PI / 2, 0, 0]} material={matPaws}>
+              <cylinderGeometry args={[dna.legs.thickness * 1.15, dna.legs.thickness * 0.95, 0.04, 12]} />
+            </mesh>
+          </group>
+        );
+      })}
 
       {/* Tail - Lowered attachment (5%) and offset left (5°) */}
       <group ref={tail} position={[0.02, (dna.legs.height + dna.body.height - 0.1) * 0.95, -dna.body.length / 2]}>
