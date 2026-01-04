@@ -108,6 +108,8 @@ interface EmotionalPose {
   shoulder_hunch: number;      // scale.x modifier
   breathing_rate: number;      // multiplier vs base 1.6Hz
   micro_movement_scale: number; // fidget amplitude
+  eye_squint: number;           // 0-1, closed to open
+  mouth_open: number;           // 0-1, closed to panting
 }
 
 const EMOTIONAL_POSES: Record<string, EmotionalPose> = {
@@ -124,6 +126,8 @@ const EMOTIONAL_POSES: Record<string, EmotionalPose> = {
     shoulder_hunch: 1.0,
     breathing_rate: 1.25,
     micro_movement_scale: 1.8,
+    eye_squint: 0.8, // Relaxed happy squint
+    mouth_open: 1.0,  // Happy panting
   },
   sad: {
     spine_curve: -0.15,
@@ -138,6 +142,8 @@ const EMOTIONAL_POSES: Record<string, EmotionalPose> = {
     shoulder_hunch: 0.92,
     breathing_rate: 0.75,
     micro_movement_scale: 0.35,
+    eye_squint: 0.4, // Droopy eyes
+    mouth_open: 0.0,
   },
   energetic: {
     spine_curve: -0.05,
@@ -152,6 +158,8 @@ const EMOTIONAL_POSES: Record<string, EmotionalPose> = {
     shoulder_hunch: 1.05,
     breathing_rate: 1.45,
     micro_movement_scale: 2.5,
+    eye_squint: 1.0, // Alert wide eyes
+    mouth_open: 0.5, // Slight open
   },
   sick: {
     spine_curve: -0.22,
@@ -166,6 +174,8 @@ const EMOTIONAL_POSES: Record<string, EmotionalPose> = {
     shoulder_hunch: 0.85,
     breathing_rate: 0.65,
     micro_movement_scale: 0.15,
+    eye_squint: 0.1, // Near closed
+    mouth_open: 0.2, // Labored gasp
   },
   neutral: {
     spine_curve: 0,
@@ -180,6 +190,8 @@ const EMOTIONAL_POSES: Record<string, EmotionalPose> = {
     shoulder_hunch: 1.0,
     breathing_rate: 1.0,
     micro_movement_scale: 1.0,
+    eye_squint: 1.0, // Open
+    mouth_open: 0.0,
   },
 };
 
@@ -279,6 +291,8 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
     right: { nextTime: 0, amplitude: 0, duration: 0, progress: 1 },
   });
 
+  const blinkState = useRef({ nextBlink: 0, progress: 1 });
+
   // GET DNA
   const dna = useMemo(() => BREED_DNA[state.breed], [state.breed]);
 
@@ -342,9 +356,15 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
 
   // Eyes - Wet glass, high specular
   const matEye = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#0a0a0a',
-    roughness: 0.08, // Wet cornea
-    metalness: 0.20  // Specular highlight
+    color: '#080808',
+    roughness: 0.05, // Very wet
+    metalness: 0.35  // High spec
+  }), []);
+
+  const matTongue = useMemo(() => new THREE.MeshStandardMaterial({
+    color: '#ff6b8b',
+    roughness: 0.4,
+    metalness: 0.05,
   }), []);
 
   useFrame(({ clock }) => {
@@ -446,25 +466,13 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
       et.left.progress = 0;
     }
 
+    const lTwitchX = (et.left.progress < 1) ? (et.left.amplitude * (et.left.progress < 0.15 ? (et.left.progress / 0.15) : et.left.progress < 0.45 ? 1 : (1 - (et.left.progress - 0.45) / 0.55))) : 0;
     if (et.left.progress < 1) {
       et.left.progress = Math.min(1, et.left.progress + (1000 / 60) / et.left.duration);
-      const twitchPhase = et.left.progress;
-      let twitchAmount = 0;
-
-      if (twitchPhase < 0.15) {
-        // Quick out (0-0.15)
-        twitchAmount = (twitchPhase / 0.15) * et.left.amplitude;
-      } else if (twitchPhase < 0.45) {
-        // Hold (0.15-0.45)
-        twitchAmount = et.left.amplitude;
-      } else {
-        // Slow return (0.45-1.0)
-        twitchAmount = et.left.amplitude * (1 - (twitchPhase - 0.45) / 0.55);
-      }
-
-      if (earLeft.current) {
-        earLeft.current.rotation.x += twitchAmount;
-      }
+    }
+    if (earLeft.current) {
+      earLeft.current.rotation.x = (dna.ears.rotation[0] - 0.052) + (1 - emotionalPose.ear_tension) * 0.35 + lTwitchX;
+      earLeft.current.rotation.z = -dna.ears.rotation[2] + (1 - emotionalPose.ear_tension) * 0.15;
     }
 
     // Right ear (same logic, independent timing)
@@ -475,22 +483,13 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
       et.right.progress = 0;
     }
 
+    const rTwitchX = (et.right.progress < 1) ? (et.right.amplitude * (et.right.progress < 0.15 ? (et.right.progress / 0.15) : et.right.progress < 0.45 ? 1 : (1 - (et.right.progress - 0.45) / 0.55))) : 0;
     if (et.right.progress < 1) {
       et.right.progress = Math.min(1, et.right.progress + (1000 / 60) / et.right.duration);
-      const twitchPhase = et.right.progress;
-      let twitchAmount = 0;
-
-      if (twitchPhase < 0.15) {
-        twitchAmount = (twitchPhase / 0.15) * et.right.amplitude;
-      } else if (twitchPhase < 0.45) {
-        twitchAmount = et.right.amplitude;
-      } else {
-        twitchAmount = et.right.amplitude * (1 - (twitchPhase - 0.45) / 0.55);
-      }
-
-      if (earRight.current) {
-        earRight.current.rotation.x += twitchAmount;
-      }
+    }
+    if (earRight.current) {
+      earRight.current.rotation.x = dna.ears.rotation[0] + (1 - emotionalPose.ear_tension) * 0.35 + rTwitchX;
+      earRight.current.rotation.z = dna.ears.rotation[2] - (1 - emotionalPose.ear_tension) * 0.15;
     }
 
     if (tail.current) {
@@ -601,13 +600,53 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
             <sphereGeometry args={[0.04, 8, 8]} />
           </mesh>
 
-          {/* Eyes - Improved wetness and realism */}
-          <mesh position={[0.09, 0.08, 0.12]} castShadow material={matEye}>
-            <sphereGeometry args={[0.045, 12, 12]} />
-          </mesh>
-          <mesh position={[-0.09, 0.08, 0.12]} castShadow material={matEye}>
-            <sphereGeometry args={[0.045, 12, 12]} />
-          </mesh>
+          {/* Eyes - Moved forward (z=0.18) and added pupils */}
+          <group position={[0.085, 0.09, 0.18]}>
+            {/* Eye Ball */}
+            <mesh castShadow material={matEye}>
+              <sphereGeometry args={[0.045, 12, 12]} />
+            </mesh>
+            {/* Pupil Detail */}
+            <mesh position={[0, 0, 0.04]} material={new THREE.MeshBasicMaterial({ color: '#000000' })}>
+              <circleGeometry args={[0.015, 8]} />
+            </mesh>
+            {/* Eyelid (Upper) */}
+            <mesh
+              position={[0, 0.033, 0.012]}
+              scale={[1.15, 1 - (emotionalPose.eye_squint * 0.82 * (blinkState.current.progress < 0.15 || blinkState.current.progress > 0.85 ? 0 : 1)), 1.15]}
+              material={matFace}
+            >
+              <sphereGeometry args={[0.046, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            </mesh>
+          </group>
+
+          <group position={[-0.085, 0.09, 0.18]}>
+            {/* Eye Ball */}
+            <mesh castShadow material={matEye}>
+              <sphereGeometry args={[0.045, 12, 12]} />
+            </mesh>
+            {/* Pupil Detail */}
+            <mesh position={[0, 0, 0.04]} material={new THREE.MeshBasicMaterial({ color: '#000000' })}>
+              <circleGeometry args={[0.015, 8]} />
+            </mesh>
+            {/* Eyelid (Upper) */}
+            <mesh
+              position={[0, 0.033, 0.012]}
+              scale={[1.15, 1 - (emotionalPose.eye_squint * 0.82 * (blinkState.current.progress < 0.15 || blinkState.current.progress > 0.85 ? 0 : 1)), 1.15]}
+              material={matFace}
+            >
+              <sphereGeometry args={[0.046, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            </mesh>
+          </group>
+
+          {/* Tongue / Mouth - Panting logic */}
+          {emotionalPose.mouth_open > 0 && (
+            <group position={[0, dna.snout.position[1] - 0.05, dna.snout.position[2] + 0.05]}>
+              <mesh rotation={[0.4, 0, 0]} material={matTongue} position={[0, -0.02, 0.05]}>
+                <capsuleGeometry args={[0.04, 0.08 * emotionalPose.mouth_open, 4, 8]} />
+              </mesh>
+            </group>
+          )}
 
           {/* Ears - Asymmetric positioning (left 3° more forward) */}
           <group>
@@ -724,7 +763,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
         opacity={0.45}
         blur={1.2}
       />
-      
+
       {/* Individual Paw Contact Shadows (Sharper) */}
       {[
         // Front Left
@@ -739,7 +778,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
         <ContactShadow
           key={`shadow-${i}`}
           position={[pos[0] as number, 0.01, pos[1] as number]}
-          scale={0.12} 
+          scale={0.12}
           opacity={0.75}
           blur={0.4}
           far={0.2}
