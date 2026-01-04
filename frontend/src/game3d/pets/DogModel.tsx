@@ -214,6 +214,41 @@ function getEmotionalPose(stats: any): EmotionalPose {
   return EMOTIONAL_POSES.neutral;
 }
 
+// AAA IDLE MOTION UTILITIES
+// Simple 1D Perlin noise for organic head drift
+function perlinNoise1D(x: number, seed: number = 0): number {
+  const xi = Math.floor(x);
+  const xf = x - xi;
+  const u = xf * xf * (3.0 - 2.0 * xf); // Smoothstep
+
+  const hash = (n: number) => {
+    const h = Math.sin(n * 127.1 + seed * 311.7) * 43758.5453;
+    return h - Math.floor(h);
+  };
+
+  const a = hash(xi);
+  const b = hash(xi + 1);
+  return a * (1 - u) + b * u;
+}
+
+// Weight shift state
+interface WeightShiftState {
+  nextShiftTime: number;
+  targetX: number;
+  targetZ: number;
+  currentX: number;
+  currentZ: number;
+  isShifting: boolean;
+  shiftStartTime: number;
+  shiftDuration: number;
+}
+
+// Ear twitch state
+interface EarTwitchState {
+  left: { nextTime: number; amplitude: number; duration: number; progress: number };
+  right: { nextTime: number; amplitude: number; duration: number; progress: number };
+}
+
 export function DogModel({ state, onPetTap, setPetPosition, stats }: {
   state: PetGame2State;
   onPetTap: () => void;
@@ -223,7 +258,26 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
   const tail = useRef<THREE.Group>(null);
+  const earLeft = useRef<THREE.Mesh>(null);
+  const earRight = useRef<THREE.Mesh>(null);
   const [isHovered, setIsHovered] = useState(false);
+
+  // AAA Idle Motion State
+  const weightShiftState = useRef<WeightShiftState>({
+    nextShiftTime: 0,
+    targetX: 0,
+    targetZ: 0,
+    currentX: 0,
+    currentZ: 0,
+    isShifting: false,
+    shiftStartTime: 0,
+    shiftDuration: 1200,
+  });
+
+  const earTwitchState = useRef<EarTwitchState>({
+    left: { nextTime: 0, amplitude: 0, duration: 0, progress: 1 },
+    right: { nextTime: 0, amplitude: 0, duration: 0, progress: 1 },
+  });
 
   // GET DNA
   const dna = useMemo(() => BREED_DNA[state.breed], [state.breed]);
@@ -322,20 +376,121 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
     }
 
     if (head.current) {
-      // AAA Reactive Head Movement - Perlin noise + micro-adjustments
-      const baseNoise = Math.sin(t * 0.8) * Math.cos(t * 1.3) * 0.05 * emotionalPose.micro_movement_scale;
+      // AAA Perlin Noise Head Drift (replaces mechanical sin/cos)
+      const driftPitch = (perlinNoise1D(t * 0.5, 1) * 2 - 1) * 0.04 * emotionalPose.micro_movement_scale;
+      const driftYaw = (perlinNoise1D(t * 0.3, 2) * 2 - 1) * 0.06 * emotionalPose.micro_movement_scale;
+      const driftRoll = (perlinNoise1D(t * 0.8, 3) * 2 - 1) * 0.015 * emotionalPose.micro_movement_scale;
+
       const nod = subtleNod(t, 1.2) * 0.08 * emotionalPose.micro_movement_scale;
 
-      // Apply emotional head posture
-      head.current.rotation.x = emotionalPose.head_pitch + nod + baseNoise * 0.5;
-
-      // Slower, more natural head turn with emotional tilt
-      head.current.rotation.y = Math.sin(t * 0.4) * 0.12 * emotionalPose.micro_movement_scale + baseNoise;
-      head.current.rotation.z = emotionalPose.head_roll;
+      // Apply emotional head posture + organic drift
+      head.current.rotation.x = emotionalPose.head_pitch + nod + driftPitch;
+      head.current.rotation.y = driftYaw;
+      head.current.rotation.z = emotionalPose.head_roll + driftRoll;
 
       // Breathing affects neck angle slightly
       const breathNeck = Math.sin((t - 0.5) * breathRate) * 0.006;
       head.current.rotation.x += breathNeck;
+    }
+
+    // AAA Stochastic Weight Shifts (6-12s intervals)
+    const now = performance.now();
+    const ws = weightShiftState.current;
+
+    if (now >= ws.nextShiftTime && !ws.isShifting) {
+      // Trigger new weight shift
+      ws.isShifting = true;
+      ws.shiftStartTime = now;
+      ws.shiftDuration = 1200; // ms
+      ws.targetX = (Math.random() - 0.5) * 0.036; // ±0.018 (lateral shift)
+      ws.targetZ = (Math.random() - 0.5) * 0.04;  // ±0.02 (fore/aft)
+      ws.nextShiftTime = now + 6000 + Math.random() * 6000; // 6-12s
+    }
+
+    if (ws.isShifting) {
+      const elapsed = now - ws.shiftStartTime;
+      const progress = Math.min(1, elapsed / ws.shiftDuration);
+
+      // Ease-in-out cubic
+      const eased = progress < 0.5
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+      ws.currentX = ws.currentX * (1 - eased) + ws.targetX * eased;
+      ws.currentZ = ws.currentZ * (1 - eased) + ws.targetZ * eased;
+
+      if (progress >= 1) {
+        ws.isShifting = false;
+      }
+
+      // Apply weight shift to root
+      if (root.current) {
+        root.current.position.x += ws.currentX;
+        root.current.position.z += ws.currentZ;
+      }
+
+      // Compensatory head turn toward weight
+      if (head.current) {
+        head.current.rotation.y += -ws.currentX * 0.3;
+      }
+    }
+
+    // AAA Async Ear Twitches
+    const et = earTwitchState.current;
+
+    // Left ear
+    if (now >= et.left.nextTime) {
+      et.left.nextTime = now + 2500 + Math.random() * 5500; // 2.5-8s
+      et.left.amplitude = 0.10 + Math.random() * 0.12; // 0.10-0.22 rad
+      et.left.duration = 600; // ms (out + hold + return)
+      et.left.progress = 0;
+    }
+
+    if (et.left.progress < 1) {
+      et.left.progress = Math.min(1, et.left.progress + (1000 / 60) / et.left.duration);
+      const twitchPhase = et.left.progress;
+      let twitchAmount = 0;
+
+      if (twitchPhase < 0.15) {
+        // Quick out (0-0.15)
+        twitchAmount = (twitchPhase / 0.15) * et.left.amplitude;
+      } else if (twitchPhase < 0.45) {
+        // Hold (0.15-0.45)
+        twitchAmount = et.left.amplitude;
+      } else {
+        // Slow return (0.45-1.0)
+        twitchAmount = et.left.amplitude * (1 - (twitchPhase - 0.45) / 0.55);
+      }
+
+      if (earLeft.current) {
+        earLeft.current.rotation.x += twitchAmount;
+      }
+    }
+
+    // Right ear (same logic, independent timing)
+    if (now >= et.right.nextTime) {
+      et.right.nextTime = now + 3000 + Math.random() * 5500; // 3-8.5s (offset from left)
+      et.right.amplitude = 0.10 + Math.random() * 0.12;
+      et.right.duration = 600;
+      et.right.progress = 0;
+    }
+
+    if (et.right.progress < 1) {
+      et.right.progress = Math.min(1, et.right.progress + (1000 / 60) / et.right.duration);
+      const twitchPhase = et.right.progress;
+      let twitchAmount = 0;
+
+      if (twitchPhase < 0.15) {
+        twitchAmount = (twitchPhase / 0.15) * et.right.amplitude;
+      } else if (twitchPhase < 0.45) {
+        twitchAmount = et.right.amplitude;
+      } else {
+        twitchAmount = et.right.amplitude * (1 - (twitchPhase - 0.45) / 0.55);
+      }
+
+      if (earRight.current) {
+        earRight.current.rotation.x += twitchAmount;
+      }
     }
 
     if (tail.current) {
@@ -458,6 +613,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
           <group>
             {/* Left Ear - More forward */}
             <mesh
+              ref={earLeft}
               position={[-dna.ears.position[0], dna.ears.position[1] * 1.02, dna.ears.position[2]]}
               rotation={[dna.ears.rotation[0] - 0.052, -dna.ears.rotation[1], -dna.ears.rotation[2]]}
               castShadow material={matEarsInner}
@@ -466,6 +622,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
             </mesh>
             {/* Right Ear */}
             <mesh
+              ref={earRight}
               position={[dna.ears.position[0], dna.ears.position[1], dna.ears.position[2]]}
               rotation={[dna.ears.rotation[0], dna.ears.rotation[1], dna.ears.rotation[2]]}
               castShadow material={matEarsInner}
