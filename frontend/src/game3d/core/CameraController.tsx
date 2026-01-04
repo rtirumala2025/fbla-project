@@ -27,8 +27,8 @@ export function CameraController({
     }
     if (!controlsRef.current) return;
 
-    // 1. Update look-at target to pet position
-    targetVec.set(...currentPosition);
+    // 1. Update look-at target to pet position (plus offset to look at body not feet)
+    targetVec.set(currentPosition[0], currentPosition[1] + 0.75, currentPosition[2]);
     controlsRef.current.target.lerp(targetVec, 0.1);
 
     // 2. Navigation Chase Cam Logic
