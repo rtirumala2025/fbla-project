@@ -73,6 +73,8 @@ export function PetGame2Scene({
   setPetPosition,
   onToggleDrone,
   setBreed,
+  onExitBuilding,
+  onActivity,
 }: {
   petType: PetGame2PetType;
   petName: string;
@@ -89,6 +91,8 @@ export function PetGame2Scene({
   setPetPosition: (pos: [number, number, number]) => void;
   onToggleDrone: () => void;
   setBreed: (breed: any) => void;
+  onExitBuilding?: () => void;
+  onActivity?: (id: string) => void;
 }) {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0));
   const preset = presetForPet(petType);
@@ -124,13 +128,16 @@ export function PetGame2Scene({
         droneActive={state.cameraMode === 'drone'}
         breed={state.breed}
         setBreed={setBreed}
+        indoorLocation={state.indoorLocation}
+        onExitBuilding={onExitBuilding}
+        onActivity={onActivity}
       />
 
       {/* Three.js Canvas */}
       <Canvas
         shadows
         dpr={dpr}
-        camera={{ fov: 45, near: 0.1, far: 100, position: [0, 8, 12] }}
+        camera={{ fov: 45, near: 0.01, far: 1000, position: [0, 8, 12] }}
         gl={{ antialias: true, alpha: false }}
         onCreated={({ gl, scene }) => {
           gl.setClearColor('#0b1020', 1);
@@ -172,6 +179,7 @@ export function PetGame2Scene({
             mode={state.cameraMode}
             interaction={state.interaction}
             currentPosition={state.currentPosition}
+            indoorLocation={state.indoorLocation}
             onDroneExit={onToggleDrone}
           />
         </Suspense>

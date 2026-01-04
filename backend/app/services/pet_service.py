@@ -264,14 +264,6 @@ class PetService:
             updates["breed"] = payload.breed
         if payload.color is not None and columns["color"]:
             updates[columns["color"]] = payload.color
-        if payload.hunger is not None:
-            updates[columns["hunger"]] = self._clamp(payload.hunger)
-        if payload.hygiene is not None:
-            updates[columns["hygiene"]] = self._clamp(payload.hygiene)
-        if payload.energy is not None:
-            updates[columns["energy"]] = self._clamp(payload.energy)
-        if payload.mood is not None:
-            updates[columns["mood"]] = self._mood_to_score(payload.mood)
 
         if not updates:
             pet = await self.get_pet(user_id)

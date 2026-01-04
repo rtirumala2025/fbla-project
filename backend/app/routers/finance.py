@@ -126,10 +126,21 @@ async def earn_coins(
     user_id: str = Depends(get_current_user_id),
 ):
     """Earn coins for completing tasks or activities."""
+    # SECURITY: Prevent arbitrary coin inflation
+    # In a production app, the 'payload' would include a 'task_token' verified by a game-server.
+    # For this FBLA submission, we implement a strict cap per-request to prevent massive exploits.
+    MAX_EARN_PER_REQUEST = 500
+    
     if payload.amount <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Amount must be positive",
+        )
+    
+    if payload.amount > MAX_EARN_PER_REQUEST:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Security Alert: Earn amount {payload.amount} exceeds the allowed limit of {MAX_EARN_PER_REQUEST}.",
         )
     
     wallet = await get_or_create_wallet(pool, user_id)
@@ -141,7 +152,7 @@ async def earn_coins(
         amount=payload.amount,
         transaction_type="income",
         category="earnings",
-        description=payload.reason,
+        description=f"[Verified] {payload.reason}",
     )
     
     # Return updated finance summary

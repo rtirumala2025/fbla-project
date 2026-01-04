@@ -26,6 +26,7 @@ export const PetGame2Screen: React.FC = () => {
     triggerPetTap,
     triggerAction,
     triggerNavigation,
+    exitBuilding,
     setPetPosition,
     setCameraMode,
     setBreed
@@ -328,6 +329,14 @@ export const PetGame2Screen: React.FC = () => {
           setCameraMode(prev => prev === 'drone' ? 'follow' : 'drone');
         }}
         setBreed={setBreed}
+        onExitBuilding={exitBuilding}
+        onActivity={(id) => {
+          if (id === 'agility') handleAction('play');
+          if (id === 'vet') handleAction('rest');
+          if (id === 'budget' || id === 'savings') handleAction('play');
+          if (id === 'play_session') handleAction('play');
+          if (id === 'hibernate') handleAction('rest');
+        }}
       />
 
       {/* Overlays */}

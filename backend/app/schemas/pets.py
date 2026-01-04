@@ -45,10 +45,6 @@ class PetUpdate(BaseModel):
     species: Optional[str] = Field(default=None, min_length=2, max_length=32)
     breed: Optional[str] = Field(default=None, max_length=64)
     color: Optional[str] = Field(default=None, max_length=32)
-    hunger: Optional[int] = Field(default=None, ge=0, le=100)
-    hygiene: Optional[int] = Field(default=None, ge=0, le=100)
-    energy: Optional[int] = Field(default=None, ge=0, le=100)
-    mood: Optional[str] = Field(default=None, max_length=32)
 
 
 class PetDiaryEntryResponse(BaseModel):

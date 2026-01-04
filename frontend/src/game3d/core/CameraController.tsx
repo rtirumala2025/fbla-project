@@ -9,11 +9,13 @@ export function CameraController({
   mode,
   interaction,
   currentPosition,
+  indoorLocation,
   onDroneExit,
 }: {
   mode: PetGame2CameraMode;
   interaction: PetGame2Interaction;
   currentPosition: [number, number, number];
+  indoorLocation?: ActivityZone | null;
   onDroneExit?: () => void;
 }) {
   const controlsRef = useRef<any>(null);
@@ -28,7 +30,8 @@ export function CameraController({
     if (!controlsRef.current) return;
 
     // 1. Update look-at target to pet position (plus offset to look at head/upper body)
-    targetVec.set(currentPosition[0], currentPosition[1] + 1.25, currentPosition[2]);
+    // Increased offset since pets are scaled 3.2x
+    targetVec.set(currentPosition[0], currentPosition[1] + 2.0, currentPosition[2]);
     controlsRef.current.target.lerp(targetVec, 0.1);
 
     // 2. Navigation Chase Cam Logic
@@ -46,6 +49,10 @@ export function CameraController({
 
       intendedMinDist = 6;
       intendedMaxDist = 8;
+    } else if (indoorLocation) {
+      // Tighter framing for indoor interactions
+      intendedMinDist = 2;
+      intendedMaxDist = 4;
     } else {
       intendedMinDist = 5;
       intendedMaxDist = 20;

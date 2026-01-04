@@ -85,7 +85,10 @@ export function PetHUD({
     onToggleDrone,
     droneActive,
     breed,
-    setBreed
+    setBreed,
+    indoorLocation,
+    onExitBuilding,
+    onActivity
 }: {
     petName: string;
     species: string;
@@ -100,6 +103,9 @@ export function PetHUD({
     droneActive?: boolean;
     breed?: string;
     setBreed?: (breed: string) => void;
+    indoorLocation?: string | null;
+    onExitBuilding?: () => void;
+    onActivity?: (id: string) => void;
 }) {
     const hunger = stats?.hunger ?? 50;
     const happiness = stats?.happiness ?? 50;
@@ -146,6 +152,15 @@ export function PetHUD({
                 >
                     <Plane size={20} className={droneActive ? "animate-[pulse_2s_infinite]" : ""} />
                 </button>
+
+                {indoorLocation && (
+                    <button
+                        onClick={onExitBuilding}
+                        className="px-4 py-2 rounded-xl bg-red-500/80 backdrop-blur-md border border-white/10 text-white font-bold hover:bg-red-600 transition-all hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2"
+                    >
+                        <span>EXIT BUILDING</span>
+                    </button>
+                )}
 
                 {/* Breed Selector */}
                 {species === 'dog' && (
@@ -211,34 +226,92 @@ export function PetHUD({
             {/* Bottom-right: Actions */}
             <div className="absolute bottom-6 right-6 z-10 pointer-events-auto">
                 <div className="flex gap-3">
-                    <ActionButton
-                        label="Feed ($5)"
-                        action="feed"
-                        disabled={!!(disabled || droneActive)}
-                        onAction={onAction}
-                        icon={<Heart size={20} />}
-                    />
-                    <ActionButton
-                        label="Play ($10)"
-                        action="play"
-                        disabled={!!(disabled || droneActive)}
-                        onAction={onAction}
-                        icon={<Sparkles size={20} />}
-                    />
-                    <ActionButton
-                        label="Rest"
-                        action="rest"
-                        disabled={!!(disabled || droneActive)}
-                        onAction={onAction}
-                        icon={<Zap size={20} />}
-                    />
-                    <ActionButton
-                        label="Bathe ($3)"
-                        action="bathe"
-                        disabled={!!(disabled || droneActive)}
-                        onAction={onAction}
-                        icon={<Droplets size={20} />}
-                    />
+                    {!indoorLocation ? (
+                        <>
+                            <ActionButton
+                                label="Feed ($5)"
+                                action="feed"
+                                disabled={!!(disabled || droneActive)}
+                                onAction={onAction}
+                                icon={<Heart size={20} />}
+                            />
+                            <ActionButton
+                                label="Play ($10)"
+                                action="play"
+                                disabled={!!(disabled || droneActive)}
+                                onAction={onAction}
+                                icon={<Sparkles size={20} />}
+                            />
+                            <ActionButton
+                                label="Rest"
+                                action="rest"
+                                disabled={!!(disabled || droneActive)}
+                                onAction={onAction}
+                                icon={<Zap size={20} />}
+                            />
+                            <ActionButton
+                                label="Bathe ($3)"
+                                action="bathe"
+                                disabled={!!(disabled || droneActive)}
+                                onAction={onAction}
+                                icon={<Droplets size={20} />}
+                            />
+                        </>
+                    ) : (
+                        <div className="flex flex-col gap-2 bg-slate-900/60 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-2xl">
+                            <h4 className="text-amber-400 font-bold text-xs uppercase tracking-widest mb-1">Building Activity</h4>
+                            <div className="flex gap-3">
+                                {indoorLocation === 'agility' && (
+                                    <button
+                                        onClick={() => onActivity?.('agility')}
+                                        className="px-6 py-3 bg-indigo-600 rounded-xl text-white font-bold hover:bg-indigo-500 transition-all shadow-lg border border-white/10"
+                                    >
+                                        Start Agility Drill
+                                    </button>
+                                )}
+                                {indoorLocation === 'center' && (
+                                    <>
+                                        <button
+                                            onClick={() => onActivity?.('budget')}
+                                            className="px-6 py-3 bg-emerald-600 rounded-xl text-white font-bold hover:bg-emerald-500 transition-all shadow-lg border border-white/10"
+                                        >
+                                            View Budget Plan
+                                        </button>
+                                        <button
+                                            onClick={() => onActivity?.('savings')}
+                                            className="px-6 py-3 bg-sky-600 rounded-xl text-white font-bold hover:bg-sky-500 transition-all shadow-lg border border-white/10"
+                                        >
+                                            Open Savings Goal
+                                        </button>
+                                    </>
+                                )}
+                                {indoorLocation === 'vet' && (
+                                    <button
+                                        onClick={() => onActivity?.('vet')}
+                                        className="px-6 py-3 bg-red-600 rounded-xl text-white font-bold hover:bg-red-500 transition-all shadow-lg border border-white/10"
+                                    >
+                                        Perform Health Scan
+                                    </button>
+                                )}
+                                {indoorLocation === 'play' && (
+                                    <button
+                                        onClick={() => onActivity?.('play_session')}
+                                        className="px-6 py-3 bg-blue-600 rounded-xl text-white font-bold hover:bg-blue-500 transition-all shadow-lg border border-white/10"
+                                    >
+                                        Join Play Session
+                                    </button>
+                                )}
+                                {indoorLocation === 'rest' && (
+                                    <button
+                                        onClick={() => onActivity?.('hibernate')}
+                                        className="px-6 py-3 bg-amber-600 rounded-xl text-white font-bold hover:bg-amber-500 transition-all shadow-lg border border-white/10"
+                                    >
+                                        Deep Hibernate
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

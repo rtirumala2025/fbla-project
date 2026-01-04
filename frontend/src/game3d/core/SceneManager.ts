@@ -39,6 +39,7 @@ export type PetGame2State = {
   navigationState: NavigationState;
   currentPosition: [number, number, number];
   breed: PetBreed;
+  indoorLocation: ActivityZone | null;
 };
 
 // Activity zone positions (matching DogPark.tsx building positions)
@@ -70,6 +71,7 @@ export function usePetGame2State() {
   });
   const [currentPosition, setCurrentPosition] = useState<[number, number, number]>([0, 0, 0]);
   const [breed, setBreed] = useState<PetBreed>('labrador');
+  const [indoorLocation, setIndoorLocation] = useState<ActivityZone | null>(null);
 
   const vfxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navAnimRef = useRef<number | null>(null);
@@ -164,6 +166,16 @@ export function usePetGame2State() {
     });
   }, []);
 
+  const enterBuilding = useCallback((zone: ActivityZone) => {
+    setIndoorLocation(zone);
+    setInteraction({ kind: 'atActivity', zone, startedAt: nowMs() });
+  }, []);
+
+  const exitBuilding = useCallback(() => {
+    setIndoorLocation(null);
+    setInteraction({ kind: 'idle' });
+  }, []);
+
   // Navigation animation loop
   useEffect(() => {
     if (interaction.kind !== 'navigating' || !navigationState.target) return;
@@ -181,18 +193,8 @@ export function usePetGame2State() {
       }));
 
       if (progress >= 1) {
-        // Navigation complete
-        setInteraction({ kind: 'atActivity', zone: navigationState.target!, startedAt: nowMs() });
-        setNavigationState((prev) => ({ ...prev, target: null, progress: 0 }));
-
-        // Return to idle after 2 seconds at activity
-        window.setTimeout(() => {
-          setInteraction((prev) =>
-            prev.kind === 'atActivity' && prev.zone === navigationState.target
-              ? { kind: 'idle' }
-              : prev
-          );
-        }, 2000);
+        // Enter building automatically when reaching target
+        enterBuilding(navigationState.target!);
       } else {
         navAnimRef.current = requestAnimationFrame(animate);
       }
@@ -216,8 +218,9 @@ export function usePetGame2State() {
       navigationState,
       currentPosition,
       breed,
+      indoorLocation,
     }),
-    [interaction, cameraMode, vfx, navigationState, currentPosition, breed]
+    [interaction, cameraMode, vfx, navigationState, currentPosition, breed, indoorLocation]
   );
 
   return {
@@ -225,6 +228,8 @@ export function usePetGame2State() {
     triggerPetTap,
     triggerAction,
     triggerNavigation,
+    enterBuilding,
+    exitBuilding,
     setPetPosition: (pos: [number, number, number]) => {
       petPositionRef.current = pos;
       setCurrentPosition(pos);

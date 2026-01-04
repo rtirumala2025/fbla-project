@@ -2,38 +2,22 @@ import React, { useMemo, useRef } from 'react';
 import { Cloud, Float, Box, Cylinder, Sphere } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { makeGrassTexture, createCanvasTexture } from '../core/AssetLoader';
+import { makeGrassTexture, makeGravelTexture, createCanvasTexture } from '../core/AssetLoader';
 import { AgilityFacility } from '../props/AgilityFacility';
 import { VetClinic } from '../props/VetClinic';
 import { PlayPavilion } from '../props/PlayPavilion';
 import { RestShelter } from '../props/RestShelter';
 import { ParkHubBuilding } from '../props/ParkHubBuilding';
+import { ParkHubInterior } from '../props/ParkHubInterior';
+import { AgilityInterior } from '../props/AgilityInterior';
+import { VetInterior } from '../props/VetInterior';
+import { PlayInterior } from '../props/PlayInterior';
+import { RestInterior } from '../props/RestInterior';
 import { NavigationGuide } from '../ui/NavigationGuide';
 import type { PetGame2State, ActivityZone } from '../core/SceneManager';
+import { ACTIVITY_POSITIONS } from '../core/SceneManager';
 
 // --- Assets & Helpers ---
-
-function makeGravelTexture() {
-  return createCanvasTexture({
-    size: 512,
-    paint: (ctx, size) => {
-      ctx.fillStyle = '#eaddcf'; // Light beige base
-      ctx.fillRect(0, 0, size, size);
-      for (let i = 0; i < 15000; i++) {
-        const shade = Math.random() > 0.5 ? 180 : 220; // Lighter noise
-        ctx.fillStyle = `rgba(${shade},${shade},${shade},0.2)`;
-        const s = 1 + Math.random() * 2;
-        ctx.fillRect(Math.random() * size, Math.random() * size, s, s);
-      }
-      // Add some warm speckles
-      for (let i = 0; i < 5000; i++) {
-        ctx.fillStyle = 'rgba(160, 120, 90, 0.15)';
-        const s = 1 + Math.random() * 2;
-        ctx.fillRect(Math.random() * size, Math.random() * size, s, s);
-      }
-    }
-  });
-}
 
 function Tree({ position, scale = 1, rotation = 0, lean = [0, 0] }: { position: [number, number, number]; scale?: number; rotation?: number, lean?: [number, number] }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -82,7 +66,7 @@ export function DogPark({
 }) {
   const grassTex = useMemo(() => {
     const t = makeGrassTexture();
-    t.repeat.set(32, 32);
+    t.repeat.set(64, 64); // Increased for larger grid
     t.wrapS = THREE.RepeatWrapping;
     t.wrapT = THREE.RepeatWrapping;
     return t;
@@ -90,76 +74,136 @@ export function DogPark({
 
   const gravelTex = useMemo(() => {
     const t = makeGravelTexture();
-    t.repeat.set(10, 10);
+    t.repeat.set(20, 20);
     t.wrapS = THREE.RepeatWrapping;
     t.wrapT = THREE.RepeatWrapping;
     return t;
+  }, []);
+
+  // Define Highway Path Curves
+  const paths = useMemo(() => {
+    // Outer highway loop (rounded square)
+    const size = 60;
+    const radius = 15;
+
+    const highwayCurves = [
+      // Top edge
+      new THREE.LineCurve3(new THREE.Vector3(-size + radius, 0, -size), new THREE.Vector3(size - radius, 0, -size)),
+      // Top-right corner
+      new THREE.QuadraticBezierCurve3(new THREE.Vector3(size - radius, 0, -size), new THREE.Vector3(size, 0, -size), new THREE.Vector3(size, 0, -size + radius)),
+      // Right edge
+      new THREE.LineCurve3(new THREE.Vector3(size, 0, -size + radius), new THREE.Vector3(size, 0, size - radius)),
+      // Bottom-right corner
+      new THREE.QuadraticBezierCurve3(new THREE.Vector3(size, 0, size - radius), new THREE.Vector3(size, 0, size), new THREE.Vector3(size - radius, 0, size)),
+      // Bottom edge
+      new THREE.LineCurve3(new THREE.Vector3(size - radius, 0, size), new THREE.Vector3(-size + radius, 0, size)),
+      // Bottom-left corner
+      new THREE.QuadraticBezierCurve3(new THREE.Vector3(-size + radius, 0, size), new THREE.Vector3(-size, 0, size), new THREE.Vector3(-size, 0, size - radius)),
+      // Left edge
+      new THREE.LineCurve3(new THREE.Vector3(-size, 0, size - radius), new THREE.Vector3(-size, 0, -size + radius)),
+      // Top-left corner
+      new THREE.QuadraticBezierCurve3(new THREE.Vector3(-size, 0, -size + radius), new THREE.Vector3(-size, 0, -size), new THREE.Vector3(-size + radius, 0, -size)),
+    ];
+
+    // Spokes to connect to buildings/center
+    const spokes = [
+      new THREE.LineCurve3(new THREE.Vector3(0, 0, -size), new THREE.Vector3(0, 0, size)), // N-S Spoke
+      new THREE.LineCurve3(new THREE.Vector3(-size, 0, 0), new THREE.Vector3(size, 0, 0)), // E-W Spoke
+    ];
+
+    return { highwayCurves, spokes };
   }, []);
 
   const scenery = useMemo(() => {
     const trees: { pos: [number, number, number]; scale: number; rot: number; lean: [number, number] }[] = [];
     const bushes: { pos: [number, number, number]; scale: number; rot: number }[] = [];
 
-    // Bounds for organic forest
-    for (let i = 0; i < 110; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = 18 + Math.random() * 30;
-      const x = Math.cos(angle) * dist;
-      const z = Math.sin(angle) * dist;
+    const isNearPath = (x: number, z: number, threshold = 6) => {
+      const p = new THREE.Vector3(x, 0, z);
+      // Check distance to all curves
+      for (const curve of [...paths.highwayCurves, ...paths.spokes]) {
+        // Approximate distance to curve (cheap check)
+        const segments = 10;
+        for (let s = 0; s <= segments; s++) {
+          const cp = curve.getPoint(s / segments);
+          if (cp.distanceTo(p) < threshold) return true;
+        }
+      }
+      // Keep clear area around central plaza
+      if (Math.hypot(x, z) < 20) return true;
+      // Keep clear area around buildings
+      for (const bPos of Object.values(ACTIVITY_POSITIONS)) {
+        if (Math.hypot(x - bPos[0], z - bPos[2]) < 12) return true;
+      }
+      return false;
+    };
 
-      // Clearing for buildings
-      if (Math.abs(x) < 18 && Math.abs(z) < 18) continue;
+    // Global tree placement covering 200x200 grid
+    const treeCount = 450;
+    const range = 95;
+    for (let i = 0; i < treeCount; i++) {
+      const x = (Math.random() - 0.5) * range * 2;
+      const z = (Math.random() - 0.5) * range * 2;
+
+      if (isNearPath(x, z)) continue;
 
       trees.push({
         pos: [x, 0, z],
-        scale: 0.7 + Math.random() * 1.2,
+        scale: 0.8 + Math.random() * 1.5,
         rot: Math.random() * Math.PI,
         lean: [(Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.15]
       });
 
       if (Math.random() > 0.4) {
         bushes.push({
-          pos: [x + (Math.random() - 0.5) * 3, 0, z + (Math.random() - 0.5) * 3],
-          scale: 0.5 + Math.random() * 0.5,
+          pos: [x + (Math.random() - 0.5) * 4, 0, z + (Math.random() - 0.5) * 4],
+          scale: 0.6 + Math.random() * 0.6,
           rot: Math.random() * Math.PI
         });
       }
     }
 
     return { trees, bushes };
-  }, []);
+  }, [paths]);
 
   return (
     <>
       <color attach="background" args={['#87CEEB']} />
-      <fog attach="fog" args={['#87CEEB', 35, 100]} />
+      <fog attach="fog" args={['#87CEEB', 50, 160]} />
 
-      <group position={[0, 25, -15]}>
-        <Cloud opacity={0.6} speed={0.1} segments={40} bounds={[50, 6, 50]} volume={18} color="#ffffff" />
+      <group position={[0, 40, -30]}>
+        <Cloud opacity={0.4} speed={0.1} segments={40} bounds={[100, 10, 100]} volume={25} color="#ffffff" />
       </group>
 
       {/* --- MAIN GROUND --- */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[120, 120]} />
-        <meshStandardMaterial map={grassTex} color="#98c48a" roughness={1} />
+        <planeGeometry args={[220, 220]} />
+        <meshStandardMaterial map={grassTex} color="#8fb97e" roughness={1} />
       </mesh>
 
-      {/* --- CENTRAL PLAZA (Organic Shape) --- */}
+      {/* --- HIGHWAY SYSTEM MESHES --- */}
+      {/* Outer Loop */}
+      {paths.highwayCurves.map((curve, i) => (
+        <mesh key={`loop-${i}`} position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <tubeGeometry args={[curve as any, 20, 2.5, 8, false]} />
+          <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
+        </mesh>
+      ))}
+
+      {/* Spokes - Flattened planes for better performance and alignment */}
+      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[5, 120]} />
+        <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[120, 5]} />
+        <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
+      </mesh>
+
+      {/* --- CENTRAL PLAZA --- */}
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[14, 64]} />
+        <circleGeometry args={[15, 64]} />
         <meshStandardMaterial map={gravelTex} color="#ffffff" transparent opacity={0.95} roughness={0.9} />
-      </mesh>
-
-      {/* Decorative Circular Planter removed to clear dog spawn area */}
-
-      {/* Path Spokes */}
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[5, 100]} />
-        <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[100, 5]} />
-        <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
       </mesh>
 
       {/* --- BUILDINGS IN ORGANIC LAYOUT --- */}
@@ -167,41 +211,65 @@ export function DogPark({
       {/* Agility - Tucked in a corner with bushes */}
       <group position={[-16, 0, -14]} rotation={[0, 0.8, 0]}>
         <AgilityFacility onSignClick={() => triggerNavigation('agility')} />
-        {/* Environment Blending */}
-        <Bush position={[-6, 0, -5]} scale={1.2} />
-        <Bush position={[6, 0, -4]} scale={0.8} />
       </group>
 
       {/* Vet Clinic - Street side feel */}
       <group position={[-18, 0, 10]} rotation={[0, -0.3, 0]}>
         <VetClinic onSignClick={() => triggerNavigation('vet')} />
-        <Bush position={[0, 0, -6]} scale={1} />
       </group>
 
       {/* Play Pavilion - Open area */}
       <group position={[14, 0, -18]} rotation={[0, -2.4, 0]}>
         <PlayPavilion onSignClick={() => triggerNavigation('play')} />
-        <Bush position={[-5, 0, 5]} scale={1.1} />
       </group>
 
       {/* Rest Shelter - Shady spot under trees */}
       <group position={[16, 0, 14]} rotation={[0, 3.8, 0]}>
         <RestShelter onSignClick={() => triggerNavigation('rest')} />
-        <Tree position={[-5, 0, -5]} scale={0.9} />
-        <Bush position={[5, 0, 0]} scale={0.8} />
       </group>
 
       {/* Central Hub - Facing the entrance plaza */}
       <ParkHubBuilding position={[0, 0, -10]} rotation={[0, 0, 0]} onSignClick={() => triggerNavigation('center')} />
 
       {/* --- DECORATIVE NATURE --- */}
-      {scenery.trees.map((t, i) => <Tree key={`t-${i}`} position={t.pos} scale={t.scale} rotation={t.rot} lean={t.lean} />)}
-      {scenery.bushes.map((b, i) => <Bush key={`b-${i}`} position={b.pos} scale={b.scale} rotation={b.rot} />)}
+      {!state.indoorLocation && scenery.trees.map((t, i) => <Tree key={`t-${i}`} position={t.pos} scale={t.scale} rotation={t.rot} lean={t.lean} />)}
+      {!state.indoorLocation && scenery.bushes.map((b, i) => <Bush key={`b-${i}`} position={b.pos} scale={b.scale} rotation={b.rot} />)}
 
       <NavigationGuide navigationState={state.navigationState} currentPosition={currentPetPosition} />
 
-      {/* Decorative Lamp Posts to unify the park */}
-      {[[-12, -8], [12, -8], [-12, 8], [12, 8]].map((pos, i) => (
+      {/* --- INTERIOR VIEWS (Rendered at building locations) --- */}
+      {state.indoorLocation === 'agility' && (
+        <group position={[-16, 0.6, -14]}>
+          <AgilityInterior />
+        </group>
+      )}
+      {state.indoorLocation === 'vet' && (
+        <group position={[-18, 0.6, 10]}>
+          <VetInterior />
+        </group>
+      )}
+      {state.indoorLocation === 'play' && (
+        <group position={[14, 0.6, -18]}>
+          <PlayInterior />
+        </group>
+      )}
+      {state.indoorLocation === 'rest' && (
+        <group position={[16, 0.6, 14]}>
+          <RestInterior />
+        </group>
+      )}
+      {state.indoorLocation === 'center' && (
+        <group position={[0, 0.6, -10]}>
+          <ParkHubInterior />
+        </group>
+      )}
+
+      {/* Decorative Lamp Posts along the highway and plaza */}
+      {[
+        [-12, -8], [12, -8], [-12, 8], [12, 8],
+        [-60, -60], [60, -60], [60, 60], [-60, 60],
+        [0, -60], [60, 0], [0, 60], [-60, 0]
+      ].map((pos, i) => (
         <group key={`lamp-${i}`} position={[pos[0], 0, pos[1]]}>
           <Cylinder args={[0.1, 0.15, 3.5, 8]} position={[0, 1.75, 0]} castShadow>
             <meshStandardMaterial color="#333" />
@@ -209,16 +277,16 @@ export function DogPark({
           <Sphere args={[0.25]} position={[0, 3.5, 0]}>
             <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={1} />
           </Sphere>
-          <pointLight position={[0, 3.5, 0]} intensity={1.5} distance={10} color="#fff1d0" />
+          <pointLight position={[0, 3.5, 0]} intensity={1.5} distance={12} color="#fff1d0" />
         </group>
       ))}
 
       {/* --- ATMOSPHERE --- */}
       <Float speed={1.5} floatIntensity={0.3}>
         <group position={[0, 3, 0]}>
-          {Array.from({ length: 30 }).map((_, i) => (
-            <mesh key={i} position={[(Math.random() - 0.5) * 25, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 25]}>
-              <sphereGeometry args={[0.02, 4, 4]} />
+          {Array.from({ length: 60 }).map((_, i) => (
+            <mesh key={i} position={[(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 100]}>
+              <sphereGeometry args={[0.03, 4, 4]} />
               <meshBasicMaterial color="#fff" transparent opacity={0.25} />
             </mesh>
           ))}

@@ -293,3 +293,48 @@ export function makeShingleTexture() {
     },
   });
 }
+
+export function makeGravelTexture() {
+  return createCanvasTexture({
+    size: 512,
+    paint: (ctx, size) => {
+      // Base: Light grey/beige mix
+      ctx.fillStyle = '#dcd7d0';
+      ctx.fillRect(0, 0, size, size);
+
+      // 1. Varied Sand/Grit
+      for (let i = 0; i < 15000; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const tone = 180 + Math.random() * 40;
+        ctx.fillStyle = `rgb(${tone}, ${tone - 5}, ${tone - 10})`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+
+      // 2. Small Pebble/Stone Details
+      for (let i = 0; i < 2000; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 0.5 + Math.random() * 2;
+        const tone = 120 + Math.random() * 60;
+        ctx.fillStyle = `rgba(${tone}, ${tone}, ${tone}, 0.6)`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 3. Subtle Moisture/Dirt Patches
+      ctx.globalAlpha = 0.1;
+      ctx.fillStyle = '#8b7d6b';
+      for (let i = 0; i < 30; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 20 + Math.random() * 40;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1.0;
+    },
+  });
+}
