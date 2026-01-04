@@ -94,10 +94,131 @@ const BREED_DNA: Record<PetBreed, DogDNA> = {
   }
 };
 
-export function DogModel({ state, onPetTap, setPetPosition }: {
+// AAA EMOTIONAL POSTURE SYSTEM
+interface EmotionalPose {
+  spine_curve: number;         // rad, + = arch back, - = hunch
+  chest_expansion: number;     // scale multiplier
+  head_pitch: number;          // rad, + = chin up, - = down
+  head_roll: number;           // rad, asymmetry tilt
+  weight_forward: number;      // 0-1, front vs rear load
+  tail_offset: number;         // rad from breed default
+  tail_wag_speed: number;      // Hz
+  tail_wag_amp: number;        // amplitude  
+  ear_tension: number;         // 0-1, perked vs relaxed
+  shoulder_hunch: number;      // scale.x modifier
+  breathing_rate: number;      // multiplier vs base 1.6Hz
+  micro_movement_scale: number; // fidget amplitude
+}
+
+const EMOTIONAL_POSES: Record<string, EmotionalPose> = {
+  happy: {
+    spine_curve: +0.08,
+    chest_expansion: 1.08,
+    head_pitch: -0.12,
+    head_roll: 0.03,
+    weight_forward: 0.72,
+    tail_offset: +0.25,
+    tail_wag_speed: 9.0,
+    tail_wag_amp: 0.65,
+    ear_tension: 0.85,
+    shoulder_hunch: 1.0,
+    breathing_rate: 1.25,
+    micro_movement_scale: 1.8,
+  },
+  sad: {
+    spine_curve: -0.15,
+    chest_expansion: 0.88,
+    head_pitch: +0.22,
+    head_roll: -0.02,
+    weight_forward: 0.48,
+    tail_offset: -0.35,
+    tail_wag_speed: 0,
+    tail_wag_amp: 0,
+    ear_tension: 0.15,
+    shoulder_hunch: 0.92,
+    breathing_rate: 0.75,
+    micro_movement_scale: 0.35,
+  },
+  energetic: {
+    spine_curve: -0.05,
+    chest_expansion: 0.95,
+    head_pitch: -0.18,
+    head_roll: 0.0,
+    weight_forward: 0.78,
+    tail_offset: +0.30,
+    tail_wag_speed: 12.0,
+    tail_wag_amp: 0.45,
+    ear_tension: 0.95,
+    shoulder_hunch: 1.05,
+    breathing_rate: 1.45,
+    micro_movement_scale: 2.5,
+  },
+  sick: {
+    spine_curve: -0.22,
+    chest_expansion: 0.82,
+    head_pitch: +0.30,
+    head_roll: -0.08,
+    weight_forward: 0.40,
+    tail_offset: -0.45,
+    tail_wag_speed: 0,
+    tail_wag_amp: 0,
+    ear_tension: 0.08,
+    shoulder_hunch: 0.85,
+    breathing_rate: 0.65,
+    micro_movement_scale: 0.15,
+  },
+  neutral: {
+    spine_curve: 0,
+    chest_expansion: 1.0,
+    head_pitch: 0,
+    head_roll: 0,
+    weight_forward: 0.62,
+    tail_offset: 0,
+    tail_wag_speed: 8.0,
+    tail_wag_amp: 0.5,
+    ear_tension: 0.5,
+    shoulder_hunch: 1.0,
+    breathing_rate: 1.0,
+    micro_movement_scale: 1.0,
+  },
+};
+
+function getEmotionalPose(stats: any): EmotionalPose {
+  if (!stats) return EMOTIONAL_POSES.neutral;
+
+  const happiness = stats.happiness ?? 50;
+  const energy = stats.energy ?? 50;
+  const hygiene = stats.cleanliness ?? stats.hygiene ?? 50;
+
+  // Sick state (low hygiene or health)
+  if (hygiene < 30) {
+    return EMOTIONAL_POSES.sick;
+  }
+
+  // Sad state (low happiness)
+  if (happiness < 35) {
+    return EMOTIONAL_POSES.sad;
+  }
+
+  // Energetic state (high energy + high happiness)
+  if (energy > 70 && happiness > 65) {
+    return EMOTIONAL_POSES.energetic;
+  }
+
+  // Happy state (high happiness)
+  if (happiness > 65) {
+    return EMOTIONAL_POSES.happy;
+  }
+
+  // Default neutral
+  return EMOTIONAL_POSES.neutral;
+}
+
+export function DogModel({ state, onPetTap, setPetPosition, stats }: {
   state: PetGame2State;
   onPetTap: () => void;
   setPetPosition?: (pos: [number, number, number]) => void;
+  stats?: any;
 }) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
@@ -110,10 +231,8 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
   // Scale factor to match large environment
   const SCALE = 3.2;
 
-  // VISUAL STATE: SICKNESS / EMOTION (Placeholder logic)
-  // In a real implementation, we'd check state.stats.health etc.
-  // For now, assume healthy unless specific interactions happen
-  const isSick = state.interaction.kind === 'idle' && Math.random() > 2; // always false for now, can be wired up
+  // EMOTIONAL STATE SYSTEM
+  const emotionalPose = useMemo(() => getEmotionalPose(stats), [stats]);
 
   // AAA MATERIAL SYSTEM - Multi-Zone Fur Response
   // Different body areas have different fur characteristics
@@ -177,12 +296,12 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
-    if (root.current) {
-      // AAA Multi-Layer Breathing System
-      const breathRate = 1.6; // Base breathing cycle
+    // AAA Multi-Layer Breathing System (Emotion-Modulated)
+    const breathRate = 1.6 * emotionalPose.breathing_rate;
 
+    if (root.current) {
       // Primary breathing (chest) - Most pronounced
-      const breathPrimary = Math.sin(t * breathRate) * 0.022;
+      const breathPrimary = Math.sin(t * breathRate) * 0.022 * emotionalPose.chest_expansion;
 
       // Secondary (shoulders lag 0.3s) - Subtle
       const breathShoulders = Math.sin((t - 0.3) * breathRate) * 0.015;
@@ -190,36 +309,48 @@ export function DogModel({ state, onPetTap, setPetPosition }: {
       // Tertiary (overall body expansion) - Minimal
       const breathBody = Math.sin((t - 0.1) * breathRate) * 0.008;
 
-      // Apply layered breathing
-      root.current.scale.x = SCALE * (1.0 + breathBody);
+      // Apply layered breathing with emotion
+      root.current.scale.x = SCALE * emotionalPose.shoulder_hunch * (1.0 + breathBody);
       root.current.scale.y = SCALE * (1.0 + breathPrimary);
       root.current.scale.z = SCALE * (1.0 + breathBody * 0.6);
 
       // Subtle shoulder lift (via position adjustment)
       root.current.position.y = (root.current.position.y || 0) * 0.9 + breathShoulders * 0.02;
+
+      // Spine curve from emotional state
+      root.current.rotation.z = emotionalPose.spine_curve;
     }
 
     if (head.current) {
       // AAA Reactive Head Movement - Perlin noise + micro-adjustments
-      const baseNoise = Math.sin(t * 0.8) * Math.cos(t * 1.3) * 0.05; // Perlin-like
-      const nod = subtleNod(t, 1.2) * 0.08;
+      const baseNoise = Math.sin(t * 0.8) * Math.cos(t * 1.3) * 0.05 * emotionalPose.micro_movement_scale;
+      const nod = subtleNod(t, 1.2) * 0.08 * emotionalPose.micro_movement_scale;
 
-      head.current.rotation.x = -0.1 + nod + baseNoise * 0.5;
+      // Apply emotional head posture
+      head.current.rotation.x = emotionalPose.head_pitch + nod + baseNoise * 0.5;
 
-      // Slower, more natural head turn
-      head.current.rotation.y = Math.sin(t * 0.4) * 0.12 + baseNoise;
+      // Slower, more natural head turn with emotional tilt
+      head.current.rotation.y = Math.sin(t * 0.4) * 0.12 * emotionalPose.micro_movement_scale + baseNoise;
+      head.current.rotation.z = emotionalPose.head_roll;
 
       // Breathing affects neck angle slightly
-      const breathNeck = Math.sin((t - 0.5) * 1.6) * 0.006;
+      const breathNeck = Math.sin((t - 0.5) * breathRate) * 0.006;
       head.current.rotation.x += breathNeck;
     }
 
     if (tail.current) {
-      // More natural wag - not constant mechanical motion
-      const wagSpeed = 8.0; // Slightly slower
-      const wagAmp = 0.5; // Reduced amplitude
-      const wagVariation = Math.sin(t * 0.3) * 0.2; // Irregular rhythm
-      tail.current.rotation.y = Math.sin(t * wagSpeed + wagVariation) * wagAmp;
+      // Emotional tail motion - Complex layering
+      if (emotionalPose.tail_wag_speed === 0) {
+        // Subtle drift even when "still" (sad/sick)
+        const drift = Math.sin(t * 0.4) * 0.03;
+        tail.current.rotation.y = drift;
+      } else {
+        // Active wag with emotional variation
+        const wagSpeed = emotionalPose.tail_wag_speed;
+        const wagAmp = emotionalPose.tail_wag_amp;
+        const wagVariation = Math.sin(t * 0.3) * 0.2; // Irregular rhythm
+        tail.current.rotation.y = Math.sin(t * wagSpeed + wagVariation) * wagAmp + emotionalPose.tail_offset * 0.3;
+      }
     }
 
     // Navigation logic (same as before)
