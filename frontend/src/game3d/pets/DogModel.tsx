@@ -716,12 +716,35 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
         </mesh>
       </group>
 
+      {/* AAA SHADOW SYSTEM - 4-Point Contact + Body AO */}
+      {/* Central Body AO (Soft) */}
       <ContactShadow
         position={[0, 0.01, 0]}
-        scale={[dna.body.width * 4, dna.body.length * 3, 1]}
-        opacity={0.6}
-        blur={0.8}
+        scale={[dna.body.width * 2.8, dna.body.length * 2.2, 1]}
+        opacity={0.45}
+        blur={1.2}
       />
+      
+      {/* Individual Paw Contact Shadows (Sharper) */}
+      {[
+        // Front Left
+        [(dna.body.width / 2 - 0.02) * 1.01, (dna.body.length / 2 - 0.1) * 1.04],
+        // Front Right
+        [-(dna.body.width / 2 - 0.02) * 0.99, (dna.body.length / 2 - 0.1) * 1.04],
+        // Back Left
+        [(dna.body.width / 2 - 0.02) * 1.02, (-dna.body.length / 2 + 0.1) * 0.92],
+        // Back Right
+        [-(dna.body.width / 2 - 0.02) * 1.02, (-dna.body.length / 2 + 0.1) * 0.92]
+      ].map((pos, i) => (
+        <ContactShadow
+          key={`shadow-${i}`}
+          position={[pos[0] as number, 0.01, pos[1] as number]}
+          scale={0.12} 
+          opacity={0.75}
+          blur={0.4}
+          far={0.2}
+        />
+      ))}
     </group>
   );
 }
