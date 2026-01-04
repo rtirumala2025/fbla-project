@@ -27,7 +27,8 @@ export const PetGame2Screen: React.FC = () => {
     triggerAction,
     triggerNavigation,
     setPetPosition,
-    setCameraMode
+    setCameraMode,
+    setBreed
   } = usePetGame2State();
 
   // -- State --
@@ -326,6 +327,7 @@ export const PetGame2Screen: React.FC = () => {
         onToggleDrone={() => {
           setCameraMode(prev => prev === 'drone' ? 'follow' : 'drone');
         }}
+        setBreed={setBreed}
       />
 
       {/* Overlays */}

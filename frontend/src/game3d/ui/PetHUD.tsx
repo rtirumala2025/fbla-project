@@ -84,6 +84,8 @@ export function PetHUD({
     soundEnabled,
     onToggleDrone,
     droneActive,
+    breed,
+    setBreed
 }: {
     petName: string;
     species: string;
@@ -96,6 +98,8 @@ export function PetHUD({
     soundEnabled?: boolean;
     onToggleDrone?: () => void;
     droneActive?: boolean;
+    breed?: string;
+    setBreed?: (breed: string) => void;
 }) {
     const hunger = stats?.hunger ?? 50;
     const happiness = stats?.happiness ?? 50;
@@ -142,6 +146,27 @@ export function PetHUD({
                 >
                     <Plane size={20} className={droneActive ? "animate-[pulse_2s_infinite]" : ""} />
                 </button>
+
+                {/* Breed Selector */}
+                {species === 'dog' && (
+                    <div className="relative group">
+                        <button className="p-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/60 transition-all hover:scale-105 shadow-lg flex items-center gap-2">
+                            <span className="text-xs font-bold opacity-60">BREED:</span>
+                            <span className="text-sm font-bold text-amber-400 capitalize">{breed || 'labrador'}</span>
+                        </button>
+                        <div className="absolute right-0 top-full mt-2 w-40 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                            {['labrador', 'shepherd', 'pug'].map((b) => (
+                                <button
+                                    key={b}
+                                    onClick={() => setBreed?.(b)}
+                                    className="px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10 rounded-lg capitalize transition-colors"
+                                >
+                                    {b}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 <button
                     onClick={onToggleSound}
                     className="p-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/60 transition-all hover:scale-105 active:scale-95 shadow-lg"
@@ -187,14 +212,14 @@ export function PetHUD({
             <div className="absolute bottom-6 right-6 z-10 pointer-events-auto">
                 <div className="flex gap-3">
                     <ActionButton
-                        label="Feed"
+                        label="Feed ($5)"
                         action="feed"
                         disabled={!!(disabled || droneActive)}
                         onAction={onAction}
                         icon={<Heart size={20} />}
                     />
                     <ActionButton
-                        label="Play"
+                        label="Play ($10)"
                         action="play"
                         disabled={!!(disabled || droneActive)}
                         onAction={onAction}
@@ -208,7 +233,7 @@ export function PetHUD({
                         icon={<Zap size={20} />}
                     />
                     <ActionButton
-                        label="Bathe"
+                        label="Bathe ($3)"
                         action="bathe"
                         disabled={!!(disabled || droneActive)}
                         onAction={onAction}

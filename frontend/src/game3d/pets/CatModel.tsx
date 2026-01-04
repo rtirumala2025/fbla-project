@@ -18,6 +18,9 @@ export function CatModel({ state, onPetTap, setPetPosition }: {
   const tail = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Scale factor to match large environment
+  const SCALE = 2.4; // Cats are smaller than dogs
+
   // AAA Color Variation: Tabby cat with subtle fur patterns
   const fur = useMemo(() => new THREE.Color('#d1c8ba'), []); // Base fur (warmer)
   const furVariant1 = useMemo(() => new THREE.Color('#dcd4c6'), []); // Light patches
@@ -80,12 +83,12 @@ export function CatModel({ state, onPetTap, setPetPosition }: {
     else if (state.interaction.kind !== 'idle') {
       const startedAt = state.interaction.startedAt;
       const localT = Math.min(1, (performance.now() - startedAt) / 420);
-      const s = 1 + pop(localT) * 0.05;
+      const s = SCALE * (1 + pop(localT) * 0.05);
       if (root.current) root.current.scale.setScalar(s);
       if (root.current) root.current.rotation.z = wobble(localT) * 0.06;
     } else {
       if (root.current) {
-        const targetScale = isHovered ? 1.03 : 1.0;
+        const targetScale = isHovered ? SCALE * 1.03 : SCALE;
         root.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         root.current.rotation.z *= 0.85;
       }
@@ -95,6 +98,7 @@ export function CatModel({ state, onPetTap, setPetPosition }: {
   return (
     <group
       ref={root}
+      scale={SCALE}
       onPointerEnter={(e) => {
         e.stopPropagation();
         setIsHovered(true);

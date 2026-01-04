@@ -30,13 +30,16 @@ export type PetGame2Vfx =
 
 export type PetGame2CameraMode = 'follow' | 'focus' | 'drone';
 
-export interface PetGame2State {
+export type PetBreed = 'labrador' | 'shepherd' | 'pug';
+
+export type PetGame2State = {
   interaction: PetGame2Interaction;
   cameraMode: PetGame2CameraMode;
   vfx: PetGame2Vfx[];
   navigationState: NavigationState;
   currentPosition: [number, number, number];
-}
+  breed: PetBreed;
+};
 
 // Activity zone positions (matching DogPark.tsx building positions)
 export const ACTIVITY_POSITIONS: Record<ActivityZone, [number, number, number]> = {
@@ -66,6 +69,7 @@ export function usePetGame2State() {
     endPosition: [0, 0, 0],
   });
   const [currentPosition, setCurrentPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const [breed, setBreed] = useState<PetBreed>('labrador');
 
   const vfxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navAnimRef = useRef<number | null>(null);
@@ -211,8 +215,9 @@ export function usePetGame2State() {
       vfx,
       navigationState,
       currentPosition,
+      breed,
     }),
-    [interaction, cameraMode, vfx, navigationState, currentPosition]
+    [interaction, cameraMode, vfx, navigationState, currentPosition, breed]
   );
 
   return {
@@ -225,5 +230,6 @@ export function usePetGame2State() {
       setCurrentPosition(pos);
     },
     setCameraMode,
+    setBreed,
   };
 }

@@ -16,6 +16,9 @@ export function PandaModel({ state, onPetTap, setPetPosition }: {
   const [isHovered, setIsHovered] = useState(false);
   const { camera } = useThree();
 
+  // Scale factor to match large environment
+  const SCALE = 3.2; // Pandas are bulky like dogs
+
   // AAA Two-Tone PBR: White fur (sheen) vs Black patches (deep absorption)
   // Critical: Avoid pure white/black - add subtle undertones
   const white = useMemo(() => new THREE.Color('#f8f6f4'), []); // Warm white (slight cream)
@@ -95,7 +98,7 @@ export function PandaModel({ state, onPetTap, setPetPosition }: {
       }
     } else {
       if (root.current) {
-        const targetScale = isHovered ? 1.05 : 1.0;
+        const targetScale = isHovered ? SCALE * 1.05 : SCALE;
         root.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         root.current.rotation.z *= 0.85;
       }
@@ -105,6 +108,7 @@ export function PandaModel({ state, onPetTap, setPetPosition }: {
   return (
     <group
       ref={root}
+      scale={SCALE}
       onPointerEnter={(e) => {
         e.stopPropagation();
         setIsHovered(true);

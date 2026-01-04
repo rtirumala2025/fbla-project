@@ -72,6 +72,7 @@ export function PetGame2Scene({
   triggerNavigation,
   setPetPosition,
   onToggleDrone,
+  setBreed,
 }: {
   petType: PetGame2PetType;
   petName: string;
@@ -87,6 +88,7 @@ export function PetGame2Scene({
   triggerNavigation: (zone: any) => void;
   setPetPosition: (pos: [number, number, number]) => void;
   onToggleDrone: () => void;
+  setBreed: (breed: any) => void;
 }) {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0));
   const preset = presetForPet(petType);
@@ -120,6 +122,8 @@ export function PetGame2Scene({
         soundEnabled={soundEnabled}
         onToggleDrone={onToggleDrone}
         droneActive={state.cameraMode === 'drone'}
+        breed={state.breed}
+        setBreed={setBreed}
       />
 
       {/* Three.js Canvas */}
