@@ -49,8 +49,8 @@ export function ContactShadow({
         const edgeFalloff = blur * 0.3;
 
         gradient.addColorStop(0, `rgba(0, 0, 0, ${innerAlpha})`);
-        gradient.addColorStop(0.4 + edgeFalloff, `rgba(0, 0, 0, ${opacity * 0.6})`);
-        gradient.addColorStop(0.7 + edgeFalloff, `rgba(0, 0, 0, ${opacity * 0.2})`);
+        gradient.addColorStop(Math.min(1.0, 0.4 + edgeFalloff), `rgba(0, 0, 0, ${opacity * 0.6})`);
+        gradient.addColorStop(Math.min(1.0, 0.7 + edgeFalloff), `rgba(0, 0, 0, ${opacity * 0.2})`);
         gradient.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = gradient;
