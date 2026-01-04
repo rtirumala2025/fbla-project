@@ -150,17 +150,7 @@ export function DogPark({
         <meshStandardMaterial map={gravelTex} color="#ffffff" transparent opacity={0.95} roughness={0.9} />
       </mesh>
 
-      {/* Decorative Circular Planter in Central Plaza */}
-      <group position={[0, 0.02, 0]}>
-        <Box args={[4, 0.6, 4]} position={[0, 0.3, 0]} castShadow receiveShadow>
-          <meshStandardMaterial color="#666" metalness={0.2} roughness={0.8} />
-        </Box>
-        <mesh position={[0, 0.6, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[1.8, 32]} />
-          <meshStandardMaterial map={grassTex} color="#7ba66d" />
-        </mesh>
-        <Tree position={[0, 0.6, 0]} scale={0.7} />
-      </group>
+      {/* Decorative Circular Planter removed to clear dog spawn area */}
 
       {/* Path Spokes */}
       <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>

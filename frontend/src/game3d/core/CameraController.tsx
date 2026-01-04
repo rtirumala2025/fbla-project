@@ -44,8 +44,8 @@ export function CameraController({
       controlsRef.current.minDistance = 6;
       controlsRef.current.maxDistance = 8;
     } else {
-      controlsRef.current.minDistance = 2;
-      controlsRef.current.maxDistance = 10;
+      controlsRef.current.minDistance = 5;
+      controlsRef.current.maxDistance = 20;
     }
 
     controlsRef.current.update();

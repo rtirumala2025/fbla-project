@@ -126,7 +126,7 @@ export function PetGame2Scene({
       <Canvas
         shadows
         dpr={dpr}
-        camera={{ fov: 45, near: 0.1, far: 100, position: [0, 2.4, 5.2] }}
+        camera={{ fov: 45, near: 0.1, far: 100, position: [0, 8, 12] }}
         gl={{ antialias: true, alpha: false }}
         onCreated={({ gl, scene }) => {
           gl.setClearColor('#0b1020', 1);
