@@ -6,6 +6,8 @@ import { breathe } from '../animations/idle';
 import { pop, wobble } from '../animations/interact';
 import { ContactShadow } from '../core/ContactShadow';
 
+import { useKeyboardControls } from '../core/useKeyboardControls';
+
 export function PandaModel({ state, onPetTap, setPetPosition }: {
   state: PetGame2State;
   onPetTap: () => void;
@@ -13,8 +15,16 @@ export function PandaModel({ state, onPetTap, setPetPosition }: {
 }) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
+  const legFL = useRef<THREE.Mesh>(null);
+  const legFR = useRef<THREE.Mesh>(null);
+  const legBL = useRef<THREE.Mesh>(null);
+  const legBR = useRef<THREE.Mesh>(null);
   const [isHovered, setIsHovered] = useState(false);
   const { camera } = useThree();
+
+  // Keyboard Controls
+  const keys = useKeyboardControls();
+
 
   // Scale factor to match large environment
   const SCALE = 3.2; // Pandas are bulky like dogs
@@ -98,6 +108,55 @@ export function PandaModel({ state, onPetTap, setPetPosition }: {
       }
     } else {
       if (root.current) {
+        // SNAPPING & MANUAL MOVEMENT
+        const isMovingManually = keys.forward || keys.backward || keys.left || keys.right;
+
+        if (state.currentPosition && !isMovingManually) {
+          const [cx, cy, cz] = state.currentPosition;
+          root.current.position.set(cx, cy, cz);
+        }
+
+        if (isMovingManually) {
+          const moveSpeed = 5.0 * 0.016;
+          const rotateSpeed = 3.2 * 0.016;
+
+          const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(root.current.quaternion);
+          if (keys.forward) root.current.position.add(forward.multiplyScalar(moveSpeed));
+          if (keys.backward) root.current.position.add(forward.multiplyScalar(-moveSpeed * 0.5));
+          if (keys.left) root.current.rotation.y += rotateSpeed;
+          if (keys.right) root.current.rotation.y -= rotateSpeed;
+
+          // Boundaries
+          root.current.position.x = Math.max(-58, Math.min(58, root.current.position.x));
+          root.current.position.z = Math.max(-58, Math.min(58, root.current.position.z));
+
+          setPetPosition?.([root.current.position.x, root.current.position.y, root.current.position.z]);
+
+          // PROCEDURAL ANIMATION: Heavy Panda Waddle
+          const walkTime = t * 10;
+          const legAmplitude = 0.4;
+
+          if (legFL.current) legFL.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+          if (legBR.current) legBR.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+
+          if (legFR.current) legFR.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+          if (legBL.current) legBL.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+
+          // Heavy Banking (Lumbering feel)
+          let targetBank = 0;
+          if (keys.left) targetBank = 0.25;
+          if (keys.right) targetBank = -0.25;
+
+          root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, targetBank, 0.05); // Slower response
+        } else {
+          // Return to neutral
+          if (legFL.current) legFL.current.rotation.x = THREE.MathUtils.lerp(legFL.current.rotation.x, 0, 0.1);
+          if (legFR.current) legFR.current.rotation.x = THREE.MathUtils.lerp(legFR.current.rotation.x, 0, 0.1);
+          if (legBL.current) legBL.current.rotation.x = THREE.MathUtils.lerp(legBL.current.rotation.x, 0, 0.1);
+          if (legBR.current) legBR.current.rotation.x = THREE.MathUtils.lerp(legBR.current.rotation.x, 0, 0.1);
+          if (root.current) root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, 0, 0.1);
+        }
+
         const targetScale = isHovered ? SCALE * 1.05 : SCALE;
         root.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         root.current.rotation.z *= 0.85;
@@ -194,20 +253,20 @@ export function PandaModel({ state, onPetTap, setPetPosition }: {
         </mesh>
       </group>
 
-      {/* Black legs - Consistent matte finish with micro-variation */}
-      <mesh position={[0.2, 0.1, 0.18]} castShadow>
+      {/* Black legs - Refactored for Animation */}
+      <mesh ref={legFL} position={[0.2, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.07, 0.2, 6, 12]} />
         <meshStandardMaterial color={black} roughness={0.74} metalness={0.02} />
       </mesh>
-      <mesh position={[-0.2, 0.1, 0.18]} castShadow>
+      <mesh ref={legFR} position={[-0.2, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.07, 0.2, 6, 12]} />
         <meshStandardMaterial color={blackVariant} roughness={0.74} metalness={0.02} />
       </mesh>
-      <mesh position={[0.2, 0.1, -0.18]} castShadow>
+      <mesh ref={legBL} position={[0.2, 0.1, -0.18]} castShadow>
         <capsuleGeometry args={[0.07, 0.2, 6, 12]} />
         <meshStandardMaterial color={black} roughness={0.74} metalness={0.02} />
       </mesh>
-      <mesh position={[-0.2, 0.1, -0.18]} castShadow>
+      <mesh ref={legBR} position={[-0.2, 0.1, -0.18]} castShadow>
         <capsuleGeometry args={[0.07, 0.2, 6, 12]} />
         <meshStandardMaterial color={blackVariant} roughness={0.74} metalness={0.02} />
       </mesh>

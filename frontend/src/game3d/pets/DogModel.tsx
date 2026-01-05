@@ -261,6 +261,8 @@ interface EarTwitchState {
   right: { nextTime: number; amplitude: number; duration: number; progress: number };
 }
 
+import { useKeyboardControls } from '../core/useKeyboardControls';
+
 export function DogModel({ state, onPetTap, setPetPosition, stats }: {
   state: PetGame2State;
   onPetTap: () => void;
@@ -272,7 +274,15 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
   const tail = useRef<THREE.Group>(null);
   const earLeft = useRef<THREE.Mesh>(null);
   const earRight = useRef<THREE.Mesh>(null);
+  const legFL = useRef<THREE.Group>(null);
+  const legFR = useRef<THREE.Group>(null);
+  const legBL = useRef<THREE.Group>(null);
+  const legBR = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Keyboard Controls
+  const keys = useKeyboardControls();
+
 
   // AAA Idle Motion State
   const weightShiftState = useRef<WeightShiftState>({
@@ -524,10 +534,10 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
 
       setPetPosition?.([x, y, z]);
     } else if (root.current && state.currentPosition) {
-      // Snap to latest usually
-      // logic from original...
-      const [cx, cy, cz] = state.currentPosition;
-      if (state.interaction.kind !== 'navigating') {
+      // Snap to latest usually - BUT SKIP if user is manually moving
+      const isMovingManually = keys.forward || keys.backward || keys.left || keys.right;
+      if (state.interaction.kind !== 'navigating' && !isMovingManually) {
+        const [cx, cy, cz] = state.currentPosition;
         root.current.position.set(cx, cy, cz);
       }
     }
@@ -538,6 +548,71 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
       const localT = Math.min(1, (performance.now() - startedAt) / 450);
       const s = SCALE * (1 + pop(localT) * 0.06);
       root.current.scale.setScalar(s);
+    }
+
+    // KEYBOARD MOVEMENT
+    if (root.current && (keys.forward || keys.backward || keys.left || keys.right)) {
+      // Use fixed delta for stability if needed, but clock.getDelta() is standard
+      // However, multiple calls to getDelta() in same frame return 0, so utilize 'clock' carefully or just use a fixed time step for movement to be safe/smooth
+      const delta = 0.016; // Fixed 60fps step for consistent physics feel
+      const moveSpeed = 6.5 * delta;
+      const rotateSpeed = 3.0 * delta;
+
+      // Calculate forward direction
+      const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(root.current.quaternion);
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(root.current.quaternion);
+
+      // Simple direct steering
+      if (keys.forward) {
+        root.current.position.add(forward.multiplyScalar(moveSpeed));
+      }
+      if (keys.backward) {
+        root.current.position.add(forward.multiplyScalar(-moveSpeed * 0.6));
+      }
+      if (keys.left) {
+        root.current.rotation.y += rotateSpeed;
+      }
+      if (keys.right) {
+        root.current.rotation.y -= rotateSpeed;
+      }
+
+      // Walk cycle
+      const walkCycle = Math.sin(t * 12) * 0.15;
+      root.current.position.y = (root.current.position.y || 0) * 0.9 + Math.abs(walkCycle) * 0.1;
+
+      // Sync with Scene State (for Camera)
+      // Boundary Check (Basic Clamping to +/- 58 units)
+      root.current.position.x = Math.max(-58, Math.min(58, root.current.position.x));
+      root.current.position.z = Math.max(-58, Math.min(58, root.current.position.z));
+
+      setPetPosition?.([root.current.position.x, root.current.position.y, root.current.position.z]);
+
+      // PROCEDURAL ANIMATION: Leg Movement & Body Banking
+      const walkTime = t * 12; // Speed of legs
+      const legAmplitude = 0.5; // Depth of swing
+
+      // Front Left / Back Right (Diagonal Pair 1)
+      if (legFL.current) legFL.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+      if (legBR.current) legBR.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+
+      // Front Right / Back Left (Diagonal Pair 2) - Offset by PI
+      if (legFR.current) legFR.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+      if (legBL.current) legBL.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+
+      // Bank into turns
+      let targetBank = 0;
+      if (keys.left) targetBank = 0.15;
+      if (keys.right) targetBank = -0.15;
+
+      root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, targetBank, 0.1);
+    } else {
+      // Return to neutral when stopped
+      if (legFL.current) legFL.current.rotation.x = THREE.MathUtils.lerp(legFL.current.rotation.x, 0, 0.1);
+      if (legFR.current) legFR.current.rotation.x = THREE.MathUtils.lerp(legFR.current.rotation.x, 0, 0.1);
+      if (legBL.current) legBL.current.rotation.x = THREE.MathUtils.lerp(legBL.current.rotation.x, 0, 0.1);
+      if (legBR.current) legBR.current.rotation.x = THREE.MathUtils.lerp(legBR.current.rotation.x, 0, 0.1);
+
+      if (root.current) root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, emotionalPose.spine_curve, 0.1);
     }
   });
 
@@ -672,77 +747,53 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
         </group>
       </group>
 
-      {/* Legs - Articulated with visible joints */}
-      {[
-        // Front Left - Right shoulder lower (weight bias), 8° paw rotation
-        {
-          pos: [(dna.body.width / 2 - 0.02) * 1.01, dna.legs.height / 2 * 0.97, (dna.body.length / 2 - 0.1) * 1.04] as [number, number, number],
-          splay: 0.14,  // 8° outward
-          shoulderY: 0.97, // 3% lower (weight bias)
-          elbowBend: -0.14 // Forward bend
-        },
-        // Front Right - Higher shoulder
-        {
-          pos: [-(dna.body.width / 2 - 0.02) * 0.99, dna.legs.height / 2, (dna.body.length / 2 - 0.1) * 1.04] as [number, number, number],
-          splay: -0.087, // 5° outward
-          shoulderY: 1.0,
-          elbowBend: -0.14
-        },
-        // Back Left - Wider stance, settled hip
-        {
-          pos: [(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2 * 0.98, (-dna.body.length / 2 + 0.1) * 0.92] as [number, number, number],
-          splay: 0.087,
-          shoulderY: 0.98,
-          elbowBend: 0.09 // Rear angle
-        },
-        // Back Right
-        {
-          pos: [-(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2 * 0.98, (-dna.body.length / 2 + 0.1) * 0.92] as [number, number, number],
-          splay: -0.087,
-          shoulderY: 0.98,
-          elbowBend: 0.09
-        },
-      ].map((leg, i) => {
-        const isFront = i < 2;
-        return (
-          <group key={i} position={leg.pos} rotation={[leg.elbowBend, 0, leg.splay]}>
-            {/* Shoulder landmark (front legs only) */}
-            {isFront && (
-              <mesh
-                position={[0, dna.legs.height / 2 * 0.82, 0]}
-                castShadow
-                material={matLegs}
-              >
-                <sphereGeometry args={[dna.legs.thickness * 1.15, 8, 8]} />
-              </mesh>
-            )}
+      {/* Legs - Individual Groups with Refs for Animation */}
 
-            {/* Leg with tapered capsule (elbow visibility) */}
-            <mesh castShadow material={matLegs}>
-              <capsuleGeometry args={[
-                dna.legs.thickness,  // radius
-                dna.legs.height,     // height
-                6,                   // radial segments
-                10                   // height segments
-              ]} />
-            </mesh>
+      {/* Front Left */}
+      <group ref={legFL} position={[(dna.body.width / 2 - 0.02) * 1.01, dna.legs.height / 2 * 0.97, (dna.body.length / 2 - 0.1) * 1.04]} rotation={[-0.14, 0, 0.14]}>
+        <mesh position={[0, dna.legs.height / 2 * 0.82, 0]} castShadow material={matLegs}>
+          <sphereGeometry args={[dna.legs.thickness * 1.15, 8, 8]} />
+        </mesh>
+        <mesh castShadow material={matLegs}>
+          <capsuleGeometry args={[dna.legs.thickness, dna.legs.height, 6, 10]} />
+        </mesh>
+        <mesh position={[0, -dna.legs.height / 2 - 0.01, 0.02]} rotation={[-Math.PI / 2, 0, 0]} material={matPaws}>
+          <cylinderGeometry args={[dna.legs.thickness * 1.15, dna.legs.thickness * 0.95, 0.04, 12]} />
+        </mesh>
+      </group>
 
-            {/* Ankle/Wrist joint suggestion */}
-            <mesh
-              position={[0, -dna.legs.height / 2 * 0.85, 0.01]}
-              castShadow
-              material={matLegs}
-            >
-              <sphereGeometry args={[dna.legs.thickness * 0.95, 6, 6]} />
-            </mesh>
+      {/* Front Right */}
+      <group ref={legFR} position={[-(dna.body.width / 2 - 0.02) * 0.99, dna.legs.height / 2, (dna.body.length / 2 - 0.1) * 1.04]} rotation={[-0.14, 0, -0.087]}>
+        <mesh position={[0, dna.legs.height / 2 * 0.82, 0]} castShadow material={matLegs}>
+          <sphereGeometry args={[dna.legs.thickness * 1.15, 8, 8]} />
+        </mesh>
+        <mesh castShadow material={matLegs}>
+          <capsuleGeometry args={[dna.legs.thickness, dna.legs.height, 6, 10]} />
+        </mesh>
+        <mesh position={[0, -dna.legs.height / 2 - 0.01, 0.02]} rotation={[-Math.PI / 2, 0, 0]} material={matPaws}>
+          <cylinderGeometry args={[dna.legs.thickness * 1.15, dna.legs.thickness * 0.95, 0.04, 12]} />
+        </mesh>
+      </group>
 
-            {/* Paw - Flattened cone for ground contact */}
-            <mesh position={[0, -dna.legs.height / 2 - 0.01, 0.02]} rotation={[-Math.PI / 2, 0, 0]} material={matPaws}>
-              <cylinderGeometry args={[dna.legs.thickness * 1.15, dna.legs.thickness * 0.95, 0.04, 12]} />
-            </mesh>
-          </group>
-        );
-      })}
+      {/* Back Left */}
+      <group ref={legBL} position={[(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2 * 0.98, (-dna.body.length / 2 + 0.1) * 0.92]} rotation={[0.09, 0, 0.087]}>
+        <mesh castShadow material={matLegs}>
+          <capsuleGeometry args={[dna.legs.thickness, dna.legs.height, 6, 10]} />
+        </mesh>
+        <mesh position={[0, -dna.legs.height / 2 - 0.01, 0.02]} rotation={[-Math.PI / 2, 0, 0]} material={matPaws}>
+          <cylinderGeometry args={[dna.legs.thickness * 1.15, dna.legs.thickness * 0.95, 0.04, 12]} />
+        </mesh>
+      </group>
+
+      {/* Back Right */}
+      <group ref={legBR} position={[-(dna.body.width / 2 - 0.02) * 1.02, dna.legs.height / 2 * 0.98, (-dna.body.length / 2 + 0.1) * 0.92]} rotation={[0.09, 0, -0.087]}>
+        <mesh castShadow material={matLegs}>
+          <capsuleGeometry args={[dna.legs.thickness, dna.legs.height, 6, 10]} />
+        </mesh>
+        <mesh position={[0, -dna.legs.height / 2 - 0.01, 0.02]} rotation={[-Math.PI / 2, 0, 0]} material={matPaws}>
+          <cylinderGeometry args={[dna.legs.thickness * 1.15, dna.legs.thickness * 0.95, 0.04, 12]} />
+        </mesh>
+      </group>
 
       {/* Tail - Lowered attachment (5%) and offset left (5°) */}
       <group ref={tail} position={[0.02, (dna.legs.height + dna.body.height - 0.1) * 0.95, -dna.body.length / 2]}>

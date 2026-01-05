@@ -23,24 +23,20 @@ function Tree({ position, scale = 1, rotation = 0, lean = [0, 0] }: { position: 
   // Trees standard scale
   const baseScale = scale;
 
-  const groupRef = useRef<THREE.Group>(null);
-  useFrame((state) => {
-    if (!groupRef.current) return;
-    const t = state.clock.getElapsedTime();
-    const sway = Math.sin(t * 0.8 + position[0]) * 0.015;
-    groupRef.current.rotation.z = lean[0] + sway;
-    groupRef.current.rotation.x = lean[1] + Math.cos(t * 0.6 + position[2]) * 0.01;
-  });
+  // Performance Optimization: Removed per-tree useFrame sway
+  // Trees are now static but random to save 450+ frame loops
   return (
-    <group ref={groupRef} position={position} scale={baseScale} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 0.8 * baseScale, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.15 * baseScale, 0.25 * baseScale, 1.6 * baseScale, 8]} />
-        <meshStandardMaterial color="#4a3b2f" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 2.2 * baseScale, 0]} castShadow receiveShadow>
-        <dodecahedronGeometry args={[1 * baseScale, 0]} />
-        <meshStandardMaterial color="#4d7e36" roughness={0.8} />
-      </mesh>
+    <group position={position} scale={baseScale} rotation={[0, rotation, 0]}>
+      <group rotation={[lean[1], 0, lean[0]]}>
+        <mesh position={[0, 0.8 * baseScale, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.15 * baseScale, 0.25 * baseScale, 1.6 * baseScale, 8]} />
+          <meshStandardMaterial color="#4a3b2f" roughness={0.9} />
+        </mesh>
+        <mesh position={[0, 2.2 * baseScale, 0]} castShadow receiveShadow>
+          <dodecahedronGeometry args={[1 * baseScale, 0]} />
+          <meshStandardMaterial color="#4d7e36" roughness={0.8} />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -145,7 +141,8 @@ export function DogPark({
     };
 
     // Global tree placement covering 200x200 grid
-    const treeCount = 450;
+    // OPTIMIZED: Reduced from 450 to 150 for performance
+    const treeCount = 150;
     const range = 95;
     for (let i = 0; i < treeCount; i++) {
       const x = (Math.random() - 0.5) * range * 2;

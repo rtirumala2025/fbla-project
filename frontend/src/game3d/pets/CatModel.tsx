@@ -6,6 +6,8 @@ import { breathe, subtleNod } from '../animations/idle';
 import { pop, wobble } from '../animations/interact';
 import { ContactShadow } from '../core/ContactShadow';
 
+import { useKeyboardControls } from '../core/useKeyboardControls';
+
 export function CatModel({ state, onPetTap, setPetPosition }: {
   state: PetGame2State;
   onPetTap: () => void;
@@ -16,7 +18,15 @@ export function CatModel({ state, onPetTap, setPetPosition }: {
   const earL = useRef<THREE.Mesh>(null);
   const earR = useRef<THREE.Mesh>(null);
   const tail = useRef<THREE.Group>(null);
+  const legFL = useRef<THREE.Mesh>(null);
+  const legFR = useRef<THREE.Mesh>(null);
+  const legBL = useRef<THREE.Mesh>(null);
+  const legBR = useRef<THREE.Mesh>(null);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Keyboard Controls
+  const keys = useKeyboardControls();
+
 
   // Scale factor to match large environment
   const SCALE = 2.4; // Cats are smaller than dogs
@@ -88,6 +98,56 @@ export function CatModel({ state, onPetTap, setPetPosition }: {
       if (root.current) root.current.rotation.z = wobble(localT) * 0.06;
     } else {
       if (root.current) {
+        // SNAPPING & MANUAL MOVEMENT
+        const isMovingManually = keys.forward || keys.backward || keys.left || keys.right;
+
+        if (state.currentPosition && !isMovingManually) {
+          const [cx, cy, cz] = state.currentPosition;
+          root.current.position.set(cx, cy, cz);
+        }
+
+        if (isMovingManually) {
+          const delta = clock.getDelta(); // This might be tricky if used twice, but Cat doesn't use it elsewhere
+          const moveSpeed = 5.0 * 0.016; // Using fixed time step because clock.getDelta() behavior can be erratic
+          const rotateSpeed = 3.5 * 0.016;
+
+          const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(root.current.quaternion);
+          if (keys.forward) root.current.position.add(forward.multiplyScalar(moveSpeed));
+          if (keys.backward) root.current.position.add(forward.multiplyScalar(-moveSpeed * 0.5));
+          if (keys.left) root.current.rotation.y += rotateSpeed;
+          if (keys.right) root.current.rotation.y -= rotateSpeed;
+
+          // Boundaries
+          root.current.position.x = Math.max(-58, Math.min(58, root.current.position.x));
+          root.current.position.z = Math.max(-58, Math.min(58, root.current.position.z));
+
+          setPetPosition?.([root.current.position.x, root.current.position.y, root.current.position.z]);
+
+          // PROCEDURAL ANIMATION: Faster Cat Trot
+          const walkTime = t * 16;
+          const legAmplitude = 0.55;
+
+          if (legFL.current) legFL.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+          if (legBR.current) legBR.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+
+          if (legFR.current) legFR.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+          if (legBL.current) legBL.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+
+          // Agile body banking
+          let targetBank = 0;
+          if (keys.left) targetBank = 0.2;
+          if (keys.right) targetBank = -0.2;
+
+          root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, targetBank, 0.15);
+        } else {
+          // Return to neutral
+          if (legFL.current) legFL.current.rotation.x = THREE.MathUtils.lerp(legFL.current.rotation.x, 0, 0.1);
+          if (legFR.current) legFR.current.rotation.x = THREE.MathUtils.lerp(legFR.current.rotation.x, 0, 0.1);
+          if (legBL.current) legBL.current.rotation.x = THREE.MathUtils.lerp(legBL.current.rotation.x, 0, 0.1);
+          if (legBR.current) legBR.current.rotation.x = THREE.MathUtils.lerp(legBR.current.rotation.x, 0, 0.1);
+          if (root.current) root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, 0, 0.1);
+        }
+
         const targetScale = isHovered ? SCALE * 1.03 : SCALE;
         root.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
         root.current.rotation.z *= 0.85;
@@ -171,20 +231,20 @@ export function CatModel({ state, onPetTap, setPetPosition }: {
         </mesh>
       </group>
 
-      {/* Legs - Stripe colored, consistent PBR */}
-      <mesh position={[0.16, 0.1, 0.18]} castShadow>
+      {/* Legs - Refactored for Animation */}
+      <mesh ref={legFL} position={[0.16, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.055, 0.18, 6, 12]} />
         <meshStandardMaterial color={stripe} roughness={0.68} metalness={0.03} />
       </mesh>
-      <mesh position={[-0.16, 0.1, 0.18]} castShadow>
+      <mesh ref={legFR} position={[-0.16, 0.1, 0.18]} castShadow>
         <capsuleGeometry args={[0.055, 0.18, 6, 12]} />
         <meshStandardMaterial color={stripeVariant} roughness={0.68} metalness={0.03} />
       </mesh>
-      <mesh position={[0.16, 0.1, -0.16]} castShadow>
+      <mesh ref={legBL} position={[0.16, 0.1, -0.16]} castShadow>
         <capsuleGeometry args={[0.055, 0.18, 6, 12]} />
         <meshStandardMaterial color={stripe} roughness={0.68} metalness={0.03} />
       </mesh>
-      <mesh position={[-0.16, 0.1, -0.16]} castShadow>
+      <mesh ref={legBR} position={[-0.16, 0.1, -0.16]} castShadow>
         <capsuleGeometry args={[0.055, 0.18, 6, 12]} />
         <meshStandardMaterial color={stripeVariant} roughness={0.68} metalness={0.03} />
       </mesh>
