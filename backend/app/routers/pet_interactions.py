@@ -41,6 +41,24 @@ async def interact_with_pet(
     current_user: AuthenticatedUser = Depends(get_current_user),
     pet_service: PetService = Depends(get_pet_service),
 ) -> PetInteractResponse:
+    """
+    Process a user command interaction with the pet.
+
+    Parses natural language-like commands (e.g., "feed", "play") or structured actions
+    and returns the pet's State-Machine reaction, updated stats, and AI-generated flavor text.
+
+    Args:
+        payload (PetInteractRequest): The action and optional parameters.
+        current_user (AuthenticatedUser): The logged-in user.
+        pet_service (PetService): Service for pet state logic.
+
+    Returns:
+        PetInteractResponse: Updated pet state, mood, and reaction message.
+
+    Raises:
+        HTTPException(404): If user has no pet.
+        HTTPException(400): If command is invalid.
+    """
     pet = await pet_service.get_pet(current_user.id)
     if pet is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pet not found.")

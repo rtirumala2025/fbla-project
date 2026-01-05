@@ -30,8 +30,8 @@ export function CameraController({
     if (!controlsRef.current) return;
 
     // 1. Update look-at target to pet position (plus offset to look at head/upper body)
-    // Increased offset since pets are scaled 3.2x
-    targetVec.set(currentPosition[0], currentPosition[1] + 2.0, currentPosition[2]);
+    // Updated for Pro Scale (1.2x)
+    targetVec.set(currentPosition[0], currentPosition[1] + 0.75, currentPosition[2]);
     controlsRef.current.target.lerp(targetVec, 0.1);
 
     // 2. Navigation Chase Cam Logic

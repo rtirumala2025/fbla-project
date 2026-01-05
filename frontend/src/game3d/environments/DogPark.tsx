@@ -20,6 +20,9 @@ import { ACTIVITY_POSITIONS } from '../core/SceneManager';
 // --- Assets & Helpers ---
 
 function Tree({ position, scale = 1, rotation = 0, lean = [0, 0] }: { position: [number, number, number]; scale?: number; rotation?: number, lean?: [number, number] }) {
+  // Trees standard scale
+  const baseScale = scale;
+
   const groupRef = useRef<THREE.Group>(null);
   useFrame((state) => {
     if (!groupRef.current) return;
@@ -29,13 +32,13 @@ function Tree({ position, scale = 1, rotation = 0, lean = [0, 0] }: { position: 
     groupRef.current.rotation.x = lean[1] + Math.cos(t * 0.6 + position[2]) * 0.01;
   });
   return (
-    <group ref={groupRef} position={position} scale={scale} rotation={[0, rotation, 0]}>
-      <mesh position={[0, 0.8 * scale, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.15 * scale, 0.25 * scale, 1.6 * scale, 8]} />
+    <group ref={groupRef} position={position} scale={baseScale} rotation={[0, rotation, 0]}>
+      <mesh position={[0, 0.8 * baseScale, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.15 * baseScale, 0.25 * baseScale, 1.6 * baseScale, 8]} />
         <meshStandardMaterial color="#4a3b2f" roughness={0.9} />
       </mesh>
-      <mesh position={[0, 2.2 * scale, 0]} castShadow receiveShadow>
-        <dodecahedronGeometry args={[1 * scale, 0]} />
+      <mesh position={[0, 2.2 * baseScale, 0]} castShadow receiveShadow>
+        <dodecahedronGeometry args={[1 * baseScale, 0]} />
         <meshStandardMaterial color="#4d7e36" roughness={0.8} />
       </mesh>
     </group>
@@ -43,8 +46,9 @@ function Tree({ position, scale = 1, rotation = 0, lean = [0, 0] }: { position: 
 }
 
 function Bush({ position, scale = 1, rotation = 0 }: { position: [number, number, number]; scale?: number; rotation?: number }) {
+  const baseScale = scale;
   return (
-    <group position={position} scale={scale} rotation={[0, rotation, 0]}>
+    <group position={position} scale={baseScale} rotation={[0, rotation, 0]}>
       <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
         <dodecahedronGeometry args={[0.5, 0]} />
         <meshStandardMaterial color="#3a5e2a" roughness={0.9} />
@@ -66,7 +70,9 @@ export function DogPark({
 }) {
   const grassTex = useMemo(() => {
     const t = makeGrassTexture();
-    t.repeat.set(64, 64); // Increased for larger grid
+    t.repeat.set(64, 64); // Standard grid
+
+
     t.wrapS = THREE.RepeatWrapping;
     t.wrapT = THREE.RepeatWrapping;
     return t;
@@ -168,8 +174,8 @@ export function DogPark({
 
   return (
     <>
-      <color attach="background" args={['#87CEEB']} />
-      <fog attach="fog" args={['#87CEEB', 50, 160]} />
+      <color attach="background" args={['#cce0ff']} />
+      <fog attach="fog" args={['#cce0ff', 50, 160]} />
 
       <group position={[0, 40, -30]}>
         <Cloud opacity={0.4} speed={0.1} segments={40} bounds={[100, 10, 100]} volume={25} color="#ffffff" />

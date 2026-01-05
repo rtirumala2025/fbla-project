@@ -57,6 +57,9 @@ def create_app() -> FastAPI:
         ),
     )
 
+from app.middleware.rate_limiter import RateLimitMiddleware
+
+    app.add_middleware(RateLimitMiddleware, max_requests=60, window_seconds=60)
     app.middleware("http")(error_handling_middleware)
 
     register_exception_handlers(app)

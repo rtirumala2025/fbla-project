@@ -296,8 +296,8 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
   // GET DNA
   const dna = useMemo(() => BREED_DNA[state.breed], [state.breed]);
 
-  // Scale factor to match large environment
-  const SCALE = 3.2;
+  // Scale factor to match large environment - NORMALIZED for Pro Scale
+  const SCALE = 1.2;
 
   // EMOTIONAL STATE SYSTEM
   const emotionalPose = useMemo(() => getEmotionalPose(stats), [stats]);

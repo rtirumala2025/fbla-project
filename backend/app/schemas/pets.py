@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from .events import SeasonalMoodPayload
 
@@ -37,7 +37,7 @@ class PetBase(BaseModel):
 
 
 class PetCreate(PetBase):
-    pass
+    model_config = ConfigDict(extra="forbid")
 
 
 class PetUpdate(BaseModel):
@@ -45,6 +45,8 @@ class PetUpdate(BaseModel):
     species: Optional[str] = Field(default=None, min_length=2, max_length=32)
     breed: Optional[str] = Field(default=None, max_length=64)
     color: Optional[str] = Field(default=None, max_length=32)
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class PetDiaryEntryResponse(BaseModel):
@@ -57,6 +59,8 @@ class PetDiaryEntryResponse(BaseModel):
 class PetDiaryCreate(BaseModel):
     mood: str = Field(min_length=3, max_length=32)
     note: Optional[str] = Field(default=None, max_length=280)
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class PetResponse(PetBase):
@@ -84,6 +88,8 @@ class PetActionRequest(BaseModel):
     game_type: Optional[str] = None
     duration_hours: Optional[int] = Field(default=None, ge=1, le=12)
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class PetActionResponse(BaseModel):
     pet: PetResponse
@@ -104,6 +110,8 @@ class PetInteractRequest(BaseModel):
     )
     action: str = Field(..., min_length=2, max_length=32)
     message: Optional[str] = Field(default=None, max_length=500)
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class PetInteractResponse(BaseModel):

@@ -1,37 +1,33 @@
-import React, { useMemo } from 'react';
-import { Billboard, Text } from '@react-three/drei';
-import * as THREE from 'three';
+import React from 'react';
 import type { PetGame2Vfx } from './SceneManager';
-
-function VfxText({ text, color, y }: { text: string; color: string; y: number }) {
-  const position = useMemo(() => new THREE.Vector3(0, y, 0), [y]);
-  return (
-    <Billboard position={position} follow>
-      <Text
-        fontSize={0.22}
-        color={color}
-        outlineWidth={0.006}
-        outlineColor="#0b1020"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {text}
-      </Text>
-    </Billboard>
-  );
-}
+import { ParticleSystem } from './ParticleSystem';
 
 export function SceneVfx({ vfx }: { vfx: PetGame2Vfx[] }) {
-  const active = vfx.slice(-3);
+  // Only show the most recent effects to avoid clutter
+  const active = vfx.slice(-4);
 
   return (
     <group>
       {active.map((fx, i) => {
-        const y = 1.55 + i * 0.18;
-        if (fx.kind === 'sparkleBurst') return <VfxText key={fx.id} text="Nice" color="#ffffff" y={y} />;
-        if (fx.kind === 'foodPuff') return <VfxText key={fx.id} text="Fed" color="#ffe3a8" y={y} />;
-        if (fx.kind === 'toyBounce') return <VfxText key={fx.id} text="Play" color="#c0d7ff" y={y} />;
-        return <VfxText key={fx.id} text="Rest" color="#cfead8" y={y} />;
+        // Stagger positions slightly so they don't perfectly overlap
+        // Lifted higher (y=1.5) to account for Pro Scale (1.2)
+        const position: [number, number, number] = [
+          (Math.random() - 0.5) * 1.5,
+          1.5 + (Math.random() * 1.0),
+          (Math.random() - 0.5) * 1.0 + 1.0
+        ];
+
+        if (fx.kind === 'sparkleBurst') {
+          return <ParticleSystem key={fx.id} type="star" count={12} color="#ffffff" position={position} duration={2.5} />;
+        }
+        if (fx.kind === 'foodPuff') {
+          return <ParticleSystem key={fx.id} type="heart" count={8} color="#ffb700" position={position} duration={3} />;
+        }
+        if (fx.kind === 'toyBounce') {
+          return <ParticleSystem key={fx.id} type="star" count={10} color="#60a5fa" position={position} duration={2} />;
+        }
+        // Rest / Default
+        return <ParticleSystem key={fx.id} type="bubble" count={6} color="#86efac" position={position} duration={4} />;
       })}
     </group>
   );
