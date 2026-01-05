@@ -263,11 +263,14 @@ interface EarTwitchState {
 
 import { useKeyboardControls } from '../core/useKeyboardControls';
 
-export function DogModel({ state, onPetTap, setPetPosition, stats }: {
+export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, isMovingRef, rotationRef }: {
   state: PetGame2State;
   onPetTap: () => void;
   setPetPosition?: (pos: [number, number, number]) => void;
   stats?: any;
+  targetRef?: React.MutableRefObject<THREE.Vector3>;
+  isMovingRef?: React.MutableRefObject<boolean>;
+  rotationRef?: React.MutableRefObject<THREE.Quaternion>;
 }) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
@@ -302,6 +305,11 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
   });
 
   const blinkState = useRef({ nextBlink: 0, progress: 1 });
+
+  // Optimize: Reuse vectors for movement
+  const forward = useMemo(() => new THREE.Vector3(), []);
+  const right = useMemo(() => new THREE.Vector3(), []);
+  const lastPosUpdate = useRef(0);
 
   // GET DNA
   const dna = useMemo(() => BREED_DNA[state.breed], [state.breed]);
@@ -552,22 +560,19 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
 
     // KEYBOARD MOVEMENT
     if (root.current && (keys.forward || keys.backward || keys.left || keys.right)) {
-      // Use fixed delta for stability if needed, but clock.getDelta() is standard
-      // However, multiple calls to getDelta() in same frame return 0, so utilize 'clock' carefully or just use a fixed time step for movement to be safe/smooth
-      const delta = 0.016; // Fixed 60fps step for consistent physics feel
+      const delta = 0.016; // Fixed 60fps step
       const moveSpeed = 6.5 * delta;
       const rotateSpeed = 3.0 * delta;
 
       // Calculate forward direction
-      const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(root.current.quaternion);
-      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(root.current.quaternion);
+      forward.set(0, 0, 1).applyQuaternion(root.current.quaternion);
 
       // Simple direct steering
       if (keys.forward) {
-        root.current.position.add(forward.multiplyScalar(moveSpeed));
+        root.current.position.addScaledVector(forward, moveSpeed);
       }
       if (keys.backward) {
-        root.current.position.add(forward.multiplyScalar(-moveSpeed * 0.6));
+        root.current.position.addScaledVector(forward, -moveSpeed * 0.6);
       }
       if (keys.left) {
         root.current.rotation.y += rotateSpeed;
@@ -580,12 +585,26 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
       const walkCycle = Math.sin(t * 12) * 0.15;
       root.current.position.y = (root.current.position.y || 0) * 0.9 + Math.abs(walkCycle) * 0.1;
 
-      // Sync with Scene State (for Camera)
       // Boundary Check (Basic Clamping to +/- 58 units)
       root.current.position.x = Math.max(-58, Math.min(58, root.current.position.x));
       root.current.position.z = Math.max(-58, Math.min(58, root.current.position.z));
 
-      setPetPosition?.([root.current.position.x, root.current.position.y, root.current.position.z]);
+      // Update Shared Target Ref for Camera (Smooth 60fps)
+      if (targetRef) {
+        targetRef.current.copy(root.current.position);
+      }
+      if (rotationRef) {
+        rotationRef.current.copy(root.current.quaternion);
+      }
+      if (isMovingRef) isMovingRef.current = true;
+
+      // THROTTLED STATE SYNC (Performance Critical)
+      // Only update React state every 100ms to allow UI updates without killing FPS
+      const now = performance.now();
+      if (now - lastPosUpdate.current > 100) {
+        setPetPosition?.([root.current.position.x, root.current.position.y, root.current.position.z]);
+        lastPosUpdate.current = now;
+      }
 
       // PROCEDURAL ANIMATION: Leg Movement & Body Banking
       const walkTime = t * 12; // Speed of legs
@@ -606,6 +625,21 @@ export function DogModel({ state, onPetTap, setPetPosition, stats }: {
 
       root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, targetBank, 0.1);
     } else {
+      // Stopped - Snap one last time to ensure accuracy
+      if (performance.now() - lastPosUpdate.current > 500 && Math.abs((root.current?.position.x || 0) - (state.currentPosition?.[0] || 0)) > 0.1) {
+        setPetPosition?.([root.current?.position.x || 0, root.current?.position.y || 0, root.current?.position.z || 0]);
+        lastPosUpdate.current = performance.now();
+      }
+
+      // Update Shared Target Ref when stopped too (to catch snap)
+      if (targetRef && root.current) {
+        targetRef.current.copy(root.current.position);
+      }
+      if (rotationRef && root.current) {
+        rotationRef.current.copy(root.current.quaternion);
+      }
+      if (isMovingRef) isMovingRef.current = false;
+
       // Return to neutral when stopped
       if (legFL.current) legFL.current.rotation.x = THREE.MathUtils.lerp(legFL.current.rotation.x, 0, 0.1);
       if (legFR.current) legFR.current.rotation.x = THREE.MathUtils.lerp(legFR.current.rotation.x, 0, 0.1);

@@ -19,16 +19,23 @@ function PetModel({
   petType,
   state,
   onPetTap,
-  setPetPosition
+  setPetPosition,
+  targetRef,
+  isMovingRef,
+  rotationRef
 }: {
   petType: PetGame2PetType;
   state: PetGame2State;
   onPetTap: () => void;
   setPetPosition: (pos: [number, number, number]) => void;
+  targetRef: React.MutableRefObject<THREE.Vector3>;
+  isMovingRef: React.MutableRefObject<boolean>;
+  rotationRef: React.MutableRefObject<THREE.Quaternion>;
 }) {
   if (petType === 'cat') return <CatModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} />;
+  // Note: Only DogModel implements targetRef/rotationRef/isMovingRef for now
   if (petType === 'panda') return <PandaModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} />;
-  return <DogModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} />;
+  return <DogModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} targetRef={targetRef} isMovingRef={isMovingRef} rotationRef={rotationRef} />;
 }
 
 function Environment({
@@ -95,6 +102,8 @@ export function PetGame2Scene({
   onActivity?: (id: string) => void;
 }) {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0));
+  const isMovingRef = useRef(false);
+  const rotationRef = useRef(new THREE.Quaternion());
   const preset = presetForPet(petType);
 
   const dpr = useMemo(() => {
@@ -171,6 +180,9 @@ export function PetGame2Scene({
                 onPetTap();
               }}
               setPetPosition={setPetPosition}
+              targetRef={targetRef}
+              isMovingRef={isMovingRef}
+              rotationRef={rotationRef}
             />
           </group>
 
@@ -181,6 +193,9 @@ export function PetGame2Scene({
             currentPosition={state.currentPosition}
             indoorLocation={state.indoorLocation}
             onDroneExit={onToggleDrone}
+            targetRef={targetRef}
+            isMovingRef={isMovingRef}
+            rotationRef={rotationRef}
           />
         </Suspense>
       </Canvas>
