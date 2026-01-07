@@ -4,7 +4,8 @@ export type PetGame2PetType = 'dog' | 'cat' | 'panda';
 
 export type PetGame2Action = 'feed' | 'play' | 'rest' | 'bathe';
 
-export type ActivityZone = 'agility' | 'vet' | 'play' | 'rest' | 'center';
+// 7 activity zones: 5 original + shop (Gift Shop) + home (Pet House)
+export type ActivityZone = 'agility' | 'vet' | 'play' | 'rest' | 'center' | 'shop' | 'home';
 
 export type PetGame2Interaction =
   | { kind: 'idle' }
@@ -42,13 +43,16 @@ export type PetGame2State = {
   indoorLocation: ActivityZone | null;
 };
 
-// Activity zone positions (matching DogPark.tsx building positions - UPDATED for smaller environment)
+// Activity zone positions - SPREAD AROUND GRID EDGES for better visibility
+// Buildings positioned in a ring around the center pet area
 export const ACTIVITY_POSITIONS: Record<ActivityZone, [number, number, number]> = {
-  agility: [-12, 0, -10],
-  vet: [-14, 0, 8],
-  play: [10, 0, -14],
-  rest: [12, 0, 10],
-  center: [0, 0, 0],
+  agility: [-25, 0, -25],   // Back Left - Training Center
+  vet: [-35, 0, 0],          // Left Side - Vet Clinic
+  play: [25, 0, -25],        // Back Right - Play Pavilion
+  rest: [35, 0, 0],          // Right Side - Rest Shelter
+  center: [-25, 0, 25],      // Front Left - Park Hub (Info Center)
+  shop: [25, 0, 25],         // Front Right - Gift Shop (NEW)
+  home: [0, 0, -35],         // Far Back Center - Pet House (NEW)
 };
 
 const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
