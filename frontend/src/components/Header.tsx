@@ -47,6 +47,11 @@ const Header = memo(() => {
 
 
   const handleLogout = useCallback(async () => {
+    // Add confirmation dialog
+    if (!window.confirm('Are you sure you want to sign out?')) {
+      return;
+    }
+
     try {
       // Close any open menus
       setIsMobileMenuOpen(false);

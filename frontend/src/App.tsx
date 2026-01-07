@@ -268,7 +268,8 @@ function AppContent() {
               <Routes location={location} key={location.pathname}>
                 {/* Public routes */}
                 <Route path="/" element={<PublicRoute><PageTransition><Pages.LandingPage /></PageTransition></PublicRoute>} />
-                <Route path="/login" element={<PublicRoute><PageTransition><Pages.Login /></PageTransition></PublicRoute>} />
+                {/* Login route is NOT wrapped in PublicRoute to allow account switching */}
+                <Route path="/login" element={<PageTransition><Pages.Login /></PageTransition>} />
                 <Route path="/signup" element={<PublicRoute><PageTransition><Pages.SignUp /></PageTransition></PublicRoute>} />
                 <Route path="/register" element={<PublicRoute><PageTransition><Pages.Register /></PageTransition></PublicRoute>} />
                 <Route path="/auth/callback" element={<Pages.AuthCallback />} />

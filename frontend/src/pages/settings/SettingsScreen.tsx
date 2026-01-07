@@ -380,6 +380,45 @@ export const SettingsScreen: React.FC = () => {
               <button className="px-3 py-2 rounded-pet border border-red-300 text-red-700" onClick={resetProgress}>Reset Progress</button>
             </div>
           </div>
+
+          {process.env.NODE_ENV === 'development' && (
+            <div className="ds-card p-4 border-l-4 border-indigo-400">
+              <h2 className="text-lg font-bold mb-2">Developer Tools</h2>
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 mb-3">
+                  Tools for testing account management.
+                </p>
+                <button
+                  className="w-full px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-500 transition-colors shadow-sm flex items-center justify-center gap-2"
+                  onClick={async () => {
+                    if (!window.confirm('Clear ALL local data (including IndexedDB) and hard reload?')) return;
+
+                    toast.info('Clearing all data...');
+
+                    // Clear Supabase auth
+                    await supabase.auth.signOut();
+
+                    // Clear Storage
+                    localStorage.clear();
+                    sessionStorage.clear();
+
+                    // Clear IndexedDB
+                    if (window.indexedDB) {
+                      const databases = await window.indexedDB.databases();
+                      databases.forEach(db => {
+                        if (db.name) window.indexedDB.deleteDatabase(db.name);
+                      });
+                    }
+
+                    // Redirect to login
+                    window.location.href = '/login';
+                  }}
+                >
+                  💣 Clear All Data & Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

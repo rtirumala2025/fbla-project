@@ -42,7 +42,7 @@ export const useAuth = () => {
 // Helper function to convert Supabase user to our User type
 const mapSupabaseUser = (supabaseUser: SupabaseUser | null): User | null => {
   if (!supabaseUser) return null;
-  
+
   return {
     uid: supabaseUser.id,
     email: supabaseUser.email || null,
@@ -70,12 +70,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // No pet found - not an error
           return false;
         }
-        
+
         if (attempt === maxRetries) {
           onboardingLogger.error(`Pet check failed after ${maxRetries} attempts`, error, { userId, maxRetries });
           return false; // Default to no pet on final failure
         }
-        
+
         // Exponential backoff: 100ms, 200ms, 400ms
         const delay = 100 * Math.pow(2, attempt - 1);
         onboardingLogger.petRetry(attempt, maxRetries, { userId, delay, error: error?.message });
@@ -94,16 +94,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         onboardingLogger.petCheck('Mock mode: returning default values', { userId });
         return { isNew: false, hasPet: true };
       }
-      
+
       const profile = await profileService.getProfile(userId);
       const isNew = profile === null; // true if no profile exists (new user)
       onboardingLogger.petCheck('Profile check complete', { userId, isNew });
-      
+
       // Check for pet existence (always check, regardless of profile status)
       let petExists = false;
       petExists = await checkPetWithRetry(userId);
       onboardingLogger.petCheck('Pet check complete', { userId, hasPet: petExists });
-      
+
       return { isNew, hasPet: petExists };
     } catch (error) {
       onboardingLogger.error('Error checking user profile', error, { userId });
@@ -119,20 +119,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         // Fetch the latest profile data from the database
         const profile = await profileService.getProfile(session.user.id);
-        
+
         // Create updated user object with latest username from profile
         const updatedUser: User = {
           uid: session.user.id,
           email: session.user.email || null,
           displayName: profile?.username || session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || null,
         };
-        
+
         const isNew = profile === null;
-        
+
         // Check for pet existence (always check, regardless of profile status)
         let petExists = false;
         petExists = await checkPetWithRetry(session.user.id);
-        
+
         onboardingLogger.authInit('User state refreshed', { userId: session.user.id, isNew, hasPet: petExists, displayName: updatedUser.displayName });
         setIsNewUser(isNew);
         setHasPet(petExists);
@@ -163,14 +163,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     onboardingLogger.authInit('Initializing AuthContext', { supabaseInitialized: !!supabase });
-    
+
     // Fallback timeout to ensure loading never gets stuck
     const fallbackTimeout = setTimeout(() => {
       setLoading(false);
     }, 3000); // 3 second timeout for localhost
-    
+
     // Get initial session - this restores the session from localStorage
     (async () => {
+      // Check for ?noauth=true to skip auto-login
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('noauth') === 'true') {
+        onboardingLogger.authInit('Skipping initial session check due to ?noauth=true');
+        setCurrentUser(null);
+        setIsNewUser(false);
+        setHasPet(false);
+        setLoading(false);
+        initialSessionLoadedRef.current = true;
+        clearTimeout(fallbackTimeout);
+        return;
+      }
+
       try {
         const sessionPromise = supabase.auth.getSession();
         const { data: { session }, error } = await withTimeout(
@@ -185,15 +198,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           error: error?.message || undefined,
           expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined,
         });
-        
+
         if (error) {
           logger.error('Error getting session', { error: error.message }, error);
           throw error;
         }
-        
+
         const mappedUser = mapSupabaseUser(session?.user || null);
         onboardingLogger.authInit('Mapped user', { userId: mappedUser?.uid || undefined, email: mappedUser?.email || undefined });
-        
+
         try {
           if (mappedUser) {
             // Check if user has a profile and pet - with timeout to prevent hanging
@@ -216,12 +229,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsNewUser(false); // Default to not new user if check fails
           setHasPet(false);
         }
-        
+
         setCurrentUser(mappedUser);
         setLoading(false);
         initialSessionLoadedRef.current = true; // Mark initial session as loaded
         clearTimeout(fallbackTimeout); // Clear timeout since we completed successfully
-        
+
         // Set up pet subscription if user exists
         if (mappedUser?.uid && !petSubscriptionRef.current) {
           try {
@@ -277,24 +290,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userEmail: session?.user?.email || undefined,
         expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : undefined,
       });
-      
+
       // Ignore INITIAL_SESSION event - we handle initial session via getSession() above
       // This prevents race conditions where onAuthStateChange fires before getSession() completes
       if (event === 'INITIAL_SESSION') {
         onboardingLogger.authStateChange('Skipping INITIAL_SESSION - handled by getSession()');
         return;
       }
-      
+
       // Only process auth state changes after initial session is loaded
       // This prevents clearing the user state before getSession() completes
       if (!initialSessionLoadedRef.current) {
         onboardingLogger.authStateChange('Skipping - initial session not yet loaded');
         return;
       }
-      
+
       const mappedUser = mapSupabaseUser(session?.user || null);
       onboardingLogger.authStateChange('Processing auth state change', { userId: mappedUser?.uid || undefined, email: mappedUser?.email || undefined });
-      
+
+      // Race condition fix: Set loading true immediately for sign-in events
+      // This ensures ProtectedRoute waits for the profile check logic below
+      // instead of seeing a null user and redirecting to login
+      if (event === 'SIGNED_IN' || (mappedUser && !currentUser)) {
+        setLoading(true);
+      }
+
       try {
         if (mappedUser) {
           // Check if user has a profile and pet - with timeout to prevent hanging
@@ -316,10 +336,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsNewUser(false); // Default to not new user if check fails
         setHasPet(false);
       }
-      
+
       setCurrentUser(mappedUser);
       setLoading(false);
-      
+
       // Set up or update pet subscription if user exists
       if (mappedUser?.uid) {
         // Clean up existing subscription if user changed
@@ -327,7 +347,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           petSubscriptionRef.current.unsubscribe();
           petSubscriptionRef.current = null;
         }
-        
+
         onboardingLogger.realtimeEvent('Setting up pet subscription', { userId: mappedUser.uid });
         petSubscriptionRef.current = supabase
           .channel(`pet-changes-${mappedUser.uid}`)
@@ -357,7 +377,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           petSubscriptionRef.current.unsubscribe();
           petSubscriptionRef.current = null;
         }
-        
+
         // Explicitly handle SIGNED_OUT event
         if (event === 'SIGNED_OUT') {
           onboardingLogger.authStateChange('SIGNED_OUT event received - clearing all state');
@@ -384,14 +404,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (getEnv('USE_MOCK', 'false') === 'true') {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Create mock user
       const mockUser = {
         uid: 'mock-user-123',
         email: email,
         displayName: email.split('@')[0],
       };
-      
+
       setCurrentUser(mockUser);
       return;
     }
@@ -413,14 +433,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (getEnv('USE_MOCK', 'false') === 'true') {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Create mock user
       const mockUser = {
         uid: `mock-user-${Date.now()}`,
         email: email,
         displayName: displayName || email.split('@')[0],
       };
-      
+
       setCurrentUser(mockUser);
       return;
     }
@@ -472,20 +492,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const signInWithGoogle = async () => {
     console.log('🔵 AuthContext: Google sign-in initiated');
-    
+
     // Mock authentication for development
     if (getEnv('USE_MOCK', 'false') === 'true') {
       console.log('🔧 Mock mode: Simulating Google sign-in');
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Create mock user
       const mockUser = {
         uid: 'mock-google-user-123',
         email: 'mockuser@gmail.com',
         displayName: 'Mock Google User',
       };
-      
+
       setCurrentUser(mockUser);
       return;
     }
@@ -498,7 +518,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('  Current origin:', window.location.origin);
       console.log('  Redirect URL:', redirectUrl);
       console.log('  Supabase URL:', getEnv('SUPABASE_URL') || 'Not configured');
-      
+
       // Check if Supabase is properly configured
       if (!getEnv('SUPABASE_URL') || !getEnv('SUPABASE_ANON_KEY')) {
         throw new Error(
@@ -508,7 +528,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           '\nAlso ensure Google OAuth is enabled in Supabase Dashboard.'
         );
       }
-      
+
       // Use redirect flow (not popup) for Google OAuth
       // Supabase v2 best practice: Use redirect flow for OAuth
       // - skipBrowserRedirect: false (default) uses redirect flow
@@ -528,7 +548,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('❌ Google sign-in error:', error);
         console.error('  Error code:', error.status);
         console.error('  Error message:', error.message);
-        
+
         // Provide helpful error messages
         if (error.message.includes('redirect')) {
           throw new Error(
@@ -538,7 +558,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             '3. Google Cloud Console redirect URI matches: https://xhhtkjtcdeewesijxbts.supabase.co/auth/v1/callback'
           );
         }
-        
+
         throw new Error(error.message || 'Google sign-in failed');
       }
 
@@ -551,7 +571,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('❌ No redirect URL received from Supabase');
         console.error('  Response data:', data);
         console.error('  Supabase client:', supabase ? 'initialized' : 'NOT initialized');
-        
+
         throw new Error(
           'No redirect URL received from Supabase. This usually means:\n' +
           '1. Google OAuth is not enabled in Supabase Dashboard → Authentication → Providers\n' +
@@ -604,6 +624,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Clear any cached data
       const { requestCache } = await import('../utils/requestCache');
       requestCache.clear();
+
+      // Clear storage
+      localStorage.clear();
+      sessionStorage.clear();
+
     } catch (error) {
       // Ensure state is cleared even if there's an error
       setCurrentUser(null);
