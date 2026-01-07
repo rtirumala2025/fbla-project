@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import type { PetStats } from '@/types/pet';
 import type { PetGame2Action } from '../core/SceneManager';
-import { Heart, Sparkles, Zap, Droplets, Book, Backpack, Volume2, VolumeX, Plane, DollarSign, TrendingDown } from 'lucide-react';
+import { Heart, Sparkles, Zap, Droplets, Book, Backpack, Volume2, VolumeX, Plane, DollarSign, TrendingDown, HelpCircle } from 'lucide-react';
+import { useAIAssistant } from '../../contexts/AIAssistantContext';
 
 // Pet emotion calculation based on stats
 function calculateEmotion(stats: PetStats | null): { emoji: string; text: string; color: string } {
@@ -202,6 +203,7 @@ export function PetHUD({
     totalSpent?: number;
     balanceChange?: { amount: number; isPositive: boolean } | null;
 }) {
+    const { sendMessage, toggleOpen, isOpen } = useAIAssistant();
     const hunger = stats?.hunger ?? 50;
     const happiness = stats?.happiness ?? 50;
     const energy = stats?.energy ?? 50;
@@ -305,7 +307,18 @@ export function PetHUD({
             {/* Right Sidebar: Stats - moved from bottom-left to avoid overlapping viewport */}
             <div className="absolute top-48 right-6 z-20 pointer-events-none">
                 <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-white/15 shadow-2xl w-[220px]">
-                    <h3 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-3">Pet Stats</h3>
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-white/70 text-xs font-bold uppercase tracking-widest">Pet Stats</h3>
+                        <button
+                            onClick={() => {
+                                sendMessage("How do I improve my pet's stats?");
+                                if (!isOpen) toggleOpen();
+                            }}
+                            className="text-white/50 hover:text-white transition-colors"
+                        >
+                            <HelpCircle size={14} />
+                        </button>
+                    </div>
                     <div className="flex flex-col gap-3">
                         <StatBar
                             label="Hunger"

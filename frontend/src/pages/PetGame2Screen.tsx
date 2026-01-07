@@ -4,6 +4,7 @@
  */
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { usePet } from '@/context/PetContext';
+import { useAIAssistant } from '@/contexts/AIAssistantContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFinancial } from '@/context/FinancialContext';
 import PetGame2Scene from '@/game3d/PetGame2Scene';
@@ -104,6 +105,22 @@ export const PetGame2Screen: React.FC = () => {
       setStats(pet.stats);
     }
   }, [pet?.id]);
+
+  // -- AI Assistant Integration --
+  const { updateContext, toggleOpen, sendMessage } = useAIAssistant();
+
+  useEffect(() => {
+    updateContext({
+      currentPage: 'pet-game',
+      petStats: stats,
+      balance: balance
+    });
+  }, [stats, balance, updateContext]);
+
+  const askAIHelp = () => {
+    sendMessage("What should I do next with my pet?");
+    if (!open) toggleOpen();
+  };
 
   const petType = useMemo<PetGame2PetType>(() => {
     if (devPetOverride) return devPetOverride;
@@ -409,8 +426,8 @@ export const PetGame2Screen: React.FC = () => {
           style={{ animation: 'slideInDown 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards' }}
         >
           <div className={`px-6 py-3 rounded-2xl shadow-2xl font-bold text-lg flex items-center gap-3 ${transactionToast.cost > 0
-              ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white'
-              : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+            ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white'
+            : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
             }`}>
             <span className="text-2xl">{transactionToast.cost > 0 ? '💸' : '✨'}</span>
             <span>{transactionToast.message}</span>
@@ -443,6 +460,12 @@ export const PetGame2Screen: React.FC = () => {
           className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded-full border border-white/20 backdrop-blur-sm transition-colors"
         >
           🔄 Change Pet ({petType})
+        </button>
+        <button
+          onClick={askAIHelp}
+          className="px-3 py-1 bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs rounded-full border border-indigo-400/30 backdrop-blur-sm transition-colors flex items-center gap-1"
+        >
+          🤖 Ask AI
         </button>
       </div>
     </div>

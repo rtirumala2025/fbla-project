@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAIAssistant } from '../../contexts/AIAssistantContext';
 import { useToast } from '../../contexts/ToastContext';
 import { getTransactions, type DateRange } from '../../api/finance';
 import SummaryCard from '../../components/budget/SummaryCard';
@@ -34,9 +35,20 @@ export const BudgetDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [txns, setTxns] = useState<any[]>([]);
   const [filter, setFilter] = useState<Filter>({ range: 'week', category: 'all', type: 'all' });
+  const { updateContext, sendMessage, toggleOpen, isOpen } = useAIAssistant();
+
+
 
   // Finance state
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
+
+  // Update AI context
+  useEffect(() => {
+    updateContext({
+      currentPage: 'budget',
+      balance: summary?.balance,
+    });
+  }, [summary, updateContext]);
   const [financeLoading, setFinanceLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [goalForm, setGoalForm] = useState({ name: '', target: '' });
@@ -318,13 +330,22 @@ export const BudgetDashboard: React.FC = () => {
             <p className="text-xl text-gray-600">Track your pet's spending, income, savings, and financial goals</p>
           </div>
           <div className="flex gap-3" role="group" aria-label="Date range selector">
+            <button
+              onClick={() => {
+                sendMessage("How can I save more money?");
+                if (!isOpen) toggleOpen();
+              }}
+              className="px-4 py-3 rounded-pet text-base font-semibold transition-colors bg-indigo-100 text-indigo-700 hover:bg-indigo-200 flex items-center gap-2"
+            >
+              🤖 Ask AI
+            </button>
             {(['today', 'week', 'month', 'all'] as DateRange[]).map(r => (
               <button
                 key={r}
                 onClick={() => setFilter(prev => ({ ...prev, range: r }))}
                 className={`px-6 py-3 rounded-pet text-base font-semibold transition-colors ${filter.range === r
-                    ? 'bg-primary text-white shadow-soft'
-                    : 'bg-white border border-gray-200 text-charcoal hover:bg-gray-50'
+                  ? 'bg-primary text-white shadow-soft'
+                  : 'bg-white border border-gray-200 text-charcoal hover:bg-gray-50'
                   }`}
               >
                 {r.charAt(0).toUpperCase() + r.slice(1)}

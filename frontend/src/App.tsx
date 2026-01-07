@@ -9,6 +9,8 @@ import { PetProvider } from './context/PetContext';
 import { FinancialProvider } from './context/FinancialContext';
 import { PetAutoSync } from './components/sync/PetAutoSync';
 import { StoreSync } from './components/sync/StoreSync';
+import { AIAssistantProvider } from './contexts/AIAssistantContext';
+import AIAssistantWidget from './components/ai/AIAssistantWidget';
 import Header from './components/Header';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -261,6 +263,7 @@ function AppContent() {
         {/* UX Enhancement Components */}
         <OnboardingTutorial autoStart={false} />
         <TooltipGuide enabled={true} />
+        <AIAssistantWidget />
         <div className="bg-cream text-charcoal flex flex-col h-screen overflow-hidden">
           <Header />
           <main className="bg-cream flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col">
@@ -368,7 +371,9 @@ function App() {
         <ToastProvider>
           <ThemeProvider>
             <SoundProvider>
-              <AppContent />
+              <AIAssistantProvider>
+                <AppContent />
+              </AIAssistantProvider>
             </SoundProvider>
           </ThemeProvider>
         </ToastProvider>
