@@ -111,8 +111,8 @@ export function CameraController({
         intendedMinDist = 2;
         intendedMaxDist = 4;
       } else {
-        intendedMinDist = 5;
-        intendedMaxDist = 20;
+        intendedMinDist = 4;
+        intendedMaxDist = 12; // Reduced from 20 for closer pet focus
       }
       controlsRef.current.update();
     }

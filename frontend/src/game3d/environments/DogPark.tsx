@@ -47,8 +47,8 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
   }, []);
 
   const paths = useMemo(() => {
-    const size = 60;
-    const radius = 15;
+    const size = 30; // Reduced from 60
+    const radius = 8; // Reduced from 15
     const highwayCurves = [
       new THREE.LineCurve3(new THREE.Vector3(-size + radius, 0, -size), new THREE.Vector3(size - radius, 0, -size)),
       new THREE.QuadraticBezierCurve3(new THREE.Vector3(size - radius, 0, -size), new THREE.Vector3(size, 0, -size), new THREE.Vector3(size, 0, -size + radius)),
@@ -67,26 +67,24 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
     const trees: { pos: [number, number, number]; scale: number; rotation: number; lean: [number, number] }[] = [];
     const bushes: { pos: [number, number, number]; scale: number; rotation: number }[] = [];
 
-    const isNearPath = (x: number, z: number, threshold = 6) => {
+    const isNearPath = (x: number, z: number, threshold = 4) => {
       const p = new THREE.Vector3(x, 0, z);
       // Simplify check: just box check central plaza and buildings first
-      if (Math.hypot(x, z) < 20) return true;
+      if (Math.hypot(x, z) < 12) return true;
       for (const bPos of Object.values(ACTIVITY_POSITIONS)) {
-        if (Math.hypot(x - bPos[0], z - bPos[2]) < 12) return true;
+        if (Math.hypot(x - bPos[0], z - bPos[2]) < 8) return true;
       }
-      // Highway check
-      // Approximation: Highway is at +/- 60 size.
-      // If x is near -60 or 60, or z is near -60 or 60
-      if ((Math.abs(x) > 54 && Math.abs(x) < 66) || (Math.abs(z) > 54 && Math.abs(z) < 66)) return true;
+      // Highway check - at +/- 30 size now
+      if ((Math.abs(x) > 26 && Math.abs(x) < 34) || (Math.abs(z) > 26 && Math.abs(z) < 34)) return true;
 
       // Center spokes
-      if (Math.abs(x) < 4 || Math.abs(z) < 4) return true;
+      if (Math.abs(x) < 3 || Math.abs(z) < 3) return true;
 
       return false;
     };
 
-    const treeCount = 150;
-    const range = 95;
+    const treeCount = 35; // Reduced from 150 for performance
+    const range = 38; // Reduced from 95
     let attempts = 0;
     while (trees.length < treeCount && attempts < 1000) {
       attempts++;
@@ -121,9 +119,9 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
         <Cloud opacity={0.4} speed={0.1} segments={20} bounds={[100, 10, 100]} volume={12} color="#ffffff" />
       </group>
 
-      {/* Main Ground */}
+      {/* Main Ground - Reduced size */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow userData={{ cameraCollide: true }}>
-        <planeGeometry args={[220, 220]} />
+        <planeGeometry args={[80, 80]} />
         <meshStandardMaterial map={grassTex} color="#8fb97e" roughness={1} />
       </mesh>
 
@@ -134,45 +132,44 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
           <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
         </mesh>
       ))}
-      {/* Spokes */}
+      {/* Spokes - Reduced size */}
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[5, 120]} />
+        <planeGeometry args={[3, 60]} />
         <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
       </mesh>
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[120, 5]} />
+        <planeGeometry args={[60, 3]} />
         <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
       </mesh>
 
-      {/* Central Plaza */}
+      {/* Central Plaza - Smaller */}
       <mesh position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[15, 64]} />
+        <circleGeometry args={[10, 64]} />
         <meshStandardMaterial map={gravelTex} color="#ffffff" transparent opacity={0.95} roughness={0.9} />
       </mesh>
 
-      {/* Buildings */}
-      <group position={[-16, 0, -14]} rotation={[0, 0.8, 0]}>
+      {/* Buildings - Moved closer to center */}
+      <group position={[-12, 0, -10]} rotation={[0, 0.8, 0]}>
         <AgilityFacility onSignClick={() => onSignClick('agility')} />
       </group>
-      <group position={[-18, 0, 10]} rotation={[0, -0.3, 0]}>
+      <group position={[-14, 0, 8]} rotation={[0, -0.3, 0]}>
         <VetClinic onSignClick={() => onSignClick('vet')} />
       </group>
-      <group position={[14, 0, -18]} rotation={[0, -2.4, 0]}>
+      <group position={[10, 0, -14]} rotation={[0, -2.4, 0]}>
         <PlayPavilion onSignClick={() => onSignClick('play')} />
       </group>
-      <group position={[16, 0, 14]} rotation={[0, 3.8, 0]}>
+      <group position={[12, 0, 10]} rotation={[0, 3.8, 0]}>
         <RestShelter onSignClick={() => onSignClick('rest')} />
       </group>
-      <ParkHubBuilding position={[0, 0, -10]} rotation={[0, 0, 0]} onSignClick={() => onSignClick('center')} />
+      <ParkHubBuilding position={[0, 0, -8]} rotation={[0, 0, 0]} onSignClick={() => onSignClick('center')} />
 
       {/* INSTANCED NATURE */}
       <InstancedNature trees={scenery.trees} bushes={scenery.bushes} />
 
-      {/* Decorative Lamps */}
+      {/* Decorative Lamps - Fewer, closer */}
       {[
-        [-12, -8], [12, -8], [-12, 8], [12, 8],
-        [-60, -60], [60, -60], [60, 60], [-60, 60],
-        [0, -60], [60, 0], [0, 60], [-60, 0]
+        [-8, -6], [8, -6], [-8, 6], [8, 6],
+        [-25, -25], [25, -25], [25, 25], [-25, 25]
       ].map((pos, i) => (
         <group key={`lamp-${i}`} position={[pos[0] as number, 0, pos[1] as number]}>
           <Cylinder args={[0.1, 0.15, 3.5, 8]} position={[0, 1.75, 0]} castShadow>
@@ -185,11 +182,11 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
         </group>
       ))}
 
-      {/* Ambient Floating Particles (Static within component, animated by GPU/Shader or internally if low cost) */}
+      {/* Ambient Floating Particles - Fewer for performance */}
       <Float speed={1.5} floatIntensity={0.3}>
         <group position={[0, 3, 0]}>
-          {Array.from({ length: 60 }).map((_, i) => (
-            <mesh key={i} position={[(Math.random() - 0.5) * 100, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 100]}>
+          {Array.from({ length: 20 }).map((_, i) => (
+            <mesh key={i} position={[(Math.random() - 0.5) * 50, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 50]}>
               <sphereGeometry args={[0.03, 4, 4]} />
               <meshBasicMaterial color="#fff" transparent opacity={0.25} />
             </mesh>
@@ -222,12 +219,12 @@ export function DogPark({
       {/* Dynamic Navigation Guide */}
       <NavigationGuide navigationState={state.navigationState} currentPosition={currentPetPosition} />
 
-      {/* Interior Views (Dynamic based on state.indoorLocation) */}
-      {state.indoorLocation === 'agility' && <group position={[-16, 0.6, -14]}><AgilityInterior /></group>}
-      {state.indoorLocation === 'vet' && <group position={[-18, 0.6, 10]}><VetInterior /></group>}
-      {state.indoorLocation === 'play' && <group position={[14, 0.6, -18]}><PlayInterior /></group>}
-      {state.indoorLocation === 'rest' && <group position={[16, 0.6, 14]}><RestInterior /></group>}
-      {state.indoorLocation === 'center' && <group position={[0, 0.6, -10]}><ParkHubInterior /></group>}
+      {/* Interior Views (Dynamic based on state.indoorLocation) - Updated positions */}
+      {state.indoorLocation === 'agility' && <group position={[-12, 0.6, -10]}><AgilityInterior /></group>}
+      {state.indoorLocation === 'vet' && <group position={[-14, 0.6, 8]}><VetInterior /></group>}
+      {state.indoorLocation === 'play' && <group position={[10, 0.6, -14]}><PlayInterior /></group>}
+      {state.indoorLocation === 'rest' && <group position={[12, 0.6, 10]}><RestInterior /></group>}
+      {state.indoorLocation === 'center' && <group position={[0, 0.6, -8]}><ParkHubInterior /></group>}
     </>
   );
 }

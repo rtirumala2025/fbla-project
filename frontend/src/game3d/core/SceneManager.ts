@@ -42,12 +42,12 @@ export type PetGame2State = {
   indoorLocation: ActivityZone | null;
 };
 
-// Activity zone positions (matching DogPark.tsx building positions)
+// Activity zone positions (matching DogPark.tsx building positions - UPDATED for smaller environment)
 export const ACTIVITY_POSITIONS: Record<ActivityZone, [number, number, number]> = {
-  agility: [-16, 0, -14],
-  vet: [-18, 0, 10],
-  play: [14, 0, -18],
-  rest: [16, 0, 14],
+  agility: [-12, 0, -10],
+  vet: [-14, 0, 8],
+  play: [10, 0, -14],
+  rest: [12, 0, 10],
   center: [0, 0, 0],
 };
 
