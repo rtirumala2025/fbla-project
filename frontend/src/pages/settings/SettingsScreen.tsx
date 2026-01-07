@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useSoundPreferences } from '../../contexts/SoundContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { indexedDBStorage } from '../../utils/indexedDBStorage';
 
 export const SettingsScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -167,41 +168,41 @@ export const SettingsScreen: React.FC = () => {
             <h2 className="text-lg font-bold mb-2">Game Settings</h2>
             <div className="space-y-3">
               <label className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  checked={sound} 
+                <input
+                  type="checkbox"
+                  checked={sound}
                   onChange={e => {
                     const newValue = e.target.checked;
                     setSound(newValue);
                     setEffectsEnabled(newValue);
                     savePreference('sound', newValue);
-                  }} 
-                /> 
+                  }}
+                />
                 Sound effects
               </label>
               <label className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  checked={music} 
+                <input
+                  type="checkbox"
+                  checked={music}
                   onChange={e => {
                     const newValue = e.target.checked;
                     setMusic(newValue);
                     setAmbientEnabled(newValue);
                     savePreference('music', newValue);
-                  }} 
-                /> 
+                  }}
+                />
                 Music
               </label>
               <label className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  checked={notifications} 
+                <input
+                  type="checkbox"
+                  checked={notifications}
                   onChange={e => {
                     const newValue = e.target.checked;
                     setNotifications(newValue);
                     savePreference('notifications', newValue);
-                  }} 
-                /> 
+                  }}
+                />
                 Notifications
               </label>
             </div>
@@ -210,19 +211,19 @@ export const SettingsScreen: React.FC = () => {
             <h2 className="text-lg font-bold mb-2">Appearance</h2>
             <div className="space-y-3">
               <label className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  checked={theme === 'dark'} 
-                  onChange={() => toggleTheme()} 
-                /> 
+                <input
+                  type="checkbox"
+                  checked={theme === 'dark'}
+                  onChange={() => toggleTheme()}
+                />
                 Dark mode
               </label>
               <label className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  checked={colorBlindMode} 
-                  onChange={() => toggleColorBlindMode()} 
-                /> 
+                <input
+                  type="checkbox"
+                  checked={colorBlindMode}
+                  onChange={() => toggleColorBlindMode()}
+                />
                 Color blind mode
               </label>
             </div>
@@ -231,29 +232,56 @@ export const SettingsScreen: React.FC = () => {
             <h2 className="text-lg font-bold mb-2">Accessibility</h2>
             <div className="space-y-3">
               <label className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  checked={reducedMotion} 
+                <input
+                  type="checkbox"
+                  checked={reducedMotion}
                   onChange={e => {
                     const newValue = e.target.checked;
                     setReducedMotion(newValue);
                     savePreference('reduced_motion', newValue);
-                  }} 
-                /> 
+                  }}
+                />
                 Reduced motion
               </label>
               <label className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  checked={highContrast} 
+                <input
+                  type="checkbox"
+                  checked={highContrast}
                   onChange={e => {
                     const newValue = e.target.checked;
                     setHighContrast(newValue);
                     savePreference('high_contrast', newValue);
-                  }} 
-                /> 
+                  }}
+                />
                 High contrast
               </label>
+            </div>
+          </div>
+          <div className="ds-card p-4">
+            <h2 className="text-lg font-bold mb-2">Help & Tutorial</h2>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600 mb-3">Get help with the game or restart the tutorial.</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-500 transition-colors"
+                  onClick={() => navigate('/help')}
+                >
+                  📖 View Help & FAQ
+                </button>
+                <button
+                  className="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-400 transition-colors"
+                  onClick={() => {
+                    // Clear tutorial progress to restart
+                    indexedDBStorage.clearTutorialProgress('main-onboarding-tutorial').then(() => {
+                      toast.success('Tutorial will restart on your next visit to the Dashboard!');
+                    }).catch(() => {
+                      toast.info('Navigate to the Pet Game to see the tutorial restart button.');
+                    });
+                  }}
+                >
+                  🎓 Restart Tutorial
+                </button>
+              </div>
             </div>
           </div>
           <div className="ds-card p-4">
