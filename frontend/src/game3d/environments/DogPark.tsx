@@ -118,7 +118,7 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
 
       {/* Static Atmosphere */}
       <group position={[0, 40, -30]}>
-        <Cloud opacity={0.4} speed={0.1} segments={40} bounds={[100, 10, 100]} volume={25} color="#ffffff" />
+        <Cloud opacity={0.4} speed={0.1} segments={20} bounds={[100, 10, 100]} volume={12} color="#ffffff" />
       </group>
 
       {/* Main Ground */}
@@ -129,23 +129,23 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
 
       {/* Paths */}
       {paths.highwayCurves.map((curve, i) => (
-        <mesh key={`loop-${i}`} position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <mesh key={`loop-${i}`} position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <tubeGeometry args={[curve as any, 20, 2.5, 8, false]} />
           <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
         </mesh>
       ))}
       {/* Spokes */}
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[5, 120]} />
         <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
       </mesh>
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[120, 5]} />
         <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
       </mesh>
 
       {/* Central Plaza */}
-      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[15, 64]} />
         <meshStandardMaterial map={gravelTex} color="#ffffff" transparent opacity={0.95} roughness={0.9} />
       </mesh>

@@ -87,7 +87,27 @@ export function DroneControls({ active, onExit }: { active: boolean; onExit?: ()
         velocity.current.add(acceleration.multiplyScalar(speed * 2 * delta));
         velocity.current.multiplyScalar(damping);
 
-        camera.position.add(velocity.current.clone().multiplyScalar(delta));
+        const nextPos = camera.position.clone().add(velocity.current.clone().multiplyScalar(delta));
+
+        // Bounds Check to prevent "infinite zoom" crash/glitch
+        const BOUNDS = 400; // Enough to see the whole 220x220 park + context
+        const MIN_Y = 1.5;  // Don't clip through ground
+        const MAX_Y = 300;  // High enough for drone view, but not infinite
+
+        if (nextPos.x < -BOUNDS || nextPos.x > BOUNDS) {
+            velocity.current.x = 0;
+            nextPos.x = THREE.MathUtils.clamp(nextPos.x, -BOUNDS, BOUNDS);
+        }
+        if (nextPos.y < MIN_Y || nextPos.y > MAX_Y) {
+            velocity.current.y = 0;
+            nextPos.y = THREE.MathUtils.clamp(nextPos.y, MIN_Y, MAX_Y);
+        }
+        if (nextPos.z < -BOUNDS || nextPos.z > BOUNDS) {
+            velocity.current.z = 0;
+            nextPos.z = THREE.MathUtils.clamp(nextPos.z, -BOUNDS, BOUNDS);
+        }
+
+        camera.position.copy(nextPos);
     });
 
     const handleCanvasClick = (e: any) => {
