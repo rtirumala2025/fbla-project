@@ -63,6 +63,8 @@ export const PetGame2Screen: React.FC = () => {
   // Feedback
   const [floatingCost, setFloatingCost] = useState<FloatingCostProps | null>(null);
   const [successIndicator, setSuccessIndicator] = useState<{ id: string; action: string; message: string } | null>(null);
+  const [transactionToast, setTransactionToast] = useState<{ id: string; message: string; cost: number } | null>(null);
+  const transactionTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Evolution
   const [showEvolution, setShowEvolution] = useState(false);
@@ -171,6 +173,24 @@ export const PetGame2Screen: React.FC = () => {
     });
   };
 
+  // Transaction toast - shows pet name, action, and cost
+  const showTransactionToast = useCallback((actionText: string, cost: number) => {
+    if (transactionTimer.current) clearTimeout(transactionTimer.current);
+    const petDisplayName = pet?.name || 'Pet';
+    const costText = cost > 0 ? `-$${cost}` : 'FREE';
+    setTransactionToast({
+      id: Date.now().toString(),
+      message: `${actionText} ${petDisplayName}! ${costText} 💰`,
+      cost,
+    });
+    // Update balance change for visual feedback
+    if (cost > 0) {
+      setBalanceChange({ amount: -cost, isPositive: false });
+      setTimeout(() => setBalanceChange(null), 2000);
+    }
+    transactionTimer.current = setTimeout(() => setTransactionToast(null), 3000);
+  }, [pet?.name]);
+
   // -- Actions --
   const updateStats = (response: PetActionResponse) => {
     if (response.pet && response.pet.stats) {
@@ -190,21 +210,25 @@ export const PetGame2Screen: React.FC = () => {
 
       if (action === 'feed') {
         showCost('-$5 Food');
+        showTransactionToast('Fed', 5);
         playUiTone('feed');
         response = await feedPetAction('standard');
         showSuccess('feed', 'Yum! 😋');
       } else if (action === 'play') {
         showCost('-$10 Toy');
+        showTransactionToast('Played with', 10);
         playUiTone('play');
         response = await playWithPet('fetch');
         showSuccess('play', 'Fun! 🎉');
       } else if (action === 'rest') {
-        showCost('-$0 Sleep');
+        showCost('FREE Sleep');
+        showTransactionToast('Rested', 0);
         playUiTone('use'); // Silent-ish
         response = await restPetAction(1);
         showSuccess('rest', 'Zzz... 💤');
       } else if (action === 'bathe') {
         showCost('-$3 Bath');
+        showTransactionToast('Bathed', 3);
         playUiTone('bathe');
         response = await bathePetAction();
         showSuccess('bathe', 'Squeaky Clean! ✨');
@@ -376,6 +400,22 @@ export const PetGame2Screen: React.FC = () => {
           indicator={successIndicator}
           onComplete={() => setSuccessIndicator(null)}
         />
+      )}
+
+      {/* Transaction Toast - Top Center */}
+      {transactionToast && (
+        <div
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-bounce-in"
+          style={{ animation: 'slideInDown 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards' }}
+        >
+          <div className={`px-6 py-3 rounded-2xl shadow-2xl font-bold text-lg flex items-center gap-3 ${transactionToast.cost > 0
+              ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white'
+              : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+            }`}>
+            <span className="text-2xl">{transactionToast.cost > 0 ? '💸' : '✨'}</span>
+            <span>{transactionToast.message}</span>
+          </div>
+        </div>
       )}
 
       {/* Evolution Animation */}

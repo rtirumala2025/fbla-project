@@ -89,15 +89,15 @@ function StatBar({ label, value, color, icon }: { label: string; value: number; 
     const clamped = Math.min(100, Math.max(0, value));
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-                <div className="text-white/90 text-base font-semibold flex items-center gap-2">
+                <div className="text-white/90 text-sm font-semibold flex items-center gap-1.5">
                     {icon}
                     <span>{label}</span>
                 </div>
-                <span className="text-white/70 text-sm font-medium ml-auto">{Math.round(clamped)}%</span>
+                <span className="text-white/70 text-xs font-medium ml-auto">{Math.round(clamped)}%</span>
             </div>
-            <div className="w-56 h-3 bg-black/40 rounded-full overflow-hidden backdrop-blur-sm border border-white/10">
+            <div className="w-full h-2.5 bg-black/40 rounded-full overflow-hidden backdrop-blur-sm border border-white/10">
                 <div
                     className="h-full rounded-full transition-all duration-500 ease-out shadow-lg"
                     style={{
@@ -302,42 +302,42 @@ export function PetHUD({
 
 
 
-            {/* Bottom-left: Stats */}
-            <div className="absolute bottom-6 left-6 z-10 pointer-events-none">
-                <div className="bg-gradient-to-br from-slate-900/70 to-slate-800/70 backdrop-blur-md rounded-2xl p-6 border border-white/15 shadow-2xl">
-                    <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Pet Stats</h3>
-                    <div className="flex flex-col gap-4">
+            {/* Right Sidebar: Stats - moved from bottom-left to avoid overlapping viewport */}
+            <div className="absolute top-48 right-6 z-20 pointer-events-none">
+                <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-white/15 shadow-2xl w-[220px]">
+                    <h3 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-3">Pet Stats</h3>
+                    <div className="flex flex-col gap-3">
                         <StatBar
                             label="Hunger"
                             value={hunger}
                             color="#fbbf24"
-                            icon={<Heart size={18} className="text-amber-400" />}
+                            icon={<Heart size={16} className="text-amber-400" />}
                         />
                         <StatBar
                             label="Happiness"
                             value={happiness}
                             color="#60a5fa"
-                            icon={<Sparkles size={18} className="text-blue-400" />}
+                            icon={<Sparkles size={16} className="text-blue-400" />}
                         />
                         <StatBar
                             label="Energy"
                             value={energy}
                             color="#34d399"
-                            icon={<Zap size={18} className="text-emerald-400" />}
+                            icon={<Zap size={16} className="text-emerald-400" />}
                         />
                         <StatBar
                             label="Clean"
                             value={cleanliness}
                             color="#38bdf8"
-                            icon={<Droplets size={18} className="text-sky-400" />}
+                            icon={<Droplets size={16} className="text-sky-400" />}
                         />
                     </div>
                 </div>
             </div>
 
-            {/* Bottom-right: Actions */}
-            <div className="absolute bottom-6 right-6 z-10 pointer-events-auto">
-                <div className="flex gap-3">
+            {/* Bottom-center: Actions - centered to not overlap viewport */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+                <div className="flex gap-3 bg-slate-900/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-2xl">
                     {!indoorLocation ? (
                         <>
                             <ActionButton
