@@ -73,17 +73,30 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
 
     const isNearPath = (x: number, z: number, threshold = 4) => {
       const p = new THREE.Vector3(x, 0, z);
-      // Box check central plaza
-      if (Math.hypot(x, z) < 14) return true;
+      // Box check central plaza (expanded slightly)
+      if (Math.hypot(x, z) < 16) return true;
 
-      // Building Exclusion Zones
+      // Building Exclusion Zones (wider radius to prevent view blocking)
       for (const bPos of Object.values(ACTIVITY_POSITIONS)) {
-        if (Math.hypot(x - bPos[0], z - bPos[2]) < 12) return true;
+        if (Math.hypot(x - bPos[0], z - bPos[2]) < 15) return true;
       }
 
-      // Ring Path (Radius 36-44)
-      const dist = Math.hypot(x, z);
-      if (dist > 34 && dist < 46) return true;
+      // View Corridors from center to each building (prevent trees in sightlines)
+      for (const bPos of Object.values(ACTIVITY_POSITIONS)) {
+        const bx = bPos[0], bz = bPos[2];
+        const buildingDist = Math.hypot(bx, bz);
+        // Distance from point to line through origin to building
+        const lineDist = Math.abs(z * bx - x * bz) / buildingDist;
+        // Check if point is in corridor and between center and building
+        const dotProduct = (x * bx + z * bz);
+        if (lineDist < 6 && dotProduct > 0 && dotProduct < buildingDist * buildingDist) {
+          return true;
+        }
+      }
+
+      // Ring Path (Radius 36-44) - removed as visual ring is gone
+      // const dist = Math.hypot(x, z);
+      // if (dist > 34 && dist < 46) return true;
 
       // Cardinal Spokes (Cross)
       if (Math.abs(x) < 4 || Math.abs(z) < 4) return true;
@@ -95,7 +108,7 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
       return false;
     };
 
-    const treeCount = 45; // More trees for larger area
+    const treeCount = 28; // Reduced for cleaner look
     const range = 48; // Larger range for expanded grid
     let attempts = 0;
     while (trees.length < treeCount && attempts < 1000) {
@@ -204,11 +217,16 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
       {/* INSTANCED NATURE */}
       <InstancedNature trees={scenery.trees} bushes={scenery.bushes} />
 
-      {/* Decorative Lamps - Spread around larger area */}
+      {/* Decorative Lamps - Positioned along pathways */}
       {[
-        [-10, -8], [10, -8], [-10, 8], [10, 8],
-        [-30, -30], [30, -30], [30, 30], [-30, 30],
-        [-35, 15], [-35, -15], [35, 15], [35, -15]
+        // Inner ring on cardinal directions
+        [-15, 0], [15, 0], [0, -15], [0, 15],
+        // Inner ring on diagonals
+        [-11, -11], [11, -11], [-11, 11], [11, 11],
+        // Outer ring on cardinal directions
+        [-28, 0], [28, 0], [0, -28], [0, 28],
+        // Outer ring on diagonals  
+        [-20, -20], [20, -20], [-20, 20], [20, 20]
       ].map((pos, i) => (
         <group key={`lamp-${i}`} position={[pos[0] as number, 0, pos[1] as number]}>
           <Cylinder args={[0.1, 0.15, 3.5, 8]} position={[0, 1.75, 0]} castShadow>
