@@ -279,9 +279,98 @@ export const SettingsScreen: React.FC = () => {
                     });
                   }}
                 >
-                  🎓 Restart Tutorial
+                  🔄 Restart Tutorial
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div className="ds-card p-4 border-l-4 border-yellow-400">
+            <h2 className="text-lg font-bold mb-2">Competition Demo Mode</h2>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600 mb-3">
+                Reset your account to a clean "Demo State" for presentation.
+                <br />
+                <span className="font-semibold text-red-500">Warning: This will reset your balance, pet stats, and transaction history.</span>
+              </p>
+              <button
+                className="px-4 py-2 rounded-lg bg-yellow-500 text-white font-semibold hover:bg-yellow-400 transition-colors shadow-sm flex items-center gap-2"
+                onClick={async () => {
+                  if (!window.confirm('Are you sure? This will reset your data for the demo.')) return;
+                  if (!currentUser) return;
+
+                  toast.info('Resetting to Demo State...', 2000);
+                  try {
+                    // 1. Reset Balance to $150
+                    const { data: account } = await supabase
+                      .from('bank_accounts')
+                      .select('id')
+                      .eq('user_id', currentUser.uid)
+                      .single();
+
+                    if (account) {
+                      await supabase
+                        .from('bank_accounts')
+                        .update({ balance: 150.00 })
+                        .eq('id', account.id);
+
+                      // 2. Clear Transactions & Add Sample History
+                      await supabase.from('transactions').delete().eq('account_id', account.id);
+
+                      const now = new Date();
+                      const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+                      const twoDaysAgo = new Date(now); twoDaysAgo.setDate(now.getDate() - 2);
+
+                      await supabase.from('transactions').insert([
+                        {
+                          account_id: account.id,
+                          amount: 200.00,
+                          item_name: 'Initial Allowance',
+                          category: 'income',
+                          created_at: twoDaysAgo.toISOString()
+                        },
+                        {
+                          account_id: account.id,
+                          amount: -15.50,
+                          item_name: 'Pet Food Bundle',
+                          category: 'expense',
+                          created_at: yesterday.toISOString()
+                        },
+                        {
+                          account_id: account.id,
+                          amount: -34.50,
+                          item_name: 'New Toys',
+                          category: 'expense',
+                          created_at: now.toISOString()
+                        }
+                      ]);
+                    }
+
+                    // 3. Reset Pet Stats to 75%
+                    await supabase
+                      .from('pets')
+                      .update({
+                        energy: 75,
+                        fun: 75,
+                        food: 75,
+                        hygiene: 75,
+                        happiness: 80
+                      })
+                      .eq('user_id', currentUser.uid);
+
+                    toast.success('Demo State Active! Balance $150, Stats 75%');
+
+                    // Force a reload to refresh everything
+                    setTimeout(() => window.location.reload(), 1500);
+
+                  } catch (error) {
+                    console.error('Demo reset failed:', error);
+                    toast.error('Failed to reset state.');
+                  }
+                }}
+              >
+                ✨ Reset to Demo State
+              </button>
             </div>
           </div>
           <div className="ds-card p-4">
