@@ -629,6 +629,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.clear();
       sessionStorage.clear();
 
+      // Clear IndexedDB if it exists (for offline sync data)
+      try {
+        if (window.indexedDB) {
+          const databases = await window.indexedDB.databases();
+          for (const db of databases) {
+            if (db.name) {
+              window.indexedDB.deleteDatabase(db.name);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('IndexedDB cleanup failed (non-critical):', e);
+      }
+
+      // Force hard reload to login page (more aggressive than navigate)
+      // This ensures all state is completely reset
+      window.location.href = '/login';
+
     } catch (error) {
       // Ensure state is cleared even if there's an error
       setCurrentUser(null);
@@ -636,7 +654,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setHasPet(false);
       setLoading(false);
       onboardingLogger.error('Error during sign out', error);
-      // Don't throw - user should still be able to navigate away
+
+      // Even on error, force hard reload to clear everything
+      window.location.href = '/login';
     }
   };
 

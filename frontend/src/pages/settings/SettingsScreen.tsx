@@ -381,7 +381,7 @@ export const SettingsScreen: React.FC = () => {
             </div>
           </div>
 
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <div className="ds-card p-4 border-l-4 border-indigo-400">
               <h2 className="text-lg font-bold mb-2">Developer Tools</h2>
               <div className="space-y-3">

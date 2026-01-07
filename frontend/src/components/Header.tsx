@@ -57,19 +57,17 @@ const Header = memo(() => {
       setIsMobileMenuOpen(false);
       setIsMoreMenuOpen(false);
 
-      // Sign out
+      // Sign out (now includes redirect)
       await signOut();
 
-      // Small delay to ensure state is cleared before navigation
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // No need for navigation here anymore - signOut() now does hard redirect
+      // The window.location.href in signOut will take over
 
-      // Navigate to login page
-      navigate('/login', { replace: true });
     } catch (error) {
-      // Even if signOut throws, try to navigate anyway
-      navigate('/login', { replace: true });
+      // If signOut throws somehow, still try to go to login
+      window.location.href = '/login';
     }
-  }, [signOut, navigate]);
+  }, [signOut]);
 
   // Navigation links for authenticated users only (Profile link removed - shown as welcome message)
   // Consolidated to 6 essential tabs for cleaner, focused navigation
