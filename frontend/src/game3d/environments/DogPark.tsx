@@ -136,13 +136,22 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
           <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
         </mesh>
       ))}
-      {/* Spokes - Extended for larger grid */}
+      {/* Spokes - Extended for larger grid and diagonal paths */}
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[3, 80]} />
         <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
       </mesh>
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[80, 3]} />
+        <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
+      </mesh>
+      {/* Diagonal Spokes */}
+      <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 4]} receiveShadow>
+        <planeGeometry args={[3, 80]} />
+        <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, -Math.PI / 4]} receiveShadow>
+        <planeGeometry args={[3, 80]} />
         <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
       </mesh>
 
