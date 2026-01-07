@@ -50,7 +50,7 @@ const AIAssistantWidget: React.FC = () => {
                         animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%', top: '50%', left: '50%' }}
                         exit={{ opacity: 0, scale: 0.9, x: '50%', y: '50%', top: '100%', left: '100%' }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="fixed z-[60] w-[95vw] md:w-[85vw] max-w-[1400px] h-[85vh] max-h-[900px] bg-slate-900/60 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/10 flex flex-col overflow-hidden text-white"
+                        className="fixed z-[60] w-[95vw] md:w-[85vw] max-w-[1400px] h-[85vh] max-h-[900px] bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/10 flex flex-col overflow-hidden text-white"
                     >
                         {/* Header */}
                         <div className="p-4 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/5 backdrop-blur-sm">
@@ -95,32 +95,32 @@ const AIAssistantWidget: React.FC = () => {
                                     <div
                                         className={`max-w-[85%] rounded-2xl px-5 py-3.5 text-xl leading-relaxed shadow-sm ${msg.role === 'user'
                                             ? 'bg-indigo-600 text-white rounded-br-none shadow-indigo-900/20'
-                                            : 'bg-white/10 backdrop-blur-md border border-white/5 text-white/90 rounded-bl-none'
+                                            : 'bg-black/40 backdrop-blur-md border border-white/10 text-slate-100 rounded-bl-none shadow-sm'
                                             }`}
                                     >
                                         <div className="prose prose-invert prose-lg max-w-none 
-                                            prose-p:leading-relaxed prose-p:mb-4 last:prose-p:mb-0
-                                            prose-headings:font-bold prose-headings:text-indigo-200 prose-headings:mb-3 prose-headings:mt-6 first:prose-headings:mt-0
+                                            prose-p:leading-relaxed prose-p:mb-4 last:prose-p:mb-0 prose-p:text-white
+                                            prose-headings:font-bold prose-headings:text-white prose-headings:mb-3 prose-headings:mt-6 first:prose-headings:mt-0
                                             prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4
                                             prose-ol:list-decimal prose-ol:pl-6 prose-ol:mb-4
-                                            prose-li:mb-2 prose-li:text-white/90
+                                            prose-li:mb-2 prose-li:text-white
                                             prose-strong:text-white prose-strong:font-semibold
                                             prose-a:text-indigo-300 prose-a:underline hover:prose-a:text-indigo-200
-                                            prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:bg-black/30 prose-code:text-indigo-200 prose-code:font-mono prose-code:text-base
+                                            prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:bg-black/30 prose-code:text-white prose-code:font-mono prose-code:text-base
                                             prose-pre:p-4 prose-pre:rounded-xl prose-pre:bg-black/40 prose-pre:backdrop-blur-sm prose-pre:border prose-pre:border-white/10 prose-pre:my-4">
                                             <ReactMarkdown
                                                 components={{
-                                                    p: ({ node, ...props }) => <p className="mb-3 last:mb-0" {...props} />,
-                                                    ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-3 space-y-1" {...props} />,
-                                                    ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-3 space-y-1" {...props} />,
-                                                    li: ({ node, ...props }) => <li className="text-white/90" {...props} />,
+                                                    p: ({ node, ...props }) => <p className="mb-3 last:mb-0 text-white" {...props} />,
+                                                    ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-3 space-y-1 text-white" {...props} />,
+                                                    ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-3 space-y-1 text-white" {...props} />,
+                                                    li: ({ node, ...props }) => <li className="text-white" {...props} />,
                                                     h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mb-3 text-white" {...props} />,
                                                     h2: ({ node, ...props }) => <h2 className="text-xl font-bold mb-2 text-white" {...props} />,
                                                     h3: ({ node, ...props }) => <h3 className="text-lg font-bold mb-2 text-white" {...props} />,
                                                     code: ({ node, inline, ...props }: any) => (
                                                         inline
-                                                            ? <code className="px-1.5 py-0.5 rounded bg-black/20 text-indigo-200 font-mono text-base" {...props} />
-                                                            : <code className="block p-4 rounded-xl bg-black/30 text-indigo-100 font-mono text-sm overflow-x-auto border border-white/10 my-3" {...props} />
+                                                            ? <code className="px-1.5 py-0.5 rounded bg-black/20 text-white font-mono text-base" {...props} />
+                                                            : <code className="block p-4 rounded-xl bg-black/30 text-white font-mono text-sm overflow-x-auto border border-white/10 my-3" {...props} />
                                                     ),
                                                 }}
                                             >

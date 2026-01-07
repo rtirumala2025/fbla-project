@@ -10,6 +10,11 @@ export function useKeyboardControls() {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Ignore if active element is an input
+            if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
+                return;
+            }
+
             switch (e.code) {
                 case 'ArrowUp':
                 case 'KeyW':
@@ -31,6 +36,11 @@ export function useKeyboardControls() {
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
+            // Ignore if active element is an input
+            if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
+                return;
+            }
+
             switch (e.code) {
                 case 'ArrowUp':
                 case 'KeyW':
