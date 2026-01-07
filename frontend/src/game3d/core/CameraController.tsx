@@ -67,8 +67,8 @@ export function CameraController({
       controlsRef.current.enableDamping = false;
 
       // Calculate offset Behind the pet
-      // Offset: 0, 3(up), -5(back) - Negative Z is behind in this model's space
-      dummyVec.set(0, 3, -5).applyQuaternion(rotationRef.current);
+      // Offset: 0, 1.5(up), -4.5(back) - Lower angle to see environment
+      dummyVec.set(0, 1.5, -4.5).applyQuaternion(rotationRef.current);
 
       const targetPos = petCenter.set(
         smoothPos.x + dummyVec.x,
@@ -79,7 +79,7 @@ export function CameraController({
       // Tight Lerp for "Locked" feeling but smooth enough to not jitter
       camera.position.lerp(targetPos, 0.2);
 
-      intendedMinDist = 4;
+      intendedMinDist = 3;
       intendedMaxDist = 6;
 
       // Ensure target is set correctly and sync controls
@@ -90,7 +90,7 @@ export function CameraController({
       controlsRef.current.enabled = false;
       controlsRef.current.enableDamping = true; // Smooth auto-nav
 
-      const idealOffset = dummyVec.set(0, 4, 6);
+      const idealOffset = dummyVec.set(0, 2.5, 6);
       const targetPos = petCenter.set(
         smoothPos.x + idealOffset.x,
         smoothPos.y + idealOffset.y,

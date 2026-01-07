@@ -73,16 +73,24 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
 
     const isNearPath = (x: number, z: number, threshold = 4) => {
       const p = new THREE.Vector3(x, 0, z);
-      // Simplify check: just box check central plaza and buildings first
-      if (Math.hypot(x, z) < 12) return true;
-      for (const bPos of Object.values(ACTIVITY_POSITIONS)) {
-        if (Math.hypot(x - bPos[0], z - bPos[2]) < 8) return true;
-      }
-      // Highway check - at +/- 40 size now
-      if ((Math.abs(x) > 36 && Math.abs(x) < 44) || (Math.abs(z) > 36 && Math.abs(z) < 44)) return true;
+      // Box check central plaza
+      if (Math.hypot(x, z) < 14) return true;
 
-      // Center spokes
-      if (Math.abs(x) < 3 || Math.abs(z) < 3) return true;
+      // Building Exclusion Zones
+      for (const bPos of Object.values(ACTIVITY_POSITIONS)) {
+        if (Math.hypot(x - bPos[0], z - bPos[2]) < 12) return true;
+      }
+
+      // Ring Path (Radius 36-44)
+      const dist = Math.hypot(x, z);
+      if (dist > 34 && dist < 46) return true;
+
+      // Cardinal Spokes (Cross)
+      if (Math.abs(x) < 4 || Math.abs(z) < 4) return true;
+
+      // Diagonal Spokes (X-shape)
+      if (Math.abs(x - z) / 1.414 < 4) return true;
+      if (Math.abs(x + z) / 1.414 < 4) return true;
 
       return false;
     };
@@ -129,13 +137,8 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
         <meshStandardMaterial map={grassTex} color="#8fb97e" roughness={1} />
       </mesh>
 
-      {/* Paths */}
-      {paths.highwayCurves.map((curve, i) => (
-        <mesh key={`loop-${i}`} position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <tubeGeometry args={[curve as any, 20, 2.5, 8, false]} />
-          <meshStandardMaterial map={gravelTex} color="#ffffff" roughness={0.9} />
-        </mesh>
-      ))}
+      {/* Paths - Highway Curves Removed */}
+
       {/* Spokes - Extended for larger grid and diagonal paths */}
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[3, 80]} />
@@ -184,12 +187,12 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
       </group>
 
       {/* Park Hub (Info Center) - Front Left */}
-      <group position={[-25, 0, 25]} rotation={[0, Math.PI / 4, 0]}>
+      <group position={[-25, 0, 25]} rotation={[0, 3 * Math.PI / 4, 0]}>
         <ParkHubBuilding onSignClick={() => onSignClick('center')} />
       </group>
 
       {/* Gift Shop (NEW) - Front Right */}
-      <group position={[25, 0, 25]} rotation={[0, -Math.PI / 4, 0]}>
+      <group position={[25, 0, 25]} rotation={[0, -3 * Math.PI / 4, 0]}>
         <GiftShop onSignClick={() => onSignClick('shop')} />
       </group>
 
