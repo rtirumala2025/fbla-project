@@ -4,30 +4,51 @@ import { ParticleSystem } from './ParticleSystem';
 
 export function SceneVfx({ vfx }: { vfx: PetGame2Vfx[] }) {
   // Only show the most recent effects to avoid clutter
-  const active = vfx.slice(-4);
+  const active = vfx.slice(-5);
 
   return (
     <group>
-      {active.map((fx, i) => {
+      {active.map((fx) => {
         // Stagger positions slightly so they don't perfectly overlap
         // Lifted higher (y=1.5) to account for Pro Scale (1.2)
         const position: [number, number, number] = [
-          (Math.random() - 0.5) * 1.5,
-          1.5 + (Math.random() * 1.0),
-          (Math.random() - 0.5) * 1.0 + 1.0
+          (Math.random() - 0.5) * 1.2,
+          1.5 + (Math.random() * 0.8),
+          (Math.random() - 0.5) * 0.8 + 0.8
         ];
 
+        // sparkleBurst - general tap interaction
         if (fx.kind === 'sparkleBurst') {
-          return <ParticleSystem key={fx.id} type="star" count={12} color="#ffffff" position={position} duration={2.5} />;
+          return <ParticleSystem key={fx.id} type="star" count={15} color="#ffd700" position={position} duration={2} />;
         }
+
+        // foodPuff - feed action: hearts (love/care)
         if (fx.kind === 'foodPuff') {
-          return <ParticleSystem key={fx.id} type="heart" count={8} color="#ffb700" position={position} duration={3} />;
+          return <ParticleSystem key={fx.id} type="heart" count={12} color="#ff6b6b" position={position} duration={2.5} />;
         }
+
+        // toyBounce - play action: colorful stars
         if (fx.kind === 'toyBounce') {
-          return <ParticleSystem key={fx.id} type="star" count={10} color="#60a5fa" position={position} duration={2} />;
+          return <ParticleSystem key={fx.id} type="star" count={18} color="#a78bfa" position={position} duration={2} />;
         }
-        // Rest / Default
-        return <ParticleSystem key={fx.id} type="bubble" count={6} color="#86efac" position={position} duration={4} />;
+
+        // sleepZ - rest action: slow floating bubbles (like ZZZ)
+        if (fx.kind === 'sleepZ') {
+          return <ParticleSystem key={fx.id} type="bubble" count={8} color="#818cf8" position={[position[0], position[1] + 0.5, position[2]]} duration={4} />;
+        }
+
+        // bubbleBurst - bathe action: water bubbles
+        if (fx.kind === 'bubbleBurst') {
+          return <ParticleSystem key={fx.id} type="bubble" count={15} color="#67e8f9" position={position} duration={2.5} />;
+        }
+
+        // cleaning - bathe sparkle effect
+        if (fx.kind === 'cleaning') {
+          return <ParticleSystem key={fx.id} type="star" count={10} color="#34d399" position={[position[0], position[1] - 0.3, position[2]]} duration={2} />;
+        }
+
+        // All VFX kinds should be handled above, but return null for safety
+        return null;
       })}
     </group>
   );
