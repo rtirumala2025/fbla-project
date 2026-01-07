@@ -82,6 +82,9 @@ export function PetGame2Scene({
   setBreed,
   onExitBuilding,
   onActivity,
+  balance = 0,
+  totalSpent = 0,
+  balanceChange = null,
 }: {
   petType: PetGame2PetType;
   petName: string;
@@ -100,6 +103,9 @@ export function PetGame2Scene({
   setBreed: (breed: any) => void;
   onExitBuilding?: () => void;
   onActivity?: (id: string) => void;
+  balance?: number;
+  totalSpent?: number;
+  balanceChange?: { amount: number; isPositive: boolean } | null;
 }) {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0));
   const isMovingRef = useRef(false);
@@ -140,6 +146,9 @@ export function PetGame2Scene({
         indoorLocation={state.indoorLocation}
         onExitBuilding={onExitBuilding}
         onActivity={onActivity}
+        balance={balance}
+        totalSpent={totalSpent}
+        balanceChange={balanceChange}
       />
 
       {/* Three.js Canvas */}

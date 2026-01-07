@@ -1,27 +1,109 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { PetStats } from '@/types/pet';
 import type { PetGame2Action } from '../core/SceneManager';
-import { Heart, Sparkles, Zap, Droplets, Book, Backpack, Volume2, VolumeX, Plane } from 'lucide-react';
+import { Heart, Sparkles, Zap, Droplets, Book, Backpack, Volume2, VolumeX, Plane, DollarSign, TrendingDown } from 'lucide-react';
+
+// Pet emotion calculation based on stats
+function calculateEmotion(stats: PetStats | null): { emoji: string; text: string; color: string } {
+    if (!stats) return { emoji: '😶', text: 'Unknown', color: 'text-gray-400' };
+
+    const hunger = stats.hunger ?? 50;
+    const happiness = stats.happiness ?? 50;
+    const energy = stats.energy ?? 50;
+    const cleanliness = stats.cleanliness ?? stats.hygiene ?? 50;
+
+    // Check for critical states first
+    if (hunger < 20 || happiness < 20 || energy < 20 || cleanliness < 20) {
+        if (hunger < 20) return { emoji: '😢', text: 'Hungry', color: 'text-red-400' };
+        if (happiness < 20) return { emoji: '😭', text: 'Sad', color: 'text-red-400' };
+        if (energy < 20) return { emoji: '😴', text: 'Exhausted', color: 'text-purple-400' };
+        if (cleanliness < 20) return { emoji: '🤢', text: 'Dirty', color: 'text-yellow-400' };
+    }
+
+    // Check for low states
+    if (hunger < 40 || happiness < 40 || energy < 40 || cleanliness < 40) {
+        return { emoji: '😟', text: 'Needs Care', color: 'text-amber-400' };
+    }
+
+    // Check for excellent state
+    const avgStat = (hunger + happiness + energy + cleanliness) / 4;
+    if (avgStat > 80) return { emoji: '🤩', text: 'Thriving!', color: 'text-green-400' };
+    if (avgStat > 60) return { emoji: '😊', text: 'Happy', color: 'text-emerald-400' };
+
+    return { emoji: '😐', text: 'Content', color: 'text-blue-400' };
+}
+
+// Budget display component with animation
+function BudgetDisplay({ balance, totalSpent, balanceChange }: { balance: number; totalSpent: number; balanceChange?: { amount: number; isPositive: boolean } | null }) {
+    return (
+        <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-2xl min-w-[200px]">
+            {/* Main Balance */}
+            <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 bg-emerald-500/20 rounded-lg">
+                    <DollarSign size={20} className="text-emerald-400" />
+                </div>
+                <div>
+                    <p className="text-white/60 text-xs font-medium uppercase tracking-wide">Balance</p>
+                    <p className="text-2xl font-bold text-emerald-400">${balance.toLocaleString()}</p>
+                </div>
+            </div>
+
+            {/* Total Spent */}
+            <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+                <div className="p-1.5 bg-red-500/20 rounded-lg">
+                    <TrendingDown size={14} className="text-red-400" />
+                </div>
+                <div>
+                    <p className="text-white/50 text-xs">Total Spent</p>
+                    <p className="text-sm font-semibold text-red-300">${totalSpent.toLocaleString()}</p>
+                </div>
+            </div>
+
+            {/* Balance change animation indicator */}
+            {balanceChange && (
+                <div
+                    className={`mt-2 text-center py-1 rounded-lg text-sm font-bold animate-pulse ${balanceChange.isPositive ? 'bg-emerald-500/30 text-emerald-300' : 'bg-red-500/30 text-red-300'
+                        }`}
+                >
+                    {balanceChange.isPositive ? '+' : ''}{balanceChange.amount}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Emotion indicator component
+function EmotionIndicator({ petName, emotion }: { petName: string; emotion: { emoji: string; text: string; color: string } }) {
+    return (
+        <div className="bg-gradient-to-br from-slate-900/60 to-slate-800/60 backdrop-blur-md rounded-full px-4 py-2 border border-white/10 shadow-lg">
+            <p className="text-lg font-semibold text-white flex items-center gap-2">
+                <span className="text-2xl">{emotion.emoji}</span>
+                <span>{petName} is</span>
+                <span className={`${emotion.color} font-bold`}>{emotion.text}</span>
+            </p>
+        </div>
+    );
+}
 
 function StatBar({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {
     const clamped = Math.min(100, Math.max(0, value));
 
     return (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-                <div className="text-white/80 text-sm font-medium flex items-center gap-1.5">
+                <div className="text-white/90 text-base font-semibold flex items-center gap-2">
                     {icon}
                     <span>{label}</span>
                 </div>
-                <span className="text-white/60 text-xs ml-auto">{Math.round(clamped)}%</span>
+                <span className="text-white/70 text-sm font-medium ml-auto">{Math.round(clamped)}%</span>
             </div>
-            <div className="w-48 h-2 bg-black/30 rounded-full overflow-hidden backdrop-blur-sm">
+            <div className="w-56 h-3 bg-black/40 rounded-full overflow-hidden backdrop-blur-sm border border-white/10">
                 <div
                     className="h-full rounded-full transition-all duration-500 ease-out shadow-lg"
                     style={{
                         width: `${clamped}%`,
                         background: `linear-gradient(90deg, ${color}, ${color}dd)`,
-                        boxShadow: `0 0 8px ${color}66`
+                        boxShadow: `0 0 10px ${color}88`
                     }}
                 />
             </div>
@@ -34,13 +116,15 @@ function ActionButton({
     action,
     disabled,
     onAction,
-    icon
+    icon,
+    isFree = false
 }: {
     label: string;
     action: PetGame2Action;
     disabled: boolean;
     onAction: (action: PetGame2Action) => void;
     icon: React.ReactNode;
+    isFree?: boolean;
 }) {
     const colors = {
         feed: 'from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400',
@@ -54,7 +138,7 @@ function ActionButton({
             onClick={() => !disabled && onAction(action)}
             disabled={disabled}
             className={`
-        relative px-6 py-3 rounded-xl font-semibold text-white
+        relative px-5 py-3 rounded-xl font-semibold text-white
         bg-gradient-to-br ${colors[action]}
         shadow-lg hover:shadow-xl
         transform transition-all duration-200
@@ -62,11 +146,16 @@ function ActionButton({
         active:scale-95 active:translate-y-0
         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
         flex items-center gap-2
-        border border-white/20
+        border ${isFree ? 'border-green-400/60 ring-1 ring-green-400/30' : 'border-white/20'}
       `}
         >
             {icon}
             <span>{label}</span>
+            {isFree && (
+                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-green-400">
+                    FREE
+                </span>
+            )}
             <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 hover:opacity-100 transition-opacity duration-200" />
         </button>
     );
@@ -88,7 +177,10 @@ export function PetHUD({
     setBreed,
     indoorLocation,
     onExitBuilding,
-    onActivity
+    onActivity,
+    balance = 0,
+    totalSpent = 0,
+    balanceChange = null,
 }: {
     petName: string;
     species: string;
@@ -106,6 +198,9 @@ export function PetHUD({
     indoorLocation?: string | null;
     onExitBuilding?: () => void;
     onActivity?: (id: string) => void;
+    balance?: number;
+    totalSpent?: number;
+    balanceChange?: { amount: number; isPositive: boolean } | null;
 }) {
     const hunger = stats?.hunger ?? 50;
     const happiness = stats?.happiness ?? 50;
@@ -114,110 +209,127 @@ export function PetHUD({
 
     const speciesEmoji = species === 'panda' ? '🐼' : species === 'cat' ? '🐱' : '🐶';
 
+    // Calculate pet emotion
+    const emotion = useMemo(() => calculateEmotion(stats), [stats]);
+
     return (
         <>
-            {/* Top-left: Pet Info */}
+            {/* Top-left: Pet Info + Emotion */}
             <div className="absolute top-6 left-6 z-10 pointer-events-none">
-                <div className="bg-gradient-to-br from-slate-900/40 to-slate-800/40 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-2xl">
-                    <div className="flex items-center gap-3">
-                        <div className="text-4xl">{speciesEmoji}</div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-white drop-shadow-lg">{petName}</h2>
-                            <p className="text-sm text-white/70 capitalize">{species}</p>
+                <div className="flex flex-col gap-3">
+                    <div className="bg-gradient-to-br from-slate-900/40 to-slate-800/40 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-2xl">
+                        <div className="flex items-center gap-3">
+                            <div className="text-4xl">{speciesEmoji}</div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-white drop-shadow-lg">{petName}</h2>
+                                <p className="text-sm text-white/70 capitalize">{species}</p>
+                            </div>
                         </div>
+                    </div>
+                    {/* Emotion Indicator */}
+                    <EmotionIndicator petName={petName} emotion={emotion} />
+                </div>
+            </div>
+
+            {/* Top-right: Budget Display */}
+            <div className="absolute top-6 right-6 z-10 pointer-events-none">
+                <div className="flex flex-col gap-3 items-end">
+                    <BudgetDisplay balance={balance} totalSpent={totalSpent} balanceChange={balanceChange} />
+                    {/* Tools row below budget */}
+                    <div className="flex gap-2 pointer-events-auto flex-wrap justify-end">
+                        <button
+                            onClick={onToggleDiary}
+                            className="p-2.5 rounded-xl bg-slate-900/60 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/80 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                            title="Pet Diary"
+                        >
+                            <Book size={18} />
+                        </button>
+                        <button
+                            onClick={onToggleInventory}
+                            className="p-2.5 rounded-xl bg-slate-900/60 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/80 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                            title="Inventory"
+                        >
+                            <Backpack size={18} />
+                        </button>
+                        <button
+                            onClick={onToggleDrone}
+                            className={`p-2.5 rounded-xl backdrop-blur-md border border-white/10 text-white transition-all hover:scale-105 active:scale-95 shadow-lg ${droneActive ? 'bg-amber-500/60' : 'bg-slate-900/60 hover:bg-slate-800/80'}`}
+                            title={droneActive ? "Exit Drone Mode" : "Enter Drone Mode"}
+                        >
+                            <Plane size={18} className={droneActive ? "animate-[pulse_2s_infinite]" : ""} />
+                        </button>
+                        <button
+                            onClick={onToggleSound}
+                            className="p-2.5 rounded-xl bg-slate-900/60 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/80 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                            title={soundEnabled ? "Mute" : "Unmute"}
+                        >
+                            {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                        </button>
+
+                        {/* Breed Selector for dogs */}
+                        {species === 'dog' && (
+                            <div className="relative group">
+                                <button className="px-3 py-2 rounded-xl bg-slate-900/60 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/80 transition-all hover:scale-105 shadow-lg flex items-center gap-2">
+                                    <span className="text-xs font-bold opacity-60">BREED:</span>
+                                    <span className="text-xs font-bold text-amber-400 capitalize">{breed || 'labrador'}</span>
+                                </button>
+                                <div className="absolute right-0 top-full mt-2 w-36 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-50">
+                                    {['labrador', 'shepherd', 'pug'].map((b) => (
+                                        <button
+                                            key={b}
+                                            onClick={() => setBreed?.(b)}
+                                            className="px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10 rounded-lg capitalize transition-colors"
+                                        >
+                                            {b}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Exit Building Button */}
+                        {indoorLocation && (
+                            <button
+                                onClick={onExitBuilding}
+                                className="px-3 py-2 rounded-xl bg-red-500/80 backdrop-blur-md border border-white/10 text-white font-bold text-sm hover:bg-red-600 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                            >
+                                EXIT
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Top-right: Tools */}
-            <div className="absolute top-6 right-6 z-10 pointer-events-auto flex gap-3">
-                <button
-                    onClick={onToggleDiary}
-                    className="p-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/60 transition-all hover:scale-105 active:scale-95 shadow-lg"
-                    title="Diary"
-                >
-                    <Book size={20} />
-                </button>
-                <button
-                    onClick={onToggleInventory}
-                    className="p-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/60 transition-all hover:scale-105 active:scale-95 shadow-lg"
-                    title="Inventory"
-                >
-                    <Backpack size={20} />
-                </button>
-                <button
-                    onClick={onToggleDrone}
-                    className={`p-3 rounded-xl backdrop-blur-md border border-white/10 text-white transition-all hover:scale-105 active:scale-95 shadow-lg ${droneActive ? 'bg-amber-500/60' : 'bg-slate-900/40 hover:bg-slate-800/60'}`}
-                    title={droneActive ? "Exit Drone Mode" : "Enter Drone Mode"}
-                >
-                    <Plane size={20} className={droneActive ? "animate-[pulse_2s_infinite]" : ""} />
-                </button>
 
-                {indoorLocation && (
-                    <button
-                        onClick={onExitBuilding}
-                        className="px-4 py-2 rounded-xl bg-red-500/80 backdrop-blur-md border border-white/10 text-white font-bold hover:bg-red-600 transition-all hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2"
-                    >
-                        <span>EXIT BUILDING</span>
-                    </button>
-                )}
-
-                {/* Breed Selector */}
-                {species === 'dog' && (
-                    <div className="relative group">
-                        <button className="p-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/60 transition-all hover:scale-105 shadow-lg flex items-center gap-2">
-                            <span className="text-xs font-bold opacity-60">BREED:</span>
-                            <span className="text-sm font-bold text-amber-400 capitalize">{breed || 'labrador'}</span>
-                        </button>
-                        <div className="absolute right-0 top-full mt-2 w-40 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl p-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-                            {['labrador', 'shepherd', 'pug'].map((b) => (
-                                <button
-                                    key={b}
-                                    onClick={() => setBreed?.(b)}
-                                    className="px-4 py-2 text-left text-sm text-white/80 hover:bg-white/10 rounded-lg capitalize transition-colors"
-                                >
-                                    {b}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                <button
-                    onClick={onToggleSound}
-                    className="p-3 rounded-xl bg-slate-900/40 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/60 transition-all hover:scale-105 active:scale-95 shadow-lg"
-                    title={soundEnabled ? "Mute" : "Unmute"}
-                >
-                    {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-                </button>
-            </div>
 
             {/* Bottom-left: Stats */}
             <div className="absolute bottom-6 left-6 z-10 pointer-events-none">
-                <div className="bg-gradient-to-br from-slate-900/40 to-slate-800/40 backdrop-blur-md rounded-2xl p-5 border border-white/10 shadow-2xl">
-                    <div className="flex flex-col gap-3">
+                <div className="bg-gradient-to-br from-slate-900/70 to-slate-800/70 backdrop-blur-md rounded-2xl p-6 border border-white/15 shadow-2xl">
+                    <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Pet Stats</h3>
+                    <div className="flex flex-col gap-4">
                         <StatBar
                             label="Hunger"
                             value={hunger}
                             color="#fbbf24"
-                            icon={<Heart size={16} className="text-amber-400" />}
+                            icon={<Heart size={18} className="text-amber-400" />}
                         />
                         <StatBar
                             label="Happiness"
                             value={happiness}
                             color="#60a5fa"
-                            icon={<Sparkles size={16} className="text-blue-400" />}
+                            icon={<Sparkles size={18} className="text-blue-400" />}
                         />
                         <StatBar
                             label="Energy"
                             value={energy}
                             color="#34d399"
-                            icon={<Zap size={16} className="text-emerald-400" />}
+                            icon={<Zap size={18} className="text-emerald-400" />}
                         />
                         <StatBar
                             label="Clean"
                             value={cleanliness}
                             color="#38bdf8"
-                            icon={<Droplets size={16} className="text-sky-400" />}
+                            icon={<Droplets size={18} className="text-sky-400" />}
                         />
                     </div>
                 </div>
@@ -248,6 +360,7 @@ export function PetHUD({
                                 disabled={!!(disabled || droneActive)}
                                 onAction={onAction}
                                 icon={<Zap size={20} />}
+                                isFree={true}
                             />
                             <ActionButton
                                 label="Bathe ($3)"

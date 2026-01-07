@@ -20,7 +20,17 @@ import type { PetStats, PetActionResponse } from '@/types/pet';
 export const PetGame2Screen: React.FC = () => {
   const { pet, loading, error, refreshPet } = usePet();
   const { currentUser } = useAuth();
-  const { refreshBalance } = useFinancial();
+  const { balance, transactions, refreshBalance } = useFinancial();
+
+  // Calculate total spent from transactions
+  const totalSpent = useMemo(() => {
+    return transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [transactions]);
+
+  // Balance change tracking for visual feedback
+  const [balanceChange, setBalanceChange] = useState<{ amount: number; isPositive: boolean } | null>(null);
   const {
     state,
     triggerPetTap,
@@ -337,6 +347,9 @@ export const PetGame2Screen: React.FC = () => {
           if (id === 'play_session') handleAction('play');
           if (id === 'hibernate') handleAction('rest');
         }}
+        balance={balance}
+        totalSpent={totalSpent}
+        balanceChange={balanceChange}
       />
 
       {/* Overlays */}
