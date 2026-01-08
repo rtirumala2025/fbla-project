@@ -7,6 +7,7 @@ import { pop, wobble } from '../animations/interact';
 import { ContactShadow } from '../core/ContactShadow';
 
 import { useKeyboardControls } from '../core/useKeyboardControls';
+import { getValidPosition, clampToBounds } from '../core/CollisionSystem';
 
 export function CatModel({ state, onPetTap, setPetPosition }: {
   state: PetGame2State;
@@ -111,15 +112,36 @@ export function CatModel({ state, onPetTap, setPetPosition }: {
           const moveSpeed = 5.0 * 0.016; // Using fixed time step because clock.getDelta() behavior can be erratic
           const rotateSpeed = 3.5 * 0.016;
 
+          // COLLISION DETECTION: Save position BEFORE movement
+          const prevX = root.current.position.x;
+          const prevZ = root.current.position.z;
+
           const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(root.current.quaternion);
-          if (keys.forward) root.current.position.add(forward.multiplyScalar(moveSpeed));
-          if (keys.backward) root.current.position.add(forward.multiplyScalar(-moveSpeed * 0.5));
+
+          // Apply rotation first (doesn't need collision check)
           if (keys.left) root.current.rotation.y += rotateSpeed;
           if (keys.right) root.current.rotation.y -= rotateSpeed;
 
-          // Boundaries
-          root.current.position.x = Math.max(-58, Math.min(58, root.current.position.x));
-          root.current.position.z = Math.max(-58, Math.min(58, root.current.position.z));
+          // Apply movement
+          if (keys.forward) root.current.position.add(forward.clone().multiplyScalar(moveSpeed));
+          if (keys.backward) root.current.position.add(forward.clone().multiplyScalar(-moveSpeed * 0.5));
+
+          // COLLISION CHECK: Get valid position (slides along walls if collision detected)
+          const [validX, validZ] = getValidPosition(
+            prevX,
+            prevZ,
+            root.current.position.x,
+            root.current.position.z
+          );
+
+          // Apply collision-corrected position
+          root.current.position.x = validX;
+          root.current.position.z = validZ;
+
+          // Boundaries (clamp to +/- 58 units)
+          const [clampedX, clampedZ] = clampToBounds(root.current.position.x, root.current.position.z, 58);
+          root.current.position.x = clampedX;
+          root.current.position.z = clampedZ;
 
           setPetPosition?.([root.current.position.x, root.current.position.y, root.current.position.z]);
 

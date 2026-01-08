@@ -41,11 +41,13 @@ function PetModel({
 function Environment({
   petType,
   state,
-  triggerNavigation
+  triggerNavigation,
+  onEnterBuilding,
 }: {
   petType: PetGame2PetType;
   state: PetGame2State;
   triggerNavigation: (zone: any) => void;
+  onEnterBuilding?: (zone: any) => void;
 }) {
   if (petType === 'cat') return <CozyRoom />;
   if (petType === 'panda') return <BambooForest />;
@@ -54,6 +56,7 @@ function Environment({
       state={state}
       triggerNavigation={triggerNavigation}
       currentPetPosition={state.currentPosition}
+      onEnterBuilding={onEnterBuilding}
     />
   );
 }
@@ -81,6 +84,7 @@ export function PetGame2Scene({
   onToggleDrone,
   setBreed,
   onExitBuilding,
+  onEnterBuilding,
   onActivity,
   balance = 0,
   totalSpent = 0,
@@ -102,6 +106,7 @@ export function PetGame2Scene({
   onToggleDrone: () => void;
   setBreed: (breed: any) => void;
   onExitBuilding?: () => void;
+  onEnterBuilding?: (zone: any) => void;
   onActivity?: (id: string) => void;
   balance?: number;
   totalSpent?: number;
@@ -178,6 +183,7 @@ export function PetGame2Scene({
             petType={petType}
             state={state}
             triggerNavigation={triggerNavigation}
+            onEnterBuilding={onEnterBuilding}
           />
 
           <group position={[0, 0, 0]}>

@@ -37,6 +37,7 @@ export const PetGame2Screen: React.FC = () => {
     triggerPetTap,
     triggerAction,
     triggerNavigation,
+    enterBuilding,
     exitBuilding,
     setPetPosition,
     setCameraMode,
@@ -381,6 +382,7 @@ export const PetGame2Screen: React.FC = () => {
         }}
         setBreed={setBreed}
         onExitBuilding={exitBuilding}
+        onEnterBuilding={enterBuilding}
         onActivity={(id) => {
           if (id === 'agility') handleAction('play');
           if (id === 'vet') handleAction('rest');

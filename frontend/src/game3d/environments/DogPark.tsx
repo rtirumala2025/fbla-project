@@ -17,6 +17,7 @@ import { RestInterior } from '../props/RestInterior';
 import { GiftShopInterior } from '../props/GiftShopInterior';
 import { PetHouseInterior } from '../props/PetHouseInterior';
 import { NavigationGuide } from '../ui/NavigationGuide';
+
 import type { PetGame2State, ActivityZone } from '../core/SceneManager';
 import { ACTIVITY_POSITIONS } from '../core/SceneManager';
 import { InstancedNature } from './InstancedNature';
@@ -254,19 +255,46 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
   );
 });
 
+import { BuildingEntrance, BUILDING_ENTRANCES } from '../props/BuildingEntrance';
+import { setEntranceOpen } from '../core/CollisionSystem';
+import { useCallback } from 'react';
+
+// Rotation map to match the static building rotations
+const BUILDING_ROTATIONS: Record<ActivityZone, number> = {
+  agility: Math.PI / 4,
+  vet: Math.PI / 2,
+  play: -Math.PI / 4,
+  rest: -Math.PI / 2,
+  center: 3 * Math.PI / 4,
+  shop: -3 * Math.PI / 4,
+  home: 0,
+};
+
 // --- MAIN DYNAMIC COMPONENT ---
 export function DogPark({
   state,
   triggerNavigation,
-  currentPetPosition
+  currentPetPosition,
+  onEnterBuilding,
 }: {
   state: PetGame2State;
   triggerNavigation: (zone: ActivityZone) => void;
   currentPetPosition: [number, number, number];
+  onEnterBuilding?: (zone: ActivityZone) => void;
 }) {
 
   // Memoize the handle function so DogParkStatic props don't change
   const handleSignClick = useMemo(() => triggerNavigation, [triggerNavigation]);
+
+  // Handle building entry: Open door -> Walk in
+  const handleEnter = useCallback((zone: ActivityZone) => {
+    // 1. Open the physical entrance (disables collision)
+    setEntranceOpen(zone);
+
+    // 2. Trigger navigation to walk into the building
+    // The SceneManager will detect arrival and switch scenes
+    triggerNavigation(zone);
+  }, [triggerNavigation]);
 
   return (
     <>
@@ -275,6 +303,30 @@ export function DogPark({
 
       {/* Dynamic Navigation Guide */}
       <NavigationGuide navigationState={state.navigationState} currentPosition={currentPetPosition} />
+
+      {/* 3D Interactive Entrances (Replaces 2D UI) */}
+      {!state.indoorLocation && (Object.keys(ACTIVITY_POSITIONS) as ActivityZone[]).map((zone) => {
+        const buildingPos = ACTIVITY_POSITIONS[zone];
+        const entranceConfig = BUILDING_ENTRANCES[zone];
+        const rotation = BUILDING_ROTATIONS[zone];
+
+        return (
+          <BuildingEntrance
+            key={zone}
+            buildingId={zone}
+            buildingPosition={buildingPos}
+            doorLocalPosition={entranceConfig.doorLocalPosition}
+            doorRotation={rotation}
+            onEnter={handleEnter}
+            petPosition={currentPetPosition}
+            doorWidth={entranceConfig.doorWidth}
+            doorHeight={entranceConfig.doorHeight}
+            requireStairs={entranceConfig.requireStairs}
+            stairCount={entranceConfig.stairCount}
+            label={`ENTER ${zone.toUpperCase()}`}
+          />
+        );
+      })}
 
       {/* Interior Views (Dynamic based on state.indoorLocation) - Updated positions */}
       {state.indoorLocation === 'agility' && <group position={[-25, 0.6, -25]}><AgilityInterior /></group>}
@@ -287,3 +339,5 @@ export function DogPark({
     </>
   );
 }
+
+

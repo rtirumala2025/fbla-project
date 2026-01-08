@@ -262,6 +262,7 @@ interface EarTwitchState {
 }
 
 import { useKeyboardControls } from '../core/useKeyboardControls';
+import { getValidPosition, clampToBounds } from '../core/CollisionSystem';
 
 export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, isMovingRef, rotationRef }: {
   state: PetGame2State;
@@ -564,16 +565,14 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
       const moveSpeed = 6.5 * delta;
       const rotateSpeed = 3.0 * delta;
 
+      // COLLISION DETECTION: Save position BEFORE movement
+      const prevX = root.current.position.x;
+      const prevZ = root.current.position.z;
+
       // Calculate forward direction
       forward.set(0, 0, 1).applyQuaternion(root.current.quaternion);
 
-      // Simple direct steering
-      if (keys.forward) {
-        root.current.position.addScaledVector(forward, moveSpeed);
-      }
-      if (keys.backward) {
-        root.current.position.addScaledVector(forward, -moveSpeed * 0.6);
-      }
+      // Apply rotation (turning doesn't need collision check)
       if (keys.left) {
         root.current.rotation.y += rotateSpeed;
       }
@@ -581,13 +580,34 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
         root.current.rotation.y -= rotateSpeed;
       }
 
+      // Apply movement
+      if (keys.forward) {
+        root.current.position.addScaledVector(forward, moveSpeed);
+      }
+      if (keys.backward) {
+        root.current.position.addScaledVector(forward, -moveSpeed * 0.6);
+      }
+
       // Walk cycle
       const walkCycle = Math.sin(t * 12) * 0.15;
       root.current.position.y = (root.current.position.y || 0) * 0.9 + Math.abs(walkCycle) * 0.1;
 
-      // Boundary Check (Basic Clamping to +/- 58 units)
-      root.current.position.x = Math.max(-58, Math.min(58, root.current.position.x));
-      root.current.position.z = Math.max(-58, Math.min(58, root.current.position.z));
+      // COLLISION CHECK: Get valid position (slides along walls if collision detected)
+      const [validX, validZ] = getValidPosition(
+        prevX,
+        prevZ,
+        root.current.position.x,
+        root.current.position.z
+      );
+
+      // Apply collision-corrected position
+      root.current.position.x = validX;
+      root.current.position.z = validZ;
+
+      // Boundary Check (Clamp to +/- 58 units)
+      const [clampedX, clampedZ] = clampToBounds(root.current.position.x, root.current.position.z, 58);
+      root.current.position.x = clampedX;
+      root.current.position.z = clampedZ;
 
       // Update Shared Target Ref for Camera (Smooth 60fps)
       if (targetRef) {
