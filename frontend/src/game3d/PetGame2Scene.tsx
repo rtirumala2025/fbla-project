@@ -14,6 +14,7 @@ import { PandaModel } from './pets/PandaModel.tsx';
 import { SceneVfx } from './core/SceneVfx.tsx';
 import { PetHUD } from './ui/PetHUD.tsx';
 import type { PetGame2Action } from './core/SceneManager.ts';
+import { PerformanceMonitor } from './components/PerformanceMonitor';
 
 function PetModel({
   petType,
@@ -118,8 +119,7 @@ export function PetGame2Scene({
   const preset = presetForPet(petType);
 
   const dpr = useMemo(() => {
-    if (typeof window === 'undefined') return 1;
-    return Math.min(2, window.devicePixelRatio || 1);
+    return Math.min(1.5, window.devicePixelRatio || 1);
   }, []);
 
   return (
@@ -159,20 +159,22 @@ export function PetGame2Scene({
       {/* Three.js Canvas */}
       <Canvas
         shadows
-        dpr={dpr}
+        dpr={dpr} // DPR is already capped at 2 in useMemo, could lower to 1.5 if needed
         camera={{ fov: 45, near: 0.5, far: 1000, position: [0, 8, 12] }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{
+          antialias: false,
+          alpha: false,
+          powerPreference: "high-performance",
+          stencil: false,
+          depth: true
+        }}
         onCreated={({ gl, scene }) => {
           gl.setClearColor('#0b1020', 1);
           gl.outputColorSpace = THREE.SRGBColorSpace;
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.0;
-          scene.traverse((obj) => {
-            if ((obj as THREE.Mesh).isMesh) {
-              (obj as THREE.Mesh).castShadow = true;
-              (obj as THREE.Mesh).receiveShadow = true;
-            }
-          });
+          // REMOVED: Loop that forced castShadow/receiveShadow on EVERYTHING.
+          // Shadows should be opt-in for performance.
         }}
       >
         <Suspense fallback={null}>
@@ -213,8 +215,13 @@ export function PetGame2Scene({
             rotationRef={rotationRef}
           />
         </Suspense>
-      </Canvas>
-    </div>
+        isMovingRef={isMovingRef}
+        rotationRef={rotationRef}
+          />
+      </Suspense>
+    </Canvas>
+      { process.env.NODE_ENV === 'development' && <PerformanceMonitor /> }
+    </div >
   );
 }
 

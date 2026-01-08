@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { Cloud, Float, Cylinder, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
+import { useThree } from '@react-three/fiber';
+import { useEffect } from 'react';
 import { makeGrassTexture, makeGravelTexture } from '../core/AssetLoader';
 import { AgilityFacility } from '../props/AgilityFacility';
 import { VetClinic } from '../props/VetClinic';
@@ -136,6 +138,50 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
     return { trees, bushes };
   }, [paths]);
 
+  const { scene } = useThree();
+
+  useEffect(() => {
+    if (scene && process.env.NODE_ENV === 'development') {
+      const analyzeScene = () => {
+        let triangles = 0;
+        let meshes = 0;
+        let lights = 0;
+        let materials = 0;
+
+        scene.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            meshes++;
+            if (object.geometry) {
+              const geo = object.geometry as THREE.BufferGeometry;
+              if (geo.index) {
+                triangles += geo.index.count / 3;
+              } else if (geo.attributes.position) {
+                triangles += geo.attributes.position.count / 3;
+              }
+            }
+            if (object.material) {
+              materials++;
+            }
+          }
+          if (object instanceof THREE.Light) {
+            lights++;
+          }
+        });
+
+        console.group('Scene Complexity Analysis');
+        console.log(`Triangles: ${Math.round(triangles).toLocaleString()}`);
+        console.log(`Meshes: ${meshes}`);
+        console.log(`Lights: ${lights}`);
+        console.log(`Materials: ${materials}`);
+        console.groupEnd();
+      };
+
+      // Delay slightly to ensure everything is mounted
+      const timeout = setTimeout(analyzeScene, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [scene]);
+
   return (
     <>
       <color attach="background" args={['#cce0ff']} />
@@ -230,13 +276,13 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
         [-20, -20], [20, -20], [-20, 20], [20, 20]
       ].map((pos, i) => (
         <group key={`lamp-${i}`} position={[pos[0] as number, 0, pos[1] as number]}>
-          <Cylinder args={[0.1, 0.15, 3.5, 8]} position={[0, 1.75, 0]} castShadow>
+          <Cylinder args={[0.1, 0.15, 3.5, 5]} position={[0, 1.75, 0]}>
             <meshStandardMaterial color="#333" />
           </Cylinder>
-          <Sphere args={[0.25]} position={[0, 3.5, 0]}>
+          <Sphere args={[0.25, 8, 8]} position={[0, 3.5, 0]}>
             <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={1} />
           </Sphere>
-          <pointLight position={[0, 3.5, 0]} intensity={1.5} distance={12} color="#fff1d0" />
+          <pointLight position={[0, 3.5, 0]} intensity={0.5} distance={5} color="#fff1d0" castShadow={false} />
         </group>
       ))}
 

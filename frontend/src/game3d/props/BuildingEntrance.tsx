@@ -59,25 +59,35 @@ export function BuildingEntrance({
     // Track world position for proximity check
     const [worldPos] = useState(() => new THREE.Vector3());
 
-    // Check proximity frame-by-frame (more accurate/robust than effect)
+    // Check proximity frame-by-frame (throttled)
+    const frameCount = useRef(0);
+
     useFrame(() => {
         if (!doorRef.current) return;
+
+        // Throttle: Run only every 10 frames (~6 times/sec at 60fps)
+        frameCount.current++;
+        if (frameCount.current % 10 !== 0) return;
 
         // Get actual world position from scene graph
         doorRef.current.getWorldPosition(worldPos);
 
         const dx = petPosition[0] - worldPos.x;
         const dz = petPosition[2] - worldPos.z;
-        const distance = Math.sqrt(dx * dx + dz * dz);
+        const distSquared = dx * dx + dz * dz;
 
         const proximityThreshold = 5;
-        const isClose = distance < proximityThreshold;
+        const thresholdSquared = proximityThreshold * proximityThreshold;
+        const isClose = distSquared < thresholdSquared;
 
         if (isClose !== isNearby) {
             setIsNearby(isClose);
         }
 
-        if (distance > proximityThreshold + 2 && doorOpen) {
+        // Use slightly larger hysteresis for exiting to prevent flickering
+        // (5 + 2)^2 = 49
+        const exitThresholdSquared = 49;
+        if (distSquared > exitThresholdSquared && doorOpen) {
             setDoorOpen(false);
             setIsEntering(false);
         }
@@ -92,6 +102,15 @@ export function BuildingEntrance({
         if (!doorPivotRef.current || variant === 'hidden') return;
 
         targetAngle.current = doorOpen ? -Math.PI / 2 : 0;
+
+        // Optimization: Stop updating if we're close enough to target
+        if (Math.abs(doorAngle.current - targetAngle.current) < 0.001) {
+            if (doorPivotRef.current.rotation.y !== targetAngle.current) {
+                doorPivotRef.current.rotation.y = targetAngle.current;
+                doorAngle.current = targetAngle.current;
+            }
+            return;
+        }
 
         doorAngle.current = THREE.MathUtils.lerp(
             doorAngle.current,

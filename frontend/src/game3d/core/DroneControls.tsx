@@ -4,7 +4,6 @@ import { PointerLockControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 export function DroneControls({ active, onExit }: { active: boolean; onExit?: () => void }) {
-    console.log('[DroneControls] active:', active);
     const { camera, gl } = useThree();
     const moveState = useRef({
         forward: false,
@@ -120,6 +119,6 @@ export function DroneControls({ active, onExit }: { active: boolean; onExit?: ()
     };
 
     return active ? <PointerLockControls onUnlock={() => {
-        console.log('[DroneControls] Mouse unlocked');
+        // Unlocked
     }} /> : null;
 }
