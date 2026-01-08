@@ -63,12 +63,12 @@ export function VetClinic(props: any & { onSignClick?: () => void }) {
 
             {/* ========== ENTRANCE & WINDOWS ========== */}
             <group position={[0, 0.4, 4.26]}>
-                {/* Double Glass Doors */}
-                <Box args={[2.2, 2.4, 0.1]} position={[0, 1.2, 0]} castShadow>
-                    <meshStandardMaterial color="#b3e5fc" metalness={0.9} roughness={0.1} transparent opacity={0.7} />
-                </Box>
+                {/* Double Glass Doors REMOVED for Dynamic Entrance */}
+
+                {/* Door Frame Top */}
                 <Box args={[2.4, 0.1, 0.2]} position={[0, 2.45, 0]} castShadow><meshStandardMaterial color="#333" /></Box>
-                <Box args={[0.1, 2.4, 0.1]} position={[0, 1.2, 0]} castShadow><meshStandardMaterial color="#333" /></Box>
+                {/* Door Frame Center Post */}
+                <Box args={[0.05, 2.4, 0.1]} position={[0, 1.2, 0]} castShadow><meshStandardMaterial color="#333" /></Box>
             </group>
 
             {/* Large Side Window */}

@@ -97,28 +97,9 @@ export function PetHouse(props: any & { onSignClick?: () => void; petName?: stri
 
             {/* ========== FRONT DOOR ========== */}
             <group position={[0, 2.2, 4.8]}>
-                {/* Door Frame */}
+                {/* Door Frame Only - Door removed for dynamic interaction */}
                 <Box args={[2.2, 3.4, 0.2]} position={[0, 0, 0]} castShadow>
                     <meshStandardMaterial color={trimColor} />
-                </Box>
-                {/* Door */}
-                <Box args={[1.8, 3, 0.15]} position={[0, 0, 0.1]} castShadow>
-                    <meshStandardMaterial map={woodTex} color={doorColor} />
-                </Box>
-                {/* Door Panels */}
-                <Box args={[0.6, 1, 0.05]} position={[0, 0.8, 0.18]}>
-                    <meshStandardMaterial color={trimColor} />
-                </Box>
-                <Box args={[0.6, 1, 0.05]} position={[0, -0.5, 0.18]}>
-                    <meshStandardMaterial color={trimColor} />
-                </Box>
-                {/* Door Handle */}
-                <Sphere args={[0.08]} position={[0.65, 0, 0.2]}>
-                    <meshStandardMaterial color="#ffd700" metalness={0.8} />
-                </Sphere>
-                {/* Pet Door Flap */}
-                <Box args={[0.6, 0.8, 0.08]} position={[0, -1.1, 0.15]}>
-                    <meshStandardMaterial color="#5d4037" transparent opacity={0.9} />
                 </Box>
             </group>
 

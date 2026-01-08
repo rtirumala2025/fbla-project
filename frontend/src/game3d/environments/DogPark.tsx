@@ -310,21 +310,34 @@ export function DogPark({
         const entranceConfig = BUILDING_ENTRANCES[zone];
         const rotation = BUILDING_ROTATIONS[zone];
 
+        // RENDER ENTRANCE IN LOCAL SPACE OF BUILDING
         return (
-          <BuildingEntrance
-            key={zone}
-            buildingId={zone}
-            buildingPosition={buildingPos}
-            doorLocalPosition={entranceConfig.doorLocalPosition}
-            doorRotation={rotation}
-            onEnter={handleEnter}
-            petPosition={currentPetPosition}
-            doorWidth={entranceConfig.doorWidth}
-            doorHeight={entranceConfig.doorHeight}
-            requireStairs={entranceConfig.requireStairs}
-            stairCount={entranceConfig.stairCount}
-            label={`ENTER ${zone.toUpperCase()}`}
-          />
+          <group key={zone} position={buildingPos} rotation={[0, rotation, 0]}>
+            <BuildingEntrance
+              buildingId={zone}
+
+              // Position is now RELATIVE to building (Local Space)
+              // We pass it as 'buildingPosition' prop but treating it as 0,0,0 parent
+              buildingPosition={[0, 0, 0]}
+
+              // Door Local Offset
+              doorLocalPosition={entranceConfig.doorLocalPosition}
+
+              // Rotation is handled by parent group
+              doorRotation={0}
+
+              onEnter={handleEnter}
+              petPosition={currentPetPosition}
+              doorWidth={entranceConfig.doorWidth}
+              doorHeight={entranceConfig.doorHeight}
+              variant={entranceConfig.variant}
+              doorColor={entranceConfig.doorColor}
+              frameColor={entranceConfig.frameColor}
+              requireStairs={entranceConfig.requireStairs}
+              stairCount={entranceConfig.stairCount}
+              label={`ENTER ${zone.toUpperCase()}`}
+            />
+          </group>
         );
       })}
 

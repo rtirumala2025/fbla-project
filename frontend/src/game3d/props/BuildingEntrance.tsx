@@ -13,6 +13,8 @@ import { Box, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import type { ActivityZone } from '../core/SceneManager';
 
+export type EntranceVariant = 'solid' | 'glass' | 'gate' | 'hidden';
+
 interface BuildingEntranceProps {
     buildingId: ActivityZone;
     buildingPosition: [number, number, number]; // World position of the building
@@ -26,6 +28,8 @@ interface BuildingEntranceProps {
     label?: string;
     requireStairs?: boolean; // Whether to render entrance stairs
     stairCount?: number;
+    variant?: EntranceVariant;
+    frameColor?: string;
 }
 
 export function BuildingEntrance({
@@ -41,67 +45,61 @@ export function BuildingEntrance({
     label = 'ENTER',
     requireStairs = false,
     stairCount = 2,
+    variant = 'solid',
+    frameColor = '#2c2c2c',
 }: BuildingEntranceProps) {
     const [isNearby, setIsNearby] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [doorOpen, setDoorOpen] = useState(false);
     const [isEntering, setIsEntering] = useState(false);
 
+    // Ref for the specific door group
     const doorRef = useRef<THREE.Group>(null);
-    const doorAngle = useRef(0);
-    const targetAngle = useRef(0);
 
-    // Calculate world position of door
-    const doorWorldPosition = useMemo(() => {
-        // Apply building rotation to local door position
-        const cos = Math.cos(doorRotation);
-        const sin = Math.sin(doorRotation);
-        const localX = doorLocalPosition[0];
-        const localZ = doorLocalPosition[2];
+    // Track world position for proximity check
+    const [worldPos] = useState(() => new THREE.Vector3());
 
-        return [
-            buildingPosition[0] + localX * cos - localZ * sin,
-            buildingPosition[1] + doorLocalPosition[1],
-            buildingPosition[2] + localX * sin + localZ * cos,
-        ] as [number, number, number];
-    }, [buildingPosition, doorLocalPosition, doorRotation]);
+    // Check proximity frame-by-frame (more accurate/robust than effect)
+    useFrame(() => {
+        if (!doorRef.current) return;
 
-    // Check proximity to door
-    useEffect(() => {
-        const dx = petPosition[0] - doorWorldPosition[0];
-        const dz = petPosition[2] - doorWorldPosition[2];
+        // Get actual world position from scene graph
+        doorRef.current.getWorldPosition(worldPos);
+
+        const dx = petPosition[0] - worldPos.x;
+        const dz = petPosition[2] - worldPos.z;
         const distance = Math.sqrt(dx * dx + dz * dz);
 
-        const proximityThreshold = 5; // Units
+        const proximityThreshold = 5;
         const isClose = distance < proximityThreshold;
 
         if (isClose !== isNearby) {
-            console.log(`BuildingEntrance [${buildingId}]: Distance ${distance.toFixed(2)} (Thresh: ${proximityThreshold}) -> Nearby: ${isClose}`);
             setIsNearby(isClose);
         }
 
-        // Auto-close door when pet moves away
-        if (distance > proximityThreshold + 2) {
-            if (doorOpen) console.log(`BuildingEntrance [${buildingId}]: Auto-closing door`);
+        if (distance > proximityThreshold + 2 && doorOpen) {
             setDoorOpen(false);
             setIsEntering(false);
         }
-    }, [petPosition, doorWorldPosition, isNearby, buildingId, doorOpen]);
+    });
 
     // Animate door
+    const doorPivotRef = useRef<THREE.Group>(null);
+    const doorAngle = useRef(0);
+    const targetAngle = useRef(0);
+
     useFrame((_, delta) => {
-        if (!doorRef.current) return;
+        if (!doorPivotRef.current || variant === 'hidden') return;
 
-        targetAngle.current = doorOpen ? -Math.PI / 2 : 0; // Open = 90 degrees
+        targetAngle.current = doorOpen ? -Math.PI / 2 : 0;
 
-        // Smooth door animation
         doorAngle.current = THREE.MathUtils.lerp(
             doorAngle.current,
             targetAngle.current,
             delta * 5
         );
 
-        doorRef.current.rotation.y = doorAngle.current;
+        doorPivotRef.current.rotation.y = doorAngle.current;
     });
 
     const handleEnterClick = () => {
@@ -119,8 +117,20 @@ export function BuildingEntrance({
     const stairDepth = 0.6;
     const stairHeight = 0.15;
 
+    // Group ref for world position access
+    // Note: We use doorRef for the pivoting part, but we need a ref for the ROOT of this component to get position
+    // BUT, we can just use doorRef's parent or similar. 
+    // Simplest: Wrap content in a group referenced by `doorRef`? 
+    // Wait, the proximity logic uses `doorRef`.
+    // Currently `doorRef` is on the pivoting door part. That moves!
+    // We should use a stable ref for position.
+
     return (
-        <group position={doorWorldPosition} rotation={[0, doorRotation, 0]}>
+        <group
+            ref={doorRef}
+            position={doorLocalPosition}
+            rotation={[0, 0, 0]} // Rotation handled by parent
+        >
             {/* Entrance Stairs (if needed) */}
             {requireStairs && (
                 <group position={[0, -doorLocalPosition[1], doorWidth / 2 + 0.5]}>
@@ -140,7 +150,7 @@ export function BuildingEntrance({
 
             {/* Animated Door */}
             <group
-                ref={doorRef}
+                ref={doorPivotRef}
                 position={[-doorWidth / 2, 0, 0]} // Pivot point at left edge (hinge)
             >
                 <Box
@@ -205,8 +215,10 @@ export function BuildingEntrance({
                 </group>
             )}
 
+
+
             {/* Visual indicator when door is open */}
-            {doorOpen && (
+            {doorOpen && variant !== 'hidden' && (
                 <pointLight
                     position={[0, doorHeight / 2, -1]}
                     intensity={1}
@@ -225,54 +237,76 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     stairCount: number;
     doorWidth: number;
     doorHeight: number;
+    variant: EntranceVariant;
+    doorColor?: string;
+    frameColor?: string;
 }> = {
     shop: {
-        doorLocalPosition: [0, 2.2, 6], // GiftShop door position (relative)
+        // Gift Shop: Solid wood door with stairs
+        doorLocalPosition: [0, 2.2, 5.9],
         requireStairs: true,
         stairCount: 2,
         doorWidth: 2.4,
         doorHeight: 3.2,
+        variant: 'solid',
+        doorColor: '#5d4037'
     },
     home: {
-        doorLocalPosition: [0, 2.2, 5], // PetHouse door (already has stairs in building)
-        requireStairs: false, // Built into PetHouse
+        // Pet House: Solid door, built-in stairs handled by model
+        doorLocalPosition: [0, 2.2, 4.9],
+        requireStairs: false,
         stairCount: 0,
         doorWidth: 1.8,
         doorHeight: 3,
+        variant: 'solid',
+        doorColor: '#6d4c41'
     },
     agility: {
-        doorLocalPosition: [0, 1.8, 5],
-        requireStairs: true,
-        stairCount: 1,
-        doorWidth: 2,
-        doorHeight: 2.8,
+        // Agility: Rustic Gate
+        doorLocalPosition: [0, 0.5, 11],
+        requireStairs: false,
+        stairCount: 0,
+        doorWidth: 3,
+        doorHeight: 1.5,
+        variant: 'gate',
+        doorColor: '#8d6e63'
     },
     vet: {
-        doorLocalPosition: [0, 1.8, 5],
-        requireStairs: true,
-        stairCount: 1,
-        doorWidth: 2,
-        doorHeight: 2.8,
+        // Vet: Glass double doors
+        doorLocalPosition: [0, 1.6, 4.26],
+        requireStairs: false,
+        stairCount: 0,
+        doorWidth: 2.2,
+        doorHeight: 2.4,
+        variant: 'glass',
+        frameColor: '#333'
     },
     play: {
+        // Play: Open archway (Hidden door)
         doorLocalPosition: [0, 1.8, 5],
-        requireStairs: true,
-        stairCount: 1,
-        doorWidth: 2.2,
-        doorHeight: 2.8,
+        requireStairs: false,
+        stairCount: 0,
+        doorWidth: 4,
+        doorHeight: 4,
+        variant: 'hidden'
     },
     rest: {
+        // Rest: Open shelter (Hidden door)
         doorLocalPosition: [0, 1.8, 5],
         requireStairs: true,
         stairCount: 1,
-        doorWidth: 2,
-        doorHeight: 2.8,
+        doorWidth: 4,
+        doorHeight: 4,
+        variant: 'hidden'
     },
     center: {
-        doorLocalPosition: [0, 1.8, 5],
-        requireStairs: true,
-        stairCount: 1,
-        doorWidth: 2.2,
-        doorHeight: 3,
+        // Park Hub: Modern Glass
+        doorLocalPosition: [0, 1.8, 2],
+        requireStairs: false, // Deck handles this
+        stairCount: 0,
+        doorWidth: 2.4,
+        doorHeight: 3.6,
+        variant: 'glass',
+        frameColor: '#2c2c2c'
     },
 };

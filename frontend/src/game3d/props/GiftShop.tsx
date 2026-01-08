@@ -105,23 +105,20 @@ export function GiftShop(props: any & { onSignClick?: () => void }) {
                 ))}
             </group>
 
-            {/* ========== ENTRANCE DOOR ========== */}
+            {/* ========== ENTRANCE OPENING (Dynamic Door Added by Scene) ========== */}
             <group position={[0, 1.8, 5.9]}>
-                {/* Double Doors */}
-                <Box args={[2.4, 3.2, 0.1]} castShadow>
-                    <meshStandardMaterial color="#5d4037" map={woodTex} />
+                {/* JUST THE FRAME - Door is removed */}
+                {/* Horizontal Header */}
+                <Box args={[2.6, 0.2, 0.3]} position={[0, 1.7, 0]} castShadow>
+                    <meshStandardMaterial color="#4e342e" />
                 </Box>
-                {/* Door Windows */}
-                <Box args={[0.8, 1.5, 0.12]} position={[-0.55, 0.3, 0]}>
-                    <meshStandardMaterial color="#b3e5fc" transparent opacity={0.6} metalness={0.8} />
+                {/* Vertical Jambs */}
+                <Box args={[0.2, 3.4, 0.3]} position={[-1.3, 0, 0]} castShadow>
+                    <meshStandardMaterial color="#4e342e" />
                 </Box>
-                <Box args={[0.8, 1.5, 0.12]} position={[0.55, 0.3, 0]}>
-                    <meshStandardMaterial color="#b3e5fc" transparent opacity={0.6} metalness={0.8} />
+                <Box args={[0.2, 3.4, 0.3]} position={[1.3, 0, 0]} castShadow>
+                    <meshStandardMaterial color="#4e342e" />
                 </Box>
-                {/* Door Handle */}
-                <Cylinder args={[0.05, 0.05, 0.4, 8]} position={[0.9, 0, 0.1]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-                    <meshStandardMaterial color="#ffd700" metalness={0.8} />
-                </Cylinder>
             </group>
 
             {/* ========== AWNING ========== */}
