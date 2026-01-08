@@ -562,7 +562,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
     // KEYBOARD MOVEMENT
     if (root.current && (keys.forward || keys.backward || keys.left || keys.right)) {
       const delta = 0.016; // Fixed 60fps step
-      const moveSpeed = 6.5 * delta;
+      const moveSpeed = 11.0 * delta;
       const rotateSpeed = 3.0 * delta;
 
       // COLLISION DETECTION: Save position BEFORE movement
