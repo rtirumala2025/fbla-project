@@ -1,8 +1,29 @@
 import React, { useMemo } from 'react';
 import type { PetStats } from '@/types/pet';
-import type { PetGame2Action } from '../core/SceneManager';
-import { Heart, Sparkles, Zap, Droplets, Book, Backpack, Volume2, VolumeX, Plane, DollarSign, TrendingDown, HelpCircle } from 'lucide-react';
+import type { PetGame2Action, ActivityZone } from '../core/SceneManager';
+import { Heart, Sparkles, Zap, Droplets, Book, Backpack, Volume2, VolumeX, Plane, DollarSign, TrendingDown, HelpCircle, DoorOpen } from 'lucide-react';
 import { useAIAssistant } from '../../contexts/AIAssistantContext';
+
+// Building names for display
+const BUILDING_NAMES: Record<ActivityZone, string> = {
+    shop: 'Gift Shop',
+    home: 'Pet House',
+    agility: 'Training Center',
+    vet: 'Vet Clinic',
+    play: 'Play Pavilion',
+    rest: 'Rest Area',
+    center: 'Info Center',
+};
+
+const BUILDING_ICONS: Record<ActivityZone, string> = {
+    shop: '🛍️',
+    home: '🏠',
+    agility: '🏃',
+    vet: '🏥',
+    play: '🎮',
+    rest: '😴',
+    center: 'ℹ️',
+};
 
 // Pet emotion calculation based on stats
 function calculateEmotion(stats: PetStats | null): { emoji: string; text: string; color: string } {
@@ -182,6 +203,8 @@ export function PetHUD({
     balance = 0,
     totalSpent = 0,
     balanceChange = null,
+    nearbyBuilding = null,
+    onEnterBuilding,
 }: {
     petName: string;
     species: string;
@@ -202,6 +225,8 @@ export function PetHUD({
     balance?: number;
     totalSpent?: number;
     balanceChange?: { amount: number; isPositive: boolean } | null;
+    nearbyBuilding?: ActivityZone | null;
+    onEnterBuilding?: (zone: ActivityZone) => void;
 }) {
     const { sendMessage, toggleOpen, isOpen } = useAIAssistant();
     const hunger = stats?.hunger ?? 50;
@@ -347,6 +372,34 @@ export function PetHUD({
                     </div>
                 </div>
             </div>
+
+            {/* Enter Building Button - above actions when near a building */}
+            {nearbyBuilding && !indoorLocation && !droneActive && (
+                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+                    <button
+                        onClick={() => onEnterBuilding?.(nearbyBuilding)}
+                        className="
+                            flex items-center gap-3 px-8 py-4
+                            bg-gradient-to-r from-green-600 to-emerald-600
+                            hover:from-green-500 hover:to-emerald-500
+                            text-white font-bold text-lg
+                            rounded-2xl shadow-2xl
+                            border-2 border-green-400/50
+                            transform transition-all duration-200
+                            hover:scale-105 hover:-translate-y-1
+                            active:scale-95
+                            animate-pulse
+                        "
+                        style={{
+                            boxShadow: '0 8px 32px rgba(34, 197, 94, 0.4), 0 0 0 4px rgba(34, 197, 94, 0.2)'
+                        }}
+                    >
+                        <span className="text-2xl">{BUILDING_ICONS[nearbyBuilding]}</span>
+                        <span>Enter {BUILDING_NAMES[nearbyBuilding]}</span>
+                        <DoorOpen size={24} />
+                    </button>
+                </div>
+            )}
 
             {/* Bottom-center: Actions - centered to not overlap viewport */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">

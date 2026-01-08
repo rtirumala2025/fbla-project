@@ -192,52 +192,7 @@ export function BuildingEntrance({
                 </mesh>
             </group>
 
-            {/* ENTER Button - Floating above door when nearby */}
-            {isNearby && !isEntering && (
-                <group position={[0, doorHeight / 2 + 1, 1]}>
-                    {/* 3D Button Background */}
-                    <Box
-                        args={[2.5, 0.8, 0.2]}
-                        onPointerEnter={() => {
-                            setIsHovered(true);
-                            document.body.style.cursor = 'pointer';
-                        }}
-                        onPointerLeave={() => {
-                            setIsHovered(false);
-                            document.body.style.cursor = 'auto';
-                        }}
-                        onPointerDown={(e) => {
-                            e.stopPropagation();
-                            handleEnterClick();
-                        }}
-                    >
-                        <meshStandardMaterial
-                            color={isHovered ? '#4caf50' : '#388e3c'}
-                            emissive={isHovered ? '#4caf50' : '#2e7d32'}
-                            emissiveIntensity={0.3}
-                        />
-                    </Box>
-
-                    {/* Button Text */}
-                    <Text
-                        position={[0, 0, 0.15]}
-                        fontSize={0.35}
-                        color="#ffffff"
-                        anchorX="center"
-                        anchorY="middle"
-                        outlineWidth={0.02}
-                        outlineColor="#1b5e20"
-                    >
-                        {label}
-                    </Text>
-
-                    {/* Arrow indicator */}
-                    <mesh position={[0.9, 0, 0.15]} rotation={[0, 0, -Math.PI / 2]}>
-                        <coneGeometry args={[0.12, 0.25, 8]} />
-                        <meshStandardMaterial color="#ffffff" />
-                    </mesh>
-                </group>
-            )}
+            {/* 3D ENTER button removed - now using 2D BuildingProximityUI instead */}
 
 
 

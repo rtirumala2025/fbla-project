@@ -12,7 +12,6 @@ import { ParkHubBuilding } from '../props/ParkHubBuilding';
 import { GiftShop } from '../props/GiftShop';
 import { PetHouse } from '../props/PetHouse';
 import { NavigationGuide } from '../ui/NavigationGuide';
-import { BuildingProximityUI } from '../ui/BuildingProximityUI';
 
 import type { PetGame2State, ActivityZone } from '../core/SceneManager';
 import { ACTIVITY_POSITIONS } from '../core/SceneManager';
@@ -388,13 +387,7 @@ export function DogPark({
       })}
 
       {/* Interior Views - Now handled by floating windows in PetGame2Screen */}
-
-      {/* 2D Enter Button UI - Positioned above pet controls */}
-      <BuildingProximityUI
-        petPosition={currentPetPosition}
-        onEnterBuilding={handleEnter}
-        indoorLocation={state.indoorLocation}
-      />
+      {/* Enter Button UI - Now rendered in PetHUD (pure React) instead of drei Html */}
     </>
   );
 }

@@ -3,7 +3,8 @@ import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CameraController } from './core/CameraController.tsx';
 import { Lighting, type LightingPreset } from './core/Lighting.tsx';
-import type { PetGame2PetType, PetGame2State } from './core/SceneManager.ts';
+import type { PetGame2PetType, PetGame2State, ActivityZone } from './core/SceneManager.ts';
+import { ACTIVITY_POSITIONS } from './core/SceneManager.ts';
 import type { PetStats } from '@/types/pet';
 import { DogPark } from './environments/DogPark.tsx';
 import { CozyRoom } from './environments/CozyRoom.tsx';
@@ -127,6 +128,35 @@ export function PetGame2Scene({
     return Math.min(1.5, window.devicePixelRatio || 1);
   }, []);
 
+  // Calculate nearby building for Enter button (only for dog park)
+  const nearbyBuilding = useMemo<ActivityZone | null>(() => {
+    if (petType !== 'dog') return null; // Only dog park has buildings
+    if (state.indoorLocation) return null; // Already inside
+
+    const proximityThreshold = 12;
+    // Exclude outdoor-only zones
+    const excludedZones: ActivityZone[] = ['play', 'rest', 'center'];
+
+    const petPos = state.currentPosition;
+    let nearest: { zone: ActivityZone; distance: number } | null = null;
+
+    for (const [zone, pos] of Object.entries(ACTIVITY_POSITIONS)) {
+      if (excludedZones.includes(zone as ActivityZone)) continue;
+
+      const dx = petPos[0] - pos[0];
+      const dz = petPos[2] - pos[2];
+      const distance = Math.sqrt(dx * dx + dz * dz);
+
+      if (distance < proximityThreshold) {
+        if (!nearest || distance < nearest.distance) {
+          nearest = { zone: zone as ActivityZone, distance };
+        }
+      }
+    }
+
+    return nearest?.zone ?? null;
+  }, [petType, state.currentPosition, state.indoorLocation]);
+
   return (
     <div className="w-full h-full relative overflow-hidden">
       {/* HTML Overlay HUD - positioned above canvas */}
@@ -159,6 +189,8 @@ export function PetGame2Scene({
         balance={balance}
         totalSpent={totalSpent}
         balanceChange={balanceChange}
+        nearbyBuilding={nearbyBuilding}
+        onEnterBuilding={onEnterBuilding}
       />
 
       {/* Three.js Canvas */}
