@@ -11,14 +11,8 @@ import { RestShelter } from '../props/RestShelter';
 import { ParkHubBuilding } from '../props/ParkHubBuilding';
 import { GiftShop } from '../props/GiftShop';
 import { PetHouse } from '../props/PetHouse';
-import { ParkHubInterior } from '../props/ParkHubInterior';
-import { AgilityInterior } from '../props/AgilityInterior';
-import { VetInterior } from '../props/VetInterior';
-import { PlayInterior } from '../props/PlayInterior';
-import { RestInterior } from '../props/RestInterior';
-import { GiftShopInterior } from '../props/GiftShopInterior';
-import { PetHouseInterior } from '../props/PetHouseInterior';
 import { NavigationGuide } from '../ui/NavigationGuide';
+import { BuildingProximityUI } from '../ui/BuildingProximityUI';
 
 import type { PetGame2State, ActivityZone } from '../core/SceneManager';
 import { ACTIVITY_POSITIONS } from '../core/SceneManager';
@@ -322,11 +316,13 @@ export function DogPark({
   triggerNavigation,
   currentPetPosition,
   onEnterBuilding,
+  onPurchase,
 }: {
   state: PetGame2State;
   triggerNavigation: (zone: ActivityZone) => void;
   currentPetPosition: [number, number, number];
   onEnterBuilding?: (zone: ActivityZone) => void;
+  onPurchase?: (item: any) => void;
 }) {
 
   // Memoize the handle function so DogParkStatic props don't change
@@ -337,10 +333,14 @@ export function DogPark({
     // 1. Open the physical entrance (disables collision)
     setEntranceOpen(zone);
 
-    // 2. Trigger navigation to walk into the building
-    // The SceneManager will detect arrival and switch scenes
-    triggerNavigation(zone);
-  }, [triggerNavigation]);
+    // 2. Open floating window instead of walking into building
+    if (onEnterBuilding) {
+      onEnterBuilding(zone);
+    } else {
+      // Fallback: navigate to building
+      triggerNavigation(zone);
+    }
+  }, [triggerNavigation, onEnterBuilding]);
 
   return (
     <>
@@ -387,14 +387,14 @@ export function DogPark({
         );
       })}
 
-      {/* Interior Views (Dynamic based on state.indoorLocation) - Updated positions */}
-      {state.indoorLocation === 'agility' && <group position={[-25, 0.6, -25]}><AgilityInterior /></group>}
-      {state.indoorLocation === 'vet' && <group position={[-35, 0.6, 0]}><VetInterior /></group>}
-      {state.indoorLocation === 'play' && <group position={[25, 0.6, -25]}><PlayInterior /></group>}
-      {state.indoorLocation === 'rest' && <group position={[35, 0.6, 0]}><RestInterior /></group>}
-      {state.indoorLocation === 'center' && <group position={[-25, 0.6, 25]}><ParkHubInterior /></group>}
-      {state.indoorLocation === 'shop' && <group position={[25, 0.6, 25]}><GiftShopInterior /></group>}
-      {state.indoorLocation === 'home' && <group position={[0, 0.6, -35]}><PetHouseInterior /></group>}
+      {/* Interior Views - Now handled by floating windows in PetGame2Screen */}
+
+      {/* 2D Enter Button UI - Positioned above pet controls */}
+      <BuildingProximityUI
+        petPosition={currentPetPosition}
+        onEnterBuilding={handleEnter}
+        indoorLocation={state.indoorLocation}
+      />
     </>
   );
 }

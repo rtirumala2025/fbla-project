@@ -20,7 +20,7 @@ An end-to-end virtual pet simulator that teaches financial literacy through game
 The project is designed for FBLA Intro to Programming competition judges. It provides a polished experience with clear documentation, seeding scripts, and demo assets so teams can stand up the system, run a guided walkthrough, and discuss the underlying architecture.
 
 ## Feature Highlights
-- **Core Pet Care** – Feed, play, clean, and rest activities update pet stats with real-time animations, particle effects, and celebratory toasts.
+- **Core Pet Care & Costs** – Feed ($5), play ($10), clean ($3), and rest activities update pet stats while impacting your wallet. Costs are tracked in real-time, enforcing budget management alongside pet health.
 - **AI Companion** – Budget Advisor provides personalized financial insights and "Hold Your Horses" spending warnings.
 - **Financial Literacy** – Persistent budget display, expense history tracking, filtered transaction views, and CSV export.
 - **Analytics & Reporting** – `/budget` dashboard surfaces transaction history, category breakdowns, and AI-driven advice.

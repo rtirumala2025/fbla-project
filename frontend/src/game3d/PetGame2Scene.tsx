@@ -44,11 +44,13 @@ function Environment({
   state,
   triggerNavigation,
   onEnterBuilding,
+  onPurchase,
 }: {
   petType: PetGame2PetType;
   state: PetGame2State;
   triggerNavigation: (zone: any) => void;
   onEnterBuilding?: (zone: any) => void;
+  onPurchase?: (item: any) => void;
 }) {
   if (petType === 'cat') return <CozyRoom />;
   if (petType === 'panda') return <BambooForest />;
@@ -58,6 +60,7 @@ function Environment({
       triggerNavigation={triggerNavigation}
       currentPetPosition={state.currentPosition}
       onEnterBuilding={onEnterBuilding}
+      onPurchase={onPurchase}
     />
   );
 }
@@ -90,6 +93,7 @@ export function PetGame2Scene({
   balance = 0,
   totalSpent = 0,
   balanceChange = null,
+  onPurchase,
 }: {
   petType: PetGame2PetType;
   petName: string;
@@ -112,6 +116,7 @@ export function PetGame2Scene({
   balance?: number;
   totalSpent?: number;
   balanceChange?: { amount: number; isPositive: boolean } | null;
+  onPurchase?: (item: any) => void;
 }) {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0));
   const isMovingRef = useRef(false);
@@ -186,6 +191,7 @@ export function PetGame2Scene({
             state={state}
             triggerNavigation={triggerNavigation}
             onEnterBuilding={onEnterBuilding}
+            onPurchase={onPurchase}
           />
 
           <group position={[0, 0, 0]}>
@@ -215,12 +221,8 @@ export function PetGame2Scene({
             rotationRef={rotationRef}
           />
         </Suspense>
-        isMovingRef={isMovingRef}
-        rotationRef={rotationRef}
-          />
-      </Suspense>
-    </Canvas>
-      { process.env.NODE_ENV === 'development' && <PerformanceMonitor /> }
+      </Canvas>
+      {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
     </div >
   );
 }

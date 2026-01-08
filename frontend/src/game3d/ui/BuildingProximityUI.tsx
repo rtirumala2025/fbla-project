@@ -48,9 +48,14 @@ export function BuildingProximityUI({
     // Find nearest building within proximity threshold
     const nearbyBuilding = useMemo(() => {
         const proximityThreshold = 12; // Distance to show Enter button
+        // Exclude outdoor-only zones
+        const excludedZones: ActivityZone[] = ['play', 'rest', 'center'];
         let nearest: { zone: ActivityZone; distance: number; position: [number, number, number] } | null = null;
 
         for (const [zone, pos] of Object.entries(ACTIVITY_POSITIONS)) {
+            // Skip excluded zones
+            if (excludedZones.includes(zone as ActivityZone)) continue;
+
             const dx = petPosition[0] - pos[0];
             const dz = petPosition[2] - pos[2];
             const distance = Math.sqrt(dx * dx + dz * dz);

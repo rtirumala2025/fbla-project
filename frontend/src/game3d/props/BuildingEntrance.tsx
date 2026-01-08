@@ -13,7 +13,7 @@ import { Box, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import type { ActivityZone } from '../core/SceneManager';
 
-export type EntranceVariant = 'solid' | 'glass' | 'gate' | 'hidden';
+export type EntranceVariant = 'solid' | 'glass' | 'gate' | 'hidden' | 'none';
 
 interface BuildingEntranceProps {
     buildingId: ActivityZone;
@@ -52,6 +52,11 @@ export function BuildingEntrance({
     const [isHovered, setIsHovered] = useState(false);
     const [doorOpen, setDoorOpen] = useState(false);
     const [isEntering, setIsEntering] = useState(false);
+
+    // For 'none' variant, don't render anything
+    if (variant === 'none') {
+        return null;
+    }
 
     // Ref for the specific door group
     const doorRef = useRef<THREE.Group>(null);
@@ -301,22 +306,22 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
         frameColor: '#333'
     },
     play: {
-        // Play: Open archway (Hidden door)
+        // Play: Outdoor playground area - no entrance needed
         doorLocalPosition: [0, 1.8, 5],
         requireStairs: false,
         stairCount: 0,
         doorWidth: 4,
         doorHeight: 4,
-        variant: 'hidden'
+        variant: 'none'
     },
     rest: {
-        // Rest: Open shelter (Hidden door)
+        // Rest: Outdoor rest area with benches - no entrance needed
         doorLocalPosition: [0, 1.8, 5],
-        requireStairs: true,
-        stairCount: 1,
+        requireStairs: false,
+        stairCount: 0,
         doorWidth: 4,
         doorHeight: 4,
-        variant: 'hidden'
+        variant: 'none'
     },
     center: {
         // Park Hub: Modern Glass

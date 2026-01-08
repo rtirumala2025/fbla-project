@@ -8,6 +8,7 @@ This project was built for the FBLA "Introduction to Programming" competition. W
 - **React** (v18.2.0) - User interface library (MIT License).
 - **Vite** (v5.0.10) - Frontend build tool (MIT License).
 - **TypeScript** (v5.3.3) - Typed JavaScript (Apache 2.0 License).
+- **Vitest** (v1.1.0) - Unit testing framework (MIT License).
 
 ### 3D Graphics & Animation
 - **Three.js** (v0.160.0) - 3D library (MIT License).
@@ -18,12 +19,15 @@ This project was built for the FBLA "Introduction to Programming" competition. W
 
 ### UI Components & Utilities
 - **Tailwind CSS** - Utility-first CSS framework (MIT License).
-- **Lucide React** (v0.309.0) - Icon library (ISC License).
-- **React Router** (v6.21.1) - Routing library (MIT License).
-- **Recharts** (v2.10.3) - Charting library (MIT License).
-- **React Hot Toast** (v2.4.1) - Toast notifications (MIT License).
-- **React Joyride** (v2.7.1) - Guided tours (MIT License).
-- **Dayjs** (v1.11.10) - Date manipulation (MIT License).
+- **Zustand** (v4.4.7) - State management (MIT License).
+- **Lucide React** (v0.546.0) - Icon library (ISC License).
+- **React Router** (v6.18.0) - Routing library (MIT License).
+- **Recharts** (v2.15.4) - Charting library (MIT License).
+- **React Hot Toast** (v2.6.0) - Toast notifications (MIT License).
+- **React Joyride** (v2.9.3) - Guided tours (MIT License).
+- **React Markdown** (v10.1.0) - Markdown rendering (MIT License).
+- **Dayjs** (v1.11.18) - Date manipulation (MIT License).
+- **Axios** (v1.6.2) - HTTP client (MIT License).
 - **Classnames** (v2.5.1) - CSS class utility (MIT License).
 
 ### Backend & Database
