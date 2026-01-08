@@ -211,18 +211,12 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
-                            marginBottom: 16
+                            marginBottom: 20
                         }}>
-                            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+                            <h3 className="building-section-header" style={{ margin: 0 }}>
                                 Available Items
                             </h3>
-                            <div style={{
-                                background: 'rgba(251, 191, 36, 0.2)',
-                                padding: '6px 12px',
-                                borderRadius: 8,
-                                color: '#fbbf24',
-                                fontWeight: 600
-                            }}>
+                            <div className="building-balance-pill">
                                 💰 {balance} coins
                             </div>
                         </div>
@@ -256,10 +250,7 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                                         }}>
                                             {item.description}
                                         </div>
-                                        <div style={{
-                                            color: '#fbbf24',
-                                            fontWeight: 700
-                                        }}>
+                                        <div className="building-price">
                                             {item.price} 💰
                                         </div>
                                         {inCart && (
@@ -287,14 +278,7 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                     </div>
 
                     {/* Cart Sidebar */}
-                    <div style={{
-                        flex: 1,
-                        background: 'rgba(0,0,0,0.2)',
-                        borderRadius: 12,
-                        padding: 16,
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}>
+                    <div className="building-cart-sidebar" style={{ flex: 1, minWidth: 260 }}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -306,19 +290,10 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                         </div>
 
                         {cart.length === 0 ? (
-                            <div style={{
-                                flex: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#64748b',
-                                textAlign: 'center'
-                            }}>
-                                <div>
-                                    <ShoppingBag size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
-                                    <p>Your cart is empty</p>
-                                    <p style={{ fontSize: '0.8rem' }}>Click items to add them</p>
-                                </div>
+                            <div className="building-empty-state">
+                                <ShoppingBag size={36} className="building-empty-state-icon" />
+                                <p style={{ margin: '0 0 4px' }}>Your cart is empty</p>
+                                <p style={{ fontSize: '0.8rem', opacity: 0.7, margin: 0 }}>Click items to add them</p>
                             </div>
                         ) : (
                             <>
@@ -350,25 +325,14 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                                                     }}>
                                                         {item.name}
                                                     </div>
-                                                    <div style={{ color: '#fbbf24', fontSize: '0.75rem' }}>
+                                                    <div className="building-price" style={{ fontSize: '0.75rem' }}>
                                                         {item.price * quantity} 💰
                                                     </div>
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                                     <button
                                                         onClick={() => updateQuantity(item.id, -1)}
-                                                        style={{
-                                                            width: 24,
-                                                            height: 24,
-                                                            borderRadius: 4,
-                                                            border: 'none',
-                                                            background: 'rgba(255,255,255,0.1)',
-                                                            color: 'white',
-                                                            cursor: 'pointer',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center'
-                                                        }}
+                                                        className="building-qty-btn"
                                                     >
                                                         <Minus size={12} />
                                                     </button>
@@ -381,36 +345,14 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                                                     </span>
                                                     <button
                                                         onClick={() => updateQuantity(item.id, 1)}
-                                                        style={{
-                                                            width: 24,
-                                                            height: 24,
-                                                            borderRadius: 4,
-                                                            border: 'none',
-                                                            background: 'rgba(255,255,255,0.1)',
-                                                            color: 'white',
-                                                            cursor: 'pointer',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center'
-                                                        }}
+                                                        className="building-qty-btn"
                                                     >
                                                         <Plus size={12} />
                                                     </button>
                                                     <button
                                                         onClick={() => removeFromCart(item.id)}
-                                                        style={{
-                                                            width: 24,
-                                                            height: 24,
-                                                            borderRadius: 4,
-                                                            border: 'none',
-                                                            background: 'rgba(239, 68, 68, 0.2)',
-                                                            color: '#ef4444',
-                                                            cursor: 'pointer',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            marginLeft: 4
-                                                        }}
+                                                        className="building-qty-btn building-qty-btn-delete"
+                                                        style={{ marginLeft: 4 }}
                                                     >
                                                         <Trash2 size={12} />
                                                     </button>
@@ -483,29 +425,13 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        style={{
-                            position: 'absolute',
-                            inset: 0,
-                            background: 'rgba(0,0,0,0.8)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: 16,
-                            padding: 20
-                        }}
+                        className="building-checkout-overlay"
                     >
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
+                            initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            style={{
-                                background: 'linear-gradient(135deg, #1e293b, #0f172a)',
-                                borderRadius: 16,
-                                padding: 24,
-                                maxWidth: 400,
-                                width: '100%',
-                                border: '1px solid rgba(255,255,255,0.1)'
-                            }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="building-checkout-card"
                         >
                             {purchaseResult === 'success' ? (
                                 <div style={{ textAlign: 'center' }}>
@@ -513,18 +439,9 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         transition={{ type: 'spring', delay: 0.1 }}
-                                        style={{
-                                            width: 80,
-                                            height: 80,
-                                            borderRadius: '50%',
-                                            background: 'linear-gradient(135deg, #10b981, #059669)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            margin: '0 auto 16px'
-                                        }}
+                                        className="building-result-icon success"
                                     >
-                                        <Check size={40} color="white" />
+                                        <Check size={40} color="rgba(120, 255, 180, 0.95)" />
                                     </motion.div>
                                     <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem' }}>
                                         Purchase Complete!
@@ -535,17 +452,8 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                                 </div>
                             ) : purchaseResult === 'error' ? (
                                 <div style={{ textAlign: 'center' }}>
-                                    <div style={{
-                                        width: 80,
-                                        height: 80,
-                                        borderRadius: '50%',
-                                        background: 'rgba(239, 68, 68, 0.2)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        margin: '0 auto 16px'
-                                    }}>
-                                        <X size={40} color="#ef4444" />
+                                    <div className="building-result-icon error">
+                                        <X size={40} color="rgba(255, 120, 120, 0.9)" />
                                     </div>
                                     <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', color: '#ef4444' }}>
                                         Purchase Failed
@@ -569,47 +477,25 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                                         Confirm Purchase
                                     </h3>
 
-                                    <div style={{
-                                        background: 'rgba(0,0,0,0.3)',
-                                        borderRadius: 8,
-                                        padding: 12,
-                                        marginBottom: 16
-                                    }}>
+                                    <div className="building-checkout-items">
                                         {cart.map(({ item, quantity }) => (
-                                            <div key={item.id} style={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                padding: '6px 0',
-                                                borderBottom: '1px solid rgba(255,255,255,0.05)'
-                                            }}>
+                                            <div key={item.id} className="building-checkout-item">
                                                 <span>
                                                     {item.icon} {item.name} × {quantity}
                                                 </span>
-                                                <span style={{ color: '#fbbf24' }}>
+                                                <span className="building-price">
                                                     {item.price * quantity} 💰
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
 
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        fontSize: '1.1rem',
-                                        fontWeight: 700,
-                                        marginBottom: 8
-                                    }}>
+                                    <div className="building-checkout-total">
                                         <span>Total:</span>
-                                        <span style={{ color: '#fbbf24' }}>{cartTotal} 💰</span>
+                                        <span className="building-price">{cartTotal} 💰</span>
                                     </div>
 
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        fontSize: '0.9rem',
-                                        color: '#94a3b8',
-                                        marginBottom: 20
-                                    }}>
+                                    <div className="building-checkout-after">
                                         <span>Balance after:</span>
                                         <span>{balance - cartTotal} 💰</span>
                                     </div>

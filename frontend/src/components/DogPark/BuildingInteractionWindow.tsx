@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Maximize2 } from 'lucide-react';
 import './building-windows.css';
 
@@ -32,17 +32,12 @@ export function BuildingInteractionWindow({
     minHeight = 400,
 }: BuildingWindowProps) {
     const [isMinimized, setIsMinimized] = useState(false);
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-    const constraintsRef = useRef<HTMLDivElement>(null);
     const windowRef = useRef<HTMLDivElement>(null);
-    const dragControls = useDragControls();
 
     // Lock body scroll when open
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
-            // Reset position when opening
-            setPosition({ x: 0, y: 0 });
             setIsMinimized(false);
         } else {
             document.body.style.overflow = '';
@@ -101,15 +96,12 @@ export function BuildingInteractionWindow({
         }
     }, [onClose]);
 
-    const startDrag = useCallback((e: React.PointerEvent) => {
-        dragControls.start(e);
-    }, [dragControls]);
+
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    ref={constraintsRef}
                     className="building-window-backdrop"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -123,29 +115,14 @@ export function BuildingInteractionWindow({
                     <motion.div
                         ref={windowRef}
                         className={`building-window ${isMinimized ? 'minimized' : ''}`}
-                        style={{
-                            width: isMinimized ? 280 : width,
-                            minHeight: isMinimized ? 'auto' : minHeight,
-                        }}
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{
-                            opacity: 1,
-                            scale: 1,
-                            y: 0,
-                            x: position.x,
-                        }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                        drag
-                        dragControls={dragControls}
-                        dragListener={false}
-                        dragMomentum={false}
-                        dragConstraints={constraintsRef}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeOut' }}
                     >
-                        {/* Header - Draggable */}
+                        {/* Header */}
                         <div
                             className="building-window-header"
-                            onPointerDown={startDrag}
                         >
                             <div className="building-window-title" id="building-window-title">
                                 <span className="building-window-title-icon">{icon}</span>
