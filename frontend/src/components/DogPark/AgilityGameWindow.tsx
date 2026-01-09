@@ -140,9 +140,9 @@ export function AgilityGameWindow({
             id: `target-${Date.now()}-${Math.random()}`,
             x: isFromLeft ? -5 : 105,
             y: 10 + Math.random() * 75, // Use more vertical space
-            speed: 0.3 + Math.random() * 0.3,
+            speed: 0.1 + Math.random() * 0.15, // Much slower: 0.1-0.25 instead of 0.3-0.6
             direction: isFromLeft ? 1 : -1,
-            size: isBonusTarget ? 60 : 40 + Math.random() * 20,
+            size: isBonusTarget ? 100 : 60 + Math.random() * 30, // Much bigger: 60-90px instead of 40-60px
             points: isBonusTarget ? 50 : 10,
             icon: isBonusTarget ? '⭐' : TARGET_ICONS[Math.floor(Math.random() * TARGET_ICONS.length)]
         };
