@@ -9,6 +9,7 @@ from .analytics import router as analytics_router
 from .art import router as art_router
 from .auth import router as auth_router
 from .budget_advisor import router as budget_advisor_router
+from .coach import router as coach_router
 from .events import events_router, weather_router
 from .finance import router as finance_router
 from .finance_sim import router as finance_sim_router
@@ -33,6 +34,7 @@ api_router.include_router(pet_interactions_router)
 api_router.include_router(ai_router)
 api_router.include_router(analytics_router)
 api_router.include_router(budget_advisor_router)
+api_router.include_router(coach_router)
 api_router.include_router(finance_router)
 api_router.include_router(shop_router)
 api_router.include_router(events_router)
@@ -48,3 +50,4 @@ api_router.include_router(sync_router)
 api_router.include_router(games_router)
 
 __all__ = ["api_router"]
+

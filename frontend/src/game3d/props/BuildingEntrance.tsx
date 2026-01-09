@@ -288,4 +288,15 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
         variant: 'glass',
         frameColor: '#2c2c2c'
     },
+    market: {
+        // Supermarket: Sliding glass doors
+        doorLocalPosition: [0, 2.5, 6.9],
+        requireStairs: true,
+        stairCount: 2,
+        doorWidth: 3,
+        doorHeight: 4,
+        variant: 'glass',
+        doorColor: '#4caf50',
+        frameColor: '#1b5e20'
+    },
 };

@@ -12,6 +12,10 @@ interface PetContextType {
   play: () => Promise<void>;
   bathe: () => Promise<void>;
   rest: () => Promise<void>;
+  increaseStat: (stat: keyof PetStats, amount: number) => Promise<void>;
+  decreaseStat: (stat: keyof PetStats, amount: number) => Promise<void>;
+  updateHighScore: (gameType: string, score: number, coins?: number) => Promise<void>;
+  getHighScore: (gameType: string) => Promise<number>;
   loading: boolean;
   error: string | null;
   updating: boolean;
@@ -51,81 +55,200 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     };
   }, []);
 
-  // Load pet data from Supabase when userId changes
+  // -- 1. Utility Helpers --
+
+  const logTransaction = useCallback(async (action: string, cost: number) => {
+    if (!userId || !supabase) return;
+    try {
+      const query = supabase.from('transactions').insert({
+        user_id: userId,
+        item_id: action,
+        item_name: action,
+        transaction_type: 'expense',
+        amount: cost,
+      }).select('*').single();
+
+      const { error } = await withTimeout(query as unknown as Promise<any>, 10000, 'Log transaction') as any;
+      if (error) console.warn('Failed to log transaction:', error);
+    } catch (e) {
+      console.warn('Transaction logging error:', e);
+    }
+  }, [userId]);
+
+  const updatePetStats = useCallback(async (updates: Partial<PetStats>) => {
+    if (!pet || !userId || !supabase) return;
+    setUpdating(true);
+    setSaveStatus('saving');
+    try {
+      const now = new Date();
+      const updatedStats: PetStats = {
+        ...pet.stats,
+        ...updates,
+        lastUpdated: now,
+      };
+
+      // Ensure bounds
+      const bounded = {
+        health: Math.max(0, Math.min(100, updatedStats.health)),
+        hunger: Math.max(0, Math.min(100, updatedStats.hunger)),
+        happiness: Math.max(0, Math.min(100, updatedStats.happiness)),
+        cleanliness: Math.max(0, Math.min(100, updatedStats.cleanliness)),
+        energy: Math.max(0, Math.min(100, updatedStats.energy)),
+      };
+
+      const { data, error } = await supabase.from('pets').update({
+        ...bounded,
+        updated_at: now.toISOString(),
+      } as any).eq('id', pet.id).select('*').single();
+
+      if (error) throw error;
+      if (!data) throw new Error('No data returned');
+
+      const updatedPet: Pet = {
+        ...pet,
+        updatedAt: now,
+        stats: { ...updatedStats, ...bounded, lastUpdated: now },
+      };
+
+      setPet(updatedPet);
+      setSaveStatus('saved');
+      saveStatusTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 1500);
+    } catch (err) {
+      console.error('Update stats error:', err);
+      setSaveStatus('error');
+    } finally {
+      setUpdating(false);
+    }
+  }, [pet, userId]);
+
+  // -- 2. Care Actions --
+
+  const statAction = useCallback(async (action: string, updates: Partial<PetStats>, cost: number = 0) => {
+    if (!pet || !userId) return;
+    try {
+      // Wallet check for non-free actions
+      if (cost > 0) {
+        const { data: wallet } = await supabase.from('finance_wallets').select('balance').eq('user_id', userId).single();
+        if (!wallet || wallet.balance < cost) {
+          alert(`Insufficient funds! You need ${cost} coins.`);
+          return;
+        }
+      }
+
+      await updatePetStats(updates);
+      await logTransaction(action, cost);
+
+      // Update last_stat_update to prevent immediate decay
+      await supabase.from('pets').update({ last_stat_update: new Date().toISOString() } as any).eq('id', pet.id);
+      setPet(prev => prev ? { ...prev, lastStatUpdate: new Date() } : prev);
+
+    } catch (err) {
+      console.error(`${action} failed:`, err);
+    }
+  }, [pet, userId, updatePetStats, logTransaction]);
+
+  const feed = () => statAction('feed', {
+    hunger: Math.max(0, (pet?.stats.hunger || 0) - 30), // Hunger decreases when fed
+    energy: Math.min(100, (pet?.stats.energy || 0) + 10)
+  }, 5);
+
+  const play = () => statAction('play', {
+    happiness: Math.min(100, (pet?.stats.happiness || 0) + 30),
+    energy: Math.max(0, (pet?.stats.energy || 0) - 20)
+  }, 0);
+
+  const bathe = () => statAction('bathe', {
+    cleanliness: Math.min(100, (pet?.stats.cleanliness || 0) + 50)
+  }, 3);
+
+  const rest = () => statAction('rest', {
+    energy: 100,
+    hunger: Math.min(100, (pet?.stats.hunger || 0) + 10) // Hunger increases when resting
+  }, 0);
+
+  const increaseStat = useCallback(async (stat: keyof PetStats, amount: number) => {
+    if (!pet) return;
+    const val = (pet.stats as any)[stat] || 0;
+    await updatePetStats({ [stat]: Math.min(100, val + amount) });
+  }, [pet, updatePetStats]);
+
+  const decreaseStat = useCallback(async (stat: keyof PetStats, amount: number) => {
+    if (!pet) return;
+    const val = (pet.stats as any)[stat] || 0;
+    await updatePetStats({ [stat]: Math.max(0, val - amount) });
+  }, [pet, updatePetStats]);
+
+  // -- 3. Game Management --
+
+  const updateHighScore = useCallback(async (gameType: string, score: number, coins: number = 0) => {
+    if (!userId || !supabase) return;
+    try {
+      const { data: existing } = await supabase.from('game_leaderboards').select('*').eq('user_id', userId).eq('game_type', gameType).single();
+      if (existing) {
+        const isNewBest = score > existing.best_score;
+        await supabase.from('game_leaderboards').update({
+          best_score: isNewBest ? score : existing.best_score,
+          games_played: existing.games_played + 1,
+          total_score: existing.total_score + score,
+          total_coins: existing.total_coins + coins,
+          updated_at: new Date().toISOString()
+        } as any).eq('id', existing.id);
+      } else {
+        await supabase.from('game_leaderboards').insert({
+          user_id: userId, game_type: gameType, best_score: score, games_played: 1, total_score: score, total_coins: coins
+        } as any);
+      }
+    } catch (e) {
+      logger.error('High score update failed', e);
+    }
+  }, [userId]);
+
+  const getHighScore = useCallback(async (gameType: string) => {
+    if (!userId || !supabase) return 0;
+    try {
+      const { data } = await supabase.from('game_leaderboards').select('best_score').eq('user_id', userId).eq('game_type', gameType).single();
+      return data?.best_score || 0;
+    } catch (e) {
+      return 0;
+    }
+  }, [userId]);
+
+  // -- 4. Lifecycle & Background --
+
   const loadPet = useCallback(async () => {
+    if (!userId || !supabase) {
+      setPet(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
-
     try {
-      if (!userId) {
-        setPet(null);
-        setLoading(false);
-        return;
-      }
-
-      logger.debug('Loading pet for user', { userId });
-
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
-
-      const query = supabase
-        .from('pets')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
       const { data, error } = await withTimeout(
-        query as unknown as Promise<any>,
+        supabase.from('pets').select('*').eq('user_id', userId).single() as unknown as Promise<any>,
         10000,
         'Load pet'
       ) as any;
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 = no rows found (user has no pet yet)
-        logger.error('Error loading pet', { userId, errorCode: error.code }, error);
-        setError(getErrorMessage(error, 'Failed to load pet data'));
-      } else if (data) {
-        // Validate required fields - pet_type is canonical, species is fallback
-        const petType = data.pet_type || data.species;
-        if (!data.id || !data.name || !petType) {
-          logger.error('Invalid pet data from database', { userId, data });
-          setError('Invalid pet data received');
-          setLoading(false);
-          return;
-        }
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows found
 
-        logger.debug('Pet loaded', { userId, petId: data.id, petName: data.name, petType: data.pet_type || data.species });
-        // Map DB fields to Pet type with null safety
-        // Note: age, level, and xp are computed fields (not in DB schema)
-        // birthday may not exist in the actual schema
-        // pet_type is canonical source of truth, species is fallback for backward compatibility
-        let age = 0;
-        if (data.birthday) {
-          try {
-            const birthday = new Date(data.birthday);
-            const today = new Date();
-            age = Math.max(0, today.getFullYear() - birthday.getFullYear());
-          } catch (e) {
-            // birthday field doesn't exist or is invalid
-            age = 0;
-          }
-        }
+      if (data) {
+        const birthday = data.birthday ? new Date(data.birthday) : new Date(data.created_at);
+        const age = Math.floor((new Date().getTime() - birthday.getTime()) / (1000 * 60 * 60 * 24));
+        const species = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
 
-        // Use pet_type as canonical, fallback to species for backward compatibility
-        const canonicalSpecies = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
-
-        const loadedPet: Pet = {
+        const loaded: Pet = {
           id: data.id,
           name: data.name,
-          species: canonicalSpecies,
+          species,
           breed: data.breed || 'Mixed',
-          age: age, // Default to 0 if birthday doesn't exist
+          age,
           level: 1, // Default level (not stored in DB)
           experience: 0, // Default XP (not stored in DB)
           ownerId: data.user_id,
           createdAt: new Date(data.created_at),
           updatedAt: new Date(data.updated_at),
+          lastStatUpdate: data.last_stat_update ? new Date(data.last_stat_update) : new Date(data.updated_at),
           stats: {
             health: data.health ?? 100,
             hunger: data.hunger ?? 50,
@@ -135,746 +258,103 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
             lastUpdated: new Date(data.updated_at),
           },
         };
-        setPet(loadedPet);
+        setPet(loaded);
       } else {
-        logger.debug('No pet found for user', { userId });
         setPet(null);
       }
-    } catch (err) {
-      console.error('❌ Error loading pet:', err);
-
-      // Retry logic for transient errors
-      const maxRetries = 3;
-      let retries = 0;
-      let lastError = err;
-
-      while (retries < maxRetries) {
-        retries++;
-        const delay = 100 * Math.pow(2, retries - 1); // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, delay));
-
-        try {
-          if (!userId) {
-            setPet(null);
-            setLoading(false);
-            return;
-          }
-
-          // Retry fetch
-          const { data, error } = await supabase
-            .from('pets')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
-
-          if (!error && data) {
-            // Success - map and set pet
-            // Note: age, level, and xp are computed fields (not in DB schema)
-            // birthday may not exist in the actual schema
-            let age = 0;
-            if (data.birthday) {
-              try {
-                const birthday = new Date(data.birthday);
-                const today = new Date();
-                age = Math.max(0, today.getFullYear() - birthday.getFullYear());
-              } catch (e) {
-                // birthday field doesn't exist or is invalid
-                age = 0;
-              }
-            }
-
-            // Use pet_type as canonical, fallback to species for backward compatibility
-            const canonicalSpecies = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
-
-            const loadedPet: Pet = {
-              id: data.id,
-              name: data.name,
-              species: canonicalSpecies,
-              breed: data.breed || 'Mixed',
-              age: age, // Default to 0 if birthday doesn't exist
-              level: 1, // Default level (not stored in DB)
-              experience: 0, // Default XP (not stored in DB)
-              ownerId: data.user_id,
-              createdAt: new Date(data.created_at),
-              updatedAt: new Date(data.updated_at),
-              stats: {
-                health: data.health ?? 100,
-                hunger: data.hunger ?? 50,
-                happiness: data.happiness ?? 50,
-                cleanliness: data.cleanliness ?? 50,
-                energy: data.energy ?? 50,
-                lastUpdated: new Date(data.updated_at),
-              },
-            };
-            setPet(loadedPet);
-            setError(null);
-            setLoading(false);
-            return; // Success, exit
-          }
-
-          if (error && error.code !== 'PGRST116') {
-            // Store error for debugging (intentionally unused)
-            // lastError = error;
-          } else {
-            // No pet found - not an error
-            setPet(null);
-            setError(null);
-            setLoading(false);
-            return;
-          }
-        } catch (retryErr) {
-          // Store last error for debugging but don't use it
-          // lastError = retryErr;
-        }
-      }
-
-      // All retries failed
-      setError('Failed to load pet data after retries');
+    } catch (e) {
+      console.error('Load pet failed:', e);
+      setError(getErrorMessage(e, 'Failed to load pet data'));
     } finally {
       setLoading(false);
     }
   }, [userId]);
 
-  useEffect(() => {
-    loadPet();
-  }, [userId, loadPet]); // Include loadPet to ensure latest version is used
+  const processStatDecay = useCallback(async () => {
+    if (!pet || !userId || !supabase) return;
+    const lastUpdate = pet.lastStatUpdate || pet.updatedAt || new Date();
+    const elapsedMinutes = (new Date().getTime() - lastUpdate.getTime()) / 60000;
+    if (elapsedMinutes < 1) return;
 
-  // Realtime subscription for pet changes
-  useEffect(() => {
-    if (!userId || isSupabaseMock()) {
-      return;
-    }
-
-    const channel = supabase
-      .channel(`pet-realtime-${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pets',
-          filter: `user_id=eq.${userId}`,
-        },
-        async (payload) => {
-          // Reload pet data from Supabase
-          await loadPet();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-      supabase.removeChannel(channel);
+    logger.debug('Decaying stats', { elapsedMinutes });
+    // Hunger: +1% / 5m (0.2), Energy: -1% / 5m (0.2), Happiness: -1% / 10m (0.1), Cleanliness: -1% / 15m (0.06)
+    const updates: Partial<PetStats> = {
+      hunger: Math.min(100, (pet.stats.hunger || 0) + Math.floor(elapsedMinutes * 0.2)),
+      energy: Math.max(0, (pet.stats.energy || 0) - Math.floor(elapsedMinutes * 0.2)),
+      happiness: Math.max(0, (pet.stats.happiness || 0) - Math.floor(elapsedMinutes * 0.1)),
+      cleanliness: Math.max(0, (pet.stats.cleanliness || 0) - Math.floor(elapsedMinutes * 0.06)),
     };
-  }, [userId, loadPet]);
 
-  const updatePetStats = useCallback(async (updates: Partial<PetStats>) => {
-    if (!pet || !userId) return;
-
-    setUpdating(true);
-    setSaveStatus('saving');
-
-    try {
-      const now = new Date();
-      const updatedStats: PetStats = {
-        ...pet.stats,
-        ...updates,
-        lastUpdated: now,
-      };
-
-      // Ensure stats stay within bounds
-      updatedStats.health = Math.max(0, Math.min(100, updatedStats.health));
-      updatedStats.hunger = Math.max(0, Math.min(100, updatedStats.hunger));
-      updatedStats.happiness = Math.max(0, Math.min(100, updatedStats.happiness));
-      updatedStats.cleanliness = Math.max(0, Math.min(100, updatedStats.cleanliness));
-      updatedStats.energy = Math.max(0, Math.min(100, updatedStats.energy));
-
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
-
-      logger.debug('Persisting pet stats update', { petId: pet.id, updates });
-
-      const query = supabase
-        .from('pets')
-        .update({
-          health: updatedStats.health,
-          hunger: updatedStats.hunger,
-          happiness: updatedStats.happiness,
-          cleanliness: updatedStats.cleanliness,
-          energy: updatedStats.energy,
-          updated_at: now.toISOString(),
-        } as any)
-        .eq('id', pet.id)
-        .eq('user_id', userId)
-        .select('*')
-        .single();
-
-      const { data, error } = await withTimeout(
-        query as unknown as Promise<any>,
-        10000,
-        'Update pet stats'
-      ) as any;
-
-      if (error) {
-        logger.error('Error updating pet stats', { userId, petId: pet.id, errorCode: error.code }, error);
-        throw new Error(getErrorMessage(error, 'Failed to update pet stats'));
-      }
-
-      if (!data) {
-        throw new Error('Pet stats update succeeded but no data returned');
-      }
-
-      const updatedPet: Pet = {
-        ...pet,
-        updatedAt: now,
-        stats: {
-          ...updatedStats,
-          lastUpdated: now,
-        },
-      };
-
-      setPet(updatedPet);
-      setSaveStatus('saved');
-      if (saveStatusTimeoutRef.current) {
-        clearTimeout(saveStatusTimeoutRef.current);
-      }
-      saveStatusTimeoutRef.current = setTimeout(() => {
-        setSaveStatus('idle');
-      }, 1500);
-      logger.debug('Pet stats update saved', { petId: pet.id });
-    } catch (err) {
-      console.error('❌ Error updating pet stats:', err);
-      setSaveStatus('error');
-      throw err instanceof Error ? err : new Error('Failed to update pet stats');
-    } finally {
-      setUpdating(false);
+    if (pet.stats.hunger >= 95 || pet.stats.energy <= 5) {
+      updates.health = Math.max(0, (pet.stats.health || 0) - Math.floor(elapsedMinutes * 0.033));
     }
-  }, [pet, userId]);
+
+    // Only update if there are actual changes
+    const hasChanges = Object.keys(updates).some(key => updates[key as keyof PetStats] !== pet.stats[key as keyof PetStats]);
+
+    if (hasChanges) {
+      await updatePetStats(updates);
+      await supabase.from('pets').update({ last_stat_update: new Date().toISOString() } as any).eq('id', pet.id);
+      setPet(prev => prev ? { ...prev, lastStatUpdate: new Date() } : prev);
+    }
+  }, [pet, userId, updatePetStats]);
+
+  useEffect(() => { loadPet(); }, [userId, loadPet]);
+  useEffect(() => {
+    if (!pet || !userId || isSupabaseMock()) return;
+    const sub = supabase.channel(`pet-realtime-${pet.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'pets', filter: `id=eq.${pet.id}` }, () => loadPet()).subscribe();
+    const inv = setInterval(() => processStatDecay(), 60000);
+    return () => { supabase.removeChannel(sub); clearInterval(inv); };
+  }, [pet?.id, userId, processStatDecay, loadPet]);
 
   const createPet = useCallback(async (name: string, type: string, breed: string = 'Mixed') => {
-    if (!userId) throw new Error('User not authenticated');
-
+    if (!userId || !supabase) throw new Error('User not authenticated or Supabase not initialized');
     try {
-      logger.info('Creating/updating pet in DB', { name, type, breed, userId });
-
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
-
-      // Normalize pet type to valid database values
-      // pet_type is canonical and must be one of: 'dog', 'cat', 'panda'
-      // species is kept for backward compatibility
       const normalizePetType = (type: string): 'dog' | 'cat' | 'panda' => {
         const normalized = type.toLowerCase().trim();
         const validPetTypes: ('dog' | 'cat' | 'panda')[] = ['dog', 'cat', 'panda'];
-
-        if (validPetTypes.includes(normalized as 'dog' | 'cat' | 'panda')) {
-          return normalized as 'dog' | 'cat' | 'panda';
-        }
-
-        // Map other species to valid pet_type values
+        if (validPetTypes.includes(normalized as any)) return normalized as any;
         const speciesToPetType: Record<string, 'dog' | 'cat' | 'panda'> = {
-          'bird': 'dog',    // Map bird to dog
-          'rabbit': 'cat',  // Map rabbit to cat
-          'fox': 'dog',     // Map fox to dog
-          'dragon': 'panda', // Map dragon to panda
+          'bird': 'dog', 'rabbit': 'cat', 'fox': 'dog', 'dragon': 'panda',
         };
-
         const mappedType = speciesToPetType[normalized];
-        if (mappedType) {
-          logger.info(`Mapped species "${type}" to pet_type "${mappedType}"`);
-          return mappedType;
-        }
-
-        // Fallback to dog if unknown
-        logger.warn(`Unknown species "${type}", defaulting pet_type to "dog"`);
+        if (mappedType) return mappedType;
         return 'dog';
       };
-
-      const normalizedPetType = normalizePetType(type);
-      const normalizedSpecies = normalizedPetType; // Keep species same as pet_type for consistency
-
-      // Build pet data with pet_type as canonical source of truth
-      // pet_type is required and must be 'dog', 'cat', or 'panda'
-      // species is kept for backward compatibility with legacy code
-      const petData: any = {
-        user_id: userId,
-        name,
-        pet_type: normalizedPetType, // Canonical source of truth
-        species: normalizedSpecies,  // Backward compatibility (trigger will sync from this if needed)
-        breed: breed,
-        health: 100,
-        hunger: 75,
-        happiness: 80,
-        cleanliness: 90,
-        energy: 85,
-      };
-
-      // Don't include birthday or color_pattern - they may not exist in the actual schema
-      // The schema cache error confirms birthday doesn't exist
-
-      logger.debug('Pet data to upsert', petData);
-
-      // Strategy: Try upsert first, with fallback to check-then-insert/update
-      const performUpsert = async () => {
-        // Try upsert with conflict resolution on user_id
-        // Supabase PostgREST uses the unique constraint name or column for onConflict
-        const query = supabase
-          .from('pets')
-          .upsert(petData, { onConflict: 'user_id' })
-          .select()
-          .single();
-
-        return await withTimeout(
-          query as unknown as Promise<any>,
-          8000, // 8 second timeout for upsert
-          'Create pet (upsert)'
-        ) as any;
-      };
-
-      // Fallback: Check if pet exists, then insert or update
-      const performCheckThenUpsert = async () => {
-        // First, check if pet exists
-        const checkQuery = supabase
-          .from('pets')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-
-        const checkResult = await withTimeout(
-          checkQuery as unknown as Promise<any>,
-          5000, // 5 second timeout for check
-          'Check existing pet'
-        ) as any;
-
-        let result: any;
-
-        if (checkResult.data && !checkResult.error) {
-          // Pet exists - update it
-          logger.debug('Pet exists, updating', { petId: checkResult.data.id });
-          const updateQuery = supabase
-            .from('pets')
-            .update(petData)
-            .eq('user_id', userId)
-            .select()
-            .single();
-
-          result = await withTimeout(
-            updateQuery as unknown as Promise<any>,
-            8000, // 8 second timeout for update
-            'Update pet'
-          ) as any;
-        } else {
-          // Pet doesn't exist - insert it
-          logger.debug('Pet does not exist, inserting');
-          const insertQuery = supabase
-            .from('pets')
-            .insert(petData)
-            .select()
-            .single();
-
-          result = await withTimeout(
-            insertQuery as unknown as Promise<any>,
-            8000, // 8 second timeout for insert
-            'Insert pet'
-          ) as any;
-        }
-
-        return result;
-      };
-
-      // Retry up to 3 times with exponential backoff
-      let lastError: any = null;
-      let data: any = null;
-      let error: any = null;
-      let usedFallback = false;
-
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          let result: any;
-
-          // Try upsert first (faster), fallback to check-then-insert/update on timeout
-          if (attempt === 1) {
-            try {
-              result = await performUpsert();
-            } catch (upsertErr: any) {
-              // If upsert times out, try fallback strategy
-              if (upsertErr?.message?.includes('timed out') || upsertErr?.message?.includes('timeout')) {
-                logger.warn('Upsert timed out, trying fallback strategy');
-                usedFallback = true;
-                result = await performCheckThenUpsert();
-              } else {
-                throw upsertErr;
-              }
-            }
-          } else {
-            // On retry, use fallback strategy
-            usedFallback = true;
-            result = await performCheckThenUpsert();
-          }
-
-          data = result.data;
-          error = result.error;
-
-          if (!error) {
-            // Success - break out of retry loop
-            if (usedFallback) {
-              logger.info('Pet created/updated using fallback strategy');
-            }
-            break;
-          }
-
-          // Don't retry on certain errors
-          if (error?.code === '23505' || // Unique constraint
-            error?.code === '23503' || // Foreign key
-            error?.code === '42501' || // Permission denied
-            error?.code === 'PGRST116') { // Not found
-            lastError = error;
-            break;
-          }
-
-          lastError = error;
-
-          // Wait before retry (exponential backoff: 500ms, 1000ms)
-          if (attempt < 3) {
-            const delay = 500 * attempt;
-            logger.warn(`Pet creation attempt ${attempt} failed, retrying in ${delay}ms`, { error: error?.message });
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
-        } catch (err: any) {
-          lastError = err;
-
-          // Check if it's a timeout error
-          if (err?.message?.includes('timed out') || err?.message?.includes('timeout')) {
-            if (attempt < 3) {
-              const delay = 500 * attempt;
-              logger.warn(`Pet creation attempt ${attempt} timed out, retrying in ${delay}ms`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue;
-            }
-          }
-
-          // For other errors, don't retry
-          error = err;
-          break;
-        }
-      }
-
-      // Use the last error if we still have one
-      if (lastError && !error) {
-        error = lastError;
-      }
-
-      if (error) {
-        logger.error('Error creating pet', { userId, name, type, errorCode: error.code, errorDetails: error }, error);
-
-        // Provide more specific error messages based on error type
-        let errorMessage = 'Failed to create pet';
-
-        // Extract error message from Supabase error object
-        const errorDetails = error.details || error.hint || error.message || '';
-        const errorCode = error.code;
-
-        if (errorCode === '23505') {
-          // Unique constraint violation - pet already exists for this user
-          errorMessage = 'You already have a pet. Each user can only have one pet.';
-        } else if (errorCode === '23503') {
-          // Foreign key constraint violation
-          errorMessage = 'Invalid user account. Please log in again.';
-        } else if (errorCode === 'PGRST116') {
-          // No rows returned
-          errorMessage = 'Pet creation failed: No data returned from database.';
-        } else if (errorCode === '42501') {
-          // Insufficient privileges (RLS policy violation)
-          errorMessage = 'Permission denied. Please ensure you are logged in and try again.';
-        } else if (errorDetails.includes('timeout') || errorDetails.includes('timed out') || error.message?.includes('timed out')) {
-          errorMessage = 'Request timed out. This might be due to a slow connection. Please try again.';
-        } else if (errorDetails.includes('network') || errorDetails.includes('fetch')) {
-          errorMessage = 'Network error. Please check your internet connection and try again.';
-        } else if (errorDetails) {
-          errorMessage = errorDetails;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-
-        throw new Error(getErrorMessage(error, errorMessage));
-      }
-
-      if (!data) {
-        logger.error('Pet creation returned no data', { userId, name, type });
-        throw new Error('Pet created but no data returned from database');
-      }
-
-      logger.info('Pet created/updated in DB', { petId: data.id, userId, name });
-
-      // Map created pet to Pet type
-      // Note: age, level, and xp are computed fields (not in DB schema)
-      // birthday may not exist in the actual schema
-      let age = 0;
-      if (data.birthday) {
-        try {
-          const birthday = new Date(data.birthday);
-          const today = new Date();
-          age = Math.max(0, today.getFullYear() - birthday.getFullYear());
-        } catch (e) {
-          // birthday field doesn't exist or is invalid
-          age = 0;
-        }
-      }
-
-      // Use pet_type as canonical, fallback to species for backward compatibility
-      const canonicalSpecies = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
-
-      const newPet: Pet = {
-        id: data.id,
-        name: data.name,
-        species: canonicalSpecies,
-        breed: data.breed,
-        age: age, // Default to 0 if birthday doesn't exist
-        level: 1, // Default level (not stored in DB)
-        experience: 0, // Default XP (not stored in DB)
-        ownerId: data.user_id,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-        stats: {
-          health: data.health ?? 100,
-          hunger: data.hunger ?? 75,
-          happiness: data.happiness ?? 80,
-          cleanliness: data.cleanliness ?? 90,
-          energy: data.energy ?? 85,
-          lastUpdated: new Date(data.updated_at),
-        },
-      };
-
-      setPet(newPet);
-
-      // Refresh auth state to update hasPet flag
-      // This ensures route guards recognize the user has completed onboarding
-      console.log('🔄 Refreshing auth state after pet creation...');
-
-      // Wait a moment for the database write to be fully committed
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Refresh state with retries to ensure hasPet is updated
-      let refreshSuccess = false;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          await refreshUserState();
-          console.log(`✅ Auth state refreshed successfully (attempt ${attempt + 1})`);
-
-          // Wait a bit for state to propagate
-          await new Promise(resolve => setTimeout(resolve, 300));
-          refreshSuccess = true;
-          break;
-        } catch (refreshError) {
-          console.error(`❌ Error refreshing auth state (attempt ${attempt + 1}):`, refreshError);
-          if (attempt < 2) {
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-      }
-
-      if (!refreshSuccess) {
-        console.warn('⚠️ Auth state refresh failed after retries - state may be stale');
-      }
-    } catch (err: any) {
-      console.error('❌ Error creating pet:', err);
-
-      // If error is already a well-formed Error with a message, use it
-      if (err instanceof Error && err.message && err.message !== 'Failed to create pet') {
-        throw err;
-      }
-
-      // Otherwise, provide a more specific error message
-      let errorMessage = 'Failed to create pet';
-
-      if (err?.code === '23505') {
-        errorMessage = 'You already have a pet. Each user can only have one pet.';
-      } else if (err?.code === '23503') {
-        errorMessage = 'Invalid user account. Please log in again.';
-      } else if (err?.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Please check your connection and try again.';
-      } else if (err?.message?.includes('network') || err?.message?.includes('fetch')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
-      } else if (err?.message) {
-        errorMessage = err.message;
-      }
-
-      throw new Error(errorMessage);
-    }
-  }, [userId, refreshUserState]);
-
-  const feed = useCallback(async () => {
-    if (!pet || !userId) return;
-
-    try {
-      // Check wallet balance first
-      if (!supabase) throw new Error('Supabase client not initialized');
-
-      const { data: walletData, error: walletError } = await supabase
-        .from('finance_wallets')
-        .select('balance')
-        .eq('user_id', userId)
-        .single();
-
-      if (walletError && walletError.code !== 'PGRST116') {
-        console.error('Error fetching wallet:', walletError);
-        console.error('Failed to check wallet balance');
-        return;
-      }
-
-      // Check if user has enough funds (cost: 5)
-      if (!walletData || walletData.balance < 5) {
-        alert('Insufficient funds! You need 5 coins to feed your pet.');
-        return;
-      }
-
-      await updatePetStats({
-        hunger: Math.min(pet.stats.hunger + 30, 100),
-        energy: Math.min(pet.stats.energy + 10, 100),
-      });
-
-      // Log transaction for feed action
-      await logTransaction('feed', 5); // Feed costs 5 coins
-      console.log('Fed your pet! 🍖');
-    } catch (error) {
-      console.error('Feed action failed:', error);
-      console.error('Failed to feed pet');
-      // throw error; // Don't throw to prevent UI crash, toast handles it
-    }
-  }, [pet, userId, updatePetStats]);
-
-  const play = useCallback(async () => {
-    if (!pet || !userId) return;
-
-    try {
-      await updatePetStats({
-        happiness: Math.min(pet.stats.happiness + 30, 100),
-        energy: Math.max(pet.stats.energy - 20, 0),
-        hunger: Math.max(pet.stats.hunger - 10, 0),
-      });
-
-      // Log transaction for play action
-      await logTransaction('play', 0); // Play is free
-      // console.log('Played with pet! 🎾'); // Optional: Add toast for play too
-    } catch (error) {
-      console.error('Play action failed:', error);
-      console.error('Failed to play with pet');
-      // throw error;
-    }
-  }, [pet, userId, updatePetStats]);
-
-  const bathe = useCallback(async () => {
-    if (!pet || !userId) return;
-
-    try {
-      // Check wallet balance first
-      if (!supabase) throw new Error('Supabase client not initialized');
-
-      const { data: walletData, error: walletError } = await supabase
-        .from('finance_wallets')
-        .select('balance')
-        .eq('user_id', userId)
-        .single();
-
-      if (walletError && walletError.code !== 'PGRST116') {
-        console.error('Error fetching wallet:', walletError);
-        console.error('Failed to check wallet balance');
-        return;
-      }
-
-      // Check if user has enough funds (cost: 3)
-      if (!walletData || walletData.balance < 3) {
-        alert('Insufficient funds! You need 3 coins to clean your pet.');
-        return;
-      }
-
-      await updatePetStats({
-        cleanliness: 100,
-        happiness: Math.min(pet.stats.happiness + 10, 100),
-      });
-
-      // Log transaction for bathe action
-      await logTransaction('bathe', 3); // Bathe costs 3 coins
-      console.log('Cleaned your pet! 🛁');
-    } catch (error) {
-      console.error('Bathe action failed:', error);
-      console.error('Failed to clean pet');
-      // throw error;
-    }
-  }, [pet, userId, updatePetStats]);
-
-  const rest = useCallback(async () => {
-    if (!pet || !userId) return;
-
-    try {
-      await updatePetStats({
-        energy: 100,
-        hunger: Math.max(pet.stats.hunger - 10, 0),
-      });
-
-      // Log transaction for rest action
-      await logTransaction('rest', 0); // Rest is free
-      console.log('Pet is fully rested! 💤');
-    } catch (error) {
-      console.error('Rest action failed:', error);
-      console.error('Failed to rest pet');
-      // throw error;
-    }
-  }, [pet, userId, updatePetStats]);
-
-  // Log transaction function for care actions
-  const logTransaction = useCallback(async (action: string, cost: number) => {
-    if (!userId || !supabase) return;
-
-    try {
-      const query = supabase
-        .from('transactions')
-        .insert({
-          user_id: userId,
-          item_id: action,
-          item_name: action,
-          transaction_type: 'expense',
-          amount: cost,
-        })
-        .select('*')
-        .single();
-
-      const { error } = await withTimeout(
-        query as unknown as Promise<any>,
+      const petType = normalizePetType(type);
+
+      const { data, error } = await withTimeout(
+        supabase.from('pets').upsert({
+          user_id: userId, name, pet_type: petType, species: petType, breed,
+          health: 100, hunger: 75, happiness: 80, cleanliness: 90, energy: 85
+        }, { onConflict: 'user_id' }).select().single() as unknown as Promise<any>,
         10000,
-        'Log transaction'
+        'Create pet'
       ) as any;
 
       if (error) {
-        console.warn('Failed to log transaction:', error);
-        // Don't throw error - transaction logging is non-critical
+        logger.error('Error creating pet', { userId, name, type, errorCode: error.code }, error);
+        throw new Error(getErrorMessage(error, 'Failed to create pet'));
       }
-    } catch (error) {
-      console.warn('Transaction logging error:', error);
+      if (!data) throw new Error('Pet created but no data returned');
+
+      await refreshUserState();
+      await loadPet(); // Reload to get the newly created pet
+    } catch (err: any) {
+      console.error('Create pet failed:', err);
+      throw err;
     }
-  }, [userId]);
+  }, [userId, refreshUserState, loadPet]);
 
   const value = useMemo(() => ({
-    pet,
-    loading,
-    error,
-    updating,
-    saveStatus,
-    updatePetStats,
-    feed,
-    play,
-    bathe,
-    rest,
+    pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest,
+    increaseStat,
+    decreaseStat,
+    updateHighScore,
+    getHighScore,
     createPet,
     refreshPet: loadPet,
-  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, createPet, loadPet, logTransaction]);
+  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet]);
 
-  return (
-    <PetContext.Provider value={value}>
-      {children}
-    </PetContext.Provider>
-  );
+  return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 };

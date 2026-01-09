@@ -9,7 +9,7 @@ import type { PetStats } from '@/types/pet';
 import { DogPark } from './environments/DogPark.tsx';
 import { CozyRoom } from './environments/CozyRoom.tsx';
 import { BambooForest } from './environments/BambooForest.tsx';
-import { DogModel } from './pets/DogModel.tsx';
+import { DogModel, EquippedAccessory } from './pets/DogModel.tsx';
 import { CatModel } from './pets/CatModel.tsx';
 import { PandaModel } from './pets/PandaModel.tsx';
 import { SceneVfx } from './core/SceneVfx.tsx';
@@ -24,7 +24,8 @@ function PetModel({
   setPetPosition,
   targetRef,
   isMovingRef,
-  rotationRef
+  rotationRef,
+  accessories = []
 }: {
   petType: PetGame2PetType;
   state: PetGame2State;
@@ -33,11 +34,12 @@ function PetModel({
   targetRef: React.MutableRefObject<THREE.Vector3>;
   isMovingRef: React.MutableRefObject<boolean>;
   rotationRef: React.MutableRefObject<THREE.Quaternion>;
+  accessories?: EquippedAccessory[];
 }) {
   if (petType === 'cat') return <CatModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} />;
   // Note: Only DogModel implements targetRef/rotationRef/isMovingRef for now
   if (petType === 'panda') return <PandaModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} />;
-  return <DogModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} targetRef={targetRef} isMovingRef={isMovingRef} rotationRef={rotationRef} />;
+  return <DogModel state={state} onPetTap={onPetTap} setPetPosition={setPetPosition} targetRef={targetRef} isMovingRef={isMovingRef} rotationRef={rotationRef} accessories={accessories} />;
 }
 
 function Environment({
@@ -95,6 +97,7 @@ export function PetGame2Scene({
   totalSpent = 0,
   balanceChange = null,
   onPurchase,
+  accessories = [],
 }: {
   petType: PetGame2PetType;
   petName: string;
@@ -118,6 +121,7 @@ export function PetGame2Scene({
   totalSpent?: number;
   balanceChange?: { amount: number; isPositive: boolean } | null;
   onPurchase?: (item: any) => void;
+  accessories?: EquippedAccessory[];
 }) {
   const targetRef = useRef(new THREE.Vector3(0, 0, 0));
   const isMovingRef = useRef(false);
@@ -238,6 +242,7 @@ export function PetGame2Scene({
               targetRef={targetRef}
               isMovingRef={isMovingRef}
               rotationRef={rotationRef}
+              accessories={accessories}
             />
           </group>
 

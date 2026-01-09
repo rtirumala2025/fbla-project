@@ -10,6 +10,7 @@ import { PlayPavilion } from '../props/PlayPavilion';
 import { RestShelter } from '../props/RestShelter';
 import { ParkHubBuilding } from '../props/ParkHubBuilding';
 import { GiftShop } from '../props/GiftShop';
+import { Supermarket } from '../props/Supermarket';
 import { PetHouse } from '../props/PetHouse';
 import { NavigationGuide } from '../ui/NavigationGuide';
 
@@ -241,12 +242,17 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
         <ParkHubBuilding onSignClick={() => onSignClick('center')} />
       </group>
 
-      {/* Gift Shop (NEW) - Front Right */}
+      {/* Gift Shop - Front Right */}
       <group position={[25, 0, 25]} rotation={[0, -3 * Math.PI / 4, 0]}>
         <GiftShop onSignClick={() => onSignClick('shop')} />
       </group>
 
-      {/* Pet House (NEW) - Far Back Center */}
+      {/* Supermarket - Back Right diagonal pathway */}
+      <group position={[30, 0, -30]} rotation={[0, Math.PI / 4, 0]}>
+        <Supermarket onSignClick={() => onSignClick('market')} />
+      </group>
+
+      {/* Pet House - Far Back Center */}
       <group position={[0, 0, -35]} rotation={[0, 0, 0]}>
         <PetHouse onSignClick={() => onSignClick('home')} petName="Zeus" />
       </group>
@@ -293,8 +299,10 @@ const BUILDING_ROTATIONS: Record<ActivityZone, number> = {
   rest: -Math.PI / 2,
   center: 3 * Math.PI / 4,
   shop: -3 * Math.PI / 4,
+  market: Math.PI / 4,  // Facing center from back-right
   home: 0,
 };
+
 
 // --- MAIN DYNAMIC COMPONENT ---
 export function DogPark({

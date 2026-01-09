@@ -264,7 +264,15 @@ interface EarTwitchState {
 import { useKeyboardControls } from '../core/useKeyboardControls';
 import { getValidPosition, clampToBounds } from '../core/CollisionSystem';
 
-export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, isMovingRef, rotationRef }: {
+// Accessory data from equipped items
+export interface EquippedAccessory {
+  id: string;
+  slot: 'collar' | 'hat' | 'bandana' | 'glasses' | 'back';
+  color: string;
+  name?: string;
+}
+
+export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, isMovingRef, rotationRef, accessories = [] }: {
   state: PetGame2State;
   onPetTap: () => void;
   setPetPosition?: (pos: [number, number, number]) => void;
@@ -272,6 +280,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
   targetRef?: React.MutableRefObject<THREE.Vector3>;
   isMovingRef?: React.MutableRefObject<boolean>;
   rotationRef?: React.MutableRefObject<THREE.Quaternion>;
+  accessories?: EquippedAccessory[];
 }) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
@@ -848,6 +857,107 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
           <cylinderGeometry args={[dna.legs.thickness * 1.15, dna.legs.thickness * 0.95, 0.04, 12]} />
         </mesh>
       </group>
+
+      {/* === EQUIPPED ACCESSORIES RENDERING === */}
+      {accessories.map(acc => {
+        const accMaterial = new THREE.MeshStandardMaterial({
+          color: acc.color,
+          roughness: 0.35,
+          metalness: 0.15,
+        });
+
+        switch (acc.slot) {
+          case 'collar':
+            // Collar around neck - positioned at neck/body junction
+            return (
+              <group key={acc.id} position={[0, dna.legs.height + dna.body.height - 0.05, dna.body.length / 2 - 0.08]}>
+                <mesh rotation={[Math.PI / 2, 0, 0]} castShadow material={accMaterial}>
+                  <torusGeometry args={[dna.body.width * 0.45, 0.025, 8, 24]} />
+                </mesh>
+                {/* Collar tag/charm */}
+                <mesh position={[0, -dna.body.width * 0.42, 0.02]} castShadow material={accMaterial}>
+                  <sphereGeometry args={[0.035, 8, 8]} />
+                </mesh>
+              </group>
+            );
+
+          case 'bandana':
+            // Bandana - triangle at neck, front-facing
+            return (
+              <group key={acc.id} position={[0, dna.legs.height + dna.body.height - 0.1, dna.body.length / 2 - 0.05]}>
+                {/* Triangle fabric */}
+                <mesh rotation={[0.3, 0, 0]} position={[0, -0.06, 0.08]} castShadow material={accMaterial}>
+                  <coneGeometry args={[0.12, 0.15, 3]} />
+                </mesh>
+                {/* Neck band */}
+                <mesh rotation={[Math.PI / 2, 0, 0]} castShadow material={accMaterial}>
+                  <torusGeometry args={[dna.body.width * 0.42, 0.018, 6, 20]} />
+                </mesh>
+              </group>
+            );
+
+          case 'hat':
+            // Hat on top of head - rendered in head group space
+            return (
+              <group key={acc.id} position={[0, dna.legs.height + dna.body.height + 0.35, dna.body.length / 2 + 0.03]}>
+                {/* Crown */}
+                <mesh position={[0, 0.08, 0]} castShadow material={accMaterial}>
+                  <cylinderGeometry args={[0.08, 0.1, 0.1, 8]} />
+                </mesh>
+                {/* Brim */}
+                <mesh rotation={[0, 0, 0]} castShadow material={accMaterial}>
+                  <cylinderGeometry args={[0.16, 0.16, 0.02, 12]} />
+                </mesh>
+              </group>
+            );
+
+          case 'glasses':
+            // Sunglasses on face
+            return (
+              <group key={acc.id} position={[0, dna.legs.height + dna.body.height + 0.2, dna.body.length / 2 + 0.25]}>
+                {/* Left lens */}
+                <mesh position={[0.065, 0, 0]} castShadow>
+                  <sphereGeometry args={[0.045, 12, 12]} />
+                  <meshStandardMaterial color="#1a1a1a" roughness={0.1} metalness={0.3} />
+                </mesh>
+                {/* Right lens */}
+                <mesh position={[-0.065, 0, 0]} castShadow>
+                  <sphereGeometry args={[0.045, 12, 12]} />
+                  <meshStandardMaterial color="#1a1a1a" roughness={0.1} metalness={0.3} />
+                </mesh>
+                {/* Bridge */}
+                <mesh position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow material={accMaterial}>
+                  <capsuleGeometry args={[0.012, 0.06, 4, 6]} />
+                </mesh>
+                {/* Arms */}
+                <mesh position={[0.11, 0, -0.04]} rotation={[0, 0.3, 0]} castShadow material={accMaterial}>
+                  <boxGeometry args={[0.08, 0.015, 0.015]} />
+                </mesh>
+                <mesh position={[-0.11, 0, -0.04]} rotation={[0, -0.3, 0]} castShadow material={accMaterial}>
+                  <boxGeometry args={[0.08, 0.015, 0.015]} />
+                </mesh>
+              </group>
+            );
+
+          case 'back':
+            // Cape or wings on back
+            return (
+              <group key={acc.id} position={[0, dna.legs.height + dna.body.height - 0.02, -0.05]}>
+                {/* Cape/wing base */}
+                <mesh rotation={[-0.3, 0, 0]} position={[0, 0, -0.1]} castShadow material={accMaterial}>
+                  <boxGeometry args={[dna.body.width * 1.2, 0.02, 0.25]} />
+                </mesh>
+                {/* Cape flowing down */}
+                <mesh rotation={[-0.6, 0, 0]} position={[0, -0.08, -0.15]} castShadow material={accMaterial}>
+                  <boxGeometry args={[dna.body.width * 1.1, 0.02, 0.2]} />
+                </mesh>
+              </group>
+            );
+
+          default:
+            return null;
+        }
+      })}
 
       {/* Tail - Lowered attachment (5%) and offset left (5°) */}
       <group ref={tail} position={[0.02, (dna.legs.height + dna.body.height - 0.1) * 0.95, -dna.body.length / 2]}>

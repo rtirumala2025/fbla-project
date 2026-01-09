@@ -9,7 +9,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Stethoscope, Heart, Zap, Droplet, Sparkles, Check, X, AlertCircle, RefreshCw } from 'lucide-react';
 import { BuildingInteractionWindow } from './BuildingInteractionWindow';
+import { minigameService } from '@/services/minigameService';
+import type { GameStartResponse } from '@/types/game';
 import './building-windows.css';
+
 
 interface PetHealth {
     health: number;
@@ -56,6 +59,9 @@ export function VetGameWindow({
     const [healthBoost, setHealthBoost] = useState(0);
     const [showPayment, setShowPayment] = useState(false);
     const [isPaying, setIsPaying] = useState(false);
+    const [gameSession, setGameSession] = useState<GameStartResponse | null>(null);
+    const [isStartingGame, setIsStartingGame] = useState(false);
+
 
     // Reset game when window closes
     useEffect(() => {
@@ -82,12 +88,30 @@ export function VetGameWindow({
         }
     }, [gameState, timeLeft]);
 
-    const startGame = useCallback(() => {
-        setGameState('playing');
+    const startGame = useCallback(async () => {
+        setIsStartingGame(true);
         setScore(0);
         setRound(0);
+
+        try {
+            // Start a game session via backend API
+            const session = await minigameService.startRound({
+                gameType: 'reaction', // Vet game is a reaction-type game
+                preferredDifficulty: 'normal',
+                practiceMode: false,
+            });
+            setGameSession(session);
+            console.log('Vet game session started:', session.session_id);
+        } catch (error) {
+            console.warn('Failed to start vet game session, proceeding locally:', error);
+            setGameSession(null);
+        }
+
+        setGameState('playing');
+        setIsStartingGame(false);
         nextRound();
     }, []);
+
 
     const nextRound = useCallback(() => {
         if (round >= totalRounds) {
@@ -123,14 +147,36 @@ export function VetGameWindow({
         setTimeout(nextRound, 500);
     }, [nextRound]);
 
-    const endGame = useCallback(() => {
+    const endGame = useCallback(async () => {
         setGameState('complete');
         // Calculate health boost based on score
         const maxScore = totalRounds * 200; // 200 per round max
         const percentage = score / maxScore;
         const boost = Math.floor(percentage * 30); // Up to 30% health boost
         setHealthBoost(boost);
-    }, [score, totalRounds]);
+
+        // Submit score to backend using minigameService
+        try {
+            const result = await minigameService.submitResult({
+                session_id: gameSession?.session_id,
+                score: score,
+                durationSeconds: totalRounds * 2, // Approximate duration (2 sec per round)
+                difficulty: (gameSession?.difficulty as 'easy' | 'normal' | 'hard') || 'normal',
+                gameType: 'reaction',
+                metadata: {
+                    rounds: totalRounds,
+                    healthBoost: boost,
+                },
+            });
+            console.log('Vet game score submitted:', result.message);
+        } catch (error) {
+            console.warn('Failed to submit vet game score:', error);
+        }
+
+        // Clear session after submission
+        setGameSession(null);
+    }, [score, totalRounds, gameSession]);
+
 
     const handlePayment = useCallback(async () => {
         setIsPaying(true);

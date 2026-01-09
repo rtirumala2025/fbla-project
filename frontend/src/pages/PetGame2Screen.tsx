@@ -19,6 +19,7 @@ import { EvolutionAnimation } from '@/components/pets/EvolutionAnimation';
 import type { PetStats, PetActionResponse } from '@/types/pet';
 import type { ActivityZone } from '@/game3d/core/SceneManager';
 import { GiftShopWindow, HouseWindow, VetGameWindow, AgilityGameWindow } from '@/components/DogPark';
+import { SupermarketWindow } from '@/components/DogPark/SupermarketWindow';
 
 export const PetGame2Screen: React.FC = () => {
   const { pet, loading, error, refreshPet, updatePetStats } = usePet();
@@ -533,6 +534,15 @@ export const PetGame2Screen: React.FC = () => {
       {/* Building Windows */}
       <GiftShopWindow
         isOpen={openBuilding === 'shop'}
+        onClose={() => setOpenBuilding(null)}
+        onPurchaseComplete={() => {
+          refreshBalance();
+          loadInventory();
+        }}
+      />
+
+      <SupermarketWindow
+        isOpen={openBuilding === 'market'}
         onClose={() => setOpenBuilding(null)}
         onPurchaseComplete={() => {
           refreshBalance();

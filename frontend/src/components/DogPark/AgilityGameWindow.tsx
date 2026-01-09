@@ -9,6 +9,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Zap, Target, Timer, Coins, RefreshCw, X, Star, HelpCircle } from 'lucide-react';
 import { BuildingInteractionWindow } from './BuildingInteractionWindow';
+import { usePet } from '@/context/PetContext';
+import { minigameService } from '@/services/minigameService';
+import type { GameStartResponse } from '@/types/game';
 import './building-windows.css';
 
 interface AgilityGameWindowProps {
@@ -37,6 +40,7 @@ export function AgilityGameWindow({
     onClose,
     onGameComplete
 }: AgilityGameWindowProps) {
+    const { pet, updateHighScore, getHighScore, increaseStat } = usePet();
     const [gameState, setGameState] = useState<'menu' | 'playing' | 'complete'>('menu');
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
@@ -45,18 +49,27 @@ export function AgilityGameWindow({
     const [maxCombo, setMaxCombo] = useState(0);
     const [hits, setHits] = useState(0);
     const [misses, setMisses] = useState(0);
-    const [highScore, setHighScore] = useState(() => {
-        try {
-            return parseInt(localStorage.getItem('agility_high_score') || '0');
-        } catch {
-            return 0;
-        }
-    });
+    const [highScore, setHighScore] = useState(0);
+    const [isLoadingHighScore, setIsLoadingHighScore] = useState(false);
+    const [gameSession, setGameSession] = useState<GameStartResponse | null>(null);
+    const [isStartingGame, setIsStartingGame] = useState(false);
 
     const gameAreaRef = useRef<HTMLDivElement>(null);
     const animationFrameRef = useRef<number>();
     const lastSpawnRef = useRef(0);
     const [demoFeedback, setDemoFeedback] = useState<{ message: string, emoji: string } | null>(null);
+
+
+    // Load high score from Supabase
+    useEffect(() => {
+        if (isOpen && pet) {
+            setIsLoadingHighScore(true);
+            getHighScore('agility').then(score => {
+                setHighScore(score);
+                setIsLoadingHighScore(false);
+            });
+        }
+    }, [isOpen, pet, getHighScore]);
 
     // Reset game when window closes
     useEffect(() => {
@@ -127,11 +140,30 @@ export function AgilityGameWindow({
         setMisses(0);
     };
 
-    const startGame = useCallback(() => {
+    const startGame = useCallback(async () => {
+        setIsStartingGame(true);
         resetGameState();
+
+        try {
+            // Start a game session via backend API
+            const session = await minigameService.startRound({
+                gameType: 'fetch', // 'agility' maps to 'fetch' game type
+                preferredDifficulty: 'normal',
+                practiceMode: false,
+            });
+            setGameSession(session);
+            console.log('Game session started:', session.session_id);
+        } catch (error) {
+            console.warn('Failed to start game session, proceeding locally:', error);
+            // Continue without session - will create one on submit
+            setGameSession(null);
+        }
+
         setGameState('playing');
         lastSpawnRef.current = 0;
+        setIsStartingGame(false);
     }, []);
+
 
     const spawnTarget = useCallback(() => {
         // Limit max targets on screen to prevent overcrowding
@@ -192,41 +224,47 @@ export function AgilityGameWindow({
         // Check high score
         if (score > highScore) {
             setHighScore(score);
-            try {
-                localStorage.setItem('agility_high_score', score.toString());
-            } catch { }
+            await updateHighScore('agility', score);
+        } else {
+            // Still track it for total games played etc
+            await updateHighScore('agility', score);
+        }
+
+        // Boost pet happiness on game completion (Agility training is fun!)
+        if (score > 0) {
+            await increaseStat('happiness', Math.min(10, Math.floor(score / 50)));
         }
 
         // Calculate coins earned (1 coin per 50 points as fallback)
         let coinsEarned = Math.floor(score / 50);
 
-        // Submit score to backend to persist and get actual rewards
+        // Submit score to backend using minigameService (with session_id if available)
         try {
-            const response = await fetch('/api/games/submit-score', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+            const result = await minigameService.submitResult({
+                session_id: gameSession?.session_id,
+                score: score,
+                durationSeconds: GAME_DURATION - timeLeft,
+                difficulty: (gameSession?.difficulty as 'easy' | 'normal' | 'hard') || 'normal',
+                gameType: 'fetch', // 'agility' maps to 'fetch' game type
+                metadata: {
+                    hits,
+                    misses,
+                    maxCombo,
                 },
-                body: JSON.stringify({
-                    game_type: 'agility',
-                    score: score,
-                    difficulty: 'normal',
-                }),
-                credentials: 'include',
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                coinsEarned = data.coins_earned || coinsEarned;
-                console.log('Game score submitted:', data.message);
-            }
+            coinsEarned = result.reward?.coins || coinsEarned;
+            console.log('Game score submitted:', result.message);
         } catch (error) {
             console.warn('Failed to submit game score to backend:', error);
             // Continue with local calculation
         }
 
+        // Clear session after submission
+        setGameSession(null);
         onGameComplete?.(score, coinsEarned);
-    }, [score, highScore, onGameComplete]);
+    }, [score, highScore, onGameComplete, gameSession, timeLeft, hits, misses, maxCombo, updateHighScore, increaseStat]);
+
 
     const coinsEarned = Math.floor(score / 50);
 

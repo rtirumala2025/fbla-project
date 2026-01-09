@@ -4,8 +4,8 @@ export type PetGame2PetType = 'dog' | 'cat' | 'panda';
 
 export type PetGame2Action = 'feed' | 'play' | 'rest' | 'bathe';
 
-// 7 activity zones: 5 original + shop (Gift Shop) + home (Pet House)
-export type ActivityZone = 'agility' | 'vet' | 'play' | 'rest' | 'center' | 'shop' | 'home';
+// 8 activity zones: 5 original + shop (Gift Shop) + market (Supermarket) + home (Pet House)
+export type ActivityZone = 'agility' | 'vet' | 'play' | 'rest' | 'center' | 'shop' | 'market' | 'home';
 
 export type PetGame2Interaction =
   | { kind: 'idle' }
@@ -51,9 +51,11 @@ export const ACTIVITY_POSITIONS: Record<ActivityZone, [number, number, number]> 
   play: [25, 0, -25],        // Back Right - Play Pavilion
   rest: [35, 0, 0],          // Right Side - Rest Shelter
   center: [-25, 0, 25],      // Front Left - Park Hub (Info Center)
-  shop: [25, 0, 25],         // Front Right - Gift Shop (NEW)
-  home: [0, 0, -35],         // Far Back Center - Pet House (NEW)
+  shop: [25, 0, 25],         // Front Right - Gift Shop
+  market: [30, 0, -30],      // Back Right diagonal - Supermarket
+  home: [0, 0, -35],         // Far Back Center - Pet House
 };
+
 
 const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 

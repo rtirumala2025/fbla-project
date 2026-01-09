@@ -35,13 +35,13 @@ async function fetchActiveQuestsFromSupabase(): Promise<ActiveQuestsResponse> {
   const activeQuests = (allQuests || []).filter((quest) => {
     const startAt = quest.start_at ? new Date(quest.start_at) : null;
     const endAt = quest.end_at ? new Date(quest.end_at) : null;
-    
+
     // Quest is active if:
     // - No start date OR start date is in the past
     // - AND no end date OR end date is in the future
     const isStarted = !startAt || startAt <= now;
     const isNotEnded = !endAt || endAt >= now;
-    
+
     return isStarted && isNotEnded;
   });
 
@@ -69,7 +69,7 @@ async function fetchActiveQuestsFromSupabase(): Promise<ActiveQuestsResponse> {
   const quests: Quest[] = activeQuests.map((quest) => {
     const userQuest = userQuestMap.get(quest.id);
     const rewards = typeof quest.rewards === 'object' ? quest.rewards : { coins: 0, xp: 0, items: [] };
-    
+
     return {
       id: quest.id,
       quest_key: quest.quest_key,
@@ -159,21 +159,26 @@ export async function fetchDailyQuests(): Promise<import('../types/quests').Acti
 }
 
 export async function fetchCoachAdvice(): Promise<CoachAdviceResponse> {
-  // Coach endpoint not available - return basic advice gracefully
-  // This feature can be implemented later if needed
-  console.warn('Coach endpoint not available, returning basic advice');
-  return {
-    mood: 'happy',
-    difficulty_hint: 'normal',
-    summary: 'Keep taking good care of your pet! Remember to feed, play, and bathe regularly.',
-    suggestions: [
-      { category: 'care', recommendation: 'Check your pet\'s stats daily' },
-      { category: 'quest', recommendation: 'Complete quests to earn rewards' },
-      { category: 'activity', recommendation: 'Save coins for special items' },
-      { category: 'motivation', recommendation: 'You\'re doing great! Keep up the excellent pet care!' },
-    ],
-    generated_at: new Date().toISOString(),
-    source: 'heuristic',
-  };
+  try {
+    // Call the new backend coach advice endpoint
+    return await apiRequest<CoachAdviceResponse>('/api/coach/advice');
+  } catch (error) {
+    // Fallback to basic advice if API fails
+    console.warn('Coach API failed, returning fallback advice:', error);
+    return {
+      mood: 'happy',
+      difficulty_hint: 'normal',
+      summary: 'Keep taking good care of your pet! Remember to feed, play, and bathe regularly.',
+      suggestions: [
+        { category: 'care', recommendation: 'Check your pet\'s stats daily' },
+        { category: 'quest', recommendation: 'Complete quests to earn rewards' },
+        { category: 'activity', recommendation: 'Save coins for special items' },
+        { category: 'motivation', recommendation: 'You\'re doing great! Keep up the excellent pet care!' },
+      ],
+      generated_at: new Date().toISOString(),
+      source: 'heuristic',
+    };
+  }
 }
+
 

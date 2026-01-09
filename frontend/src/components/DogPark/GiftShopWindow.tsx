@@ -1,13 +1,21 @@
 /**
- * GiftShopWindow.tsx
+ * GiftShopWindow.tsx (Pet Supermarket)
  * 
- * Floating window for the Gift Shop building.
- * Features: scrollable item catalog, shopping cart, checkout flow
+ * Full-featured pet supermarket with:
+ * - Hero banner with featured deals
+ * - Category sidebar navigation
+ * - Enhanced product grid
+ * - Search and filter functionality
+ * - Shopping cart with quantity controls
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, ShoppingCart, Plus, Minus, Trash2, CreditCard, Loader2, Check, X, Gift } from 'lucide-react';
+import {
+    ShoppingBag, ShoppingCart, Plus, Minus, Trash2, CreditCard,
+    Loader2, Check, X, Gift, Search, Sparkles, Tag, Zap,
+    Bone, Heart, Scissors, Home, Crown, Package
+} from 'lucide-react';
 import { BuildingInteractionWindow } from './BuildingInteractionWindow';
 import { getShopCatalog, purchaseItems, getFinanceSummary } from '../../api/finance';
 import type { ShopItemEntry } from '../../types/finance';
@@ -16,6 +24,8 @@ import './building-windows.css';
 // Extended local type that includes icon for display purposes
 interface DisplayShopItem extends ShopItemEntry {
     icon?: string;
+    originalPrice?: number;
+    isDeal?: boolean;
 }
 
 interface CartItem {
@@ -29,14 +39,36 @@ interface GiftShopWindowProps {
     onPurchaseComplete?: () => void;
 }
 
+// Category configuration - ACCESSORIES ONLY
+const CATEGORIES = [
+    { id: 'all', name: 'All Accessories', icon: Package, color: '#8b5cf6' },
+    { id: 'deals', name: 'Hot Deals', icon: Zap, color: '#ef4444' },
+    { id: 'collar', name: 'Collars', icon: Crown, color: '#f59e0b' },
+    { id: 'hat', name: 'Hats & Headwear', icon: Crown, color: '#ec4899' },
+    { id: 'bandana', name: 'Bandanas', icon: Gift, color: '#10b981' },
+    { id: 'glasses', name: 'Eyewear', icon: Sparkles, color: '#3b82f6' },
+    { id: 'outfit', name: 'Outfits', icon: Home, color: '#a855f7' },
+    { id: 'accessory', name: 'Other', icon: Heart, color: '#06b6d4' },
+];
+
+// Accessory categories to filter from shop catalog
+const ACCESSORY_CATEGORIES = ['accessories', 'collar', 'hat', 'bandana', 'glasses', 'outfit', 'accessory', 'deals'];
+
+
 // Map a category to an icon for display
 const getCategoryIcon = (category: string): string => {
     const icons: Record<string, string> = {
         food: '🍖',
         toys: '🧸',
+        toy: '🧸',
         furniture: '🛏️',
         accessories: '📿',
         care: '✨',
+        health: '💊',
+        grooming: '✂️',
+        deals: '🔥',
+        medicine: '💊',
+        energy: '⚡',
     };
     return icons[category?.toLowerCase()] || '📦';
 };
@@ -50,6 +82,8 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
     const [showCheckout, setShowCheckout] = useState(false);
     const [purchaseResult, setPurchaseResult] = useState<'success' | 'error' | null>(null);
     const [errorMessage, setErrorMessage] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Load shop items and balance
     useEffect(() => {
@@ -65,31 +99,56 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                 getShopCatalog(),
                 getFinanceSummary()
             ]);
-            // Add icon based on category
-            const itemsWithIcons: DisplayShopItem[] = catalogData.map(item => ({
-                ...item,
-                icon: getCategoryIcon(item.category)
-            }));
+            // Filter to accessories only and add icons
+            const accessoryItems = catalogData.filter(item =>
+                ACCESSORY_CATEGORIES.includes(item.category.toLowerCase()) ||
+                (item.metadata as any)?.equippable === true
+            );
+
+            const itemsWithIcons: DisplayShopItem[] = accessoryItems.map(item => {
+                const metadata = typeof item.metadata === 'object' ? item.metadata : {};
+                return {
+                    ...item,
+                    icon: (item as any).emoji || getCategoryIcon(item.category),
+                    originalPrice: (metadata as any)?.originalPrice,
+                    isDeal: (metadata as any)?.isDeal || item.category === 'deals',
+                };
+            });
             setItems(itemsWithIcons);
             setBalance(financeData.summary?.balance ?? 0);
         } catch (error) {
             console.error('Failed to load shop data:', error);
-            // Use mock data as fallback
+            // Use accessory mock data as fallback
             setItems([
-                { id: '1', sku: 'food-1', name: 'Premium Dog Food', description: 'High-quality nutrition for your pet', price: 50, category: 'food', stock: 99, icon: '🍖' },
-                { id: '2', sku: 'toy-1', name: 'Squeaky Toy', description: 'Hours of fun playtime', price: 25, category: 'toys', stock: 99, icon: '🧸' },
-                { id: '3', sku: 'furn-1', name: 'Cozy Bed', description: 'Comfortable sleeping spot', price: 100, category: 'furniture', stock: 99, icon: '🛏️' },
-                { id: '4', sku: 'acc-1', name: 'Fancy Collar', description: 'Stylish accessory', price: 75, category: 'accessories', stock: 99, icon: '📿' },
-                { id: '5', sku: 'food-2', name: 'Treat Bag', description: 'Delicious snacks', price: 30, category: 'food', stock: 99, icon: '🍪' },
-                { id: '6', sku: 'toy-2', name: 'Ball Launcher', description: 'Automatic fetch fun', price: 150, category: 'toys', stock: 99, icon: '🎾' },
-                { id: '7', sku: 'care-1', name: 'Grooming Kit', description: 'Keep your pet clean and healthy', price: 45, category: 'care', stock: 99, icon: '✨' },
-                { id: '8', sku: 'furn-2', name: 'Water Fountain', description: 'Fresh water always', price: 80, category: 'furniture', stock: 99, icon: '💧' },
+                { id: '1', sku: 'acc-collar', name: 'Fancy Collar', description: 'Stylish neckwear for your pet', price: 75, category: 'collar', stock: 99, icon: '📿' },
+                { id: '2', sku: 'acc-bandana', name: 'Cool Bandana', description: 'Fashionable bandana', price: 40, category: 'bandana', stock: 99, icon: '🧣' },
+                { id: '3', sku: 'acc-crown', name: 'Royal Crown', description: 'For pet royalty', price: 120, category: 'hat', stock: 50, icon: '👑' },
+                { id: '4', sku: 'acc-glasses', name: 'Pet Sunglasses', description: 'Cool shades', price: 60, category: 'glasses', stock: 99, icon: '🕶️' },
+                { id: '5', sku: 'acc-bowtie', name: 'Dapper Bowtie', description: 'For formal occasions', price: 50, category: 'collar', stock: 99, icon: '🎀' },
             ]);
             setBalance(500);
         } finally {
             setLoading(false);
         }
     };
+
+
+    // Filtered items based on category and search
+    const filteredItems = useMemo(() => {
+        return items.filter(item => {
+            const matchesCategory = selectedCategory === 'all' ||
+                item.category.toLowerCase() === selectedCategory.toLowerCase();
+            const matchesSearch = !searchQuery ||
+                item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesCategory && matchesSearch;
+        });
+    }, [items, selectedCategory, searchQuery]);
+
+    // Deal items for hero section
+    const dealItems = useMemo(() => {
+        return items.filter(item => item.isDeal || item.category === 'deals').slice(0, 3);
+    }, [items]);
 
     // Cart calculations
     const cartTotal = useMemo(() => {
@@ -152,11 +211,9 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
 
             await purchaseItems(purchaseData);
 
-
             setPurchaseResult('success');
             setBalance(prev => prev - cartTotal);
 
-            // Clear cart after short delay
             setTimeout(() => {
                 setCart([]);
                 setShowCheckout(false);
@@ -171,10 +228,12 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
         }
     };
 
-    // Close handler - reset state
+    // Close handler
     const handleClose = () => {
         setShowCheckout(false);
         setPurchaseResult(null);
+        setSearchQuery('');
+        setSelectedCategory('all');
         onClose();
     };
 
@@ -182,10 +241,10 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
         <BuildingInteractionWindow
             isOpen={isOpen}
             onClose={handleClose}
-            title="Gift Shop"
-            icon={<Gift />}
-            width={800}
-            minHeight={500}
+            title="Pet Accessories Shop"
+            icon={<ShoppingBag />}
+            width={1000}
+            minHeight={600}
             footer={
                 cart.length > 0 && !showCheckout ? (
                     <button
@@ -201,219 +260,448 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
             {loading ? (
                 <div className="building-loading">
                     <div className="building-loading-spinner" />
-                    <span>Loading shop...</span>
+                    <span>Loading supermarket...</span>
                 </div>
             ) : (
-                <div style={{ display: 'flex', gap: 20, height: '100%' }}>
-                    {/* Item Catalog */}
-                    <div style={{ flex: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: 20
-                        }}>
-                            <h3 className="building-section-header" style={{ margin: 0 }}>
-                                Available Items
-                            </h3>
-                            <div className="building-balance-pill">
-                                💰 {balance} coins
-                            </div>
-                        </div>
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 16 }}>
 
-                        <div className="building-grid" style={{
-                            overflowY: 'auto',
-                            flex: 1,
-                            paddingRight: 8
-                        }}>
-                            {items.map(item => {
-                                const inCart = cart.find(c => c.item.id === item.id);
-                                return (
-                                    <motion.div
-                                        key={item.id}
-                                        className={`building-grid-item ${inCart ? 'selected' : ''}`}
+                    {/* Hero Banner - Daily Deals */}
+                    {dealItems.length > 0 && selectedCategory === 'all' && !searchQuery && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(249, 115, 22, 0.2) 100%)',
+                                borderRadius: 16,
+                                padding: '16px 20px',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 16,
+                            }}
+                        >
+                            <div style={{
+                                background: 'rgba(239, 68, 68, 0.3)',
+                                borderRadius: 12,
+                                padding: '8px 12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                            }}>
+                                <Zap size={18} color="#fbbf24" />
+                                <span style={{ fontWeight: 700, color: '#fbbf24' }}>HOT DEALS</span>
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', gap: 12, overflowX: 'auto' }}>
+                                {dealItems.map(deal => (
+                                    <motion.button
+                                        key={deal.id}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
-                                        onClick={() => addToCart(item)}
+                                        onClick={() => addToCart(deal)}
+                                        style={{
+                                            background: 'rgba(0, 0, 0, 0.3)',
+                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                            borderRadius: 10,
+                                            padding: '8px 14px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 8,
+                                            cursor: 'pointer',
+                                            color: 'white',
+                                            whiteSpace: 'nowrap',
+                                        }}
                                     >
-                                        <div style={{ fontSize: '2rem', marginBottom: 8 }}>
-                                            {item.icon || '📦'}
-                                        </div>
-                                        <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                                            {item.name}
-                                        </div>
-                                        <div style={{
-                                            fontSize: '0.75rem',
-                                            color: '#94a3b8',
-                                            marginBottom: 8,
-                                            minHeight: 32
+                                        <span>{deal.icon}</span>
+                                        <span style={{ fontWeight: 500 }}>{deal.name}</span>
+                                        <span style={{
+                                            color: '#fbbf24',
+                                            fontWeight: 700,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 4,
                                         }}>
-                                            {item.description}
-                                        </div>
-                                        <div className="building-price">
-                                            {item.price} 💰
-                                        </div>
-                                        {inCart && (
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: 8,
-                                                right: 8,
-                                                background: '#6366f1',
-                                                borderRadius: '50%',
-                                                width: 24,
-                                                height: 24,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontSize: '0.75rem',
-                                                fontWeight: 700
-                                            }}>
-                                                {inCart.quantity}
-                                            </div>
-                                        )}
-                                    </motion.div>
+                                            {deal.originalPrice && (
+                                                <span style={{
+                                                    textDecoration: 'line-through',
+                                                    color: '#94a3b8',
+                                                    fontSize: '0.75rem',
+                                                }}>
+                                                    {deal.originalPrice}
+                                                </span>
+                                            )}
+                                            {deal.price} 💰
+                                        </span>
+                                    </motion.button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Main Content Area */}
+                    <div style={{ display: 'flex', gap: 20, flex: 1, minHeight: 0 }}>
+
+                        {/* Category Sidebar */}
+                        <div style={{
+                            width: 180,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 6,
+                        }}>
+                            {CATEGORIES.map(cat => {
+                                const IconComponent = cat.icon;
+                                const isActive = selectedCategory === cat.id;
+                                const itemCount = cat.id === 'all'
+                                    ? items.length
+                                    : items.filter(i => i.category.toLowerCase() === cat.id).length;
+
+                                if (itemCount === 0 && cat.id !== 'all') return null;
+
+                                return (
+                                    <motion.button
+                                        key={cat.id}
+                                        whileHover={{ x: 4 }}
+                                        onClick={() => setSelectedCategory(cat.id)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 10,
+                                            padding: '10px 14px',
+                                            borderRadius: 12,
+                                            border: 'none',
+                                            background: isActive
+                                                ? `${cat.color}33`
+                                                : 'rgba(255, 255, 255, 0.05)',
+                                            color: isActive ? cat.color : 'rgba(255, 255, 255, 0.7)',
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                            transition: 'all 0.2s',
+                                            borderLeft: isActive
+                                                ? `3px solid ${cat.color}`
+                                                : '3px solid transparent',
+                                        }}
+                                    >
+                                        <IconComponent size={18} />
+                                        <span style={{ flex: 1, fontWeight: isActive ? 600 : 500, fontSize: '0.9rem' }}>
+                                            {cat.name}
+                                        </span>
+                                        <span style={{
+                                            fontSize: '0.75rem',
+                                            opacity: 0.7,
+                                            background: 'rgba(255, 255, 255, 0.1)',
+                                            padding: '2px 6px',
+                                            borderRadius: 6,
+                                        }}>
+                                            {itemCount}
+                                        </span>
+                                    </motion.button>
                                 );
                             })}
                         </div>
-                    </div>
 
-                    {/* Cart Sidebar */}
-                    <div className="building-cart-sidebar" style={{ flex: 1, minWidth: 260 }}>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            marginBottom: 16
-                        }}>
-                            <ShoppingCart size={20} />
-                            <h3 style={{ margin: 0, fontSize: '1rem' }}>Cart</h3>
-                        </div>
-
-                        {cart.length === 0 ? (
-                            <div className="building-empty-state">
-                                <ShoppingBag size={36} className="building-empty-state-icon" />
-                                <p style={{ margin: '0 0 4px' }}>Your cart is empty</p>
-                                <p style={{ fontSize: '0.8rem', opacity: 0.7, margin: 0 }}>Click items to add them</p>
+                        {/* Product Grid */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                            {/* Search and Balance Bar */}
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: 16,
+                                gap: 16,
+                            }}>
+                                <div style={{
+                                    flex: 1,
+                                    maxWidth: 300,
+                                    position: 'relative',
+                                }}>
+                                    <Search
+                                        size={16}
+                                        style={{
+                                            position: 'absolute',
+                                            left: 12,
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            opacity: 0.5,
+                                        }}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Search items..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 12px 10px 38px',
+                                            borderRadius: 10,
+                                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                                            background: 'rgba(255, 255, 255, 0.08)',
+                                            color: 'white',
+                                            fontSize: '0.9rem',
+                                            outline: 'none',
+                                        }}
+                                    />
+                                </div>
+                                <div className="building-balance-pill">
+                                    💰 {balance} coins
+                                </div>
                             </div>
-                        ) : (
-                            <>
-                                <div style={{ flex: 1, overflowY: 'auto' }}>
-                                    <AnimatePresence mode="popLayout">
-                                        {cart.map(({ item, quantity }) => (
+
+                            {/* Items Grid */}
+                            <div style={{
+                                flex: 1,
+                                overflowY: 'auto',
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                                gap: 12,
+                                paddingRight: 8,
+                                alignContent: 'start',
+                            }}>
+                                {filteredItems.length === 0 ? (
+                                    <div style={{
+                                        gridColumn: '1 / -1',
+                                        textAlign: 'center',
+                                        padding: '40px 20px',
+                                        color: 'rgba(255, 255, 255, 0.5)',
+                                    }}>
+                                        <Package size={48} style={{ opacity: 0.3, marginBottom: 12 }} />
+                                        <p>No items found</p>
+                                    </div>
+                                ) : (
+                                    filteredItems.map(item => {
+                                        const inCart = cart.find(c => c.item.id === item.id);
+                                        return (
                                             <motion.div
                                                 key={item.id}
-                                                layout
-                                                initial={{ opacity: 0, x: 20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: -20 }}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 8,
-                                                    padding: '8px 0',
-                                                    borderBottom: '1px solid rgba(255,255,255,0.1)'
-                                                }}
+                                                className={`building-grid-item ${inCart ? 'selected' : ''}`}
+                                                whileHover={{ scale: 1.03 }}
+                                                whileTap={{ scale: 0.97 }}
+                                                onClick={() => addToCart(item)}
+                                                style={{ position: 'relative' }}
                                             >
-                                                <span style={{ fontSize: '1.25rem' }}>{item.icon || '📦'}</span>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                {item.isDeal && (
                                                     <div style={{
-                                                        fontWeight: 500,
-                                                        fontSize: '0.85rem',
-                                                        whiteSpace: 'nowrap',
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis'
+                                                        position: 'absolute',
+                                                        top: -6,
+                                                        left: -6,
+                                                        background: '#ef4444',
+                                                        color: 'white',
+                                                        padding: '2px 8px',
+                                                        borderRadius: 8,
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: 700,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 3,
                                                     }}>
-                                                        {item.name}
+                                                        <Tag size={10} /> DEAL
                                                     </div>
-                                                    <div className="building-price" style={{ fontSize: '0.75rem' }}>
-                                                        {item.price * quantity} 💰
-                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '2rem', marginBottom: 8 }}>
+                                                    {item.icon || '📦'}
                                                 </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                    <button
-                                                        onClick={() => updateQuantity(item.id, -1)}
-                                                        className="building-qty-btn"
-                                                    >
-                                                        <Minus size={12} />
-                                                    </button>
-                                                    <span style={{
-                                                        width: 24,
-                                                        textAlign: 'center',
-                                                        fontSize: '0.85rem'
+                                                <div style={{ fontWeight: 600, marginBottom: 4, fontSize: '0.9rem' }}>
+                                                    {item.name}
+                                                </div>
+                                                <div style={{
+                                                    fontSize: '0.7rem',
+                                                    color: 'rgba(255, 255, 255, 0.6)',
+                                                    marginBottom: 8,
+                                                    minHeight: 28,
+                                                    overflow: 'hidden',
+                                                    display: '-webkit-box',
+                                                    WebkitLineClamp: 2,
+                                                    WebkitBoxOrient: 'vertical',
+                                                }}>
+                                                    {item.description}
+                                                </div>
+                                                <div className="building-price" style={{ fontSize: '0.85rem' }}>
+                                                    {item.originalPrice && (
+                                                        <span style={{
+                                                            textDecoration: 'line-through',
+                                                            color: '#94a3b8',
+                                                            marginRight: 6,
+                                                            fontSize: '0.75rem',
+                                                        }}>
+                                                            {item.originalPrice}
+                                                        </span>
+                                                    )}
+                                                    {item.price} 💰
+                                                </div>
+                                                {inCart && (
+                                                    <div style={{
+                                                        position: 'absolute',
+                                                        top: 8,
+                                                        right: 8,
+                                                        background: '#6366f1',
+                                                        borderRadius: '50%',
+                                                        width: 22,
+                                                        height: 22,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '0.7rem',
+                                                        fontWeight: 700
                                                     }}>
-                                                        {quantity}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => updateQuantity(item.id, 1)}
-                                                        className="building-qty-btn"
-                                                    >
-                                                        <Plus size={12} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => removeFromCart(item.id)}
-                                                        className="building-qty-btn building-qty-btn-delete"
-                                                        style={{ marginLeft: 4 }}
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
+                                                        {inCart.quantity}
+                                                    </div>
+                                                )}
                                             </motion.div>
-                                        ))}
-                                    </AnimatePresence>
-                                </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
 
-                                {/* Cart Total */}
-                                <div style={{
-                                    borderTop: '1px solid rgba(255,255,255,0.2)',
-                                    paddingTop: 12,
-                                    marginTop: 12
-                                }}>
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        marginBottom: 12
+                        {/* Cart Sidebar */}
+                        <div className="building-cart-sidebar" style={{ width: 260, minWidth: 260 }}>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                marginBottom: 16
+                            }}>
+                                <ShoppingCart size={20} />
+                                <h3 style={{ margin: 0, fontSize: '1rem' }}>Cart</h3>
+                                {cartItemCount > 0 && (
+                                    <span style={{
+                                        background: '#6366f1',
+                                        borderRadius: 10,
+                                        padding: '2px 8px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
                                     }}>
-                                        <span style={{ fontWeight: 600 }}>Total:</span>
-                                        <span style={{
-                                            fontWeight: 700,
-                                            color: canAfford ? '#fbbf24' : '#ef4444'
-                                        }}>
-                                            {cartTotal} 💰
-                                        </span>
-                                    </div>
+                                        {cartItemCount}
+                                    </span>
+                                )}
+                            </div>
 
-                                    {!canAfford && (
-                                        <div style={{
-                                            color: '#ef4444',
-                                            fontSize: '0.8rem',
-                                            marginBottom: 8,
-                                            textAlign: 'center'
-                                        }}>
-                                            Insufficient funds! Need {cartTotal - balance} more coins
-                                        </div>
-                                    )}
-
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <button
-                                            className="building-btn building-btn-secondary"
-                                            onClick={clearCart}
-                                            style={{ flex: 1 }}
-                                        >
-                                            Clear
-                                        </button>
-                                        <button
-                                            className="building-btn building-btn-success"
-                                            onClick={() => setShowCheckout(true)}
-                                            disabled={!canAfford}
-                                            style={{ flex: 2 }}
-                                        >
-                                            <CreditCard size={14} style={{ marginRight: 4 }} />
-                                            Buy
-                                        </button>
-                                    </div>
+                            {cart.length === 0 ? (
+                                <div className="building-empty-state">
+                                    <ShoppingBag size={36} className="building-empty-state-icon" />
+                                    <p style={{ margin: '0 0 4px' }}>Your cart is empty</p>
+                                    <p style={{ fontSize: '0.8rem', opacity: 0.7, margin: 0 }}>Click items to add them</p>
                                 </div>
-                            </>
-                        )}
+                            ) : (
+                                <>
+                                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                                        <AnimatePresence mode="popLayout">
+                                            {cart.map(({ item, quantity }) => (
+                                                <motion.div
+                                                    key={item.id}
+                                                    layout
+                                                    initial={{ opacity: 0, x: 20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    exit={{ opacity: 0, x: -20 }}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 8,
+                                                        padding: '8px 0',
+                                                        borderBottom: '1px solid rgba(255,255,255,0.1)'
+                                                    }}
+                                                >
+                                                    <span style={{ fontSize: '1.2rem' }}>{item.icon || '📦'}</span>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{
+                                                            fontWeight: 500,
+                                                            fontSize: '0.8rem',
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        }}>
+                                                            {item.name}
+                                                        </div>
+                                                        <div className="building-price" style={{ fontSize: '0.7rem' }}>
+                                                            {item.price * quantity} 💰
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                                        <button
+                                                            onClick={() => updateQuantity(item.id, -1)}
+                                                            className="building-qty-btn"
+                                                            style={{ width: 24, height: 24 }}
+                                                        >
+                                                            <Minus size={10} />
+                                                        </button>
+                                                        <span style={{
+                                                            width: 20,
+                                                            textAlign: 'center',
+                                                            fontSize: '0.8rem'
+                                                        }}>
+                                                            {quantity}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => updateQuantity(item.id, 1)}
+                                                            className="building-qty-btn"
+                                                            style={{ width: 24, height: 24 }}
+                                                        >
+                                                            <Plus size={10} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => removeFromCart(item.id)}
+                                                            className="building-qty-btn building-qty-btn-delete"
+                                                            style={{ marginLeft: 2, width: 24, height: 24 }}
+                                                        >
+                                                            <Trash2 size={10} />
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </AnimatePresence>
+                                    </div>
+
+                                    {/* Cart Total */}
+                                    <div style={{
+                                        borderTop: '1px solid rgba(255,255,255,0.2)',
+                                        paddingTop: 12,
+                                        marginTop: 12
+                                    }}>
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            marginBottom: 12
+                                        }}>
+                                            <span style={{ fontWeight: 600 }}>Total:</span>
+                                            <span style={{
+                                                fontWeight: 700,
+                                                color: canAfford ? '#fbbf24' : '#ef4444'
+                                            }}>
+                                                {cartTotal} 💰
+                                            </span>
+                                        </div>
+
+                                        {!canAfford && (
+                                            <div style={{
+                                                color: '#ef4444',
+                                                fontSize: '0.75rem',
+                                                marginBottom: 8,
+                                                textAlign: 'center'
+                                            }}>
+                                                Need {cartTotal - balance} more coins
+                                            </div>
+                                        )}
+
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <button
+                                                className="building-btn building-btn-secondary"
+                                                onClick={clearCart}
+                                                style={{ flex: 1, padding: '10px 12px', fontSize: '0.85rem' }}
+                                            >
+                                                Clear
+                                            </button>
+                                            <button
+                                                className="building-btn building-btn-success"
+                                                onClick={() => setShowCheckout(true)}
+                                                disabled={!canAfford}
+                                                style={{ flex: 2, padding: '10px 12px', fontSize: '0.85rem' }}
+                                            >
+                                                <CreditCard size={14} style={{ marginRight: 4 }} />
+                                                Buy
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

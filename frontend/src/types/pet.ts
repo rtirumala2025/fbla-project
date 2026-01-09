@@ -24,6 +24,7 @@ export interface Pet {
   ownerId?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  lastStatUpdate?: Date;
   color_pattern?: string | null;
   birthday?: string | null;
 }
@@ -91,11 +92,11 @@ export interface PetActionResponse {
     user_id: string;
     created_at: string;
     updated_at: string;
-    stats: PetStats & { 
-      mood: string; 
-      level: number; 
-      xp: number; 
-      hygiene: number; 
+    stats: PetStats & {
+      mood: string;
+      level: number;
+      xp: number;
+      hygiene: number;
       is_sick: boolean;
       evolution_stage?: string;
     };
