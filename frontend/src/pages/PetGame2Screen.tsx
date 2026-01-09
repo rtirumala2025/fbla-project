@@ -21,7 +21,7 @@ import type { ActivityZone } from '@/game3d/core/SceneManager';
 import { GiftShopWindow, HouseWindow, VetGameWindow, AgilityGameWindow } from '@/components/DogPark';
 
 export const PetGame2Screen: React.FC = () => {
-  const { pet, loading, error, refreshPet } = usePet();
+  const { pet, loading, error, refreshPet, updatePetStats } = usePet();
   const { currentUser } = useAuth();
   const { balance, transactions, refreshBalance } = useFinancial();
 
@@ -546,21 +546,19 @@ export const PetGame2Screen: React.FC = () => {
         petName={petName}
         currentEnergy={stats?.energy ?? 50}
         onSleepComplete={async (energyRestored) => {
-          // Call API to persist energy change to database
+          // Use PetContext's updatePetStats to persist energy change to Supabase
           try {
-            const response = await restPetAction(Math.ceil(energyRestored / 20)); // Convert to rest hours
-            if (response?.pet?.stats) {
-              setStats(response.pet.stats as PetStats);
-            } else {
-              // Fallback: optimistically update local state
-              if (stats) {
-                setStats(prev => prev ? {
-                  ...prev,
-                  energy: Math.min(100, (prev.energy ?? 0) + energyRestored)
-                } : prev);
-              }
+            const currentEnergy = stats?.energy ?? 0;
+            const newEnergy = Math.min(100, currentEnergy + energyRestored);
+
+            await updatePetStats({ energy: newEnergy });
+
+            // Update local state to match
+            if (stats) {
+              setStats(prev => prev ? { ...prev, energy: newEnergy } : prev);
             }
-            // Refresh pet data from database to ensure sync
+
+            // Refresh to ensure sync with database
             await refreshPet();
           } catch (error) {
             console.error('Failed to save sleep energy:', error);
