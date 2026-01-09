@@ -187,68 +187,255 @@ export function VetGameWindow({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: 'calc(100vh - 140px)',
+                            gap: 20
+                        }}
                     >
-                        {/* Pet Health Stats */}
-                        <h3 style={{ marginTop: 0, marginBottom: 16 }}>
-                            {petName}'s Health Report
-                        </h3>
-
-                        <div className="building-stats">
-                            <StatBar icon={<Heart />} label="Health" value={petHealth.health} color="#ef4444" />
-                            <StatBar icon={<Sparkles />} label="Happiness" value={petHealth.happiness} color="#f59e0b" />
-                            <StatBar icon={<Zap />} label="Energy" value={petHealth.energy} color="#10b981" />
-                            <StatBar icon={<Droplet />} label="Clean" value={petHealth.cleanliness} color="#3b82f6" />
+                        {/* Header */}
+                        <div style={{ textAlign: 'center' }}>
+                            <h2 style={{ margin: '0 0 8px', fontSize: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                                🏥 Vet Clinic
+                            </h2>
+                            <p style={{ color: '#94a3b8', margin: 0 }}>
+                                {petName}'s Health Checkup
+                            </p>
                         </div>
 
-                        {/* Health Assessment */}
+                        {/* Main Content - Two Column Layout */}
                         <div style={{
-                            background: 'rgba(255,255,255,0.05)',
-                            borderRadius: 12,
-                            padding: 16,
-                            marginBottom: 20
+                            display: 'flex',
+                            flex: 1,
+                            gap: 20,
+                            minHeight: 0
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                                {petHealth.health >= 80 ? (
-                                    <Check size={24} color="#10b981" />
-                                ) : petHealth.health >= 50 ? (
-                                    <AlertCircle size={24} color="#f59e0b" />
-                                ) : (
-                                    <X size={24} color="#ef4444" />
-                                )}
-                                <div>
-                                    <div style={{ fontWeight: 600 }}>
-                                        {petHealth.health >= 80
-                                            ? 'Excellent Health!'
-                                            : petHealth.health >= 50
-                                                ? 'Could Use a Checkup'
-                                                : 'Needs Attention!'
-                                        }
+                            {/* Left Column - AI Tutorial */}
+                            <div style={{
+                                flex: 1,
+                                background: 'rgba(30, 30, 40, 0.8)',
+                                borderRadius: 16,
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'hidden'
+                            }}>
+                                {/* AI Chat Header */}
+                                <div style={{
+                                    padding: '12px 16px',
+                                    background: 'rgba(16, 185, 129, 0.2)',
+                                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10
+                                }}>
+                                    <div style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}>
+                                        👨‍⚕️
                                     </div>
-                                    <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                                        {petHealth.health >= 80
-                                            ? `${petName} is in great shape!`
-                                            : `A health check could help ${petName} feel better.`
-                                        }
+                                    <div>
+                                        <div style={{ fontWeight: 600 }}>Dr. Pet</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#10b981' }}>● Ready to help</div>
+                                    </div>
+                                </div>
+
+                                {/* Tutorial Messages */}
+                                <div style={{
+                                    flex: 1,
+                                    padding: 16,
+                                    overflowY: 'auto',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 12
+                                }}>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        style={{
+                                            background: 'rgba(16, 185, 129, 0.15)',
+                                            borderRadius: 12,
+                                            padding: 14,
+                                            maxWidth: '90%'
+                                        }}
+                                    >
+                                        <p style={{ margin: '0 0 10px', fontWeight: 600 }}>👋 Welcome to the Vet Clinic!</p>
+                                        <p style={{ margin: 0, color: '#cbd5e1', lineHeight: 1.5 }}>
+                                            Let me show you how the health check works:
+                                        </p>
+                                    </motion.div>
+
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.5 }}
+                                        style={{
+                                            background: 'rgba(16, 185, 129, 0.15)',
+                                            borderRadius: 12,
+                                            padding: 14,
+                                            maxWidth: '90%'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: '1.2rem' }}>1️⃣</span>
+                                                <span><strong>Watch for the glowing body part</strong></span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: '1.2rem' }}>2️⃣</span>
+                                                <span><strong>Click it quickly!</strong> (2 seconds)</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: '1.2rem' }}>3️⃣</span>
+                                                <span>Complete <strong>5 rounds</strong> to finish</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: '1.2rem' }}>4️⃣</span>
+                                                <span>Higher score = more <strong>health boost!</strong></span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.8 }}
+                                        style={{
+                                            background: 'rgba(251, 191, 36, 0.15)',
+                                            borderRadius: 12,
+                                            padding: 14,
+                                            maxWidth: '90%'
+                                        }}
+                                    >
+                                        <p style={{ margin: 0, color: '#fde68a' }}>
+                                            💰 <strong>Treatment cost: 25 coins</strong><br />
+                                            <span style={{ fontSize: '0.85rem', color: '#fbbf24' }}>Paid after completing the checkup</span>
+                                        </p>
+                                    </motion.div>
+                                </div>
+                            </div>
+
+                            {/* Right Column - Pet Health & Demo */}
+                            <div style={{
+                                flex: 1,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 16
+                            }}>
+                                {/* Pet Stats */}
+                                <div style={{
+                                    background: 'rgba(30, 30, 40, 0.8)',
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    border: '1px solid rgba(255,255,255,0.1)'
+                                }}>
+                                    <div style={{ marginBottom: 12, fontWeight: 600 }}>{petName}'s Current Stats</div>
+                                    <div className="building-stats" style={{ marginBottom: 0 }}>
+                                        <StatBar icon={<Heart />} label="Health" value={petHealth.health} color="#ef4444" />
+                                        <StatBar icon={<Sparkles />} label="Happy" value={petHealth.happiness} color="#f59e0b" />
+                                    </div>
+                                </div>
+
+                                {/* Demo Preview */}
+                                <div style={{
+                                    flex: 1,
+                                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.15))',
+                                    borderRadius: 16,
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}>
+                                    {/* Demo Label */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: 12,
+                                        left: 12,
+                                        background: 'rgba(0,0,0,0.5)',
+                                        padding: '4px 12px',
+                                        borderRadius: 20,
+                                        fontSize: '0.8rem',
+                                        color: '#a7f3d0'
+                                    }}>
+                                        🎬 Demo Preview
+                                    </div>
+
+                                    {/* Pet silhouette with animated spots */}
+                                    <div style={{ position: 'relative', fontSize: '5rem', opacity: 0.7 }}>
+                                        🐕
+                                        {/* Animated glowing spots */}
+                                        <motion.div
+                                            animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.1, 0.8] }}
+                                            transition={{ duration: 1.5, repeat: Infinity }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '10%',
+                                                left: '50%',
+                                                transform: 'translateX(-50%)',
+                                                width: 30,
+                                                height: 30,
+                                                borderRadius: '50%',
+                                                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                                boxShadow: '0 0 20px rgba(99, 102, 241, 0.6)'
+                                            }}
+                                        />
+                                        <motion.div
+                                            animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.1, 0.8] }}
+                                            transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '40%',
+                                                left: '45%',
+                                                width: 30,
+                                                height: 30,
+                                                borderRadius: '50%',
+                                                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                                boxShadow: '0 0 20px rgba(99, 102, 241, 0.6)'
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div style={{
+                                        position: 'absolute',
+                                        bottom: 16,
+                                        textAlign: 'center',
+                                        color: '#a7f3d0',
+                                        fontSize: '0.9rem'
+                                    }}>
+                                        Click the glowing spots!
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Start Game Button */}
-                        <div style={{ textAlign: 'center' }}>
-                            <p style={{ color: '#94a3b8', marginBottom: 12 }}>
-                                Play a quick reaction game to perform a health check!
-                            </p>
+                        {/* Start Button */}
+                        <div style={{ textAlign: 'center', paddingBottom: 16 }}>
                             <motion.button
-                                className="building-btn building-btn-primary"
+                                className="building-btn building-btn-success"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={startGame}
-                                style={{ padding: '12px 32px', fontSize: '1rem' }}
+                                style={{
+                                    padding: '16px 48px',
+                                    fontSize: '1.2rem'
+                                }}
                             >
-                                <Stethoscope size={18} style={{ marginRight: 8 }} />
+                                <Stethoscope size={24} style={{ marginRight: 10 }} />
                                 Start Health Check
                             </motion.button>
+                            <p style={{ margin: '12px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
+                                Press ESC to exit at any time
+                            </p>
                         </div>
                     </motion.div>
                 )}

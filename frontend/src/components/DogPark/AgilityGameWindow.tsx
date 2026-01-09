@@ -230,89 +230,295 @@ export function AgilityGameWindow({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        style={{ textAlign: 'center', padding: 20 }}
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: 'calc(100vh - 140px)',
+                            gap: 24,
+                            padding: '0 20px'
+                        }}
                     >
-                        <motion.div
-                            animate={{ rotate: [0, 10, -10, 0] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            style={{ fontSize: '4rem', marginBottom: 20 }}
-                        >
-                            🎯
-                        </motion.div>
-
-                        <h3 style={{ margin: '0 0 8px', fontSize: '1.5rem' }}>
-                            Agility Training
-                        </h3>
-                        <p style={{ color: '#94a3b8', marginBottom: 24 }}>
-                            Click the targets as fast as you can!<br />
-                            Build combos for bonus points.
-                        </p>
-
-                        {/* High Score */}
-                        <div style={{
-                            background: 'rgba(251, 191, 36, 0.1)',
-                            border: '1px solid rgba(251, 191, 36, 0.3)',
-                            borderRadius: 12,
-                            padding: 16,
-                            marginBottom: 24
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                <Trophy size={24} color="#fbbf24" />
-                                <span style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-                                    High Score: {highScore}
-                                </span>
-                            </div>
+                        {/* Header */}
+                        <div style={{ textAlign: 'center' }}>
+                            <h2 style={{ margin: '0 0 8px', fontSize: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                                🎯 Agility Training
+                            </h2>
+                            <p style={{ color: '#94a3b8', margin: 0 }}>
+                                Train your reflexes and earn coins!
+                            </p>
                         </div>
 
-                        {/* Instructions */}
+                        {/* Main Content - Two Column Layout */}
                         <div style={{
                             display: 'flex',
-                            gap: 16,
-                            justifyContent: 'center',
-                            marginBottom: 24
+                            flex: 1,
+                            gap: 24,
+                            minHeight: 0
                         }}>
+                            {/* Left Column - AI Tutorial Chat */}
                             <div style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                padding: 12,
-                                borderRadius: 8,
                                 flex: 1,
-                                maxWidth: 120
+                                background: 'rgba(30, 30, 40, 0.8)',
+                                borderRadius: 16,
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                overflow: 'hidden'
                             }}>
-                                <Timer size={20} style={{ marginBottom: 4 }} />
-                                <div style={{ fontSize: '0.85rem' }}>{GAME_DURATION}s Timer</div>
+                                {/* AI Chat Header */}
+                                <div style={{
+                                    padding: '12px 16px',
+                                    background: 'rgba(99, 102, 241, 0.2)',
+                                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10
+                                }}>
+                                    <div style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}>
+                                        🤖
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: 600 }}>Pet Assistant</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#10b981' }}>● Online</div>
+                                    </div>
+                                </div>
+
+                                {/* AI Chat Messages */}
+                                <div style={{
+                                    flex: 1,
+                                    padding: 16,
+                                    overflowY: 'auto',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 12
+                                }}>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        style={{
+                                            background: 'rgba(99, 102, 241, 0.15)',
+                                            borderRadius: 12,
+                                            padding: 14,
+                                            maxWidth: '90%'
+                                        }}
+                                    >
+                                        <p style={{ margin: '0 0 10px', fontWeight: 600 }}>👋 Welcome to Agility Training!</p>
+                                        <p style={{ margin: 0, color: '#cbd5e1', lineHeight: 1.5 }}>
+                                            This game tests your reflexes! Here's how to play:
+                                        </p>
+                                    </motion.div>
+
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.5 }}
+                                        style={{
+                                            background: 'rgba(99, 102, 241, 0.15)',
+                                            borderRadius: 12,
+                                            padding: 14,
+                                            maxWidth: '90%'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: '1.2rem' }}>1️⃣</span>
+                                                <span><strong>Click targets</strong> as they fly across the screen</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: '1.2rem' }}>2️⃣</span>
+                                                <span><strong>Build combos</strong> by hitting targets in a row</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: '1.2rem' }}>3️⃣</span>
+                                                <span><strong>Watch for ⭐</strong> bonus targets = 50 points!</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: '1.2rem' }}>4️⃣</span>
+                                                <span><strong>30 seconds</strong> to score as high as you can!</span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.8 }}
+                                        style={{
+                                            background: 'rgba(16, 185, 129, 0.15)',
+                                            borderRadius: 12,
+                                            padding: 14,
+                                            maxWidth: '90%'
+                                        }}
+                                    >
+                                        <p style={{ margin: 0, color: '#a7f3d0' }}>
+                                            💰 <strong>Earn 1 coin per 50 points!</strong> Your high score: <span style={{ color: '#fbbf24' }}>{highScore}</span>
+                                        </p>
+                                    </motion.div>
+                                </div>
                             </div>
+
+                            {/* Right Column - Demo Area */}
                             <div style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                padding: 12,
-                                borderRadius: 8,
                                 flex: 1,
-                                maxWidth: 120
+                                background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.2))',
+                                borderRadius: 16,
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                display: 'flex',
+                                flexDirection: 'column'
                             }}>
-                                <Zap size={20} color="#fbbf24" style={{ marginBottom: 4 }} />
-                                <div style={{ fontSize: '0.85rem' }}>Combo Bonus</div>
-                            </div>
-                            <div style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                padding: 12,
-                                borderRadius: 8,
-                                flex: 1,
-                                maxWidth: 120
-                            }}>
-                                <Coins size={20} color="#10b981" style={{ marginBottom: 4 }} />
-                                <div style={{ fontSize: '0.85rem' }}>Earn Coins</div>
+                                {/* Demo Label */}
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 12,
+                                    left: 12,
+                                    background: 'rgba(0,0,0,0.5)',
+                                    padding: '4px 12px',
+                                    borderRadius: 20,
+                                    fontSize: '0.8rem',
+                                    color: '#a5b4fc'
+                                }}>
+                                    🎬 Demo Preview
+                                </div>
+
+                                {/* Demo Targets */}
+                                <div style={{ flex: 1, position: 'relative' }}>
+                                    {/* Animated demo targets */}
+                                    <motion.div
+                                        animate={{
+                                            x: ['-10%', '110%'],
+                                            y: ['20%', '30%', '20%']
+                                        }}
+                                        transition={{
+                                            duration: 4,
+                                            repeat: Infinity,
+                                            ease: 'linear'
+                                        }}
+                                        style={{
+                                            position: 'absolute',
+                                            width: 50,
+                                            height: 50,
+                                            borderRadius: '50%',
+                                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '1.5rem',
+                                            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)'
+                                        }}
+                                    >
+                                        🎾
+                                    </motion.div>
+                                    <motion.div
+                                        animate={{
+                                            x: ['110%', '-10%'],
+                                            y: ['50%', '60%', '50%']
+                                        }}
+                                        transition={{
+                                            duration: 5,
+                                            repeat: Infinity,
+                                            ease: 'linear',
+                                            delay: 0.5
+                                        }}
+                                        style={{
+                                            position: 'absolute',
+                                            width: 60,
+                                            height: 60,
+                                            borderRadius: '50%',
+                                            background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '1.8rem',
+                                            boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4)'
+                                        }}
+                                    >
+                                        ⭐
+                                    </motion.div>
+                                    <motion.div
+                                        animate={{
+                                            x: ['-10%', '110%'],
+                                            y: ['70%', '75%', '70%']
+                                        }}
+                                        transition={{
+                                            duration: 3,
+                                            repeat: Infinity,
+                                            ease: 'linear',
+                                            delay: 1
+                                        }}
+                                        style={{
+                                            position: 'absolute',
+                                            width: 45,
+                                            height: 45,
+                                            borderRadius: '50%',
+                                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '1.3rem',
+                                            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)'
+                                        }}
+                                    >
+                                        🦴
+                                    </motion.div>
+
+                                    {/* Click instruction */}
+                                    <motion.div
+                                        animate={{ scale: [1, 1.1, 1] }}
+                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                        style={{
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: 'translate(-50%, -50%)',
+                                            textAlign: 'center',
+                                            pointerEvents: 'none'
+                                        }}
+                                    >
+                                        <div style={{ fontSize: '3rem', marginBottom: 8 }}>👆</div>
+                                        <div style={{ fontSize: '1rem', color: '#a5b4fc', fontWeight: 600 }}>Click targets!</div>
+                                    </motion.div>
+                                </div>
+
+                                {/* Ground */}
+                                <div style={{
+                                    height: 40,
+                                    background: 'linear-gradient(180deg, #065f46, #047857)'
+                                }} />
                             </div>
                         </div>
 
-                        <motion.button
-                            className="building-btn building-btn-primary"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={startGame}
-                            style={{ padding: '14px 40px', fontSize: '1.1rem' }}
-                        >
-                            <Target size={20} style={{ marginRight: 8 }} />
-                            Start Training!
-                        </motion.button>
+                        {/* Start Button */}
+                        <div style={{ textAlign: 'center', paddingBottom: 20 }}>
+                            <motion.button
+                                className="building-btn building-btn-primary"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={startGame}
+                                style={{
+                                    padding: '16px 48px',
+                                    fontSize: '1.2rem',
+                                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                    border: 'none'
+                                }}
+                            >
+                                <Target size={24} style={{ marginRight: 10 }} />
+                                Start Training!
+                            </motion.button>
+                            <p style={{ margin: '12px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
+                                Press ESC to exit at any time
+                            </p>
+                        </div>
                     </motion.div>
                 )}
 
