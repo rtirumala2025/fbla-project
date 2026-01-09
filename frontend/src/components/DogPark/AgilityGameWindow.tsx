@@ -140,7 +140,7 @@ export function AgilityGameWindow({
             id: `target-${Date.now()}-${Math.random()}`,
             x: isFromLeft ? -5 : 105,
             y: 10 + Math.random() * 70,
-            speed: 0.03 + Math.random() * 0.05, // Very slow: 0.03-0.08
+            speed: 0.08 + Math.random() * 0.07, // Comfortable speed: 0.08-0.15
             direction: isFromLeft ? 1 : -1,
             size: isBonusTarget ? 180 : 100 + Math.random() * 50, // Very big: 100-150px, bonus 180px
             points: isBonusTarget ? 50 : 10,
@@ -470,27 +470,27 @@ export function AgilityGameWindow({
 
                                 {/* Demo Targets */}
                                 <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-                                    {/* Animated demo targets */}
+                                    {/* Animated demo targets - big and slow like actual game */}
                                     <motion.div
                                         animate={{
                                             left: ['-20%', '120%']
                                         }}
                                         transition={{
-                                            duration: 4,
+                                            duration: 8,
                                             repeat: Infinity,
                                             ease: 'linear'
                                         }}
                                         style={{
                                             position: 'absolute',
-                                            top: '20%',
-                                            width: 50,
-                                            height: 50,
+                                            top: '15%',
+                                            width: 100,
+                                            height: 100,
                                             borderRadius: '50%',
                                             background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            fontSize: '1.5rem',
+                                            fontSize: '2.5rem',
                                             boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)'
                                         }}
                                     >
@@ -501,22 +501,22 @@ export function AgilityGameWindow({
                                             left: ['120%', '-20%']
                                         }}
                                         transition={{
-                                            duration: 5,
+                                            duration: 10,
                                             repeat: Infinity,
                                             ease: 'linear',
                                             delay: 0.5
                                         }}
                                         style={{
                                             position: 'absolute',
-                                            top: '45%',
-                                            width: 60,
-                                            height: 60,
+                                            top: '40%',
+                                            width: 130,
+                                            height: 130,
                                             borderRadius: '50%',
                                             background: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            fontSize: '1.8rem',
+                                            fontSize: '3.5rem',
                                             boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4)'
                                         }}
                                     >
@@ -527,22 +527,22 @@ export function AgilityGameWindow({
                                             left: ['-20%', '120%']
                                         }}
                                         transition={{
-                                            duration: 3,
+                                            duration: 6,
                                             repeat: Infinity,
                                             ease: 'linear',
                                             delay: 1
                                         }}
                                         style={{
                                             position: 'absolute',
-                                            top: '65%',
-                                            width: 45,
-                                            height: 45,
+                                            top: '60%',
+                                            width: 90,
+                                            height: 90,
                                             borderRadius: '50%',
                                             background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            fontSize: '1.3rem',
+                                            fontSize: '2rem',
                                             boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)'
                                         }}
                                     >
