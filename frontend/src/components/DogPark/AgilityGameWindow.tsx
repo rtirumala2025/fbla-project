@@ -471,7 +471,7 @@ export function AgilityGameWindow({
                                 {/* Demo Targets */}
                                 <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                                     {/* Animated demo targets - big and slow like actual game */}
-                                    <motion.div
+                                    <motion.button
                                         animate={{
                                             left: ['-20%', '120%']
                                         }}
@@ -480,6 +480,8 @@ export function AgilityGameWindow({
                                             repeat: Infinity,
                                             ease: 'linear'
                                         }}
+                                        whileTap={{ scale: 0.8 }}
+                                        onClick={() => alert('Nice! 🎉 You got it! Click Start Training when ready.')}
                                         style={{
                                             position: 'absolute',
                                             top: '15%',
@@ -491,12 +493,14 @@ export function AgilityGameWindow({
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             fontSize: '2.5rem',
-                                            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)'
+                                            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)',
+                                            border: 'none',
+                                            cursor: 'pointer'
                                         }}
                                     >
                                         🎾
-                                    </motion.div>
-                                    <motion.div
+                                    </motion.button>
+                                    <motion.button
                                         animate={{
                                             left: ['120%', '-20%']
                                         }}
@@ -506,6 +510,8 @@ export function AgilityGameWindow({
                                             ease: 'linear',
                                             delay: 0.5
                                         }}
+                                        whileTap={{ scale: 0.8 }}
+                                        onClick={() => alert('⭐ Bonus target! Worth 50 points in the real game!')}
                                         style={{
                                             position: 'absolute',
                                             top: '40%',
@@ -517,12 +523,14 @@ export function AgilityGameWindow({
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             fontSize: '3.5rem',
-                                            boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4)'
+                                            boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4)',
+                                            border: 'none',
+                                            cursor: 'pointer'
                                         }}
                                     >
                                         ⭐
-                                    </motion.div>
-                                    <motion.div
+                                    </motion.button>
+                                    <motion.button
                                         animate={{
                                             left: ['-20%', '120%']
                                         }}
@@ -532,6 +540,8 @@ export function AgilityGameWindow({
                                             ease: 'linear',
                                             delay: 1
                                         }}
+                                        whileTap={{ scale: 0.8 }}
+                                        onClick={() => alert('Great reflexes! 👍 Click Start Training to play for real!')}
                                         style={{
                                             position: 'absolute',
                                             top: '60%',
@@ -543,11 +553,13 @@ export function AgilityGameWindow({
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             fontSize: '2rem',
-                                            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)'
+                                            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)',
+                                            border: 'none',
+                                            cursor: 'pointer'
                                         }}
                                     >
                                         🦴
-                                    </motion.div>
+                                    </motion.button>
 
                                     {/* Click instruction */}
                                     <motion.div
