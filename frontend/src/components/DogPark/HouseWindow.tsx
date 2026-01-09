@@ -108,12 +108,8 @@ export function HouseWindow({
             setInventory(itemsWithIcons);
         } catch (error) {
             console.error('Failed to load inventory:', error);
-            // Mock data fallback
-            setInventory([
-                { item_id: '1', item_name: 'Premium Dog Food', quantity: 3, icon: '🍖', category: 'food' },
-                { item_id: '2', item_name: 'Squeaky Toy', quantity: 1, icon: '🧸', category: 'toys' },
-                { item_id: '4', item_name: 'Fancy Collar', quantity: 1, icon: '📿', category: 'accessories', equipped: true },
-            ]);
+            // Show empty inventory on error - no mock data
+            setInventory([]);
         } finally {
             setLoadingInventory(false);
         }

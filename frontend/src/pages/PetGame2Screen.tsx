@@ -545,13 +545,32 @@ export const PetGame2Screen: React.FC = () => {
         onClose={() => setOpenBuilding(null)}
         petName={petName}
         currentEnergy={stats?.energy ?? 50}
-        onSleepComplete={(energyRestored) => {
-          // Update stats with restored energy
-          if (stats) {
-            setStats(prev => prev ? {
-              ...prev,
-              energy: Math.min(100, (prev.energy ?? 0) + energyRestored)
-            } : prev);
+        onSleepComplete={async (energyRestored) => {
+          // Call API to persist energy change to database
+          try {
+            const response = await restPetAction(Math.ceil(energyRestored / 20)); // Convert to rest hours
+            if (response?.pet?.stats) {
+              setStats(response.pet.stats as PetStats);
+            } else {
+              // Fallback: optimistically update local state
+              if (stats) {
+                setStats(prev => prev ? {
+                  ...prev,
+                  energy: Math.min(100, (prev.energy ?? 0) + energyRestored)
+                } : prev);
+              }
+            }
+            // Refresh pet data from database to ensure sync
+            await refreshPet();
+          } catch (error) {
+            console.error('Failed to save sleep energy:', error);
+            // Still update local state on error
+            if (stats) {
+              setStats(prev => prev ? {
+                ...prev,
+                energy: Math.min(100, (prev.energy ?? 0) + energyRestored)
+              } : prev);
+            }
           }
           showSuccess('rest', `${petName} is well rested! +${energyRestored}% energy`);
         }}
