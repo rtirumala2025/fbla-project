@@ -56,6 +56,7 @@ export function AgilityGameWindow({
     const gameAreaRef = useRef<HTMLDivElement>(null);
     const animationFrameRef = useRef<number>();
     const lastSpawnRef = useRef(0);
+    const [demoFeedback, setDemoFeedback] = useState<{ message: string, emoji: string } | null>(null);
 
     // Reset game when window closes
     useEffect(() => {
@@ -481,7 +482,10 @@ export function AgilityGameWindow({
                                             ease: 'linear'
                                         }}
                                         whileTap={{ scale: 0.8 }}
-                                        onClick={() => alert('Nice! 🎉 You got it! Click Start Training when ready.')}
+                                        onClick={() => {
+                                            setDemoFeedback({ message: 'Nice! You got it!', emoji: '🎉' });
+                                            setTimeout(() => setDemoFeedback(null), 2000);
+                                        }}
                                         style={{
                                             position: 'absolute',
                                             top: '15%',
@@ -511,7 +515,10 @@ export function AgilityGameWindow({
                                             delay: 0.5
                                         }}
                                         whileTap={{ scale: 0.8 }}
-                                        onClick={() => alert('⭐ Bonus target! Worth 50 points in the real game!')}
+                                        onClick={() => {
+                                            setDemoFeedback({ message: 'Bonus target! 50 points!', emoji: '⭐' });
+                                            setTimeout(() => setDemoFeedback(null), 2000);
+                                        }}
                                         style={{
                                             position: 'absolute',
                                             top: '40%',
@@ -541,7 +548,10 @@ export function AgilityGameWindow({
                                             delay: 1
                                         }}
                                         whileTap={{ scale: 0.8 }}
-                                        onClick={() => alert('Great reflexes! 👍 Click Start Training to play for real!')}
+                                        onClick={() => {
+                                            setDemoFeedback({ message: 'Great reflexes!', emoji: '👍' });
+                                            setTimeout(() => setDemoFeedback(null), 2000);
+                                        }}
                                         style={{
                                             position: 'absolute',
                                             top: '60%',
@@ -577,6 +587,33 @@ export function AgilityGameWindow({
                                         <div style={{ fontSize: '3rem', marginBottom: 8 }}>👆</div>
                                         <div style={{ fontSize: '1rem', color: '#a5b4fc', fontWeight: 600 }}>Click targets!</div>
                                     </motion.div>
+
+                                    {/* Demo feedback toast */}
+                                    <AnimatePresence>
+                                        {demoFeedback && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                style={{
+                                                    position: 'absolute',
+                                                    bottom: 60,
+                                                    left: '50%',
+                                                    transform: 'translateX(-50%)',
+                                                    background: 'rgba(16, 185, 129, 0.9)',
+                                                    borderRadius: 12,
+                                                    padding: '12px 24px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 10,
+                                                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                                                }}
+                                            >
+                                                <span style={{ fontSize: '1.5rem' }}>{demoFeedback.emoji}</span>
+                                                <span style={{ fontWeight: 600, color: 'white' }}>{demoFeedback.message}</span>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
 
                                 {/* Ground */}
