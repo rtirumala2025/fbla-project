@@ -7,9 +7,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Zap, Target, Timer, Coins, RefreshCw, X, Star } from 'lucide-react';
+import { Trophy, Zap, Target, Timer, Coins, RefreshCw, X, Star, HelpCircle } from 'lucide-react';
 import { BuildingInteractionWindow } from './BuildingInteractionWindow';
-import { useAIAssistant } from '../../contexts/AIAssistantContext';
 import './building-windows.css';
 
 interface AgilityGameWindowProps {
@@ -58,24 +57,18 @@ export function AgilityGameWindow({
     const animationFrameRef = useRef<number>();
     const lastSpawnRef = useRef(0);
 
-    // AI Assistant for game guidance
-    const { sendSystemMessage } = useAIAssistant();
-
-    // Reset game when window closes, show AI intro when opens
+    // Reset game when window closes
     useEffect(() => {
         if (!isOpen) {
             setGameState('menu');
             resetGameState();
-        } else {
-            // Show AI intro when window opens
-            sendSystemMessage('agility');
         }
         return () => {
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
             }
         };
-    }, [isOpen, sendSystemMessage]);
+    }, [isOpen]);
 
     // Game timer
     useEffect(() => {
@@ -329,6 +322,12 @@ export function AgilityGameWindow({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: 'calc(100vh - 140px)',
+                            padding: 0
+                        }}
                     >
                         {/* Game HUD */}
                         <div style={{
@@ -385,19 +384,18 @@ export function AgilityGameWindow({
                             />
                         </div>
 
-                        {/* Game Area */}
+                        {/* Game Area - Full Screen */}
                         <div
                             ref={gameAreaRef}
                             onClick={handleMiss}
                             style={{
                                 position: 'relative',
                                 flex: 1,
-                                minHeight: 400,
-                                maxHeight: 'calc(100vh - 280px)',
-                                background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))',
+                                background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.2))',
                                 borderRadius: 12,
                                 overflow: 'hidden',
-                                cursor: 'crosshair'
+                                cursor: 'crosshair',
+                                margin: '0 -32px -28px -32px'
                             }}
                         >
                             {/* Ground */}

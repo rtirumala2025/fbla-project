@@ -9,7 +9,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Stethoscope, Heart, Zap, Droplet, Sparkles, Check, X, AlertCircle, RefreshCw } from 'lucide-react';
 import { BuildingInteractionWindow } from './BuildingInteractionWindow';
-import { useAIAssistant } from '../../contexts/AIAssistantContext';
 import './building-windows.css';
 
 interface PetHealth {
@@ -58,10 +57,7 @@ export function VetGameWindow({
     const [showPayment, setShowPayment] = useState(false);
     const [isPaying, setIsPaying] = useState(false);
 
-    // AI Assistant for game guidance
-    const { sendSystemMessage } = useAIAssistant();
-
-    // Reset game when window closes, show AI intro when opens
+    // Reset game when window closes
     useEffect(() => {
         if (!isOpen) {
             setGameState('idle');
@@ -71,11 +67,8 @@ export function VetGameWindow({
             setFeedback(null);
             setHealthBoost(0);
             setShowPayment(false);
-        } else {
-            // Show AI intro when window opens
-            sendSystemMessage('vet');
         }
-    }, [isOpen, sendSystemMessage]);
+    }, [isOpen]);
 
     // Game timer
     useEffect(() => {
@@ -266,7 +259,13 @@ export function VetGameWindow({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        style={{ textAlign: 'center' }}
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            height: 'calc(100vh - 180px)',
+                            textAlign: 'center'
+                        }}
                     >
                         {/* Game Header */}
                         <div style={{
@@ -309,9 +308,10 @@ export function VetGameWindow({
                         {/* Pet Body with clickable areas */}
                         <div style={{
                             position: 'relative',
-                            width: 280,
-                            height: 400,
-                            margin: '0 auto',
+                            width: '100%',
+                            maxWidth: 400,
+                            flex: 1,
+                            minHeight: 350,
                             background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))',
                             borderRadius: 16,
                             border: '2px solid rgba(255,255,255,0.1)'
