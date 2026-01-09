@@ -473,7 +473,7 @@ export function AgilityGameWindow({
                                     {/* Animated demo targets */}
                                     <motion.div
                                         animate={{
-                                            left: ['-60px', 'calc(100% + 10px)']
+                                            left: ['-20%', '120%']
                                         }}
                                         transition={{
                                             duration: 4,
@@ -498,7 +498,7 @@ export function AgilityGameWindow({
                                     </motion.div>
                                     <motion.div
                                         animate={{
-                                            right: ['-70px', 'calc(100% + 10px)']
+                                            left: ['120%', '-20%']
                                         }}
                                         transition={{
                                             duration: 5,
@@ -524,7 +524,7 @@ export function AgilityGameWindow({
                                     </motion.div>
                                     <motion.div
                                         animate={{
-                                            left: ['-50px', 'calc(100% + 10px)']
+                                            left: ['-20%', '120%']
                                         }}
                                         transition={{
                                             duration: 3,
