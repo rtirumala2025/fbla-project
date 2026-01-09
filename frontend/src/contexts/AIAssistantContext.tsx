@@ -20,6 +20,7 @@ interface AIAssistantContextType {
     toggleOpen: () => void;
     messages: ChatMessage[];
     sendMessage: (message: string) => Promise<void>;
+    sendSystemMessage: (buildingType: string) => void;
     isLoading: boolean;
     clearHistory: () => void;
     updateContext: (context: Partial<AIContextState>) => void;
@@ -101,12 +102,70 @@ export const AIAssistantProvider: React.FC<AIAssistantProviderProps> = ({ childr
         }
     }, [currentContext, messages]);
 
+    // Game/building intro messages
+    const BUILDING_INTROS: Record<string, string> = {
+        agility: `🎯 **Welcome to the Agility Center!**
+
+Here's how to play:
+1. **Click the moving targets** as fast as you can
+2. **Build combos** by hitting targets in a row for bonus points
+3. **Watch for ⭐ bonus targets** - they're worth 50 points!
+4. You have **30 seconds** - earn coins based on your score
+
+💡 **Tip:** The faster you click, the higher your time bonus! Ready to train your reflexes?`,
+
+        vet: `🏥 **Welcome to the Vet Clinic!**
+
+Here's how the health check works:
+1. **Watch for the glowing body part** on your pet
+2. **Click it quickly** before time runs out (2 seconds per round)
+3. Complete **5 rounds** to finish the checkup
+4. Your score determines the **health boost** your pet receives
+
+💰 **Cost:** 25 coins for treatment after the checkup. Better scores = bigger health boosts!`,
+
+        shop: `🛍️ **Welcome to the Gift Shop!**
+
+Here you can:
+- **Browse items** by category (Food, Toys, Medicine, Accessories)
+- **Add items to cart** and purchase with your coins
+- **Use purchased items** from your inventory to boost pet stats
+
+💡 **Tip:** Stock up on food and medicine to keep your pet healthy!`,
+
+        house: `🏠 **Welcome Home!**
+
+This is where you can:
+- **Feed your pet** (costs 5 coins, increases hunger & energy)
+- **Play with your pet** (free, increases happiness)
+- **Bathe your pet** (costs 3 coins, increases cleanliness)
+- **Let your pet rest** (free, restores energy)
+
+💡 **Tip:** Keep all stats balanced for a happy, healthy pet!`
+    };
+
+    const sendSystemMessage = useCallback((buildingType: string) => {
+        const intro = BUILDING_INTROS[buildingType.toLowerCase()];
+        if (!intro) return;
+
+        // Clear previous messages and add the intro
+        const introMessage: ChatMessage = {
+            role: 'assistant',
+            content: intro,
+            timestamp: Date.now()
+        };
+
+        setMessages([introMessage]);
+        setIsOpen(true); // Auto-open the AI chat
+    }, []);
+
     return (
         <AIAssistantContext.Provider value={{
             isOpen,
             toggleOpen,
             messages,
             sendMessage,
+            sendSystemMessage,
             isLoading,
             clearHistory,
             updateContext,

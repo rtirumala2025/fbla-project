@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Zap, Target, Timer, Coins, RefreshCw, X, Star } from 'lucide-react';
 import { BuildingInteractionWindow } from './BuildingInteractionWindow';
+import { useAIAssistant } from '../../contexts/AIAssistantContext';
 import './building-windows.css';
 
 interface AgilityGameWindowProps {
@@ -57,18 +58,24 @@ export function AgilityGameWindow({
     const animationFrameRef = useRef<number>();
     const lastSpawnRef = useRef(0);
 
-    // Reset game when window closes
+    // AI Assistant for game guidance
+    const { sendSystemMessage } = useAIAssistant();
+
+    // Reset game when window closes, show AI intro when opens
     useEffect(() => {
         if (!isOpen) {
             setGameState('menu');
             resetGameState();
+        } else {
+            // Show AI intro when window opens
+            sendSystemMessage('agility');
         }
         return () => {
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
             }
         };
-    }, [isOpen]);
+    }, [isOpen, sendSystemMessage]);
 
     // Game timer
     useEffect(() => {
@@ -139,7 +146,7 @@ export function AgilityGameWindow({
         const newTarget: GameTarget = {
             id: `target-${Date.now()}-${Math.random()}`,
             x: isFromLeft ? -5 : 105,
-            y: 20 + Math.random() * 60,
+            y: 10 + Math.random() * 75, // Use more vertical space
             speed: 0.3 + Math.random() * 0.3,
             direction: isFromLeft ? 1 : -1,
             size: isBonusTarget ? 60 : 40 + Math.random() * 20,
@@ -384,7 +391,9 @@ export function AgilityGameWindow({
                             onClick={handleMiss}
                             style={{
                                 position: 'relative',
-                                height: 300,
+                                flex: 1,
+                                minHeight: 400,
+                                maxHeight: 'calc(100vh - 280px)',
                                 background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))',
                                 borderRadius: 12,
                                 overflow: 'hidden',

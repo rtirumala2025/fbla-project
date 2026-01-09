@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Stethoscope, Heart, Zap, Droplet, Sparkles, Check, X, AlertCircle, RefreshCw } from 'lucide-react';
 import { BuildingInteractionWindow } from './BuildingInteractionWindow';
+import { useAIAssistant } from '../../contexts/AIAssistantContext';
 import './building-windows.css';
 
 interface PetHealth {
@@ -57,7 +58,10 @@ export function VetGameWindow({
     const [showPayment, setShowPayment] = useState(false);
     const [isPaying, setIsPaying] = useState(false);
 
-    // Reset game when window closes
+    // AI Assistant for game guidance
+    const { sendSystemMessage } = useAIAssistant();
+
+    // Reset game when window closes, show AI intro when opens
     useEffect(() => {
         if (!isOpen) {
             setGameState('idle');
@@ -67,8 +71,11 @@ export function VetGameWindow({
             setFeedback(null);
             setHealthBoost(0);
             setShowPayment(false);
+        } else {
+            // Show AI intro when window opens
+            sendSystemMessage('vet');
         }
-    }, [isOpen]);
+    }, [isOpen, sendSystemMessage]);
 
     // Game timer
     useEffect(() => {
@@ -302,8 +309,8 @@ export function VetGameWindow({
                         {/* Pet Body with clickable areas */}
                         <div style={{
                             position: 'relative',
-                            width: 200,
-                            height: 250,
+                            width: 280,
+                            height: 400,
                             margin: '0 auto',
                             background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))',
                             borderRadius: 16,
@@ -334,8 +341,8 @@ export function VetGameWindow({
                                         left: `${part.x}%`,
                                         top: `${part.y}%`,
                                         transform: 'translate(-50%, -50%)',
-                                        width: 44,
-                                        height: 44,
+                                        width: 60,
+                                        height: 60,
                                         borderRadius: '50%',
                                         border: 'none',
                                         background: currentTarget?.id === part.id
@@ -345,9 +352,9 @@ export function VetGameWindow({
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        fontSize: '1.25rem',
+                                        fontSize: '1.5rem',
                                         boxShadow: currentTarget?.id === part.id
-                                            ? '0 0 20px rgba(99, 102, 241, 0.5)'
+                                            ? '0 0 25px rgba(99, 102, 241, 0.6)'
                                             : 'none',
                                         animation: currentTarget?.id === part.id
                                             ? 'pulse 1s infinite'
