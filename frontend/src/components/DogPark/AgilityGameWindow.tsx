@@ -364,6 +364,83 @@ export function AgilityGameWindow({
                                         </p>
                                     </motion.div>
                                 </div>
+
+                                {/* Chat Input */}
+                                <div style={{
+                                    padding: 12,
+                                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                                    background: 'rgba(0,0,0,0.2)'
+                                }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: 8,
+                                        marginBottom: 8,
+                                        flexWrap: 'wrap'
+                                    }}>
+                                        <button
+                                            onClick={() => alert('Tip: Build combos by hitting targets quickly in a row. Each combo increases your multiplier up to 10x!')}
+                                            style={{
+                                                background: 'rgba(99, 102, 241, 0.2)',
+                                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                borderRadius: 8,
+                                                padding: '6px 10px',
+                                                fontSize: '0.75rem',
+                                                color: '#a5b4fc',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            💡 Tips
+                                        </button>
+                                        <button
+                                            onClick={() => alert('Bonus ⭐ targets are worth 50 points! They\'re larger and gold-colored. Regular targets are worth 10 points.')}
+                                            style={{
+                                                background: 'rgba(99, 102, 241, 0.2)',
+                                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                borderRadius: 8,
+                                                padding: '6px 10px',
+                                                fontSize: '0.75rem',
+                                                color: '#a5b4fc',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            ⭐ Bonus?
+                                        </button>
+                                        <button
+                                            onClick={() => alert('You earn 1 coin for every 50 points you score. So 200 points = 4 coins!')}
+                                            style={{
+                                                background: 'rgba(99, 102, 241, 0.2)',
+                                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                borderRadius: 8,
+                                                padding: '6px 10px',
+                                                fontSize: '0.75rem',
+                                                color: '#a5b4fc',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            💰 Rewards?
+                                        </button>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Ask a question..."
+                                            style={{
+                                                flex: 1,
+                                                background: 'rgba(255,255,255,0.05)',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                borderRadius: 8,
+                                                padding: '8px 12px',
+                                                color: 'white',
+                                                fontSize: '0.9rem'
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    alert('Great question! Check the tips above or just click Start Training to begin. I\'ll be here if you need help!');
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Right Column - Demo Area */}
@@ -392,12 +469,11 @@ export function AgilityGameWindow({
                                 </div>
 
                                 {/* Demo Targets */}
-                                <div style={{ flex: 1, position: 'relative' }}>
+                                <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                                     {/* Animated demo targets */}
                                     <motion.div
                                         animate={{
-                                            x: ['-10%', '110%'],
-                                            y: ['20%', '30%', '20%']
+                                            left: ['-60px', 'calc(100% + 10px)']
                                         }}
                                         transition={{
                                             duration: 4,
@@ -406,6 +482,7 @@ export function AgilityGameWindow({
                                         }}
                                         style={{
                                             position: 'absolute',
+                                            top: '20%',
                                             width: 50,
                                             height: 50,
                                             borderRadius: '50%',
@@ -421,8 +498,7 @@ export function AgilityGameWindow({
                                     </motion.div>
                                     <motion.div
                                         animate={{
-                                            x: ['110%', '-10%'],
-                                            y: ['50%', '60%', '50%']
+                                            right: ['-70px', 'calc(100% + 10px)']
                                         }}
                                         transition={{
                                             duration: 5,
@@ -432,6 +508,7 @@ export function AgilityGameWindow({
                                         }}
                                         style={{
                                             position: 'absolute',
+                                            top: '45%',
                                             width: 60,
                                             height: 60,
                                             borderRadius: '50%',
@@ -447,8 +524,7 @@ export function AgilityGameWindow({
                                     </motion.div>
                                     <motion.div
                                         animate={{
-                                            x: ['-10%', '110%'],
-                                            y: ['70%', '75%', '70%']
+                                            left: ['-50px', 'calc(100% + 10px)']
                                         }}
                                         transition={{
                                             duration: 3,
@@ -458,6 +534,7 @@ export function AgilityGameWindow({
                                         }}
                                         style={{
                                             position: 'absolute',
+                                            top: '65%',
                                             width: 45,
                                             height: 45,
                                             borderRadius: '50%',
