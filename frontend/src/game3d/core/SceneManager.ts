@@ -52,7 +52,7 @@ export const ACTIVITY_POSITIONS: Record<ActivityZone, [number, number, number]> 
   rest: [35, 0, 0],          // Right Side - Rest Shelter
   center: [-25, 0, 25],      // Front Left - Park Hub (Info Center)
   shop: [25, 0, 25],         // Front Right - Gift Shop
-  market: [30, 0, -30],      // Back Right diagonal - Supermarket
+  market: [0, 0, 35],        // Front pathway - Supermarket
   home: [0, 0, -35],         // Far Back Center - Pet House
 };
 

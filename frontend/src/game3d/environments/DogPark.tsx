@@ -63,74 +63,148 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
     return { highwayCurves };
   }, []);
 
-  // Generate Vegetation Data ONCE
+  // Tree types for variety
+  type TreeType = 'oak' | 'maple' | 'birch' | 'pine';
+  const TREE_TYPES: TreeType[] = ['oak', 'maple', 'birch', 'pine'];
+
+  // Generate Vegetation Data ONCE - Lush natural park
   const scenery = useMemo(() => {
-    const trees: { pos: [number, number, number]; scale: number; rotation: number; lean: [number, number] }[] = [];
-    const bushes: { pos: [number, number, number]; scale: number; rotation: number }[] = [];
+    const trees: { pos: [number, number, number]; scale: number; rotation: number; lean: [number, number]; type: TreeType }[] = [];
+    const bushes: { pos: [number, number, number]; scale: number; rotation: number; hasFlowers?: boolean; flowerColor?: string }[] = [];
+    const groundScatter: { pos: [number, number, number]; scale: number; rotation: number; type: 'leaf' | 'rock' | 'flower'; color?: string }[] = [];
 
-    const isNearPath = (x: number, z: number, threshold = 4) => {
-      const p = new THREE.Vector3(x, 0, z);
-      // Box check central plaza (expanded slightly)
-      if (Math.hypot(x, z) < 16) return true;
+    // Seeded random for consistent generation
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    let seed = 42;
+    const rand = () => seededRandom(seed++);
 
-      // Building Exclusion Zones (wider radius to prevent view blocking)
+    const isNearPath = (x: number, z: number) => {
+      // Central plaza
+      if (Math.hypot(x, z) < 14) return true;
+
+      // Building Exclusion Zones
       for (const bPos of Object.values(ACTIVITY_POSITIONS)) {
-        if (Math.hypot(x - bPos[0], z - bPos[2]) < 15) return true;
+        if (Math.hypot(x - bPos[0], z - bPos[2]) < 12) return true;
       }
 
-      // View Corridors from center to each building (prevent trees in sightlines)
+      // View Corridors from center to each building
       for (const bPos of Object.values(ACTIVITY_POSITIONS)) {
         const bx = bPos[0], bz = bPos[2];
         const buildingDist = Math.hypot(bx, bz);
-        // Distance from point to line through origin to building
         const lineDist = Math.abs(z * bx - x * bz) / buildingDist;
-        // Check if point is in corridor and between center and building
         const dotProduct = (x * bx + z * bz);
-        if (lineDist < 6 && dotProduct > 0 && dotProduct < buildingDist * buildingDist) {
+        if (lineDist < 5 && dotProduct > 0 && dotProduct < buildingDist * buildingDist) {
           return true;
         }
       }
 
-      // Ring Path (Radius 36-44) - removed as visual ring is gone
-      // const dist = Math.hypot(x, z);
-      // if (dist > 34 && dist < 46) return true;
+      // Cardinal Spokes (Cross pathways)
+      if (Math.abs(x) < 3.5 || Math.abs(z) < 3.5) return true;
 
-      // Cardinal Spokes (Cross)
-      if (Math.abs(x) < 4 || Math.abs(z) < 4) return true;
-
-      // Diagonal Spokes (X-shape)
-      if (Math.abs(x - z) / 1.414 < 4) return true;
-      if (Math.abs(x + z) / 1.414 < 4) return true;
+      // Diagonal Spokes (X-shape pathways)
+      if (Math.abs(x - z) / 1.414 < 3.5) return true;
+      if (Math.abs(x + z) / 1.414 < 3.5) return true;
 
       return false;
     };
 
-    const treeCount = 28; // Reduced for cleaner look
-    const range = 48; // Larger range for expanded grid
+    // Generate diverse trees (~70 total)
+    const treeCount = 72;
+    const range = 46;
     let attempts = 0;
-    while (trees.length < treeCount && attempts < 1000) {
+    while (trees.length < treeCount && attempts < 2000) {
       attempts++;
-      const x = (Math.random() - 0.5) * range * 2;
-      const z = (Math.random() - 0.5) * range * 2;
+      const x = (rand() - 0.5) * range * 2;
+      const z = (rand() - 0.5) * range * 2;
       if (isNearPath(x, z)) continue;
+
+      // Assign tree type based on location for natural clustering
+      const distFromCenter = Math.hypot(x, z);
+      let type: TreeType;
+      if (distFromCenter > 38) {
+        type = rand() > 0.6 ? 'pine' : 'birch'; // Outer ring: pines and birches
+      } else if (distFromCenter > 25) {
+        type = rand() > 0.5 ? 'oak' : 'maple'; // Middle: oaks and maples
+      } else {
+        type = TREE_TYPES[Math.floor(rand() * 4)]; // Inner: mixed
+      }
 
       trees.push({
         pos: [x, 0, z],
-        scale: 0.8 + Math.random() * 1.5,
-        rotation: Math.random() * Math.PI,
-        lean: [(Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.15]
+        scale: 0.9 + rand() * 1.2,
+        rotation: rand() * Math.PI * 2,
+        lean: [(rand() - 0.5) * 0.12, (rand() - 0.5) * 0.12],
+        type
       });
 
-      if (Math.random() > 0.4) {
-        bushes.push({
-          pos: [x + (Math.random() - 0.5) * 4, 0, z + (Math.random() - 0.5) * 4],
-          scale: 0.6 + Math.random() * 0.6,
-          rotation: Math.random() * Math.PI
+      // Add fallen leaves near trees
+      const leafCount = 3 + Math.floor(rand() * 5);
+      for (let l = 0; l < leafCount; l++) {
+        groundScatter.push({
+          pos: [x + (rand() - 0.5) * 3, 0, z + (rand() - 0.5) * 3],
+          scale: 0.8 + rand() * 0.6,
+          rotation: rand() * Math.PI * 2,
+          type: 'leaf'
         });
       }
     }
-    return { trees, bushes };
-  }, [paths]);
+
+    // Generate bushes and shrubs (~100 total)
+    const flowerColors = ['red', 'yellow', 'purple', 'white'];
+    for (let i = 0; i < 110; i++) {
+      attempts = 0;
+      while (attempts < 50) {
+        attempts++;
+        const x = (rand() - 0.5) * range * 2;
+        const z = (rand() - 0.5) * range * 2;
+        if (isNearPath(x, z)) continue;
+
+        const hasFlowers = rand() > 0.6;
+        bushes.push({
+          pos: [x, 0, z],
+          scale: 0.5 + rand() * 0.7,
+          rotation: rand() * Math.PI * 2,
+          hasFlowers,
+          flowerColor: hasFlowers ? flowerColors[Math.floor(rand() * 4)] : undefined
+        });
+        break;
+      }
+    }
+
+    // Generate wildflowers in grass (~200)
+    for (let i = 0; i < 200; i++) {
+      const x = (rand() - 0.5) * range * 2;
+      const z = (rand() - 0.5) * range * 2;
+      if (isNearPath(x, z)) continue;
+
+      groundScatter.push({
+        pos: [x, 0, z],
+        scale: 0.8 + rand() * 0.5,
+        rotation: rand() * Math.PI * 2,
+        type: 'flower',
+        color: flowerColors[Math.floor(rand() * 4)]
+      });
+    }
+
+    // Generate rocks/pebbles (~80)
+    for (let i = 0; i < 80; i++) {
+      const x = (rand() - 0.5) * range * 2;
+      const z = (rand() - 0.5) * range * 2;
+      if (isNearPath(x, z) && Math.hypot(x, z) < 12) continue; // Allow some near paths edge
+
+      groundScatter.push({
+        pos: [x, 0, z],
+        scale: 0.6 + rand() * 1.0,
+        rotation: rand() * Math.PI * 2,
+        type: 'rock'
+      });
+    }
+
+    return { trees, bushes, groundScatter };
+  }, []);
 
   const { scene } = useThree();
 
@@ -185,7 +259,7 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
       {/* Main Ground - Expanded for spread-out buildings */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow userData={{ cameraCollide: true }}>
         <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial map={grassTex} color="#8fb97e" roughness={1} />
+        <meshStandardMaterial map={grassTex} color="#75a868" roughness={1} />
       </mesh>
 
       {/* Paths - Highway Curves Removed */}
@@ -247,8 +321,8 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
         <GiftShop onSignClick={() => onSignClick('shop')} />
       </group>
 
-      {/* Supermarket - Back Right diagonal pathway */}
-      <group position={[30, 0, -30]} rotation={[0, Math.PI / 4, 0]}>
+      {/* Supermarket - Front pathway (toward camera) */}
+      <group position={[0, 0, 35]} rotation={[0, Math.PI, 0]}>
         <Supermarket onSignClick={() => onSignClick('market')} />
       </group>
 
@@ -258,27 +332,35 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
       </group>
 
       {/* INSTANCED NATURE */}
-      <InstancedNature trees={scenery.trees} bushes={scenery.bushes} />
+      <InstancedNature trees={scenery.trees} bushes={scenery.bushes} groundScatter={scenery.groundScatter} />
 
-      {/* Decorative Lamps - Positioned along pathways */}
+      {/* Decorative Lamps - Positioned along SIDES of pathways */}
       {[
-        // Inner ring on cardinal directions
-        [-15, 0], [15, 0], [0, -15], [0, 15],
-        // Inner ring on diagonals
-        [-11, -11], [11, -11], [-11, 11], [11, 11],
-        // Outer ring on cardinal directions
-        [-28, 0], [28, 0], [0, -28], [0, 28],
-        // Outer ring on diagonals  
-        [-20, -20], [20, -20], [-20, 20], [20, 20]
+        // North path (both sides, offset from center)
+        [-2.5, -12], [2.5, -12], [-2.5, -22], [2.5, -22],
+        // South path (both sides)
+        [-2.5, 12], [2.5, 12], [-2.5, 22], [2.5, 22],
+        // West path (both sides)
+        [-12, -2.5], [-12, 2.5], [-22, -2.5], [-22, 2.5],
+        // East path (both sides)
+        [12, -2.5], [12, 2.5], [22, -2.5], [22, 2.5],
+        // Diagonal NW path (offset perpendicular)
+        [-9, -7], [-7, -9],
+        // Diagonal NE path
+        [9, -7], [7, -9],
+        // Diagonal SW path
+        [-9, 7], [-7, 9],
+        // Diagonal SE path
+        [9, 7], [7, 9],
       ].map((pos, i) => (
         <group key={`lamp-${i}`} position={[pos[0] as number, 0, pos[1] as number]}>
-          <Cylinder args={[0.1, 0.15, 3.5, 5]} position={[0, 1.75, 0]}>
-            <meshStandardMaterial color="#333" />
+          <Cylinder args={[0.08, 0.12, 3.2, 6]} position={[0, 1.6, 0]}>
+            <meshStandardMaterial color="#2a2a2a" />
           </Cylinder>
-          <Sphere args={[0.25, 8, 8]} position={[0, 3.5, 0]}>
-            <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={1} />
+          <Sphere args={[0.22, 8, 8]} position={[0, 3.3, 0]}>
+            <meshStandardMaterial color="#fffae6" emissive="#ffdd88" emissiveIntensity={0.8} />
           </Sphere>
-          {/* pointLight removed for performance - emissive glow retained */}
+          {/* Warm glow effect */}
         </group>
       ))}
 
@@ -299,7 +381,7 @@ const BUILDING_ROTATIONS: Record<ActivityZone, number> = {
   rest: -Math.PI / 2,
   center: 3 * Math.PI / 4,
   shop: -3 * Math.PI / 4,
-  market: Math.PI / 4,  // Facing center from back-right
+  market: Math.PI,  // Facing center from front pathway
   home: 0,
 };
 
