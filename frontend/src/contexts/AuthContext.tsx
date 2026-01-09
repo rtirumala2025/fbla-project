@@ -541,6 +541,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // skipBrowserRedirect defaults to false (redirect flow)
           // Explicitly set to false to ensure redirect flow (not popup)
           skipBrowserRedirect: false,
+          // Force account selection prompt instead of auto-signing in with cached account
+          // This allows users to switch Google accounts after signing out
+          queryParams: {
+            prompt: 'select_account',
+            access_type: 'offline', // Request offline access for refresh tokens
+          },
         },
       });
 
