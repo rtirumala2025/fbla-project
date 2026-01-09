@@ -88,8 +88,8 @@ export function AgilityGameWindow({
         if (gameState !== 'playing') return;
 
         const gameLoop = (timestamp: number) => {
-            // Spawn new targets
-            if (timestamp - lastSpawnRef.current > 800) {
+            // Spawn new targets - slower spawn rate to avoid clustering
+            if (timestamp - lastSpawnRef.current > 1500) {
                 spawnTarget();
                 lastSpawnRef.current = timestamp;
             }
@@ -134,21 +134,36 @@ export function AgilityGameWindow({
     }, []);
 
     const spawnTarget = useCallback(() => {
-        const isFromLeft = Math.random() > 0.5;
-        const isBonusTarget = Math.random() > 0.85;
+        // Limit max targets on screen to prevent overcrowding
+        setTargets(prev => {
+            if (prev.length >= 5) return prev;
 
-        const newTarget: GameTarget = {
-            id: `target-${Date.now()}-${Math.random()}`,
-            x: isFromLeft ? -5 : 105,
-            y: 10 + Math.random() * 70,
-            speed: 0.08 + Math.random() * 0.07, // Comfortable speed: 0.08-0.15
-            direction: isFromLeft ? 1 : -1,
-            size: isBonusTarget ? 180 : 100 + Math.random() * 50, // Very big: 100-150px, bonus 180px
-            points: isBonusTarget ? 50 : 10,
-            icon: isBonusTarget ? '⭐' : TARGET_ICONS[Math.floor(Math.random() * TARGET_ICONS.length)]
-        };
+            const isFromLeft = Math.random() > 0.5;
+            const isBonusTarget = Math.random() > 0.85;
 
-        setTargets(prev => [...prev, newTarget]);
+            // Find a Y position that's not too close to existing targets
+            let y = 10 + Math.random() * 60;
+            const minDistance = 25; // Minimum 25% vertical distance between targets
+
+            for (let i = 0; i < 10; i++) {
+                const tooClose = prev.some(t => Math.abs(t.y - y) < minDistance);
+                if (!tooClose) break;
+                y = 10 + Math.random() * 60;
+            }
+
+            const newTarget: GameTarget = {
+                id: `target-${Date.now()}-${Math.random()}`,
+                x: isFromLeft ? -5 : 105,
+                y,
+                speed: 0.08 + Math.random() * 0.07, // Comfortable speed: 0.08-0.15
+                direction: isFromLeft ? 1 : -1,
+                size: isBonusTarget ? 180 : 100 + Math.random() * 50, // Very big: 100-150px, bonus 180px
+                points: isBonusTarget ? 50 : 10,
+                icon: isBonusTarget ? '⭐' : TARGET_ICONS[Math.floor(Math.random() * TARGET_ICONS.length)]
+            };
+
+            return [...prev, newTarget];
+        });
     }, []);
 
     const handleTargetClick = useCallback((targetId: string, points: number) => {
