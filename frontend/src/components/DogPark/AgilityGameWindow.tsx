@@ -170,7 +170,7 @@ export function AgilityGameWindow({
         setMisses(prev => prev + 1);
     }, []);
 
-    const endGame = useCallback(() => {
+    const endGame = useCallback(async () => {
         setGameState('complete');
 
         // Check high score
@@ -181,8 +181,34 @@ export function AgilityGameWindow({
             } catch { }
         }
 
-        // Calculate coins earned (1 coin per 50 points)
-        const coinsEarned = Math.floor(score / 50);
+        // Calculate coins earned (1 coin per 50 points as fallback)
+        let coinsEarned = Math.floor(score / 50);
+
+        // Submit score to backend to persist and get actual rewards
+        try {
+            const response = await fetch('/api/games/submit-score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    game_type: 'agility',
+                    score: score,
+                    difficulty: 'normal',
+                }),
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                coinsEarned = data.coins_earned || coinsEarned;
+                console.log('Game score submitted:', data.message);
+            }
+        } catch (error) {
+            console.warn('Failed to submit game score to backend:', error);
+            // Continue with local calculation
+        }
+
         onGameComplete?.(score, coinsEarned);
     }, [score, highScore, onGameComplete]);
 

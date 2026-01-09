@@ -12,6 +12,7 @@ from .budget_advisor import router as budget_advisor_router
 from .events import events_router, weather_router
 from .finance import router as finance_router
 from .finance_sim import router as finance_sim_router
+from .games import router as games_router
 from .habits import router as habits_router
 from .pets import router as pets_router
 from .pet_interactions import router as pet_interactions_router
@@ -44,5 +45,6 @@ api_router.include_router(reports_router)
 api_router.include_router(social_router)
 api_router.include_router(quests_router)
 api_router.include_router(sync_router)
+api_router.include_router(games_router)
 
 __all__ = ["api_router"]

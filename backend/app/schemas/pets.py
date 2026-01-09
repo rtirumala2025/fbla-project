@@ -121,3 +121,21 @@ class PetInteractResponse(BaseModel):
     pet_state: Dict[str, Any]
     notifications: list[str] = Field(default_factory=list)
     health_forecast: Optional[Dict[str, Any]] = None
+
+
+class HealthCheckRequest(BaseModel):
+    """Request for a vet health check."""
+    health_boost: int = Field(..., ge=0, le=100, description="Health boost to apply (from mini-game score)")
+    game_score: Optional[int] = Field(default=None, ge=0, description="Score achieved in health check game")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class HealthCheckResponse(BaseModel):
+    """Response from a vet health check."""
+    success: bool
+    cost: int
+    new_balance: int
+    health_before: int
+    health_after: int
+    message: str

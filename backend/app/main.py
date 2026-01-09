@@ -11,6 +11,7 @@ from app.core.database import connect_to_database, disconnect_from_database
 from app.core.errors import register_exception_handlers
 from app.middleware.authentication import JWTAuthenticationMiddleware
 from app.middleware.error_handler import error_handling_middleware
+from app.middleware.rate_limiter import RateLimitMiddleware
 from app.routers import api_router
 from app.routers.health import router as health_router
 from app.utils.logging import configure_logging
@@ -56,8 +57,6 @@ def create_app() -> FastAPI:
             "/api/auth/refresh",
         ),
     )
-
-from app.middleware.rate_limiter import RateLimitMiddleware
 
     app.add_middleware(RateLimitMiddleware, max_requests=60, window_seconds=60)
     app.middleware("http")(error_handling_middleware)

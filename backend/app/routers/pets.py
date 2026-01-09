@@ -136,6 +136,131 @@ async def process_game_loop(
     return await game_loop_service.process_game_loop(current_user.id)
 
 
+VET_VISIT_COST = 25  # Cost of a vet visit in coins
+
+
+@router.post("/health-check", summary="Perform a vet health check")
+async def perform_health_check(
+    payload: "HealthCheckRequest",
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    service: PetService = Depends(get_pet_service),
+) -> "HealthCheckResponse":
+    """
+    Perform a vet health check on the pet.
+    
+    Deducts the vet visit cost from the user's wallet and applies the health boost.
+    The health boost amount is based on the mini-game score achieved in the frontend.
+    """
+    from app.schemas.pets import HealthCheckRequest, HealthCheckResponse
+    from asyncpg import Pool
+    
+    # Get the database pool from the service
+    pool = service._pool
+    if pool is None:
+        from fastapi import HTTPException
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Database not configured")
+    
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # Get user's wallet
+            wallet = await conn.fetchrow(
+                """
+                SELECT id, balance
+                FROM finance_wallets
+                WHERE user_id = $1
+                """,
+                current_user.id,
+            )
+            
+            if not wallet:
+                from fastapi import HTTPException
+                raise HTTPException(
+                    status.HTTP_404_NOT_FOUND,
+                    "Wallet not found. Please initialize your wallet first.",
+                )
+            
+            current_balance = wallet["balance"] or 0
+            
+            # Check if user can afford the vet visit
+            if current_balance < VET_VISIT_COST:
+                from fastapi import HTTPException
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    f"Insufficient funds. Balance: {current_balance}, Required: {VET_VISIT_COST}",
+                )
+            
+            # Get current pet health
+            pet = await conn.fetchrow(
+                """
+                SELECT id, health
+                FROM pets
+                WHERE user_id = $1
+                """,
+                current_user.id,
+            )
+            
+            if not pet:
+                raise_status_not_found()
+            
+            health_before = pet["health"] or 0
+            health_after = min(100, health_before + payload.health_boost)
+            
+            # Deduct coins from wallet
+            new_balance = current_balance - VET_VISIT_COST
+            await conn.execute(
+                """
+                UPDATE finance_wallets
+                SET balance = $1, 
+                    lifetime_spent = COALESCE(lifetime_spent, 0) + $2,
+                    updated_at = NOW()
+                WHERE id = $3
+                """,
+                new_balance,
+                VET_VISIT_COST,
+                wallet["id"],
+            )
+            
+            # Record transaction
+            await conn.execute(
+                """
+                INSERT INTO finance_transactions (
+                    wallet_id, user_id, item_id, item_name, amount,
+                    transaction_type, category, description, balance_after
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                """,
+                wallet["id"],
+                current_user.id,
+                "vet_visit",
+                "Vet Health Check",
+                -VET_VISIT_COST,
+                "expense",
+                "healthcare",
+                f"Vet visit: +{payload.health_boost}% health boost",
+                new_balance,
+            )
+            
+            # Apply health boost to pet
+            await conn.execute(
+                """
+                UPDATE pets
+                SET health = $1, updated_at = NOW()
+                WHERE id = $2
+                """,
+                health_after,
+                pet["id"],
+            )
+    
+    return HealthCheckResponse(
+        success=True,
+        cost=VET_VISIT_COST,
+        new_balance=new_balance,
+        health_before=health_before,
+        health_after=health_after,
+        message=f"Health check complete! +{payload.health_boost}% health applied.",
+    )
+
+
 def raise_status_not_found() -> None:
     from fastapi import HTTPException
 

@@ -13,6 +13,8 @@ from .profiles import (
 )
 from .pets import (
     EvolutionStage,
+    HealthCheckRequest,
+    HealthCheckResponse,
     PetAction,
     PetActionRequest,
     PetActionResponse,
@@ -24,6 +26,11 @@ from .pets import (
     PetResponse,
     PetStats,
     PetUpdate,
+)
+from .games import (
+    GameScoreSubmit,
+    GameScoreResponse,
+    LeaderboardEntry as GameLeaderboardEntry,
 )
 from .shop import (
     InventoryItem,
@@ -102,6 +109,11 @@ __all__ = [
     "PetDiaryCreate",
     "PetDiaryEntryResponse",
     "EvolutionStage",
+    "HealthCheckRequest",
+    "HealthCheckResponse",
+    "GameScoreSubmit",
+    "GameScoreResponse",
+    "GameLeaderboardEntry",
     "AccessorySchema",
     "AccessoryListResponse",
     "AccessoryEquipRequest",

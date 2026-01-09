@@ -134,13 +134,40 @@ export function VetGameWindow({
 
     const handlePayment = useCallback(async () => {
         setIsPaying(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setIsPaying(false);
-        setShowPayment(false);
-        onHealthCheck?.(healthBoost);
-        onClose();
-    }, [healthBoost, onHealthCheck, onClose]);
+
+        try {
+            // Call backend to process payment and apply health boost
+            const response = await fetch('/api/pets/health-check', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    health_boost: healthBoost,
+                    game_score: score,
+                }),
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Payment failed');
+            }
+
+            const data = await response.json();
+            console.log('Health check completed:', data.message);
+
+            onHealthCheck?.(healthBoost);
+            onClose();
+        } catch (error: any) {
+            console.error('Health check payment failed:', error);
+            // Show error but still close for demo purposes
+            alert(error.message || 'Payment failed. Please try again.');
+        } finally {
+            setIsPaying(false);
+            setShowPayment(false);
+        }
+    }, [healthBoost, score, onHealthCheck, onClose]);
 
     const canAfford = walletBalance >= VET_VISIT_COST;
 
