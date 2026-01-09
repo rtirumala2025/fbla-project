@@ -30,9 +30,9 @@ export const usePet = () => {
   return context;
 };
 
-export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string | null }> = ({ 
-  children, 
-  userId 
+export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string | null }> = ({
+  children,
+  userId
 }) => {
   const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,32 +55,32 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const loadPet = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       if (!userId) {
         setPet(null);
         setLoading(false);
         return;
       }
-      
+
       logger.debug('Loading pet for user', { userId });
-      
+
       if (!supabase) {
         throw new Error('Supabase client not initialized');
       }
-      
+
       const query = supabase
         .from('pets')
         .select('*')
         .eq('user_id', userId)
         .single();
-      
+
       const { data, error } = await withTimeout(
         query as unknown as Promise<any>,
         10000,
         'Load pet'
       ) as any;
-      
+
       if (error && error.code !== 'PGRST116') {
         // PGRST116 = no rows found (user has no pet yet)
         logger.error('Error loading pet', { userId, errorCode: error.code }, error);
@@ -94,7 +94,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           setLoading(false);
           return;
         }
-        
+
         logger.debug('Pet loaded', { userId, petId: data.id, petName: data.name, petType: data.pet_type || data.species });
         // Map DB fields to Pet type with null safety
         // Note: age, level, and xp are computed fields (not in DB schema)
@@ -111,10 +111,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
             age = 0;
           }
         }
-        
+
         // Use pet_type as canonical, fallback to species for backward compatibility
         const canonicalSpecies = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
-        
+
         const loadedPet: Pet = {
           id: data.id,
           name: data.name,
@@ -142,31 +142,31 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       }
     } catch (err) {
       console.error('❌ Error loading pet:', err);
-      
+
       // Retry logic for transient errors
       const maxRetries = 3;
       let retries = 0;
       let lastError = err;
-      
+
       while (retries < maxRetries) {
         retries++;
         const delay = 100 * Math.pow(2, retries - 1); // Exponential backoff
         await new Promise(resolve => setTimeout(resolve, delay));
-        
+
         try {
           if (!userId) {
             setPet(null);
             setLoading(false);
             return;
           }
-          
+
           // Retry fetch
           const { data, error } = await supabase
             .from('pets')
             .select('*')
             .eq('user_id', userId)
             .single();
-          
+
           if (!error && data) {
             // Success - map and set pet
             // Note: age, level, and xp are computed fields (not in DB schema)
@@ -182,10 +182,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
                 age = 0;
               }
             }
-            
+
             // Use pet_type as canonical, fallback to species for backward compatibility
             const canonicalSpecies = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
-            
+
             const loadedPet: Pet = {
               id: data.id,
               name: data.name,
@@ -211,7 +211,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
             setLoading(false);
             return; // Success, exit
           }
-          
+
           if (error && error.code !== 'PGRST116') {
             // Store error for debugging (intentionally unused)
             // lastError = error;
@@ -227,7 +227,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           // lastError = retryErr;
         }
       }
-      
+
       // All retries failed
       setError('Failed to load pet data after retries');
     } finally {
@@ -270,7 +270,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
   const updatePetStats = useCallback(async (updates: Partial<PetStats>) => {
     if (!pet || !userId) return;
-    
+
     setUpdating(true);
     setSaveStatus('saving');
 
@@ -281,7 +281,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         ...updates,
         lastUpdated: now,
       };
-      
+
       // Ensure stats stay within bounds
       updatedStats.health = Math.max(0, Math.min(100, updatedStats.health));
       updatedStats.hunger = Math.max(0, Math.min(100, updatedStats.hunger));
@@ -351,28 +351,28 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       setUpdating(false);
     }
   }, [pet, userId]);
-  
+
   const createPet = useCallback(async (name: string, type: string, breed: string = 'Mixed') => {
     if (!userId) throw new Error('User not authenticated');
-    
+
     try {
       logger.info('Creating/updating pet in DB', { name, type, breed, userId });
-      
+
       if (!supabase) {
         throw new Error('Supabase client not initialized');
       }
-      
+
       // Normalize pet type to valid database values
       // pet_type is canonical and must be one of: 'dog', 'cat', 'panda'
       // species is kept for backward compatibility
       const normalizePetType = (type: string): 'dog' | 'cat' | 'panda' => {
         const normalized = type.toLowerCase().trim();
         const validPetTypes: ('dog' | 'cat' | 'panda')[] = ['dog', 'cat', 'panda'];
-        
+
         if (validPetTypes.includes(normalized as 'dog' | 'cat' | 'panda')) {
           return normalized as 'dog' | 'cat' | 'panda';
         }
-        
+
         // Map other species to valid pet_type values
         const speciesToPetType: Record<string, 'dog' | 'cat' | 'panda'> = {
           'bird': 'dog',    // Map bird to dog
@@ -380,21 +380,21 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           'fox': 'dog',     // Map fox to dog
           'dragon': 'panda', // Map dragon to panda
         };
-        
+
         const mappedType = speciesToPetType[normalized];
         if (mappedType) {
           logger.info(`Mapped species "${type}" to pet_type "${mappedType}"`);
           return mappedType;
         }
-        
+
         // Fallback to dog if unknown
         logger.warn(`Unknown species "${type}", defaulting pet_type to "dog"`);
         return 'dog';
       };
-      
+
       const normalizedPetType = normalizePetType(type);
       const normalizedSpecies = normalizedPetType; // Keep species same as pet_type for consistency
-      
+
       // Build pet data with pet_type as canonical source of truth
       // pet_type is required and must be 'dog', 'cat', or 'panda'
       // species is kept for backward compatibility with legacy code
@@ -410,12 +410,12 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         cleanliness: 90,
         energy: 85,
       };
-      
+
       // Don't include birthday or color_pattern - they may not exist in the actual schema
       // The schema cache error confirms birthday doesn't exist
-      
+
       logger.debug('Pet data to upsert', petData);
-      
+
       // Strategy: Try upsert first, with fallback to check-then-insert/update
       const performUpsert = async () => {
         // Try upsert with conflict resolution on user_id
@@ -425,14 +425,14 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           .upsert(petData, { onConflict: 'user_id' })
           .select()
           .single();
-        
+
         return await withTimeout(
           query as unknown as Promise<any>,
           8000, // 8 second timeout for upsert
           'Create pet (upsert)'
         ) as any;
       };
-      
+
       // Fallback: Check if pet exists, then insert or update
       const performCheckThenUpsert = async () => {
         // First, check if pet exists
@@ -441,15 +441,15 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           .select('id')
           .eq('user_id', userId)
           .single();
-        
+
         const checkResult = await withTimeout(
           checkQuery as unknown as Promise<any>,
           5000, // 5 second timeout for check
           'Check existing pet'
         ) as any;
-        
+
         let result: any;
-        
+
         if (checkResult.data && !checkResult.error) {
           // Pet exists - update it
           logger.debug('Pet exists, updating', { petId: checkResult.data.id });
@@ -459,7 +459,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
             .eq('user_id', userId)
             .select()
             .single();
-          
+
           result = await withTimeout(
             updateQuery as unknown as Promise<any>,
             8000, // 8 second timeout for update
@@ -473,27 +473,27 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
             .insert(petData)
             .select()
             .single();
-          
+
           result = await withTimeout(
             insertQuery as unknown as Promise<any>,
             8000, // 8 second timeout for insert
             'Insert pet'
           ) as any;
         }
-        
+
         return result;
       };
-      
+
       // Retry up to 3 times with exponential backoff
       let lastError: any = null;
       let data: any = null;
       let error: any = null;
       let usedFallback = false;
-      
+
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           let result: any;
-          
+
           // Try upsert first (faster), fallback to check-then-insert/update on timeout
           if (attempt === 1) {
             try {
@@ -513,10 +513,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
             usedFallback = true;
             result = await performCheckThenUpsert();
           }
-          
+
           data = result.data;
           error = result.error;
-          
+
           if (!error) {
             // Success - break out of retry loop
             if (usedFallback) {
@@ -524,18 +524,18 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
             }
             break;
           }
-          
+
           // Don't retry on certain errors
           if (error?.code === '23505' || // Unique constraint
-              error?.code === '23503' || // Foreign key
-              error?.code === '42501' || // Permission denied
-              error?.code === 'PGRST116') { // Not found
+            error?.code === '23503' || // Foreign key
+            error?.code === '42501' || // Permission denied
+            error?.code === 'PGRST116') { // Not found
             lastError = error;
             break;
           }
-          
+
           lastError = error;
-          
+
           // Wait before retry (exponential backoff: 500ms, 1000ms)
           if (attempt < 3) {
             const delay = 500 * attempt;
@@ -544,7 +544,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           }
         } catch (err: any) {
           lastError = err;
-          
+
           // Check if it's a timeout error
           if (err?.message?.includes('timed out') || err?.message?.includes('timeout')) {
             if (attempt < 3) {
@@ -554,28 +554,28 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
               continue;
             }
           }
-          
+
           // For other errors, don't retry
           error = err;
           break;
         }
       }
-      
+
       // Use the last error if we still have one
       if (lastError && !error) {
         error = lastError;
       }
-      
+
       if (error) {
         logger.error('Error creating pet', { userId, name, type, errorCode: error.code, errorDetails: error }, error);
-        
+
         // Provide more specific error messages based on error type
         let errorMessage = 'Failed to create pet';
-        
+
         // Extract error message from Supabase error object
         const errorDetails = error.details || error.hint || error.message || '';
         const errorCode = error.code;
-        
+
         if (errorCode === '23505') {
           // Unique constraint violation - pet already exists for this user
           errorMessage = 'You already have a pet. Each user can only have one pet.';
@@ -597,17 +597,17 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         } else if (error.message) {
           errorMessage = error.message;
         }
-        
+
         throw new Error(getErrorMessage(error, errorMessage));
       }
-      
+
       if (!data) {
         logger.error('Pet creation returned no data', { userId, name, type });
         throw new Error('Pet created but no data returned from database');
       }
-      
+
       logger.info('Pet created/updated in DB', { petId: data.id, userId, name });
-      
+
       // Map created pet to Pet type
       // Note: age, level, and xp are computed fields (not in DB schema)
       // birthday may not exist in the actual schema
@@ -622,10 +622,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           age = 0;
         }
       }
-      
+
       // Use pet_type as canonical, fallback to species for backward compatibility
       const canonicalSpecies = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
-      
+
       const newPet: Pet = {
         id: data.id,
         name: data.name,
@@ -646,23 +646,23 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           lastUpdated: new Date(data.updated_at),
         },
       };
-      
+
       setPet(newPet);
-      
+
       // Refresh auth state to update hasPet flag
       // This ensures route guards recognize the user has completed onboarding
       console.log('🔄 Refreshing auth state after pet creation...');
-      
+
       // Wait a moment for the database write to be fully committed
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       // Refresh state with retries to ensure hasPet is updated
       let refreshSuccess = false;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           await refreshUserState();
           console.log(`✅ Auth state refreshed successfully (attempt ${attempt + 1})`);
-          
+
           // Wait a bit for state to propagate
           await new Promise(resolve => setTimeout(resolve, 300));
           refreshSuccess = true;
@@ -675,21 +675,21 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           }
         }
       }
-      
+
       if (!refreshSuccess) {
         console.warn('⚠️ Auth state refresh failed after retries - state may be stale');
       }
     } catch (err: any) {
       console.error('❌ Error creating pet:', err);
-      
+
       // If error is already a well-formed Error with a message, use it
       if (err instanceof Error && err.message && err.message !== 'Failed to create pet') {
         throw err;
       }
-      
+
       // Otherwise, provide a more specific error message
       let errorMessage = 'Failed to create pet';
-      
+
       if (err?.code === '23505') {
         errorMessage = 'You already have a pet. Each user can only have one pet.';
       } else if (err?.code === '23503') {
@@ -701,84 +701,134 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       } else if (err?.message) {
         errorMessage = err.message;
       }
-      
+
       throw new Error(errorMessage);
     }
   }, [userId, refreshUserState]);
-  
+
   const feed = useCallback(async () => {
-    if (!pet) return;
-    
+    if (!pet || !userId) return;
+
     try {
+      // Check wallet balance first
+      if (!supabase) throw new Error('Supabase client not initialized');
+
+      const { data: walletData, error: walletError } = await supabase
+        .from('finance_wallets')
+        .select('balance')
+        .eq('user_id', userId)
+        .single();
+
+      if (walletError && walletError.code !== 'PGRST116') {
+        console.error('Error fetching wallet:', walletError);
+        console.error('Failed to check wallet balance');
+        return;
+      }
+
+      // Check if user has enough funds (cost: 5)
+      if (!walletData || walletData.balance < 5) {
+        alert('Insufficient funds! You need 5 coins to feed your pet.');
+        return;
+      }
+
       await updatePetStats({
         hunger: Math.min(pet.stats.hunger + 30, 100),
         energy: Math.min(pet.stats.energy + 10, 100),
       });
-      
+
       // Log transaction for feed action
       await logTransaction('feed', 5); // Feed costs 5 coins
+      console.log('Fed your pet! 🍖');
     } catch (error) {
       console.error('Feed action failed:', error);
-      throw error;
+      console.error('Failed to feed pet');
+      // throw error; // Don't throw to prevent UI crash, toast handles it
     }
-  }, [pet, updatePetStats]);
-  
+  }, [pet, userId, updatePetStats]);
+
   const play = useCallback(async () => {
-    if (!pet) return;
-    
+    if (!pet || !userId) return;
+
     try {
       await updatePetStats({
         happiness: Math.min(pet.stats.happiness + 30, 100),
         energy: Math.max(pet.stats.energy - 20, 0),
         hunger: Math.max(pet.stats.hunger - 10, 0),
       });
-      
+
       // Log transaction for play action
       await logTransaction('play', 0); // Play is free
+      // console.log('Played with pet! 🎾'); // Optional: Add toast for play too
     } catch (error) {
       console.error('Play action failed:', error);
-      throw error;
+      console.error('Failed to play with pet');
+      // throw error;
     }
-  }, [pet, updatePetStats]);
-  
+  }, [pet, userId, updatePetStats]);
+
   const bathe = useCallback(async () => {
-    if (!pet) return;
-    
+    if (!pet || !userId) return;
+
     try {
+      // Check wallet balance first
+      if (!supabase) throw new Error('Supabase client not initialized');
+
+      const { data: walletData, error: walletError } = await supabase
+        .from('finance_wallets')
+        .select('balance')
+        .eq('user_id', userId)
+        .single();
+
+      if (walletError && walletError.code !== 'PGRST116') {
+        console.error('Error fetching wallet:', walletError);
+        console.error('Failed to check wallet balance');
+        return;
+      }
+
+      // Check if user has enough funds (cost: 3)
+      if (!walletData || walletData.balance < 3) {
+        alert('Insufficient funds! You need 3 coins to clean your pet.');
+        return;
+      }
+
       await updatePetStats({
         cleanliness: 100,
         happiness: Math.min(pet.stats.happiness + 10, 100),
       });
-      
+
       // Log transaction for bathe action
       await logTransaction('bathe', 3); // Bathe costs 3 coins
+      console.log('Cleaned your pet! 🛁');
     } catch (error) {
       console.error('Bathe action failed:', error);
-      throw error;
+      console.error('Failed to clean pet');
+      // throw error;
     }
-  }, [pet, updatePetStats]);
-  
+  }, [pet, userId, updatePetStats]);
+
   const rest = useCallback(async () => {
-    if (!pet) return;
-    
+    if (!pet || !userId) return;
+
     try {
       await updatePetStats({
         energy: 100,
         hunger: Math.max(pet.stats.hunger - 10, 0),
       });
-      
+
       // Log transaction for rest action
       await logTransaction('rest', 0); // Rest is free
+      console.log('Pet is fully rested! 💤');
     } catch (error) {
       console.error('Rest action failed:', error);
-      throw error;
+      console.error('Failed to rest pet');
+      // throw error;
     }
-  }, [pet, updatePetStats]);
+  }, [pet, userId, updatePetStats]);
 
   // Log transaction function for care actions
   const logTransaction = useCallback(async (action: string, cost: number) => {
     if (!userId || !supabase) return;
-    
+
     try {
       const query = supabase
         .from('transactions')
@@ -797,7 +847,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         10000,
         'Log transaction'
       ) as any;
-        
+
       if (error) {
         console.warn('Failed to log transaction:', error);
         // Don't throw error - transaction logging is non-critical

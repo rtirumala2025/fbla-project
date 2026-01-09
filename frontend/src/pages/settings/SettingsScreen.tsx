@@ -301,64 +301,79 @@ export const SettingsScreen: React.FC = () => {
 
                   toast.info('Resetting to Demo State...', 2000);
                   try {
-                    // 1. Reset Balance to $150
-                    const { data: account } = await supabase
-                      .from('bank_accounts')
+                    // 1. Reset Wallet Balance to 150 coins
+                    const { data: wallet } = await supabase
+                      .from('finance_wallets')
                       .select('id')
                       .eq('user_id', currentUser.uid)
                       .single();
 
-                    if (account) {
+                    if (wallet) {
                       await supabase
-                        .from('bank_accounts')
-                        .update({ balance: 150.00 })
-                        .eq('id', account.id);
+                        .from('finance_wallets')
+                        .update({
+                          balance: 150,
+                          lifetime_earned: 200,
+                          lifetime_spent: 50,
+                          updated_at: new Date().toISOString()
+                        })
+                        .eq('id', wallet.id);
 
                       // 2. Clear Transactions & Add Sample History
-                      await supabase.from('transactions').delete().eq('account_id', account.id);
+                      await supabase.from('finance_transactions').delete().eq('wallet_id', wallet.id);
 
                       const now = new Date();
                       const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
                       const twoDaysAgo = new Date(now); twoDaysAgo.setDate(now.getDate() - 2);
 
+                      // Use the transactions view which has the INSTEAD OF trigger
                       await supabase.from('transactions').insert([
                         {
-                          account_id: account.id,
-                          amount: 200.00,
+                          user_id: currentUser.uid,
+                          amount: 200,
                           item_name: 'Initial Allowance',
-                          category: 'income',
-                          created_at: twoDaysAgo.toISOString()
+                          item_id: 'demo_allowance',
+                          transaction_type: 'allowance'
                         },
                         {
-                          account_id: account.id,
-                          amount: -15.50,
+                          user_id: currentUser.uid,
+                          amount: -15,
                           item_name: 'Pet Food Bundle',
-                          category: 'expense',
-                          created_at: yesterday.toISOString()
+                          item_id: 'demo_food',
+                          transaction_type: 'expense'
                         },
                         {
-                          account_id: account.id,
-                          amount: -34.50,
+                          user_id: currentUser.uid,
+                          amount: -35,
                           item_name: 'New Toys',
-                          category: 'expense',
-                          created_at: now.toISOString()
+                          item_id: 'demo_toys',
+                          transaction_type: 'expense'
                         }
                       ]);
+                    } else {
+                      // Create wallet if it doesn't exist
+                      await supabase.from('finance_wallets').insert({
+                        user_id: currentUser.uid,
+                        balance: 150,
+                        lifetime_earned: 200,
+                        lifetime_spent: 50
+                      });
                     }
 
-                    // 3. Reset Pet Stats to 75%
+                    // 3. Reset Pet Stats to 75% using correct column names
                     await supabase
                       .from('pets')
                       .update({
+                        hunger: 75,
+                        happiness: 75,
+                        cleanliness: 75,
                         energy: 75,
-                        fun: 75,
-                        food: 75,
-                        hygiene: 75,
-                        happiness: 80
+                        health: 80,
+                        updated_at: new Date().toISOString()
                       })
                       .eq('user_id', currentUser.uid);
 
-                    toast.success('Demo State Active! Balance $150, Stats 75%');
+                    toast.success('Demo State Active! Balance 150 coins, Stats 75%');
 
                     // Force a reload to refresh everything
                     setTimeout(() => window.location.reload(), 1500);

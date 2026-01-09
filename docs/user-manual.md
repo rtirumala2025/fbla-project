@@ -75,6 +75,132 @@ Tips:
 
 ---
 
+## Pet Emotion System
+
+### Overview
+
+Your virtual pet's emotional state changes based on how well you care for them. The emotion system teaches you about responsibility and the importance of consistent care.
+
+### Understanding Emotions
+
+Your pet displays 6 different emotional states based on their care statistics:
+
+#### 1. Ecstatic 😄
+- **When:** Average of all stats is 80 or higher
+- **Visual Indicators:** Jumping, wagging tail, bright vibrant colors, high energy
+- **Meaning:** Your pet is extremely well cared for! Excellent job!
+- **How to Achieve:** Keep all stats (hunger, happiness, hygiene, energy, health) above 75
+
+#### 2. Happy 😊  
+- **When:** Average of all stats is between 60-79
+- **Visual Indicators:** Smiling, relaxed posture, normal colors
+- **Meaning:** Your pet is content and well-maintained
+- **How to Achieve:** Regular feeding, playing, and cleaning
+
+#### 3. Content 😐
+- **When:** Average of all stats is between 40-59
+- **Visual Indicators:** Neutral expression, calm demeanor
+- **Meaning:** Your pet's needs are being met at a basic level
+- **How to Achieve:** Occasional care, minimum maintenance
+
+#### 4. Anxious 😟
+- **When:** Average of all stats is between 25-39
+- **Visual Indicators:** Worried expression, lower energy, muted colors
+- **Meaning:** Your pet is starting to feel neglected
+- **Action Needed:** Increase care frequency immediately
+
+#### 5. Distressed 😢
+- **When:** Average of all stats is below 25
+- **Visual Indicators:** Sad appearance, drooping posture, dull colors, low activity
+- **Meaning:** Severe neglect - your pet needs immediate attention
+- **Action Needed:** Focus on raising all stats above 40
+
+#### 6. Sick/Ill 🤒
+- **When:** ANY single stat drops to 20 or below
+- **Visual Indicators:** Lying down, weak movements, concerned appearance
+- **Meaning:** Critical condition - one or more needs are severely lacking
+- **Action Needed:** Immediate vet visit recommended, address the lowest stat first
+
+### Care Stats Explained
+
+Your pet has 5 core statistics that determine their emotional state:
+
+| Stat | Range | What It Represents | How to Improve |
+|------|-------|-------------------|----------------|
+| **Hunger** | 0-100 | How well-fed your pet is | Feed your pet ($5 per feeding, +30 points) |
+| **Happiness** | 0-100 | Your pet's joy and contentment | Play with your pet (Free, +20 points) |
+| **Hygiene** | 0-100 | Cleanliness and grooming | Clean your pet ($3 per bath, +30 points) |
+| **Energy** | 0-100 | Rest and vitality levels | Let your pet rest (Free, +25 points) |
+| **Health** | 0-100 | Overall physical wellness | Visit the vet ($25 per visit, +30 points) |
+
+### Stat Decay
+
+**Important:** Stats naturally decrease over time to simulate real pet needs:
+- Hunger decreases by 5 points per hour
+- Happiness decreases by 3 points per hour
+- Hygiene decreases by 2 points per hour
+- Energy decreases by 4 points per hour (when active)
+- Health remains stable unless other stats are very low
+
+### Financial Impact on Care
+
+Every care action costs money, teaching you about the financial responsibility of pet ownership:
+
+| Care Action | Cost | Primary Benefit | Secondary Effects |
+|-------------|------|-----------------|-------------------|
+| **Feed** | $5 | Hunger +30 | Energy +10, prevents illness |
+| **Play** | $0 | Happiness +20 | Energy -5, bonds with pet |
+| **Clean** | $3 | Hygiene +30 | Happiness +5, prevents illness |
+| **Rest** | $0 | Energy +25 | Slight happiness increase |
+| **Vet Visit** | $25 | Health +30 | Comprehensive checkup, prevents serious illness |
+
+### Emotional Care Strategy
+
+**Best Practices for Happy Pet:**
+
+1. **Balanced Care:** Don't focus on just one stat. A pet with 100 hunger but 0 hygiene will still be "Sick"
+2. **Budget Wisely:** Keep at least $25 for emergency vet visits
+3. **Daily Routine:** Feed and clean daily, play frequently, rest when energy is low
+4. **Monitor Visual Cues:** Watch your pet's appearance and emotion for early warning signs
+5. **Preventive Care:** It's cheaper to maintain stats than to fix neglect
+
+**Warning Signs:**
+- If ANY stat drops below 30, take immediate action
+- If multiple stats are below 50, your pet will become anxious
+- Sick pets may require multiple care actions to recover
+
+### Examples
+
+**Scenario 1: Well-Cared Pet**
+- Stats: Hunger 85, Happiness 90, Hygiene 80, Energy 95, Health 100
+- Average: 90
+- Emotion: **Ecstatic** 😄
+- Cost: ~$15/day in care
+
+**Scenario 2: Neglected Pet**  
+- Stats: Hunger 15, Happiness 30, Hygiene 25, Energy 40, Health 35
+- Average: 29 | Critical Stat: Hunger (15)
+- Emotion: **Sick** 🤒
+- Needed: Immediate feed ($5) + Vet visit ($25) = $30 to recover
+
+**Scenario 3: Budget Emergency**
+- Balance: $2
+- Pet Stats: All declining
+- Problem: Can't afford food ($5) or cleaning ($3)
+- Solution: Play (free) and Rest (free) until you earn more coins
+
+### Learning Objective
+
+This emotion system teaches:
+- **Responsibility:** Consistent care prevents emergencies
+- **Financial Planning:** Budgeting for ongoing and unexpected costs
+- **Cause and Effect:** Your actions directly impact your pet's wellbeing
+- **Priority Management:** Identifying urgent needs vs. routine care
+
+By understanding how your pet's emotions work, you can provide better care while learning valuable life skills about responsibility and budgeting!
+
+---
+
 ## AI Companion Features
 The AI service observes stats, diary entries, and care history to guide players.
 
