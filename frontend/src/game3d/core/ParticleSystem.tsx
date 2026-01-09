@@ -95,7 +95,7 @@ function ParticleInstance({
     return <Instance ref={ref} color={color} />;
 }
 
-export function ParticleSystem({ type, count = 10, color, position, duration = 2 }: ParticleProps) {
+export function ParticleSystem({ type, count = 5, color, position, duration = 2 }: ParticleProps) {
     // Generate random velocities for the burst
     const particles = useMemo(() => {
         return Array.from({ length: count }).map(() => ({

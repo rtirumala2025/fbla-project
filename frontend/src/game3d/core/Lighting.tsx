@@ -1,5 +1,4 @@
 import React, { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export type LightingPreset = 'park' | 'room' | 'bamboo';
@@ -43,26 +42,7 @@ export function Lighting({ preset }: { preset: LightingPreset }) {
     };
   }, [preset]);
 
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    const variation = Math.sin(t * 0.25) * 0.05;
-
-    if (ambientRef.current) {
-      ambientRef.current.intensity = config.ambient.intensity * (1 + variation * 0.5);
-    }
-
-    if (sunRef.current) {
-      sunRef.current.intensity = config.sun.intensity * (1 + variation);
-    }
-
-    if (fillRef.current) {
-      fillRef.current.intensity = config.fill.intensity * (1 + variation * 0.8);
-    }
-
-    if (rimRef.current) {
-      rimRef.current.intensity = config.rim.intensity * (1 + variation * 0.6);
-    }
-  });
+  // Light intensity animation removed for performance - static lighting is sufficient
 
   return (
     <>
@@ -73,14 +53,14 @@ export function Lighting({ preset }: { preset: LightingPreset }) {
         intensity={config.sun.intensity}
         color={config.sun.color}
         position={config.sun.position}
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
         shadow-camera-near={0.5}
-        shadow-camera-far={40}
-        shadow-camera-left={-15}
-        shadow-camera-right={15}
-        shadow-camera-top={15}
-        shadow-camera-bottom={-15}
+        shadow-camera-far={30}
+        shadow-camera-left={-10}
+        shadow-camera-right={10}
+        shadow-camera-top={10}
+        shadow-camera-bottom={-10}
         shadow-bias={-0.00015}
         shadow-normalBias={0.015}
         shadow-radius={3}

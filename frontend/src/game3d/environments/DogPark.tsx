@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Cloud, Float, Cylinder, Sphere } from '@react-three/drei';
+import { Cylinder, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';
@@ -179,10 +179,7 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
     <>
       <color attach="background" args={['#cce0ff']} />
 
-      {/* Static Atmosphere */}
-      <group position={[0, 40, -30]}>
-        <Cloud opacity={0.4} speed={0.1} segments={20} bounds={[100, 10, 100]} volume={12} color="#ffffff" />
-      </group>
+      {/* Static Atmosphere - Cloud removed for performance */}
 
       {/* Main Ground - Expanded for spread-out buildings */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow userData={{ cameraCollide: true }}>
@@ -275,21 +272,11 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
           <Sphere args={[0.25, 8, 8]} position={[0, 3.5, 0]}>
             <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={1} />
           </Sphere>
-          <pointLight position={[0, 3.5, 0]} intensity={0.5} distance={5} color="#fff1d0" castShadow={false} />
+          {/* pointLight removed for performance - emissive glow retained */}
         </group>
       ))}
 
-      {/* Ambient Floating Particles - Fewer for performance */}
-      <Float speed={1.5} floatIntensity={0.3}>
-        <group position={[0, 3, 0]}>
-          {Array.from({ length: 20 }).map((_, i) => (
-            <mesh key={i} position={[(Math.random() - 0.5) * 50, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 50]}>
-              <sphereGeometry args={[0.03, 4, 4]} />
-              <meshBasicMaterial color="#fff" transparent opacity={0.25} />
-            </mesh>
-          ))}
-        </group>
-      </Float>
+      {/* Floating Particles removed for performance */}
     </>
   );
 });

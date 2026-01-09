@@ -119,8 +119,8 @@ export function CameraController({
 
     // 3. Collision / Occlusion Detection (Optimized)
     frameCount.current++;
-    // Only raycast every 3rd frame to save CPU
-    if (frameCount.current % 3 === 0) {
+    // Only raycast every 12th frame AND only when moving to save CPU
+    if (frameCount.current % 12 === 0 && isMoving) {
       // Raycast from Pet (slightly up) towards Camera
       petCenter.set(smoothPos.x, smoothPos.y + 1.0, smoothPos.z);
       const camPos = camera.position;
@@ -130,7 +130,7 @@ export function CameraController({
 
       raycaster.set(petCenter, dir);
       // Only care about hits closer than our current intended max
-      raycaster.far = intendedMaxDist;
+      raycaster.far = Math.min(intendedMaxDist, 12);
 
       // OPTIMIZATION: intersectObjects(scene.children, true) is very expensive.
       // Ideally we only check known static geometry.
