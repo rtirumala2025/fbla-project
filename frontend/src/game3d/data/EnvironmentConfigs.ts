@@ -20,52 +20,52 @@ export const DOG_PARK_CONFIG: EnvironmentConfig = {
 
 // --- CAT ROOM (Luxury Apartment) ---
 export const CAT_ROOM_CONFIG: EnvironmentConfig = {
-    bounds: { x: 19, z: 19 },
+    bounds: { x: 50, z: 50 }, // Scaled up 2.5x
     zones: [
         // Shop -> Tech Station (Left Wall)
         {
             id: 'shop',
-            position: [-14, 0, -2],
+            position: [-40, 0, -10],
             label: 'Access Online Shop',
             icon: 'shop',
             interactionType: 'object',
-            minDistance: 5
+            minDistance: 10
         },
         // Agility -> Cat Tree (Back Right)
         {
             id: 'agility',
-            position: [14, 0, -10],
+            position: [35, 0, -30],
             label: 'Climb Cat Tree',
             icon: 'agility',
             interactionType: 'object',
-            minDistance: 5
+            minDistance: 10
         },
         // Vet -> Wellness Spa (Front Left)
         {
             id: 'vet',
-            position: [-12, 0, 10],
+            position: [-35, 0, 30],
             label: 'Use Auto-Vet Station',
             icon: 'vet',
             interactionType: 'object',
-            minDistance: 5
+            minDistance: 10
         },
         // Market -> Kitchenette (Front Right)
         {
             id: 'market',
-            position: [12, 0, 10],
+            position: [35, 0, 30],
             label: 'Order Food',
             icon: 'market',
             interactionType: 'object',
-            minDistance: 5
+            minDistance: 10
         },
         // Home -> Lounge (Center)
         {
             id: 'home',
-            position: [0, 0, 2],
+            position: [0, 0, 5],
             label: 'Rest in Lounge',
             icon: 'home',
             interactionType: 'object',
-            minDistance: 6
+            minDistance: 12
         }
     ]
 };
