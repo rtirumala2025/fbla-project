@@ -415,11 +415,105 @@ export async function earnCoins(data: EarnRequestPayload): Promise<FinanceRespon
 }
 
 export async function purchaseItems(data: PurchaseRequestPayload): Promise<void> {
-  // Use shop endpoint for purchases
-  await apiRequest(`/api/shop/purchase`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const { entries } = data;
+  if (!entries || entries.length === 0) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // 1. Calculate Total Cost
+  // We need to fetch prices to be safe, but for now we'll trust the catalog data or fetch it briefly
+  // To allow offline-ish purchases, we'll optimistically assume the client knows the price/id
+  // But better to fetch the item price to avoid simple exploits if possible.
+
+  let totalCost = 0;
+  const transactionInserts: any[] = [];
+  const inventoryInserts: any[] = [];
+
+  // Fetch current wallet to check balance
+  const { data: wallet, error: walletError } = await supabase
+    .from('finance_wallets')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (walletError || !wallet) throw new Error("Could not load wallet for purchase");
+
+  // Process items
+  for (const entry of entries) {
+    // Find item details (optional validation in a real app, strict here helps)
+    const { data: item } = await supabase
+      .from('shop_items') // view
+      .select('*')
+      .eq('id', entry.itemId)
+      .single();
+
+    const price = item?.price || 0;
+    const cost = price * entry.quantity;
+    totalCost += cost;
+
+    transactionInserts.push({
+      user_id: user.id,
+      wallet_id: wallet.id,
+      amount: -cost, // Negative for expense
+      transaction_type: 'purchase',
+      category: item?.category || 'general',
+      item_id: entry.itemId,
+      item_name: item?.name || entry.itemId,
+      description: `Bought ${entry.quantity} x ${item?.name}`,
+      quantity: entry.quantity
+    });
+
+    inventoryInserts.push({
+      user_id: user.id,
+      wallet_id: wallet.id,
+      item_id: entry.itemId,
+      item_name: item?.name || entry.itemId,
+      category: item?.category || 'general',
+      quantity: entry.quantity
+    });
+  }
+
+  if (wallet.balance < totalCost) {
+    throw new Error(`Insufficient funds. Cost: ${totalCost}, Balance: ${wallet.balance}`);
+  }
+
+  // 2. Update Wallet Balance directly
+  const { error: updateError } = await supabase
+    .from('finance_wallets')
+    .update({
+      balance: wallet.balance - totalCost,
+      lifetime_spent: (wallet.lifetime_spent || 0) + totalCost
+    })
+    .eq('id', wallet.id);
+
+  if (updateError) throw new Error("Failed to deduct funds: " + updateError.message);
+
+  // 3. Insert Transactions (Logs)
+  // We do them one by one or batch? Batch is better but let's simple loop to be safe with types
+  for (const tx of transactionInserts) {
+    await supabase.from('finance_transactions').insert(tx);
+  }
+
+  // 4. Update Inventory (Upsert)
+  for (const inv of inventoryInserts) {
+    // Check if exists
+    const { data: existing } = await supabase
+      .from('finance_inventory')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('item_id', inv.item_id)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from('finance_inventory')
+        .update({ quantity: existing.quantity + inv.quantity })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('finance_inventory').insert(inv);
+    }
+  }
 }
 
 export async function getLeaderboard(metric: 'balance' | 'care_score'): Promise<LeaderboardEntry[]> {

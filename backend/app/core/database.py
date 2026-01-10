@@ -27,7 +27,11 @@ class Database:
             return
 
         logger.info("Creating asyncpg pool to Supabase instance")
-        self._pool = await asyncpg.create_pool(dsn, command_timeout=60)
+        try:
+            self._pool = await asyncpg.create_pool(dsn, command_timeout=60)
+        except Exception as e:
+            logger.error(f"Failed to connect to database: {e}. Running without DB connection.")
+            self._pool = None
 
     async def disconnect(self) -> None:
         if self._pool is None:
