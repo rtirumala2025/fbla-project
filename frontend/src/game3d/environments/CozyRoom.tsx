@@ -90,8 +90,8 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
         <planeGeometry args={[120, 120]} />
         <meshStandardMaterial
           map={woodTex}
-          roughness={0.5}
-          metalness={0.1}
+          roughness={0.8}
+          metalness={0.02}
           color="#8c7059"
         />
       </mesh>
