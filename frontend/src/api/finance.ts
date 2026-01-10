@@ -5,7 +5,7 @@
  */
 import { apiRequest } from './httpClient';
 import { supabase, isSupabaseMock } from '../lib/supabase';
-import { cachedRequest } from '../utils/requestCache';
+import { cachedRequest, requestCache } from '../utils/requestCache';
 import type {
   DonationPayload,
   EarnRequestPayload,
@@ -107,28 +107,46 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
     throw walletError;
   }
 
-  // If no wallet exists, return empty summary
-  if (!wallet) {
-    return {
-      summary: {
+  // If no wallet exists, create one with initial balance
+  let userWallet = wallet;
+  if (!userWallet) {
+    console.log('Creating new wallet for user:', userId);
+    const { data: newWallet, error: createError } = await supabase
+      .from('finance_wallets')
+      .insert({
+        user_id: userId,
+        balance: 500, // Initial balance
         currency: 'COIN',
-        balance: 0,
-        donation_total: 0,
-        lifetime_earned: 0,
-        lifetime_spent: 0,
-        income_today: 0,
-        expenses_today: 0,
-        budget_warning: null,
-        recommendations: [],
-        notifications: [],
-        daily_allowance_available: false,
-        allowance_amount: 0,
-        goals: [],
-        transactions: [],
-        inventory: [],
-        leaderboard: [],
-      },
-    };
+        lifetime_earned: 500
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Failed to create wallet:', createError);
+      // Fallback to empty state but don't crash
+      return {
+        summary: {
+          currency: 'COIN',
+          balance: 0,
+          donation_total: 0,
+          lifetime_earned: 0,
+          lifetime_spent: 0,
+          income_today: 0,
+          expenses_today: 0,
+          budget_warning: null,
+          recommendations: [],
+          notifications: [],
+          daily_allowance_available: false,
+          allowance_amount: 0,
+          goals: [],
+          transactions: [],
+          inventory: [],
+          leaderboard: [],
+        },
+      };
+    }
+    userWallet = newWallet;
   }
 
   // Fetch today's transactions
@@ -184,7 +202,7 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
   }
 
   // Check daily allowance (if last_allowance_at is more than 24 hours ago or null)
-  const lastAllowanceAt = wallet.last_allowance_at ? new Date(wallet.last_allowance_at) : null;
+  const lastAllowanceAt = userWallet!.last_allowance_at ? new Date(userWallet!.last_allowance_at) : null;
   const now = new Date();
   const hoursSinceLastAllowance = lastAllowanceAt
     ? (now.getTime() - lastAllowanceAt.getTime()) / (1000 * 60 * 60)
@@ -251,11 +269,11 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
   }
 
   const summary: FinanceSummary = {
-    currency: wallet.currency || 'COIN',
-    balance: wallet.balance || 0,
-    donation_total: wallet.donation_total || 0,
-    lifetime_earned: wallet.lifetime_earned || 0,
-    lifetime_spent: wallet.lifetime_spent || 0,
+    currency: userWallet!.currency || 'COIN',
+    balance: userWallet!.balance || 0,
+    donation_total: userWallet!.donation_total || 0,
+    lifetime_earned: userWallet!.lifetime_earned || 0,
+    lifetime_spent: userWallet!.lifetime_spent || 0,
     income_today: incomeToday,
     expenses_today: expensesToday,
     budget_warning: null,
@@ -272,7 +290,10 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
   return { summary };
 }
 
-export async function getFinanceSummary(): Promise<FinanceResponse> {
+export async function getFinanceSummary(options?: { force?: boolean }): Promise<FinanceResponse> {
+  if (options?.force) {
+    requestCache.invalidate('finance-summary');
+  }
   return cachedRequest(
     'finance-summary',
     async () => {

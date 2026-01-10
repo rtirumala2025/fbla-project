@@ -35,6 +35,9 @@ export function useSyncManager(): SyncManagerResult {
   const [lastSynced, setLastSynced] = useState<number | null>(null);
   const [queuedOperations, setQueuedOperations] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const LAST_SAVE_TIME = useRef<number>(0);
+  const SAVE_THROTTLE_MS = 10000; // 10 seconds throttle
   const deviceId = useMemo(() => {
     if (typeof window === 'undefined') return 'server';
     let id = sessionStorage.getItem('device_id');
@@ -64,7 +67,8 @@ export function useSyncManager(): SyncManagerResult {
   }, []);
 
   // Save state to cloud
-  const save = useCallback(
+  // Use strict ref-based throttling to avoid closure staleness and recursion issues
+  const saveImplementation = useCallback(
     async (options: { force?: boolean; silent?: boolean } = {}) => {
       if (!userId) return;
 
@@ -72,6 +76,8 @@ export function useSyncManager(): SyncManagerResult {
       try {
         const result = await saveToCloud(userId, options);
         if (result.success) {
+          // Only update status if component is still mounted/valid
+          // (React state updates are safe usually, but good to be careful)
           setStatus('idle');
           setConflicts(result.conflicts);
           setLastSynced(Date.now());
@@ -91,7 +97,41 @@ export function useSyncManager(): SyncManagerResult {
         setStatus(offlineStatus.offline ? 'offline' : 'idle');
       }
     },
-    [userId, offlineStatus.offline],
+    [userId, offlineStatus.offline]
+  );
+
+  const save = useCallback(
+    async (options: { force?: boolean; silent?: boolean } = {}) => {
+      const now = Date.now();
+      const timeSinceLastSave = now - LAST_SAVE_TIME.current;
+
+      // Throttle saves unless forced
+      if (!options.force && timeSinceLastSave < SAVE_THROTTLE_MS) {
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+          // We must access the latest saveImplementation
+          // But since we are in a closure, we can't easily. 
+          // Better to just let the timeout trigger a re-check or use a ref for the function.
+          // However, simplest fix: invalidating the timeout if deps change is tricky.
+          // Instead, let's just run the logic.
+          // Since saveImplementation depends on userId, if userId changes, saveImplementation changes.
+          // But we want to run the *current* save logic for the *current* user.
+          // If user changes, we probably shouldn't run the old user's save.
+          // So, this is fine.
+          void saveImplementation(options);
+        }, SAVE_THROTTLE_MS - timeSinceLastSave);
+        return;
+      }
+
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+
+      LAST_SAVE_TIME.current = now;
+      await saveImplementation(options);
+    },
+    [saveImplementation]
   );
 
   // Restore state from cloud or offline

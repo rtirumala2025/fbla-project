@@ -188,7 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const sessionPromise = supabase.auth.getSession();
         const { data: { session }, error } = await withTimeout(
           sessionPromise,
-          10000,
+          15000,
           'Get initial session'
         ) as any;
 
@@ -210,12 +210,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           if (mappedUser) {
             // Check if user has a profile and pet - with timeout to prevent hanging
-            const profilePromise = checkUserProfile(mappedUser.uid);
-            const { isNew, hasPet: petExists } = await withTimeout(
-              profilePromise,
-              5000, // 5 second timeout for profile check
-              'User profile check'
-            ) as any;
+            // With retry and longer timeout
+            let isNew = false;
+            let petExists = false;
+            try {
+              const profileData = await withTimeout(
+                checkUserProfile(mappedUser.uid),
+                20000,
+                "Initial profile check"
+              );
+              isNew = profileData.isNew;
+              petExists = profileData.hasPet;
+            } catch (e) {
+              console.warn('Profile check timed out or failed, using safe defaults', e);
+              // Default to safe values if check fails
+              isNew = false;
+              petExists = true;
+            }
             onboardingLogger.authInit('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
             setIsNewUser(isNew);
             setHasPet(petExists);

@@ -36,7 +36,11 @@ export const useFinancial = () => {
 };
 
 export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User | null }> = ({ children, user }) => {
-  const [balance, setBalance] = useState(0);
+  // Initialize from localStorage if available to prevent 0 flash
+  const [balance, setBalance] = useState(() => {
+    const saved = localStorage.getItem('finance_balance');
+    return saved ? Number(saved) : 0;
+  });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,13 +56,15 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await getFinanceSummary();
-      
+
+      const response = await getFinanceSummary({ force: true });
+
       if (response?.summary) {
         const summary = response.summary;
-        setBalance(summary.balance || 0);
-        
+        const newBalance = summary.balance || 0;
+        setBalance(newBalance);
+        localStorage.setItem('finance_balance', newBalance.toString());
+
         // Map backend transactions to our Transaction format
         const mappedTransactions: Transaction[] = (summary.transactions || []).map((t) => ({
           id: t.id,
@@ -68,7 +74,7 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
           category: t.category || 'other',
           date: new Date(t.created_at),
         }));
-        
+
         setTransactions(mappedTransactions);
       } else {
         setBalance(0);
@@ -76,9 +82,9 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
       }
     } catch (err: any) {
       setError('Failed to load financial data');
-      // Don't throw - allow fallback behavior
-      setBalance(0);
-      setTransactions([]);
+      // On error, keep existing balance instead of resetting to 0
+      // Only reset if we suspect auth issue (which usually redirects anyway)
+      console.warn('Finance load failed, keeping previous balance:', balance);
     } finally {
       setLoading(false);
     }
@@ -92,27 +98,27 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
     if (!user) {
       throw new Error('User not authenticated');
     }
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       // Optimistic update
-      setBalance(prev => transaction.type === 'income' 
-        ? prev + transaction.amount 
+      setBalance(prev => transaction.type === 'income'
+        ? prev + transaction.amount
         : prev - transaction.amount);
-      
+
       const optimisticTransaction: Transaction = {
         ...transaction,
         id: Date.now().toString(),
         date: new Date(),
       };
-      
+
       setTransactions(prev => [optimisticTransaction, ...prev]);
-      
+
       // Refresh from API to get server-confirmed values
       await loadFinancialData();
-      
+
     } catch (err: any) {
       setError('Failed to add transaction');
       // Revert optimistic update

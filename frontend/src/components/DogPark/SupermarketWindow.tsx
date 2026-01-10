@@ -14,7 +14,8 @@ import {
     Bone, Heart, Scissors, Home, Package, Zap
 } from 'lucide-react';
 import { BuildingInteractionWindow } from './BuildingInteractionWindow';
-import { getShopCatalog, purchaseItems, getFinanceSummary } from '../../api/finance';
+import { getShopCatalog, purchaseItems } from '../../api/finance';
+import { useFinancial } from '../../context/FinancialContext';
 import type { ShopItemEntry } from '../../types/finance';
 import './building-windows.css';
 
@@ -73,7 +74,10 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
     const [cart, setCart] = useState<CartItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [purchasing, setPurchasing] = useState(false);
-    const [balance, setBalance] = useState(0);
+
+    // Global finance state
+    const { balance, refreshBalance } = useFinancial();
+
     const [showCheckout, setShowCheckout] = useState(false);
     const [purchaseResult, setPurchaseResult] = useState<'success' | 'error' | null>(null);
     const [errorMessage, setErrorMessage] = useState('');
@@ -90,10 +94,7 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
     const loadShopData = async () => {
         setLoading(true);
         try {
-            const [catalogData, financeData] = await Promise.all([
-                getShopCatalog(),
-                getFinanceSummary()
-            ]);
+            const catalogData = await getShopCatalog();
             // Filter to consumables only (NOT accessories)
             const consumableItems = catalogData.filter(item =>
                 CONSUMABLE_CATEGORIES.includes(item.category.toLowerCase()) &&
@@ -110,10 +111,9 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
                 };
             });
             setItems(itemsWithIcons);
-            setBalance(financeData.summary?.balance ?? 0);
+            setItems(itemsWithIcons);
         } catch (error) {
             console.error('Failed to load supermarket data:', error);
-            setBalance(500);
         } finally {
             setLoading(false);
         }
@@ -184,7 +184,8 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
             await purchaseItems(purchaseData);
 
             setPurchaseResult('success');
-            setBalance(prev => prev - cartTotal);
+            // Refresh global balance
+            await refreshBalance();
             setCart([]);
             setShowCheckout(false);
 

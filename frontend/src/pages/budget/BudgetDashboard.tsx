@@ -9,6 +9,7 @@ import TransactionTable from '../../components/budget/TransactionTable';
 import { claimDailyAllowance, contributeGoal, createGoal, donateCoins, getFinanceSummary } from '../../api/finance';
 import type { FinanceSummary, TransactionRecord } from '../../types/finance';
 import { useFinanceRealtime, type FinanceRefreshOptions } from '../../hooks/useFinanceRealtime';
+import { useFinancial } from '../../context/FinancialContext';
 import BudgetAdvisorAI, { type TransactionInput, type BudgetAdvisorAnalysis } from '../../components/budget/BudgetAdvisorAI';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import {
@@ -31,6 +32,7 @@ const currencyFormat = (amount: number, currency: string) => `${amount} ${curren
 
 export const BudgetDashboard: React.FC = () => {
   const { currentUser } = useAuth();
+  const { refreshBalance } = useFinancial();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,6 +169,7 @@ export const BudgetDashboard: React.FC = () => {
         newBalance: response.summary.balance,
       });
       toast.success(`Allowance claimed! +${response.summary.allowance_amount} ${response.summary.currency}`);
+      await refreshBalance();
     } catch (error: any) {
       console.error('❌ BudgetDashboard: allowance claim failed', error);
       toast.error(error.message || 'Unable to claim allowance right now.');
@@ -225,6 +228,7 @@ export const BudgetDashboard: React.FC = () => {
         goalProgress: response.summary.goals.find((g) => g.id === goalId)?.progress_percent,
       });
       toast.success('Contribution recorded!');
+      await refreshBalance();
     } catch (error: any) {
       console.error('❌ BudgetDashboard: failed to contribute', error);
       toast.error(error.message || 'Unable to contribute to goal.');
@@ -264,6 +268,7 @@ export const BudgetDashboard: React.FC = () => {
         totalDonated: response.summary.donation_total,
       });
       toast.success('Donation sent!');
+      await refreshBalance();
     } catch (error: any) {
       console.error('❌ BudgetDashboard: donation failed', error);
       toast.error(error.message || 'Unable to send donation.');

@@ -17,7 +17,8 @@ import {
     Bone, Heart, Scissors, Home, Crown, Package
 } from 'lucide-react';
 import { BuildingInteractionWindow } from './BuildingInteractionWindow';
-import { getShopCatalog, purchaseItems, getFinanceSummary } from '../../api/finance';
+import { getShopCatalog, purchaseItems } from '../../api/finance';
+import { useFinancial } from '../../context/FinancialContext';
 import type { ShopItemEntry } from '../../types/finance';
 import './building-windows.css';
 
@@ -76,7 +77,10 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
     const [cart, setCart] = useState<CartItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [purchasing, setPurchasing] = useState(false);
-    const [balance, setBalance] = useState(0);
+
+    // Global finance state
+    const { balance, refreshBalance } = useFinancial();
+
     const [showCheckout, setShowCheckout] = useState(false);
     const [purchaseResult, setPurchaseResult] = useState<'success' | 'error' | null>(null);
     const [errorMessage, setErrorMessage] = useState('');
@@ -95,21 +99,12 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
         console.log('[GiftShop] Loading shop data...');
         try {
             // Promise.all can fail entirely if one fails. Hardening this.
-            const catalogPromise = getShopCatalog().catch(e => {
+            const catalogData = await getShopCatalog().catch(e => {
                 console.error('[GiftShop] Catalog load failed:', e);
                 return [];
             });
-            const financePromise = getFinanceSummary().catch(e => {
-                console.error('[GiftShop] Finance load failed:', e);
-                return { summary: { balance: 0 } as any };
-            });
 
-            const [catalogData, financeData] = await Promise.all([
-                catalogPromise,
-                financePromise
-            ]);
-
-            console.log('[GiftShop] Loaded:', { catalog: catalogData.length, balance: financeData.summary?.balance });
+            console.log('[GiftShop] Loaded:', { catalog: catalogData.length });
 
             // Filter to accessories only and add icons
             const accessoryItems = catalogData.filter(item =>
@@ -127,7 +122,6 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                 };
             });
             setItems(itemsWithIcons);
-            setBalance(financeData.summary?.balance ?? 0);
         } catch (error) {
             console.error('Failed to load shop data:', error);
             // Use accessory mock data as fallback
@@ -136,7 +130,6 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                 { id: '2', sku: 'acc-bandana', name: 'Cool Bandana', description: 'Fashionable bandana', price: 40, category: 'bandana', stock: 99, icon: '🧣' },
                 { id: '4', sku: 'acc-glasses', name: 'Pet Sunglasses', description: 'Cool shades', price: 60, category: 'glasses', stock: 99, icon: '🕶️' },
             ]);
-            setBalance(0);
         } finally {
             setLoading(false);
         }
@@ -216,10 +209,17 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                 })),
             };
 
-            await purchaseItems(purchaseData);
+            // Add explicit timeout to purchase call to prevent infinite hanging
+            const purchasePromise = purchaseItems(purchaseData);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Purchase timed out. Please try again.')), 15000)
+            );
+
+            await Promise.race([purchasePromise, timeoutPromise]);
 
             setPurchaseResult('success');
-            setBalance(prev => prev - cartTotal);
+            // Refresh global balance to reflect purchase (non-blocking)
+            refreshBalance().catch(e => console.warn('Background balance refresh failed:', e));
 
             setTimeout(() => {
                 setCart([]);

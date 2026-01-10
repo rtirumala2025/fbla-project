@@ -222,43 +222,46 @@ export async function processSyncQueue(userId: string): Promise<{ processed: num
   }
 
   const queuedOps = await offlineStorage.getQueuedOperations();
+  if (queuedOps.length === 0) {
+    return { processed: 0, failed: 0 };
+  }
+
+  console.log(`Processing ${queuedOps.length} queued sync operations...`);
   let processed = 0;
   let failed = 0;
 
-  for (const op of queuedOps) {
-    try {
-      // Re-capture current state and push
-      const result = await saveToCloud(userId, { silent: true });
-      if (result.success) {
+  try {
+    // Since saveToCloud captures the ENTIRE current state, one save covers all pending updates.
+    // We don't need to save for every queued op.
+    const result = await saveToCloud(userId, { silent: true });
+
+    if (result.success) {
+      // If successful, we can clear ALL queued operations
+      for (const op of queuedOps) {
         await offlineStorage.removeQueuedOperation(op.id);
         processed++;
-      } else {
+      }
+    } else {
+      // If failed, increment retries for all
+      for (const op of queuedOps) {
         await offlineStorage.incrementRetry(op.id);
         if (op.retries >= MAX_RETRIES) {
-          // Too many retries, remove from queue
           await offlineStorage.removeQueuedOperation(op.id);
-          failed++;
-        } else {
           failed++;
         }
       }
-    } catch (error: any) {
-      // Check for rate limit
-      if (error?.message?.includes('429')) {
-        console.warn('Rate limited processing queue, halting for 30s');
-        // Set global breaker too
-        globalRateLimitUntil = Date.now() + 60000;
-        await sleep(30000); // Wait 30s before processing ANY more items
-        break; // Stop processing the rest of the queue
-      }
-
-      await offlineStorage.incrementRetry(op.id);
-      if (op.retries >= MAX_RETRIES) {
-        await offlineStorage.removeQueuedOperation(op.id);
-      }
-      failed++;
+      failed += queuedOps.length; // Count as failed attempt
     }
+
+  } catch (error: any) {
+    // Check for rate limit
+    if (error?.message?.includes('429')) {
+      console.warn('Rate limited processing queue, halting for 30s');
+      globalRateLimitUntil = Date.now() + 60000;
+    }
+    failed++;
   }
+
 
   return { processed, failed };
 }
