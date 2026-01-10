@@ -52,7 +52,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .from('user_preferences')
           .select('theme, color_blind_mode')
           .eq('user_id', currentUser.uid)
-          .single();
+          .maybeSingle();
 
         if (error) {
           // PGRST116 = no rows, which is okay (first time user)

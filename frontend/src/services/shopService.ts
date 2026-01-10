@@ -33,7 +33,7 @@ export const shopService = {
       .from('profiles')
       .select('coins')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching balance:', error);
@@ -68,7 +68,7 @@ export const shopService = {
         .update({ coins: currentBalance - totalCost })
         .eq('user_id', userId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         throw profileError;
@@ -93,7 +93,7 @@ export const shopService = {
           .from('profiles')
           .update({ coins: currentBalance })
           .eq('user_id', userId);
-        
+
         throw transactionError;
       }
 
@@ -119,7 +119,7 @@ export const shopService = {
       .update({ coins: newBalance })
       .eq('user_id', userId)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       throw error;

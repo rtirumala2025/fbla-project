@@ -12,7 +12,7 @@ import { XR, createXRStore, XRButton, useXR } from '@react-three/xr';
 import type { Pet } from '../types/pet';
 
 // #region agent log
-fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ARPets.tsx:13', message: 'ARPets module loading started', data: { hasImport: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+// fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'ARPets.tsx:13', message: 'ARPets module loading started', data: { hasImport: true }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
 // #endregion
 
 const xrStore = createXRStore({

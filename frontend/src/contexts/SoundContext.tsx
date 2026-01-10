@@ -44,7 +44,7 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .from('user_preferences')
           .select('sound, music')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
 
         if (error && error.code !== 'PGRST116') {
           setIsLoading(false);
@@ -70,13 +70,13 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Sync sound preferences to Supabase when they change
   const setEffectsEnabled = async (enabled: boolean) => {
     setEffectsEnabledState(enabled);
-    
+
     if (!isSupabaseMock() && !isLoading) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
           const userId = session.user.id;
-          
+
           await supabase
             .from('user_preferences')
             .upsert({
@@ -94,13 +94,13 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setAmbientEnabled = async (enabled: boolean) => {
     setAmbientEnabledState(enabled);
-    
+
     if (!isSupabaseMock() && !isLoading) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
           const userId = session.user.id;
-          
+
           await supabase
             .from('user_preferences')
             .upsert({
@@ -139,10 +139,10 @@ export const useSoundPreferences = (): SoundContextValue => {
     return {
       effectsEnabled: true,
       ambientEnabled: true,
-      toggleEffects: () => {},
-      toggleAmbient: () => {},
-      setEffectsEnabled: () => {},
-      setAmbientEnabled: () => {},
+      toggleEffects: () => { },
+      toggleAmbient: () => { },
+      setEffectsEnabled: () => { },
+      setAmbientEnabled: () => { },
     };
   }
   return context;

@@ -22,8 +22,8 @@ export const petService = {
           .from('pets')
           .select('*')
           .eq('user_id', userId)
-          .single();
-        
+          .maybeSingle();
+
         const { data, error } = await withTimeout(
           query as unknown as Promise<any>,
           10000,
@@ -65,8 +65,8 @@ export const petService = {
         .from('pets')
         .insert(petData)
         .select()
-        .single();
-      
+        .maybeSingle();
+
       const { data, error } = await withTimeout(
         query as unknown as Promise<any>,
         15000,
@@ -115,8 +115,8 @@ export const petService = {
         })
         .eq('id', petId)
         .select()
-        .single();
-      
+        .maybeSingle();
+
       const { data, error } = await withTimeout(
         query as unknown as Promise<any>,
         10000,
@@ -176,8 +176,8 @@ export const petService = {
         .from('pets')
         .select('age')
         .eq('id', petId)
-        .single();
-      
+        .maybeSingle();
+
       const { data: pet, error: fetchError } = await withTimeout(
         query as unknown as Promise<any>,
         10000,
@@ -223,8 +223,8 @@ export const petService = {
         .from('pets')
         .select('level')
         .eq('id', petId)
-        .single();
-      
+        .maybeSingle();
+
       const { data: pet, error: fetchError } = await withTimeout(
         query as unknown as Promise<any>,
         10000,

@@ -76,19 +76,19 @@ export async function captureAppState(userId: string): Promise<SyncSnapshot> {
     // Batch 1: Core user data (most critical)
     const [petData, profileData, walletData] = await Promise.all([
       safeQuery<Record<string, any> | null>(
-        () => supabase.from('pets').select('*').eq('user_id', userId).single(),
+        () => supabase.from('pets').select('*').eq('user_id', userId).maybeSingle(),
         null,
         'pet'
       ).then((data: any) => data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null),
 
       safeQuery<Record<string, any> | null>(
-        () => supabase.from('profiles').select('*').eq('user_id', userId).single(),
+        () => supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
         null,
         'profile'
       ).then((data: any) => data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null),
 
       safeQuery<Record<string, any> | null>(
-        () => supabase.from('finance_wallets').select('*').eq('user_id', userId).single(),
+        () => supabase.from('finance_wallets').select('*').eq('user_id', userId).maybeSingle(),
         null,
         'wallet'
       ).then((data: any) => data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null),
@@ -100,7 +100,7 @@ export async function captureAppState(userId: string): Promise<SyncSnapshot> {
     // Batch 2: User settings and inventory
     const [preferencesData, inventoryData, accessoriesData, goalsData] = await Promise.all([
       safeQuery<Record<string, any> | null>(
-        () => supabase.from('user_preferences').select('*').eq('user_id', userId).single(),
+        () => supabase.from('user_preferences').select('*').eq('user_id', userId).maybeSingle(),
         null,
         'preferences'
       ).then((data: any) => data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null),

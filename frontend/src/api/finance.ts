@@ -101,7 +101,7 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
     .from('finance_wallets')
     .select('*')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle(); // Use maybeSingle to avoid 406 if no wallet exists
 
   if (walletError && walletError.code !== 'PGRST116') { // PGRST116 = no rows returned
     throw walletError;

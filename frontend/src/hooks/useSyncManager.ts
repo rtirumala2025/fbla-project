@@ -86,7 +86,7 @@ export function useSyncManager(): SyncManagerResult {
             setStatus('idle');
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Save failed:', error);
         setStatus(offlineStatus.offline ? 'offline' : 'idle');
       }

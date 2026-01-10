@@ -94,11 +94,25 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
 
     const loadShopData = async () => {
         setLoading(true);
+        console.log('[GiftShop] Loading shop data...');
         try {
+            // Promise.all can fail entirely if one fails. Hardening this.
+            const catalogPromise = getShopCatalog().catch(e => {
+                console.error('[GiftShop] Catalog load failed:', e);
+                return [];
+            });
+            const financePromise = getFinanceSummary().catch(e => {
+                console.error('[GiftShop] Finance load failed:', e);
+                return { summary: { balance: 0 } as any };
+            });
+
             const [catalogData, financeData] = await Promise.all([
-                getShopCatalog(),
-                getFinanceSummary()
+                catalogPromise,
+                financePromise
             ]);
+
+            console.log('[GiftShop] Loaded:', { catalog: catalogData.length, balance: financeData.summary?.balance });
+
             // Filter to accessories only and add icons
             const accessoryItems = catalogData.filter(item =>
                 ACCESSORY_CATEGORIES.includes(item.category.toLowerCase()) ||
@@ -122,11 +136,9 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
             setItems([
                 { id: '1', sku: 'acc-collar', name: 'Fancy Collar', description: 'Stylish neckwear for your pet', price: 75, category: 'collar', stock: 99, icon: '📿' },
                 { id: '2', sku: 'acc-bandana', name: 'Cool Bandana', description: 'Fashionable bandana', price: 40, category: 'bandana', stock: 99, icon: '🧣' },
-                { id: '3', sku: 'acc-crown', name: 'Royal Crown', description: 'For pet royalty', price: 120, category: 'hat', stock: 50, icon: '👑' },
                 { id: '4', sku: 'acc-glasses', name: 'Pet Sunglasses', description: 'Cool shades', price: 60, category: 'glasses', stock: 99, icon: '🕶️' },
-                { id: '5', sku: 'acc-bowtie', name: 'Dapper Bowtie', description: 'For formal occasions', price: 50, category: 'collar', stock: 99, icon: '🎀' },
             ]);
-            setBalance(500);
+            setBalance(0);
         } finally {
             setLoading(false);
         }
@@ -260,7 +272,7 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
             {loading ? (
                 <div className="building-loading">
                     <div className="building-loading-spinner" />
-                    <span>Loading supermarket...</span>
+                    <span>Loading shop...</span>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 16 }}>

@@ -66,7 +66,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         item_name: action,
         transaction_type: 'expense',
         amount: cost,
-      }).select('*').single();
+      }).select('*').maybeSingle();
 
       const { error } = await withTimeout(query as unknown as Promise<any>, 10000, 'Log transaction') as any;
       if (error) console.warn('Failed to log transaction:', error);
@@ -99,7 +99,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       const { data, error } = await supabase.from('pets').update({
         ...bounded,
         updated_at: now.toISOString(),
-      } as any).eq('id', pet.id).select('*').single();
+      } as any).eq('id', pet.id).select('*').maybeSingle();
 
       if (error) throw error;
       if (!data) throw new Error('No data returned');
@@ -128,7 +128,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     try {
       // Wallet check for non-free actions
       if (cost > 0) {
-        const { data: wallet } = await supabase.from('finance_wallets').select('balance').eq('user_id', userId).single();
+        const { data: wallet } = await supabase.from('finance_wallets').select('balance').eq('user_id', userId).maybeSingle();
         if (!wallet || wallet.balance < cost) {
           alert(`Insufficient funds! You need ${cost} coins.`);
           return;
@@ -183,7 +183,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const updateHighScore = useCallback(async (gameType: string, score: number, coins: number = 0) => {
     if (!userId || !supabase) return;
     try {
-      const { data: existing } = await supabase.from('game_leaderboards').select('*').eq('user_id', userId).eq('game_type', gameType).single();
+      const { data: existing } = await supabase.from('game_leaderboards').select('*').eq('user_id', userId).eq('game_type', gameType).maybeSingle();
       if (existing) {
         const isNewBest = score > existing.best_score;
         await supabase.from('game_leaderboards').update({
@@ -206,7 +206,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const getHighScore = useCallback(async (gameType: string) => {
     if (!userId || !supabase) return 0;
     try {
-      const { data } = await supabase.from('game_leaderboards').select('best_score').eq('user_id', userId).eq('game_type', gameType).single();
+      const { data } = await supabase.from('game_leaderboards').select('best_score').eq('user_id', userId).eq('game_type', gameType).maybeSingle();
       return data?.best_score || 0;
     } catch (e) {
       return 0;
@@ -225,7 +225,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     setError(null);
     try {
       const { data, error } = await withTimeout(
-        supabase.from('pets').select('*').eq('user_id', userId).single() as unknown as Promise<any>,
+        supabase.from('pets').select('*').eq('user_id', userId).maybeSingle() as unknown as Promise<any>,
         10000,
         'Load pet'
       ) as any;
@@ -327,7 +327,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         supabase.from('pets').upsert({
           user_id: userId, name, pet_type: petType, species: petType, breed,
           health: 100, hunger: 75, happiness: 80, cleanliness: 90, energy: 85
-        }, { onConflict: 'user_id' }).select().single() as unknown as Promise<any>,
+        }, { onConflict: 'user_id' }).select().maybeSingle() as unknown as Promise<any>,
         10000,
         'Create pet'
       ) as any;

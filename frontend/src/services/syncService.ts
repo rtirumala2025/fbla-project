@@ -24,6 +24,9 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 3000; // Start with 3 seconds
 const MAX_RETRY_DELAY_MS = 60000; // Max 60 seconds
 
+// Global circuit breaker for rate limiting (shared across all hook instances)
+let globalRateLimitUntil = 0;
+
 /**
  * Exponential backoff delay calculation
  */
@@ -48,6 +51,13 @@ export async function saveToCloud(
 ): Promise<SyncResult> {
   if (isSupabaseMock() || !userId) {
     return { success: false, conflicts: [], restored: false, error: 'Invalid user or mock mode' };
+  }
+
+  // Global circuit breaker check
+  if (Date.now() < globalRateLimitUntil && !options.force) {
+    const waitSeconds = Math.ceil((globalRateLimitUntil - Date.now()) / 1000);
+    if (!options.silent) console.warn(`Sync blocked: Global rate limit active for ${waitSeconds}s`);
+    return { success: false, conflicts: [], restored: false, error: `Rate limited (wait ${waitSeconds}s)` };
   }
 
   try {
@@ -95,7 +105,14 @@ export async function saveToCloud(
         const isClientError = lastError.message.includes('406') || lastError.message.includes('429');
         if (isClientError) {
           console.warn('Sync aborted due to client/rate-limit error:', lastError.message);
-          break;
+
+          if (lastError.message.includes('429')) {
+            console.warn('Hit 429 rate limit. Activating global circuit breaker for 60s.');
+            globalRateLimitUntil = Date.now() + 60000;
+          }
+
+          // Don't just break, throw to stop the queue processor too
+          throw lastError;
         }
 
         if (attempt < MAX_RETRIES) {
@@ -225,7 +242,16 @@ export async function processSyncQueue(userId: string): Promise<{ processed: num
           failed++;
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Check for rate limit
+      if (error?.message?.includes('429')) {
+        console.warn('Rate limited processing queue, halting for 30s');
+        // Set global breaker too
+        globalRateLimitUntil = Date.now() + 60000;
+        await sleep(30000); // Wait 30s before processing ANY more items
+        break; // Stop processing the rest of the queue
+      }
+
       await offlineStorage.incrementRetry(op.id);
       if (op.retries >= MAX_RETRIES) {
         await offlineStorage.removeQueuedOperation(op.id);
