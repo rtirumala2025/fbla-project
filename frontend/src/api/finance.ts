@@ -542,7 +542,20 @@ export async function getShopCatalog(): Promise<ShopItemEntry[]> {
 }
 
 export async function getInventory(): Promise<InventoryEntry[]> {
-  return apiRequest<InventoryEntry[]>(`/api/shop/inventory`);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('finance_inventory')
+    .select('*')
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Failed to fetch inventory:', error);
+    throw error;
+  }
+
+  return data || [];
 }
 
 export interface UseItemPayload {

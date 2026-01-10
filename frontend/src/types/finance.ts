@@ -76,12 +76,12 @@ export interface FinanceResponse {
 }
 
 export interface PurchaseLineItemPayload {
-  item_id: string;
+  itemId: string;
   quantity: number;
 }
 
 export interface PurchaseRequestPayload {
-  items: PurchaseLineItemPayload[];
+  entries: PurchaseLineItemPayload[];
   pet_id?: string | null;
 }
 
