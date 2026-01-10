@@ -27,6 +27,7 @@ export interface LeaderboardEntry {
   balance: number;
   care_score: number;
   rank: number;
+  username?: string;
 }
 
 export interface GoalSummary {

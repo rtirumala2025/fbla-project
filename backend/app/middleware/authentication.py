@@ -32,7 +32,8 @@ class JWTAuthenticationMiddleware(BaseHTTPMiddleware):
                     email=claims.email,
                     role=claims.role,
                 )
-            except TokenValidationError:
+            except TokenValidationError as e:
+                print(f"DEBUG: Auth middleware validation failed: {e.detail}")
                 request.state.user = None
         else:
             request.state.user = None

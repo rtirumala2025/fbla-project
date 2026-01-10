@@ -37,6 +37,13 @@ def decode_access_token(token: str) -> AuthClaims:
     """Decode and validate a Supabase-issued JWT access token."""
     settings = get_settings()
     secret = settings.supabase_jwt_secret or settings.jwt_secret
+    if settings.supabase_jwt_secret:
+        print(f"DEBUG: Using SUPABASE_JWT_SECRET (starts with {settings.supabase_jwt_secret[:4]}...)")
+    elif settings.jwt_secret:
+        print(f"DEBUG: Using JWT_SECRET (starts with {settings.jwt_secret[:4]}...)")
+    else:
+        print("DEBUG: NO JWT SECRET CONFIGURED")
+
     if not secret:
         raise TokenValidationError("JWT secret not configured.")
 
@@ -48,9 +55,11 @@ def decode_access_token(token: str) -> AuthClaims:
             audience="authenticated",
         )
     except jwt.ExpiredSignatureError as exc:  # pragma: no cover - upstream library
+        print(f"DEBUG: Token expired: {exc}")
         raise TokenValidationError("Token has expired.") from exc
     except jwt.InvalidTokenError as exc:  # pragma: no cover - upstream library
-        raise TokenValidationError("Invalid token provided.") from exc
+        print(f"DEBUG: Invalid token error: {exc}")
+        raise TokenValidationError(f"Invalid token provided: {exc}") from exc
 
     sub = payload.get("sub") or payload.get("user_id")
     if not sub:

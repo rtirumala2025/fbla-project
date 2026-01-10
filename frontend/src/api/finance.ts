@@ -97,18 +97,54 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
   const todayStart = today.toISOString();
 
   // Fetch wallet
-  const { data: wallet, error: walletError } = await supabase
+  let userWallet;
+  let careScore = 0;
+  let walletError: any = null;
+
+  // Try fetching wallet with profile join first
+  const { data: walletWithProfile, error: joinError } = await supabase
     .from('finance_wallets')
-    .select('*')
+    .select('*, profiles!inner(care_score)') // Try joining via user_id
     .eq('user_id', userId)
-    .maybeSingle(); // Use maybeSingle to avoid 406 if no wallet exists
+    .maybeSingle();
+
+  if (joinError && (joinError.code === '42P01' || joinError.code === 'PGRST100')) { // relation doesn't exist or bad request
+    console.warn("Finance wallet join failed, trying simple fetch and separate profile fetch");
+    // Fallback to simple wallet fetch
+    const { data: walletSimple, error: simpleWalletError } = await supabase
+      .from('finance_wallets')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (simpleWalletError) {
+      walletError = simpleWalletError;
+    } else {
+      userWallet = walletSimple;
+      // Fetch profile separately
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('care_score')
+        .eq('id', userId)
+        .single();
+      careScore = profile?.care_score || 0;
+    }
+  } else if (joinError) {
+    walletError = joinError;
+  } else {
+    userWallet = walletWithProfile;
+    if (userWallet && (userWallet as any).profiles) {
+      careScore = (userWallet as any).profiles.care_score || 0;
+      delete (userWallet as any).profiles; // Clean up the joined data
+    }
+  }
 
   if (walletError && walletError.code !== 'PGRST116') { // PGRST116 = no rows returned
     throw walletError;
   }
 
   // If no wallet exists, create one with initial balance
-  let userWallet = wallet;
+  // Reuse existing variable
   if (!userWallet) {
     console.log('Creating new wallet for user:', userId);
     const { data: newWallet, error: createError } = await supabase
@@ -250,20 +286,36 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
     .from('finance_wallets')
     .select(`
       user_id,
-      balance,
-      profiles!inner(care_score)
+      balance
     `)
     .order('balance', { ascending: false })
     .limit(10);
 
   const leaderboard: LeaderboardEntry[] = [];
   if (!leaderboardError && leaderboardData) {
+    // Fetch profiles for the leaderboard users separately
+    const userIds = leaderboardData.map(entry => entry.user_id);
+    let profilesMap: Record<string, any> = {};
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, care_score, username')
+        .in('id', userIds);
+
+      profiles?.forEach(p => {
+        profilesMap[p.id] = p;
+      });
+    }
+
     leaderboardData.forEach((entry, index) => {
+      const profile = profilesMap[entry.user_id];
       leaderboard.push({
         user_id: entry.user_id,
         balance: entry.balance,
-        care_score: (entry.profiles as any)?.care_score || 0,
         rank: index + 1,
+        care_score: profile?.care_score || 0,
+        username: profile?.username || 'Unknown Trainer',
       });
     });
   }
@@ -387,6 +439,25 @@ export async function claimDailyAllowance(): Promise<FinanceResponse> {
     }
     throw error;
   }
+}
+
+export async function claimBetaAllowance(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not logged in");
+
+  const { error } = await supabase
+    .from('transactions') // Use the view which has the trigger
+    .insert({
+      user_id: user.id,
+      amount: 500,
+      transaction_type: 'allowance',
+      category: 'beta_reward',
+      description: 'Beta Tester Allowance',
+      item_name: 'Beta Reward',
+      item_id: 'beta_reward'
+    });
+
+  if (error) throw error;
 }
 
 export async function donateCoins(data: DonationPayload): Promise<FinanceResponse> {
