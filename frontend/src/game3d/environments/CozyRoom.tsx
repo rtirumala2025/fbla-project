@@ -152,100 +152,96 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
       </mesh>
 
 
-      {/* --- ZONES (Scaled & Repositioned) --- */}
+      {/* --- ZONES (Scaled & Repositioned for 120x120 Room) --- */}
 
-      {/* 1. LOUNGE (Center Interaction) */}
-      <group position={[0, 0, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('home'); }}>
-        {/* Rug: 15u radius - LIFTED to prevent Z-fighting */}
+      {/* 1. LOUNGE (Center Interaction) - Scaled 2.5x */}
+      <group position={[0, 0, 5]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('home'); }}>
+        {/* Massive Rug: 35u radius */}
         <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <circleGeometry args={[15, 64]} />
+          <circleGeometry args={[25, 64]} />
           <meshStandardMaterial color="#b0b8c2" roughness={1} />
         </mesh>
-        {/* Sofa: 2.5x larger */}
-        <group position={[-6, 0.05, 6]}>
+        {/* Sectional Sofa - Massive */}
+        <group position={[-10, 0.1, 10]} scale={[2.5, 2.5, 2.5]}>
           <mesh position={[0, 1, 0]} castShadow receiveShadow>
-            <boxGeometry args={[18, 2, 6]} />
+            <boxGeometry args={[7, 2, 2.5]} />
             <meshStandardMaterial color="#3d4450" />
           </mesh>
-          <mesh position={[6, 1, 6]} castShadow receiveShadow>
-            <boxGeometry args={[6, 2, 18]} />
+          <mesh position={[2.25, 1, 2.25]} castShadow receiveShadow>
+            <boxGeometry args={[2.5, 2, 7]} />
             <meshStandardMaterial color="#3d4450" />
           </mesh>
         </group>
-        {/* Coffee Table */}
-        <mesh position={[3, 0.82, 3]} castShadow>
-          <cylinderGeometry args={[4, 3, 1.5, 8]} />
+        {/* Coffee Table - Massive */}
+        <mesh position={[5, 2, 5]} castShadow scale={[2.5, 2.5, 2.5]}>
+          <cylinderGeometry args={[1.5, 1.2, 0.6, 16]} />
           <meshStandardMaterial color="#222" roughness={0.1} />
         </mesh>
       </group>
 
-      {/* 2. TECH STATION (Left Wall) */}
-      <group position={[-40, 0, -10]} rotation={[0, Math.PI / 4, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('shop'); }}>
+      {/* 2. TECH STATION (Left Wall) - Scaled 3x */}
+      <group position={[-45, 0, -20]} rotation={[0, Math.PI / 4, 0]} scale={[3, 3, 3]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('shop'); }}>
         {/* Desk */}
-        <mesh position={[0, 3, 0]} castShadow>
-          <boxGeometry args={[12, 0.5, 6]} />
-          <meshStandardMaterial color="#111" roughness={0.2} />
+        <mesh position={[0, 1.5, 0]} castShadow>
+          <boxGeometry args={[5, 0.2, 2.5]} />
+          <meshStandardMaterial color="#1a1a1a" roughness={0.2} />
         </mesh>
-        {/* Legs */}
-        <mesh position={[-5, 1.5, 0]}><cylinderGeometry args={[0.3, 0.3, 3]} /><meshStandardMaterial color="#888" /></mesh>
-        <mesh position={[5, 1.5, 0]}><cylinderGeometry args={[0.3, 0.3, 3]} /><meshStandardMaterial color="#888" /></mesh>
-
-        {/* Curved Monitor */}
-        <mesh position={[0, 4.5, -2]} rotation={[0, 0, 0]}>
-          <cylinderGeometry args={[8, 8, 3, 32, 1, true, Math.PI, Math.PI / 3]} />
-          <meshStandardMaterial color="#000" side={THREE.DoubleSide} />
-        </mesh>
-        <mesh position={[0, 4.5, -1.9]} rotation={[0, 0, 0]}>
-          <cylinderGeometry args={[7.9, 7.9, 2.8, 32, 1, true, Math.PI, Math.PI / 3]} />
-          <meshBasicMaterial color="#3498db" side={THREE.DoubleSide} /> {/* Screen */}
-        </mesh>
-
+        <mesh position={[-2, 0.75, 0]}><cylinderGeometry args={[0.1, 0.1, 1.5]} /><meshStandardMaterial color="#888" /></mesh>
+        <mesh position={[2, 0.75, 0]}><cylinderGeometry args={[0.1, 0.1, 1.5]} /><meshStandardMaterial color="#888" /></mesh>
+        {/* Monitors */}
+        <group position={[0, 1.6, -0.5]}>
+          <mesh position={[-1.2, 1, 0]} rotation={[0, 0.2, 0]}><boxGeometry args={[2.5, 1.5, 0.1]} /><meshStandardMaterial color="#111" /></mesh>
+          <mesh position={[-1.2, 1, 0.06]} rotation={[0, 0.2, 0]}><planeGeometry args={[2.3, 1.3]} /><meshStandardMaterial color="#000" emissive="#3498db" emissiveIntensity={0.6} /></mesh>
+          <mesh position={[1.2, 1, 0]} rotation={[0, -0.2, 0]}><boxGeometry args={[2.5, 1.5, 0.1]} /><meshStandardMaterial color="#111" /></mesh>
+          <mesh position={[1.2, 1, 0.06]} rotation={[0, -0.2, 0]}><planeGeometry args={[2.3, 1.3]} /><meshStandardMaterial color="#000" emissive="#9b59b6" emissiveIntensity={0.6} /></mesh>
+        </group>
         {/* Chair */}
-        <group position={[0, 0, 4]} rotation={[0, -0.5, 0]}>
-          <mesh position={[0, 2, 0]}><boxGeometry args={[3, 4, 0.5]} /><meshStandardMaterial color="#e74c3c" /></mesh>
-          <mesh position={[0, 1, 1]}><boxGeometry args={[3, 0.5, 3]} /><meshStandardMaterial color="#333" /></mesh>
+        <group position={[0, 0, 1.5]} rotation={[0, -0.5, 0]}>
+          <mesh position={[0, 1, 0]}><boxGeometry args={[1.5, 2, 0.2]} /><meshStandardMaterial color="#e74c3c" /></mesh>
+          <mesh position={[0, 0.5, 0.6]}><boxGeometry args={[1.5, 0.2, 1.5]} /><meshStandardMaterial color="#333" /></mesh>
         </group>
       </group>
 
-      {/* 3. AGILITY TOWER (Back Right) */}
-      <group position={[35, 0, -30]} rotation={[0, -Math.PI / 4, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('agility'); }}>
-        <mesh position={[0, 15, 0]} castShadow>
-          <cylinderGeometry args={[1, 1.2, 30]} />
+      {/* 3. AGILITY TOWER (Back Right) - Scaled 3x */}
+      <group position={[40, 0, -40]} rotation={[0, -Math.PI / 4, 0]} scale={[3, 3, 3]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('agility'); }}>
+        <mesh position={[0, 6, 0]} castShadow>
+          <cylinderGeometry args={[0.4, 0.4, 12, 16]} />
           <meshStandardMaterial color="#d2b48c" />
         </mesh>
-        {[5, 12, 20, 26].map((h, i) => (
-          <mesh key={i} position={[Math.sin(i) * 3, h, Math.cos(i) * 3]} castShadow>
-            <cylinderGeometry args={[5, 5, 0.5]} />
-            <meshStandardMaterial color="#666" />
+        {[2, 5, 8, 10].map((h, i) => (
+          <mesh key={i} position={[Math.sin(i * 2) * 1.5, h, Math.cos(i * 2) * 1.5]} rotation={[0, i, 0]} castShadow>
+            <cylinderGeometry args={[2, 2, 0.2, 8]} />
+            <meshStandardMaterial color="#555" />
           </mesh>
         ))}
       </group>
 
-      {/* 4. SPA (Front Left) */}
-      <group position={[-35, 0, 30]} rotation={[0, Math.PI / 2, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('vet'); }}>
-        <mesh position={[0, 3, 0]} castShadow>
-          <boxGeometry args={[10, 1, 5]} />
+      {/* 4. SPA (Front Left) - Scaled 2.5x */}
+      <group position={[-40, 0, 40]} rotation={[0, Math.PI / 2, 0]} scale={[2.5, 2.5, 2.5]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('vet'); }}>
+        <mesh position={[0, 1.2, 0]} castShadow>
+          <boxGeometry args={[4, 0.3, 2]} />
           <meshStandardMaterial color="#fff" />
         </mesh>
-        <mesh position={[-4, 1.5, 0]}><cylinderGeometry args={[0.5, 0.5, 3]} /><meshStandardMaterial color="#ccc" /></mesh>
-        <mesh position={[4, 1.5, 0]}><cylinderGeometry args={[0.5, 0.5, 3]} /><meshStandardMaterial color="#ccc" /></mesh>
+        <mesh position={[-1.5, 0.6, 0]}><cylinderGeometry args={[0.2, 0.2, 1.2]} /><meshStandardMaterial color="#ccc" /></mesh>
+        <mesh position={[1.5, 0.6, 0]}><cylinderGeometry args={[0.2, 0.2, 1.2]} /><meshStandardMaterial color="#ccc" /></mesh>
+        {/* Shelf */}
+        <group position={[0, 0, -1.2]}>
+          <mesh position={[0, 2, 0]}><boxGeometry args={[3, 0.1, 0.6]} /><meshStandardMaterial color="#e6e1d8" /></mesh>
+        </group>
       </group>
 
-      {/* 5. KITCHENETTE (Front Right) */}
-      <group position={[35, 0, 30]} rotation={[0, -Math.PI / 2, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('market'); }}>
-        <mesh position={[0, 3.5, 0]} castShadow>
-          <boxGeometry args={[12, 7, 5]} />
+      {/* 5. KITCHENETTE (Front Right) - Scaled 2.5x */}
+      <group position={[40, 0, 40]} rotation={[0, -Math.PI / 2, 0]} scale={[2.5, 2.5, 2.5]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('market'); }}>
+        <mesh position={[0, 1.5, 0]} castShadow>
+          <boxGeometry args={[5, 3, 2]} />
           <meshStandardMaterial color="#2c3e50" />
         </mesh>
-        <mesh position={[0, 7.1, 0]}>
-          <boxGeometry args={[12.5, 0.2, 5.5]} />
+        <mesh position={[0, 3.05, 0]}>
+          <boxGeometry args={[5.2, 0.1, 2.2]} />
           <meshStandardMaterial color="#fff" roughness={0.1} />
         </mesh>
         {/* Bowl */}
-        <mesh position={[-2, 7.5, 0]}>
-          <cylinderGeometry args={[1.5, 1, 0.8]} />
-          <meshStandardMaterial color="#eee" />
-        </mesh>
+        <mesh position={[-1, 3.2, 0]}><cylinderGeometry args={[0.6, 0.4, 0.3]} /><meshStandardMaterial color="#ecf0f1" /></mesh>
       </group>
 
     </group>
