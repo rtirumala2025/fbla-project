@@ -106,12 +106,12 @@ export const PetGame2Screen: React.FC = () => {
     }
   }, [getEvolutionStage]);
 
-  // Sync stats from context initially
+  // Sync stats from context whenever pet data updates
   useEffect(() => {
     if (pet?.stats) {
       setStats(pet.stats);
     }
-  }, [pet?.id]);
+  }, [pet]);
 
   // -- AI Assistant Integration --
   const { updateContext, toggleOpen, sendMessage } = useAIAssistant();
@@ -570,8 +570,8 @@ export const PetGame2Screen: React.FC = () => {
               setStats(prev => prev ? { ...prev, energy: newEnergy } : prev);
             }
 
-            // Refresh to ensure sync with database
-            await refreshPet();
+            // Refresh removed to prevent race condition - updatePetStats handles context update
+            // await refreshPet();
           } catch (error) {
             console.error('Failed to save sleep energy:', error);
             // Still update local state on error
