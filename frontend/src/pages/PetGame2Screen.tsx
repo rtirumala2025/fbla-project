@@ -14,6 +14,7 @@ import { PetDiaryOverlay, type PetDiaryEntry } from '@/game3d/ui/PetDiaryOverlay
 import { FloatingCost, type FloatingCostProps } from '@/game3d/ui/FloatingCost';
 import { SuccessToast } from '@/game3d/ui/SuccessToast';
 import { inventoryService } from '@/services/inventoryService';
+import { shopService } from '@/services/shopService';
 import { getPetDiary, bathePetAction, restPetAction, feedPetAction, playWithPet } from '@/api/pets';
 import { EvolutionAnimation } from '@/components/pets/EvolutionAnimation';
 import type { PetStats, PetActionResponse } from '@/types/pet';
@@ -70,6 +71,8 @@ export const PetGame2Screen: React.FC = () => {
   const [successIndicator, setSuccessIndicator] = useState<{ id: string; action: string; message: string } | null>(null);
   const [transactionToast, setTransactionToast] = useState<{ id: string; message: string; cost: number } | null>(null);
   const transactionTimer = useRef<NodeJS.Timeout | null>(null);
+  const [rewardToast, setRewardToast] = useState<{ id: string; message: string; amount: number } | null>(null);
+  const rewardTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Evolution
   const [showEvolution, setShowEvolution] = useState(false);
@@ -499,6 +502,20 @@ export const PetGame2Screen: React.FC = () => {
         </div>
       )}
 
+      {/* Reward Toast - Top Center (for coin earnings) */}
+      {rewardToast && (
+        <div
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[100]"
+          style={{ animation: 'slideInDown 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards' }}
+        >
+          <div className="px-6 py-3 rounded-2xl shadow-2xl font-bold text-lg flex items-center gap-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-white">
+            <span className="text-2xl">🎉</span>
+            <span>{rewardToast.message}</span>
+            <span className="text-2xl">+{rewardToast.amount} 💰</span>
+          </div>
+        </div>
+      )}
+
       {/* Evolution Animation */}
       {showEvolution && evolutionData && (
         <EvolutionAnimation
@@ -612,10 +629,28 @@ export const PetGame2Screen: React.FC = () => {
       <AgilityGameWindow
         isOpen={openBuilding === 'agility'}
         onClose={() => setOpenBuilding(null)}
-        onGameComplete={(score, coinsEarned) => {
-          if (coinsEarned > 0) {
-            showSuccess('play', `Earned ${coinsEarned} coins!`);
-            // In a real app, award coins via API
+        onGameComplete={async (score, coinsEarned) => {
+          if (coinsEarned > 0 && currentUser?.uid) {
+            try {
+              await shopService.addCoins(
+                currentUser.uid,
+                coinsEarned,
+                `Agility Game Reward (Score: ${score})`
+              );
+              setBalanceChange({ amount: coinsEarned, isPositive: true });
+              setTimeout(() => setBalanceChange(null), 2000);
+              await refreshBalance();
+              // Show reward toast
+              if (rewardTimer.current) clearTimeout(rewardTimer.current);
+              setRewardToast({
+                id: Date.now().toString(),
+                message: 'Agility Training Complete!',
+                amount: coinsEarned,
+              });
+              rewardTimer.current = setTimeout(() => setRewardToast(null), 3000);
+            } catch (error) {
+              console.error('Failed to award coins:', error);
+            }
           }
         }}
       />
