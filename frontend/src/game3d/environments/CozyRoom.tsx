@@ -7,9 +7,10 @@ import { InstancedInterior } from './InstancedInterior';
 
 function CitySkybox() {
   // A giant cylinder wrapping the scene to prevent seeing the "void"
+  // Moved down to -50 to ensure no intersection with floor at Y=0
   return (
-    <mesh position={[0, -20, 0]}>
-      <cylinderGeometry args={[90, 90, 80, 32, 1, true]} />
+    <mesh position={[0, -50, 0]}>
+      <cylinderGeometry args={[90, 90, 120, 32, 1, true]} />
       <meshBasicMaterial
         color="#080d16"
         side={THREE.BackSide}
@@ -89,7 +90,8 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
         shadow-camera-right={50}
         shadow-camera-top={50}
         shadow-camera-bottom={-50}
-        shadow-bias={-0.0001}
+        shadow-bias={0.00005} // Positive bias for large flat planes
+        shadow-mapSize={[2048, 2048]}
       />
       {/* Point lights for "zones" */}
       <pointLight position={[30, 20, 20]} intensity={1.5} color="#ffaa00" distance={40} />
@@ -169,13 +171,13 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
 
       {/* 1. LOUNGE (Center Interaction) */}
       <group position={[0, 0, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('home'); }}>
-        {/* Rug: 15u radius */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        {/* Rug: 15u radius - LIFTED to prevent Z-fighting */}
+        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <circleGeometry args={[15, 64]} />
           <meshStandardMaterial color="#b0b8c2" roughness={1} />
         </mesh>
         {/* Sofa: 2.5x larger */}
-        <group position={[-6, 0, 6]}>
+        <group position={[-6, 0.05, 6]}>
           <mesh position={[0, 1, 0]} castShadow receiveShadow>
             <boxGeometry args={[18, 2, 6]} />
             <meshStandardMaterial color="#3d4450" />
@@ -186,7 +188,7 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
           </mesh>
         </group>
         {/* Coffee Table */}
-        <mesh position={[3, 0.8, 3]} castShadow>
+        <mesh position={[3, 0.82, 3]} castShadow>
           <cylinderGeometry args={[4, 3, 1.5, 8]} />
           <meshStandardMaterial color="#222" roughness={0.1} />
         </mesh>
