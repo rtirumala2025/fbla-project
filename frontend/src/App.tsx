@@ -53,26 +53,38 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
 // Protected route component - requires authentication
 // Redirects new users (without pets) to pet selection
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, loading, hasPet, isTransitioning, isSigningOut } = useAuth();
+  const { currentUser, loading, hasPet, isTransitioning } = useAuth();
+
+  // Track if we've ever been authenticated to prevent unmounting during auth refresh
+  const wasAuthenticatedRef = React.useRef(false);
+  if (currentUser) {
+    wasAuthenticatedRef.current = true;
+  }
 
   console.log('ProtectedRoute check:', {
     currentUser: !!currentUser,
     loading,
     hasPet,
     isTransitioning,
-    isSigningOut,
+    wasAuthenticated: wasAuthenticatedRef.current,
     currentPath: window.location.pathname
   });
 
-  // Show loading spinner if initial load OR if signing out
-  // This prevents the "redirect to login" flash when signing out
-  if (loading || isSigningOut) {
-    console.log('ProtectedRoute: Still loading...');
+  // CRITICAL FIX: Don't show loading spinner if user was previously authenticated
+  // This prevents unmounting the 3D scene during auth token refresh
+  if (loading && !wasAuthenticatedRef.current) {
+    console.log('ProtectedRoute: Still loading (initial auth)...');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
+  // During loading after initial auth, allow access to prevent unmounting
+  if (loading && wasAuthenticatedRef.current) {
+    console.log('ProtectedRoute: Loading during refresh, keeping children mounted');
+    return <>{children}</>;
   }
 
   if (!currentUser) {

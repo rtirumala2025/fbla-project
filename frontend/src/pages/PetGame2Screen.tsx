@@ -406,7 +406,9 @@ export const PetGame2Screen: React.FC = () => {
   }, [diaryOpen, loadDiary]);
 
 
-  if (loading) {
+  // ONLY show full loading screen if we don't have pet data yet
+  // This prevents the 3D scene from unmounting during background refreshes
+  if (loading && !pet) {
     return <div className="min-h-[calc(100vh-5rem)] bg-[#0b1020] flex items-center justify-center text-white">Loading...</div>;
   }
 

@@ -19,7 +19,6 @@ type AuthContextType = {
   isNewUser: boolean;
   hasPet: boolean;
   isTransitioning: boolean;
-  isSigningOut: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -57,7 +56,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isNewUser, setIsNewUser] = useState(false);
   const [hasPet, setHasPet] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const initialSessionLoadedRef = useRef(false);
   const petSubscriptionRef = useRef<any>(null);
 
@@ -73,18 +71,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return false;
         }
 
-        // Critical Fix: If Supabase is throttling (406/429), assume user HAS a pet to prevent redirect loop
-        // This stops the "No pet -> Redirect to Selection -> Error -> Redirect" cycle
-        const errorMessage = error?.message || '';
-        if (errorMessage.includes('406') || errorMessage.includes('429') || (error?.status === 406)) {
-          onboardingLogger.warn('Pet check throttled (406/429) - assuming pet exists to prevent redirect loop', { userId });
-          return true;
-        }
-
         if (attempt === maxRetries) {
           onboardingLogger.error(`Pet check failed after ${maxRetries} attempts`, error, { userId, maxRetries });
-          // If we can't reach the DB at all after retries, fail open to avoid destroying UX
-          return true;
+          return false; // Default to no pet on final failure
         }
 
         // Exponential backoff: 100ms, 200ms, 400ms
@@ -93,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    return true; // Default to true on unknown failure to be safe
+    return false;
   };
 
   // Helper function to check if user has a profile and pet
@@ -118,14 +107,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { isNew, hasPet: petExists };
     } catch (error) {
       onboardingLogger.error('Error checking user profile', error, { userId });
-      // CRITICAL: Fail-safe to prevent redirect loops during DB issues
-      // Return hasPet: true to prevent redirect to pet selection when we can't confirm
-      return { isNew: false, hasPet: true };
+      return { isNew: true, hasPet: false }; // Assume new user if error occurs
     }
   }, []); // checkPetWithRetry is defined above and doesn't need to be in deps
 
   // Method to refresh user state after profile creation or update
-  // CRITICAL: This does NOT reset hasPet on failure to prevent redirect loops
   const refreshUserState = useCallback(async () => {
     onboardingLogger.authInit('Refreshing user state');
     try {
@@ -152,12 +138,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setHasPet(petExists);
         setCurrentUser(updatedUser);
       }
-      // NOTE: If no session, we intentionally do NOT reset hasPet
-      // This prevents redirect loops during transient auth hiccups
     } catch (error) {
-      // CRITICAL: Do NOT reset hasPet on error - preserve current state
-      // This prevents redirect loops when DB is rate limited or temporarily unavailable
-      onboardingLogger.error('Error refreshing user state (preserving current hasPet)', error);
+      onboardingLogger.error('Error refreshing user state', error);
     }
   }, []); // checkPetWithRetry is defined above and doesn't need to be in deps
 
@@ -350,11 +332,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setHasPet(false);
         }
       } catch (profileError) {
-        // CRITICAL: Fail-safe to prevent redirect loops during DB/timeout issues
-        // Keep hasPet true to prevent redirect to pet selection when check fails
-        onboardingLogger.error('Error checking user profile in auth change (fail-safe: keeping hasPet=true)', profileError);
+        // CRITICAL: Do NOT reset hasPet on timeout/error - preserve current hasPet value
+        // This prevents redirect to pet-selection during transient auth refresh failures
+        onboardingLogger.error('Error checking user profile in auth change (preserving hasPet)', profileError);
         setIsNewUser(false);
-        // Do NOT reset hasPet to false here - it causes redirect loops
+        // Intentionally NOT setting hasPet here - keep current value
       }
 
       setCurrentUser(mappedUser);
@@ -613,9 +595,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      // Set signing out state immediately to prevent protected routes from redirecting
-      setIsSigningOut(true);
-
       // Mock sign out for development
       if (getEnv('USE_MOCK', 'false') === 'true') {
         setCurrentUser(null);
@@ -695,7 +674,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isNewUser,
     hasPet,
     isTransitioning,
-    isSigningOut,
     signIn,
     signUp,
     signInWithGoogle,
