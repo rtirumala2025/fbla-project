@@ -5,21 +5,8 @@ import { InstancedInterior } from './InstancedInterior';
 
 // --- SUB-COMPONENTS ---
 
-function CitySkybox() {
-  // A giant cylinder wrapping the scene to prevent seeing the "void"
-  // Moved down to -50 to ensure no intersection with floor at Y=0
-  return (
-    <mesh position={[0, -50, 0]}>
-      <cylinderGeometry args={[90, 90, 120, 32, 1, true]} />
-      <meshBasicMaterial
-        color="#080d16"
-        side={THREE.BackSide}
-      />
-      {/* City lights simulation via texture or particles could go here, 
-          for now just a solid dark backing for the "Cityscape" component to pop against. */}
-    </mesh>
-  );
-}
+// CitySkybox removed per user request
+// Cityscape removed per user request
 
 function Cityscape() {
   // Enhanced Cityscape: Simulates distance city lights and buildings
@@ -72,8 +59,7 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
 
   return (
     <group>
-      {/* 1. ATMOSPHERE / VOID FIX */}
-      <CitySkybox />
+      {/* 1. ATMOSPHERE / VOID FIX - Removed */}
       <InstancedInterior />
 
       {/* 2. LIGHTING (Adjusted for scale) */}
@@ -110,8 +96,7 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
         />
       </mesh>
 
-      {/* Background City */}
-      <Cityscape />
+      {/* Background City - Removed */}
 
       {/* Back Wall (Window View) */}
       <group position={[0, 15, -45]}>
