@@ -42,7 +42,6 @@ interface GiftShopWindowProps {
 // Category configuration - ACCESSORIES ONLY
 const CATEGORIES = [
     { id: 'all', name: 'All Accessories', icon: Package, color: '#8b5cf6' },
-    { id: 'deals', name: 'Hot Deals', icon: Zap, color: '#ef4444' },
     { id: 'collar', name: 'Collars', icon: Crown, color: '#f59e0b' },
     { id: 'hat', name: 'Hats & Headwear', icon: Crown, color: '#ec4899' },
     { id: 'bandana', name: 'Bandanas', icon: Gift, color: '#10b981' },
@@ -52,7 +51,7 @@ const CATEGORIES = [
 ];
 
 // Accessory categories to filter from shop catalog
-const ACCESSORY_CATEGORIES = ['accessories', 'collar', 'hat', 'bandana', 'glasses', 'outfit', 'accessory', 'deals'];
+const ACCESSORY_CATEGORIES = ['accessories', 'collar', 'hat', 'bandana', 'glasses', 'outfit', 'accessory'];
 
 
 // Map a category to an icon for display
@@ -66,7 +65,6 @@ const getCategoryIcon = (category: string): string => {
         care: '✨',
         health: '💊',
         grooming: '✂️',
-        deals: '🔥',
         medicine: '💊',
         energy: '⚡',
     };
@@ -157,10 +155,7 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
         });
     }, [items, selectedCategory, searchQuery]);
 
-    // Deal items for hero section
-    const dealItems = useMemo(() => {
-        return items.filter(item => item.isDeal || item.category === 'deals').slice(0, 3);
-    }, [items]);
+
 
     // Cart calculations
     const cartTotal = useMemo(() => {
@@ -278,76 +273,8 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 16 }}>
 
                     {/* Hero Banner - Daily Deals */}
-                    {dealItems.length > 0 && selectedCategory === 'all' && !searchQuery && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            style={{
-                                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(249, 115, 22, 0.2) 100%)',
-                                borderRadius: 16,
-                                padding: '16px 20px',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 16,
-                            }}
-                        >
-                            <div style={{
-                                background: 'rgba(239, 68, 68, 0.3)',
-                                borderRadius: 12,
-                                padding: '8px 12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                            }}>
-                                <Zap size={18} color="#fbbf24" />
-                                <span style={{ fontWeight: 700, color: '#fbbf24' }}>HOT DEALS</span>
-                            </div>
-                            <div style={{ flex: 1, display: 'flex', gap: 12, overflowX: 'auto' }}>
-                                {dealItems.map(deal => (
-                                    <motion.button
-                                        key={deal.id}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => addToCart(deal)}
-                                        style={{
-                                            background: 'rgba(0, 0, 0, 0.3)',
-                                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                                            borderRadius: 10,
-                                            padding: '8px 14px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 8,
-                                            cursor: 'pointer',
-                                            color: 'white',
-                                            whiteSpace: 'nowrap',
-                                        }}
-                                    >
-                                        <span>{deal.icon}</span>
-                                        <span style={{ fontWeight: 500 }}>{deal.name}</span>
-                                        <span style={{
-                                            color: '#fbbf24',
-                                            fontWeight: 700,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 4,
-                                        }}>
-                                            {deal.originalPrice && (
-                                                <span style={{
-                                                    textDecoration: 'line-through',
-                                                    color: '#94a3b8',
-                                                    fontSize: '0.75rem',
-                                                }}>
-                                                    {deal.originalPrice}
-                                                </span>
-                                            )}
-                                            {deal.price} 💰
-                                        </span>
-                                    </motion.button>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
+                    {/* Hero Banner - Daily Deals REMOVED */}
+
 
                     {/* Main Content Area */}
                     <div style={{ display: 'flex', gap: 20, flex: 1, minHeight: 0 }}>
