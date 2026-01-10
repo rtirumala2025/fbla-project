@@ -18,7 +18,7 @@ export type SocialRefreshFn = (options?: SocialRefreshOptions) => Promise<void> 
  */
 export const useSocialRealtime = (refresh: SocialRefreshFn): void => {
   const refreshRef = useRef<SocialRefreshFn>(refresh);
-  
+
   useEffect(() => {
     refreshRef.current = refresh;
   }, [refresh]);
@@ -77,6 +77,9 @@ export const useSocialRealtime = (refresh: SocialRefreshFn): void => {
       );
 
       // Listen for changes to public_profiles (for leaderboard updates)
+      // REMOVED: Unfiltered 'public_profiles' subscription caused broadcast storm/high egress.
+      // Leaderboards/profiles should be polled or fetched on demand.
+      /*
       realtimeChannel.on(
         'postgres_changes',
         {
@@ -86,6 +89,7 @@ export const useSocialRealtime = (refresh: SocialRefreshFn): void => {
         },
         handleRefresh,
       );
+      */
 
       channel = realtimeChannel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {

@@ -9,7 +9,8 @@ import type { PetStats } from '@/types/pet';
 import { DogPark } from './environments/DogPark.tsx';
 import { CozyRoom } from './environments/CozyRoom.tsx';
 import { BambooForest } from './environments/BambooForest.tsx';
-import { DogModel, EquippedAccessory } from './pets/DogModel.tsx';
+import { DogModel } from './pets/DogModel.tsx';
+import { EquippedAccessory } from './core/BehaviourSystem';
 import { CatModel } from './pets/CatModel.tsx';
 import { PandaModel } from './pets/PandaModel.tsx';
 import { SceneVfx } from './core/SceneVfx.tsx';
@@ -53,7 +54,7 @@ function Environment({
 }: {
   petType: PetGame2PetType;
   state: PetGame2State;
-  triggerNavigation: (zone: any) => void;
+  triggerNavigation: (zone: any, targetPos?: any) => void;
   onEnterBuilding?: (zone: any) => void;
   onPurchase?: (item: any) => void;
 }) {
@@ -112,7 +113,7 @@ export function PetGame2Scene({
   onToggleDiary?: () => void;
   onToggleSound?: () => void;
   soundEnabled?: boolean;
-  triggerNavigation: (zone: any) => void;
+  triggerNavigation: (zone: any, targetPos?: any) => void;
   setPetPosition: (pos: [number, number, number]) => void;
   onToggleDrone: () => void;
   setBreed: (breed: any) => void;
@@ -181,7 +182,6 @@ export function PetGame2Scene({
         onActivity={onActivity}
         balance={balance}
         totalSpent={totalSpent}
-        balanceChange={balanceChange}
         balanceChange={balanceChange}
         nearbyBuilding={nearbyZone}
         nearbyZoneConfig={activeZoneConfig}

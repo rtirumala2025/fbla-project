@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { useSoundPreferences } from '../../contexts/SoundContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { indexedDBStorage } from '../../utils/indexedDBStorage';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 
 export const SettingsScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,19 @@ export const SettingsScreen: React.FC = () => {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDangerous?: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => { },
+    isDangerous: false,
+  });
 
   // Load preferences from database on mount
   useEffect(() => {
@@ -135,16 +149,23 @@ export const SettingsScreen: React.FC = () => {
 
   const resetProgress = async () => {
     if (!currentUser) return;
-    if (!window.confirm('Are you sure you want to reset all progress?')) return;
-    // Example: delete pet and transactions; keep profile with starting coins
-    try {
-      await supabase.from('pets').delete().eq('user_id', currentUser.uid);
-      await supabase.from('transactions').delete().eq('user_id', currentUser.uid);
-      await supabase.from('profiles').update({ coins: 100 }).eq('user_id', currentUser.uid);
-      toast.success('Progress reset');
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to reset');
-    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Reset Progress',
+      message: 'Are you sure you want to reset all progress? This action cannot be undone.',
+      isDangerous: true,
+      onConfirm: async () => {
+        try {
+          await supabase.from('pets').delete().eq('user_id', currentUser.uid);
+          await supabase.from('transactions').delete().eq('user_id', currentUser.uid);
+          await supabase.from('profiles').update({ coins: 100 }).eq('user_id', currentUser.uid);
+          toast.success('Progress reset');
+        } catch (e: any) {
+          toast.error(e.message || 'Failed to reset');
+        }
+      }
+    });
   };
 
   if (loading) {
@@ -295,93 +316,100 @@ export const SettingsScreen: React.FC = () => {
               </p>
               <button
                 className="px-4 py-2 rounded-lg bg-yellow-500 text-white font-semibold hover:bg-yellow-400 transition-colors shadow-sm flex items-center gap-2"
-                onClick={async () => {
-                  if (!window.confirm('Are you sure? This will reset your data for the demo.')) return;
+                onClick={() => {
                   if (!currentUser) return;
 
-                  toast.info('Resetting to Demo State...', 2000);
-                  try {
-                    // 1. Reset Wallet Balance to 150 coins
-                    const { data: wallet } = await supabase
-                      .from('finance_wallets')
-                      .select('id')
-                      .eq('user_id', currentUser.uid)
-                      .single();
+                  setConfirmModal({
+                    isOpen: true,
+                    title: 'Reset to Demo State',
+                    message: 'Are you sure? This will reset your data for the demo. This action cannot be undone.',
+                    isDangerous: true,
+                    onConfirm: async () => {
+                      toast.info('Resetting to Demo State...', 2000);
+                      try {
+                        // 1. Reset Wallet Balance to 150 coins
+                        const { data: wallet } = await supabase
+                          .from('finance_wallets')
+                          .select('id')
+                          .eq('user_id', currentUser.uid)
+                          .single();
 
-                    if (wallet) {
-                      await supabase
-                        .from('finance_wallets')
-                        .update({
-                          balance: 150,
-                          lifetime_earned: 200,
-                          lifetime_spent: 50,
-                          updated_at: new Date().toISOString()
-                        })
-                        .eq('id', wallet.id);
+                        if (wallet) {
+                          await supabase
+                            .from('finance_wallets')
+                            .update({
+                              balance: 150,
+                              lifetime_earned: 200,
+                              lifetime_spent: 50,
+                              updated_at: new Date().toISOString()
+                            })
+                            .eq('id', wallet.id);
 
-                      // 2. Clear Transactions & Add Sample History
-                      await supabase.from('finance_transactions').delete().eq('wallet_id', wallet.id);
+                          // 2. Clear Transactions & Add Sample History
+                          await supabase.from('finance_transactions').delete().eq('wallet_id', wallet.id);
 
-                      const now = new Date();
-                      const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
-                      const twoDaysAgo = new Date(now); twoDaysAgo.setDate(now.getDate() - 2);
+                          const now = new Date();
+                          const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+                          const twoDaysAgo = new Date(now); twoDaysAgo.setDate(now.getDate() - 2);
 
-                      // Use the transactions view which has the INSTEAD OF trigger
-                      await supabase.from('transactions').insert([
-                        {
-                          user_id: currentUser.uid,
-                          amount: 200,
-                          item_name: 'Initial Allowance',
-                          item_id: 'demo_allowance',
-                          transaction_type: 'allowance'
-                        },
-                        {
-                          user_id: currentUser.uid,
-                          amount: -15,
-                          item_name: 'Pet Food Bundle',
-                          item_id: 'demo_food',
-                          transaction_type: 'expense'
-                        },
-                        {
-                          user_id: currentUser.uid,
-                          amount: -35,
-                          item_name: 'New Toys',
-                          item_id: 'demo_toys',
-                          transaction_type: 'expense'
+                          // Use the transactions view which has the INSTEAD OF trigger
+                          await supabase.from('transactions').insert([
+                            {
+                              user_id: currentUser.uid,
+                              amount: 200,
+                              item_name: 'Initial Allowance',
+                              item_id: 'demo_allowance',
+                              transaction_type: 'allowance'
+                            },
+                            {
+                              user_id: currentUser.uid,
+                              amount: -15,
+                              item_name: 'Pet Food Bundle',
+                              item_id: 'demo_food',
+                              transaction_type: 'expense'
+                            },
+                            {
+                              user_id: currentUser.uid,
+                              amount: -35,
+                              item_name: 'New Toys',
+                              item_id: 'demo_toys',
+                              transaction_type: 'expense'
+                            }
+                          ]);
+                        } else {
+                          // Create wallet if it doesn't exist
+                          await supabase.from('finance_wallets').insert({
+                            user_id: currentUser.uid,
+                            balance: 150,
+                            lifetime_earned: 200,
+                            lifetime_spent: 50
+                          });
                         }
-                      ]);
-                    } else {
-                      // Create wallet if it doesn't exist
-                      await supabase.from('finance_wallets').insert({
-                        user_id: currentUser.uid,
-                        balance: 150,
-                        lifetime_earned: 200,
-                        lifetime_spent: 50
-                      });
+
+                        // 3. Reset Pet Stats to 75% using correct column names
+                        await supabase
+                          .from('pets')
+                          .update({
+                            hunger: 75,
+                            happiness: 75,
+                            cleanliness: 75,
+                            energy: 75,
+                            health: 80,
+                            updated_at: new Date().toISOString()
+                          })
+                          .eq('user_id', currentUser.uid);
+
+                        toast.success('Demo State Active! Balance 150 coins, Stats 75%');
+
+                        // Force a reload to refresh everything
+                        setTimeout(() => window.location.reload(), 1500);
+
+                      } catch (error) {
+                        console.error('Demo reset failed:', error);
+                        toast.error('Failed to reset state.');
+                      }
                     }
-
-                    // 3. Reset Pet Stats to 75% using correct column names
-                    await supabase
-                      .from('pets')
-                      .update({
-                        hunger: 75,
-                        happiness: 75,
-                        cleanliness: 75,
-                        energy: 75,
-                        health: 80,
-                        updated_at: new Date().toISOString()
-                      })
-                      .eq('user_id', currentUser.uid);
-
-                    toast.success('Demo State Active! Balance 150 coins, Stats 75%');
-
-                    // Force a reload to refresh everything
-                    setTimeout(() => window.location.reload(), 1500);
-
-                  } catch (error) {
-                    console.error('Demo reset failed:', error);
-                    toast.error('Failed to reset state.');
-                  }
+                  });
                 }}
               >
                 ✨ Reset to Demo State
@@ -405,28 +433,34 @@ export const SettingsScreen: React.FC = () => {
                 </p>
                 <button
                   className="w-full px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-500 transition-colors shadow-sm flex items-center justify-center gap-2"
-                  onClick={async () => {
-                    if (!window.confirm('Clear ALL local data (including IndexedDB) and hard reload?')) return;
+                  onClick={() => {
+                    setConfirmModal({
+                      isOpen: true,
+                      title: 'Clear All Data',
+                      message: 'Clear ALL local data (including IndexedDB) and hard reload? This should only be used if the app is broken.',
+                      isDangerous: true,
+                      onConfirm: async () => {
+                        toast.info('Clearing all data...');
 
-                    toast.info('Clearing all data...');
+                        // Clear Supabase auth
+                        await supabase.auth.signOut();
 
-                    // Clear Supabase auth
-                    await supabase.auth.signOut();
+                        // Clear Storage
+                        localStorage.clear();
+                        sessionStorage.clear();
 
-                    // Clear Storage
-                    localStorage.clear();
-                    sessionStorage.clear();
+                        // Clear IndexedDB
+                        if (window.indexedDB) {
+                          const databases = await window.indexedDB.databases();
+                          databases.forEach(db => {
+                            if (db.name) window.indexedDB.deleteDatabase(db.name);
+                          });
+                        }
 
-                    // Clear IndexedDB
-                    if (window.indexedDB) {
-                      const databases = await window.indexedDB.databases();
-                      databases.forEach(db => {
-                        if (db.name) window.indexedDB.deleteDatabase(db.name);
-                      });
-                    }
-
-                    // Redirect to login
-                    window.location.href = '/login';
+                        // Redirect to login
+                        window.location.href = '/login';
+                      }
+                    });
                   }}
                 >
                   💣 Clear All Data & Sign Out
@@ -436,7 +470,17 @@ export const SettingsScreen: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        isDangerous={confirmModal.isDangerous}
+      />
+    </div >
   );
 };
 

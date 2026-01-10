@@ -25,6 +25,7 @@ const BUILDING_NAMES: Record<ActivityZone, string> = {
     play: 'Play Pavilion',
     rest: 'Rest Area',
     center: 'Info Center',
+    market: 'Supermarket',
 };
 
 const BUILDING_ICONS: Record<ActivityZone, string> = {
@@ -35,6 +36,7 @@ const BUILDING_ICONS: Record<ActivityZone, string> = {
     play: '🎮',
     rest: '😴',
     center: 'ℹ️',
+    market: '🛒',
 };
 
 export function BuildingProximityUI({

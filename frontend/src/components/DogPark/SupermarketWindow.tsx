@@ -224,6 +224,7 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
                         return (
                             <button
                                 key={cat.id}
+                                type="button"
                                 className={`glass-category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
                                 onClick={() => setSelectedCategory(cat.id)}
                                 style={{ '--category-color': cat.color } as React.CSSProperties}
@@ -291,6 +292,7 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
                                             </div>
                                         </div>
                                         <button
+                                            type="button"
                                             className="glass-button small"
                                             onClick={() => addToCart(item)}
                                         >
@@ -311,6 +313,7 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
                                 <strong>${cartTotal.toFixed(2)}</strong>
                             </div>
                             <button
+                                type="button"
                                 className="glass-button primary"
                                 onClick={() => setShowCheckout(true)}
                             >
@@ -339,15 +342,16 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
                                             <span className="price">${(item.price * quantity).toFixed(2)}</span>
                                         </div>
                                         <div className="qty-controls">
-                                            <button onClick={() => updateQuantity(item.id, -1)}>
+                                            <button type="button" onClick={() => updateQuantity(item.id, -1)}>
                                                 <Minus size={12} />
                                             </button>
                                             <span>{quantity}</span>
-                                            <button onClick={() => updateQuantity(item.id, 1)}>
+                                            <button type="button" onClick={() => updateQuantity(item.id, 1)}>
                                                 <Plus size={12} />
                                             </button>
                                         </div>
                                         <button
+                                            type="button"
                                             className="remove"
                                             onClick={() => removeFromCart(item.id)}
                                         >
@@ -366,6 +370,7 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
                                 </div>
                             )}
                             <button
+                                type="button"
                                 className="glass-button primary w-full"
                                 onClick={handleCheckout}
                                 disabled={purchasing || !canAfford}
@@ -383,6 +388,7 @@ export function SupermarketWindow({ isOpen, onClose, onPurchaseComplete }: Super
                                 )}
                             </button>
                             <button
+                                type="button"
                                 className="glass-button secondary w-full mt-2"
                                 onClick={() => setShowCheckout(false)}
                             >

@@ -199,7 +199,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         } as any);
       }
     } catch (e) {
-      logger.error('High score update failed', e);
+      logger.error('High score update failed', { error: e }, e instanceof Error ? e : new Error(String(e)));
     }
   }, [userId]);
 

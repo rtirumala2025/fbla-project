@@ -19,6 +19,7 @@ type AuthContextType = {
   isNewUser: boolean;
   hasPet: boolean;
   isTransitioning: boolean;
+  isSigningOut: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -56,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isNewUser, setIsNewUser] = useState(false);
   const [hasPet, setHasPet] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const initialSessionLoadedRef = useRef(false);
   const petSubscriptionRef = useRef<any>(null);
 
@@ -71,9 +73,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return false;
         }
 
+        // Critical Fix: If Supabase is throttling (406/429), assume user HAS a pet to prevent redirect loop
+        // This stops the "No pet -> Redirect to Selection -> Error -> Redirect" cycle
+        const errorMessage = error?.message || '';
+        if (errorMessage.includes('406') || errorMessage.includes('429') || (error?.status === 406)) {
+          onboardingLogger.warn('Pet check throttled (406/429) - assuming pet exists to prevent redirect loop', { userId });
+          return true;
+        }
+
         if (attempt === maxRetries) {
           onboardingLogger.error(`Pet check failed after ${maxRetries} attempts`, error, { userId, maxRetries });
-          return false; // Default to no pet on final failure
+          // If we can't reach the DB at all after retries, fail open to avoid destroying UX
+          return true;
         }
 
         // Exponential backoff: 100ms, 200ms, 400ms
@@ -82,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    return false;
+    return true; // Default to true on unknown failure to be safe
   };
 
   // Helper function to check if user has a profile and pet
@@ -593,6 +604,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      // Set signing out state immediately to prevent protected routes from redirecting
+      setIsSigningOut(true);
+
       // Mock sign out for development
       if (getEnv('USE_MOCK', 'false') === 'true') {
         setCurrentUser(null);
@@ -672,6 +686,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isNewUser,
     hasPet,
     isTransitioning,
+    isSigningOut,
     signIn,
     signUp,
     signInWithGoogle,

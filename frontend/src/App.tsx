@@ -53,17 +53,20 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => {
 // Protected route component - requires authentication
 // Redirects new users (without pets) to pet selection
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, loading, hasPet, isTransitioning } = useAuth();
+  const { currentUser, loading, hasPet, isTransitioning, isSigningOut } = useAuth();
 
   console.log('ProtectedRoute check:', {
     currentUser: !!currentUser,
     loading,
     hasPet,
     isTransitioning,
+    isSigningOut,
     currentPath: window.location.pathname
   });
 
-  if (loading) {
+  // Show loading spinner if initial load OR if signing out
+  // This prevents the "redirect to login" flash when signing out
+  if (loading || isSigningOut) {
     console.log('ProtectedRoute: Still loading...');
     return (
       <div className="flex items-center justify-center min-h-screen">

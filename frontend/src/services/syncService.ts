@@ -21,8 +21,8 @@ export interface SyncResult {
 }
 
 const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1000; // Start with 1 second
-const MAX_RETRY_DELAY_MS = 30000; // Max 30 seconds
+const RETRY_DELAY_MS = 3000; // Start with 3 seconds
+const MAX_RETRY_DELAY_MS = 60000; // Max 60 seconds
 
 /**
  * Exponential backoff delay calculation
@@ -90,6 +90,14 @@ export async function saveToCloud(
         };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Stop retrying on client errors (4xx) or if rate limited (429)
+        const isClientError = lastError.message.includes('406') || lastError.message.includes('429');
+        if (isClientError) {
+          console.warn('Sync aborted due to client/rate-limit error:', lastError.message);
+          break;
+        }
+
         if (attempt < MAX_RETRIES) {
           const delay = getRetryDelay(attempt);
           if (!options.silent) {
@@ -257,7 +265,7 @@ export function setupRealtimeSync(
   onStateChange: (state: CloudSyncState) => void,
 ): () => void {
   if (isSupabaseMock() || !userId) {
-    return () => {}; // No-op cleanup
+    return () => { }; // No-op cleanup
   }
 
   const channel = supabase
@@ -287,4 +295,3 @@ export function setupRealtimeSync(
     supabase.removeChannel(channel);
   };
 }
-

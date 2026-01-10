@@ -39,13 +39,6 @@ def create_app() -> FastAPI:
     )
 
     app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.get_allowed_origins(),
-        allow_methods=["*"],
-        allow_headers=["*"],
-        allow_credentials=True,
-    )
-    app.add_middleware(
         JWTAuthenticationMiddleware,
         excluded_paths=(
             "/health",
@@ -59,6 +52,14 @@ def create_app() -> FastAPI:
     )
 
     app.add_middleware(RateLimitMiddleware, max_requests=60, window_seconds=60)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.get_allowed_origins(),
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=True,
+    )
     app.middleware("http")(error_handling_middleware)
 
     register_exception_handlers(app)

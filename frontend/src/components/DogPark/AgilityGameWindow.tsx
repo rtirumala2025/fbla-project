@@ -140,29 +140,47 @@ export function AgilityGameWindow({
         setMisses(0);
     };
 
-    const startGame = useCallback(async () => {
+    const startGame = useCallback(() => {
+        if (isStartingGame) return;
+
+        console.log('Starting game...');
+        // 1. Set flags and switch view immediately
         setIsStartingGame(true);
-        resetGameState();
-
-        try {
-            // Start a game session via backend API
-            const session = await minigameService.startRound({
-                gameType: 'fetch', // 'agility' maps to 'fetch' game type
-                preferredDifficulty: 'normal',
-                practiceMode: false,
-            });
-            setGameSession(session);
-            console.log('Game session started:', session.session_id);
-        } catch (error) {
-            console.warn('Failed to start game session, proceeding locally:', error);
-            // Continue without session - will create one on submit
-            setGameSession(null);
-        }
-
         setGameState('playing');
+
+        // 2. Reset game data
+        resetGameState();
         lastSpawnRef.current = 0;
-        setIsStartingGame(false);
-    }, []);
+
+        // 3. Initiate background session creation
+        // We wrap in a zero-delay timeout to ensure it doesn't block the render cycle if something weird happens
+        setTimeout(() => {
+            try {
+                if (!minigameService) {
+                    throw new Error('Minigame service not initialized');
+                }
+
+                minigameService.startRound({
+                    gameType: 'fetch',
+                    preferredDifficulty: 'normal',
+                    practiceMode: false,
+                }).then(session => {
+                    setGameSession(session);
+                    console.log('Game session started:', session.session_id);
+                }).catch(error => {
+                    console.warn('Failed to start game session, proceeding locally:', error);
+                    setGameSession(null);
+                }).finally(() => {
+                    // We successfully switched view, so this flag is less critical now,
+                    // but good to clean up.
+                    setIsStartingGame(false);
+                });
+            } catch (err) {
+                console.error('Error initiating game session:', err);
+                setIsStartingGame(false);
+            }
+        }, 0);
+    }, [isStartingGame]);
 
 
     const spawnTarget = useCallback(() => {
@@ -442,6 +460,7 @@ export function AgilityGameWindow({
                                                 color: '#a5b4fc',
                                                 cursor: 'pointer'
                                             }}
+                                            type="button"
                                         >
                                             💡 Tips
                                         </button>
@@ -456,6 +475,7 @@ export function AgilityGameWindow({
                                                 color: '#a5b4fc',
                                                 cursor: 'pointer'
                                             }}
+                                            type="button"
                                         >
                                             ⭐ Bonus?
                                         </button>
@@ -470,6 +490,7 @@ export function AgilityGameWindow({
                                                 color: '#a5b4fc',
                                                 cursor: 'pointer'
                                             }}
+                                            type="button"
                                         >
                                             💰 Rewards?
                                         </button>
@@ -684,15 +705,23 @@ export function AgilityGameWindow({
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={startGame}
+                                type="button"
+                                disabled={isStartingGame}
                                 style={{
                                     padding: '16px 48px',
                                     fontSize: '1.2rem',
-                                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                                    border: 'none'
+                                    background: isStartingGame ? '#94a3b8' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                    border: 'none',
+                                    cursor: isStartingGame ? 'not-allowed' : 'pointer',
+                                    opacity: isStartingGame ? 0.7 : 1
                                 }}
                             >
-                                <Target size={24} style={{ marginRight: 10 }} />
-                                Start Training!
+                                {isStartingGame ? (
+                                    <RefreshCw className="spin" size={24} style={{ marginRight: 10, animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                    <Target size={24} style={{ marginRight: 10 }} />
+                                )}
+                                {isStartingGame ? 'Starting...' : 'Start Training!'}
                             </motion.button>
                             <p style={{ margin: '12px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
                                 Press ESC to exit at any time

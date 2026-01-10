@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut, Home, ShoppingCart, Package, PawPrint, BarChart3, Settings, Gamepad2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { ConfirmationModal } from './ui/ConfirmationModal';
 
 const Header = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -10,6 +11,7 @@ const Header = memo(() => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -46,25 +48,17 @@ const Header = memo(() => {
   }, [isMoreMenuOpen]);
 
 
-  const handleLogout = useCallback(async () => {
-    // Add confirmation dialog
-    if (!window.confirm('Are you sure you want to sign out?')) {
-      return;
-    }
+  const handleLogout = useCallback(() => {
+    setShowSignOutConfirm(true);
+    setIsMobileMenuOpen(false);
+    setIsMoreMenuOpen(false);
+  }, []);
 
+  const confirmLogout = useCallback(async () => {
     try {
-      // Close any open menus
-      setIsMobileMenuOpen(false);
-      setIsMoreMenuOpen(false);
-
-      // Sign out (now includes redirect)
       await signOut();
-
-      // No need for navigation here anymore - signOut() now does hard redirect
-      // The window.location.href in signOut will take over
-
+      // No need for navigation here - signOut() redirects
     } catch (error) {
-      // If signOut throws somehow, still try to go to login
       window.location.href = '/login';
     }
   }, [signOut]);
@@ -275,7 +269,18 @@ const Header = memo(() => {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+
+
+      <ConfirmationModal
+        isOpen={showSignOutConfirm}
+        onClose={() => setShowSignOutConfirm(false)}
+        onConfirm={confirmLogout}
+        title="Sign Out"
+        message="Are you sure you want to sign out of your account?"
+        confirmText="Sign Out"
+        cancelText="Stay"
+      />
+    </header >
   );
 });
 
