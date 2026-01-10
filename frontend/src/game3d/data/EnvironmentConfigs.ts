@@ -18,106 +18,106 @@ export const DOG_PARK_CONFIG: EnvironmentConfig = {
     ]
 };
 
-// --- CAT ROOM (Cozy, Furniture Interactions) ---
+// --- CAT ROOM (Luxury Apartment) ---
 export const CAT_ROOM_CONFIG: EnvironmentConfig = {
-    bounds: { x: 15, z: 15 },
+    bounds: { x: 19, z: 19 },
     zones: [
-        // Shop -> Laptop on Sofa
+        // Shop -> Tech Station (Left Wall)
         {
             id: 'shop',
-            position: [1.5, 0, 3.5],
-            label: 'Use Tablet (Shop)',
+            position: [-14, 0, -2],
+            label: 'Access Online Shop',
             icon: 'shop',
             interactionType: 'object',
-            minDistance: 3
+            minDistance: 5
         },
-        // Agility -> Scratching Post
+        // Agility -> Cat Tree (Back Right)
         {
             id: 'agility',
-            position: [-4.0, 0, -2.0],
-            label: 'Scratch Post',
+            position: [14, 0, -10],
+            label: 'Climb Cat Tree',
             icon: 'agility',
             interactionType: 'object',
-            minDistance: 3
+            minDistance: 5
         },
-        // Vet -> Medical Kit (near Lamp area)
+        // Vet -> Wellness Spa (Front Left)
         {
             id: 'vet',
-            position: [-5, 0, 2],
-            label: 'Check Health',
+            position: [-12, 0, 10],
+            label: 'Use Auto-Vet Station',
             icon: 'vet',
             interactionType: 'object',
-            minDistance: 3
+            minDistance: 5
         },
-        // Market -> Food Bowls
+        // Market -> Kitchenette (Front Right)
         {
             id: 'market',
-            position: [3.0, 0, -2.5],
-            label: 'Refill Food',
+            position: [12, 0, 10],
+            label: 'Order Food',
             icon: 'market',
             interactionType: 'object',
-            minDistance: 3
+            minDistance: 5
         },
-        // Home -> Rug (Center)
+        // Home -> Lounge (Center)
         {
             id: 'home',
-            position: [0, 0, 0],
-            label: 'Nap on Rug',
+            position: [0, 0, 2],
+            label: 'Rest in Lounge',
             icon: 'home',
             interactionType: 'object',
-            minDistance: 4
+            minDistance: 6
         }
     ]
 };
 
-// --- PANDA FOREST (Nature Stations) ---
+// --- PANDA FOREST (Mystic Village) ---
 export const PANDA_FOREST_CONFIG: EnvironmentConfig = {
-    bounds: { x: 30, z: 30 },
+    bounds: { x: 35, z: 35 },
     zones: [
-        // Merchant Stall -> Shop
+        // Shop -> Merchant Cart (Left)
         {
             id: 'shop',
-            position: [4, 0, 4],
+            position: [-15, 0, 0],
             label: 'Trade with Merchant',
             icon: 'shop',
             interactionType: 'service',
-            minDistance: 5
-        },
-        // Training Logs -> Agility
-        {
-            id: 'agility',
-            position: [-4, 0, -4],
-            label: 'Train on Logs',
-            icon: 'agility',
-            interactionType: 'object',
-            minDistance: 5
-        },
-        // Hot Spring -> Vet
-        {
-            id: 'vet',
-            position: [-6, 0, 6],
-            label: 'Soak in Spring',
-            icon: 'vet',
-            interactionType: 'service',
             minDistance: 6
         },
-        // Bamboo Pile -> Market
+        // Agility -> Martial Arts Grounds (Right)
+        {
+            id: 'agility',
+            position: [15, 0, -5],
+            label: 'Train Kung Fu',
+            icon: 'agility',
+            interactionType: 'object',
+            minDistance: 6
+        },
+        // Vet -> Hot Spring (Far Left)
+        {
+            id: 'vet',
+            position: [-15, 0, 15],
+            label: 'Heal in Spring',
+            icon: 'vet',
+            interactionType: 'service',
+            minDistance: 7
+        },
+        // Market -> Spirit Bamboo (Center)
         {
             id: 'market',
             position: [0, 0, 5],
-            label: 'Gather Bamboo',
+            label: 'Harvest Spirit Bamboo',
             icon: 'market',
             interactionType: 'service',
-            minDistance: 4
+            minDistance: 5
         },
-        // Cave -> Home
+        // Home -> Shrine (Back)
         {
             id: 'home',
-            position: [0, 0, -8],
-            label: 'Enter Cave',
+            position: [0, 0, -15],
+            label: 'Enter Shrine',
             icon: 'home',
             interactionType: 'building',
-            minDistance: 6
+            minDistance: 7
         }
     ]
 };
