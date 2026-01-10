@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { makeWoodTexture } from '../core/AssetLoader';
+import { InstancedInterior } from './InstancedInterior';
 
 // --- SUB-COMPONENTS ---
 
@@ -72,6 +73,7 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
     <group>
       {/* 1. ATMOSPHERE / VOID FIX */}
       <CitySkybox />
+      <InstancedInterior />
 
       {/* 2. LIGHTING (Adjusted for scale) */}
       <ambientLight intensity={0.5} color="#ffdcb4" />
