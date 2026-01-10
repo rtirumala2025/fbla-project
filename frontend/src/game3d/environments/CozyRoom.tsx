@@ -4,17 +4,32 @@ import { makeWoodTexture } from '../core/AssetLoader';
 
 // --- SUB-COMPONENTS ---
 
+function CitySkybox() {
+  // A giant cylinder wrapping the scene to prevent seeing the "void"
+  return (
+    <mesh position={[0, -20, 0]}>
+      <cylinderGeometry args={[90, 90, 80, 32, 1, true]} />
+      <meshBasicMaterial
+        color="#080d16"
+        side={THREE.BackSide}
+      />
+      {/* City lights simulation via texture or particles could go here, 
+          for now just a solid dark backing for the "Cityscape" component to pop against. */}
+    </mesh>
+  );
+}
+
 function Cityscape() {
-  // Simple building silhouettes outside the window to give depth
-  // Positioned far back (-20 to -40 z)
+  // Enhanced Cityscape: Simulates distance city lights and buildings
   const buildings = useMemo(() => {
     const b = [];
-    for (let i = 0; i < 25; i++) {
-      const height = 15 + Math.random() * 25;
-      const width = 4 + Math.random() * 8;
-      const x = (Math.random() - 0.5) * 80;
-      const z = -25 - Math.random() * 30;
-      b.push({ pos: [x, height / 2 - 10, z] as [number, number, number], args: [width, height, width] as [number, number, number] });
+    // Background layer (far, dense)
+    for (let i = 0; i < 40; i++) {
+      const height = 40 + Math.random() * 60;
+      const width = 10 + Math.random() * 20;
+      const x = (Math.random() - 0.5) * 200;
+      const z = -60 - Math.random() * 50;
+      b.push({ pos: [x, height / 2 - 20, z] as [number, number, number], args: [width, height, width] as [number, number, number], color: "#0d1a2f" });
     }
     return b;
   }, []);
@@ -24,17 +39,16 @@ function Cityscape() {
       {buildings.map((b, i) => (
         <mesh key={i} position={b.pos}>
           <boxGeometry args={b.args} />
-          <meshBasicMaterial color="#1a2b4b" /> {/* Dark blueish silhouette */}
-          {/* Simple lit windows */}
-          {Math.random() > 0.4 && (
-            <mesh position={[0, Math.random() * 5, b.args[2] / 2 + 0.1]}>
-              <planeGeometry args={[b.args[0] * 0.5, b.args[1] * 0.6]} />
-              <meshBasicMaterial color={Math.random() > 0.8 ? "#fcfcba" : "#fff"} transparent opacity={0.15} />
+          <meshBasicMaterial color={b.color} transparent opacity={0.9} />
+          {/* Random lit windows */}
+          {Math.random() > 0.3 && (
+            <mesh position={[0, 0, b.args[2] / 2 + 0.1]}>
+              <planeGeometry args={[b.args[0] * 0.7, b.args[1] * 0.8]} />
+              <meshBasicMaterial color={Math.random() > 0.5 ? "#fcfcba" : "#aaccff"} transparent opacity={0.1} />
             </mesh>
           )}
         </mesh>
       ))}
-      {/* Sky Gradient implied by background color in scene, but we can add moon/stars here if needed */}
     </group>
   );
 }
@@ -42,43 +56,48 @@ function Cityscape() {
 export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: string) => void }) {
   const woodTex = useMemo(() => {
     const t = makeWoodTexture();
-    t.repeat.set(6.0, 6.0);
+    t.repeat.set(12.0, 12.0); // Increased repeat for larger floor
     t.wrapS = THREE.RepeatWrapping;
     t.wrapT = THREE.RepeatWrapping;
-    t.rotation = Math.PI / 4; // Herringbone-ish diagonal feel
+    t.rotation = Math.PI / 4;
     return t;
   }, []);
 
+  // SCALE FACTOR: 2.5x
   // Wall Colors
-  const wallColor = "#e6e1d8"; // Warm white
-  const accentColor = "#2c3e50"; // Deep blue/slate accent wall
+  const wallColor = "#e6e1d8";
+  const accentColor = "#2c3e50";
 
   return (
     <group>
-      {/* --- LIGHTING (Interior) --- */}
-      <ambientLight intensity={0.6} color="#ffdcb4" /> {/* Warm ambient */}
-      {/* Sun/Moon coming through window */}
+      {/* 1. ATMOSPHERE / VOID FIX */}
+      <CitySkybox />
+
+      {/* 2. LIGHTING (Adjusted for scale) */}
+      <ambientLight intensity={0.5} color="#ffdcb4" />
       <spotLight
-        position={[10, 15, 10]}
+        position={[30, 60, 30]}
         angle={0.5}
         penumbra={0.5}
-        intensity={1.8}
+        intensity={2.5}
         color="#fff0dd"
         castShadow
+        shadow-camera-far={200}
+        shadow-camera-left={-50}
+        shadow-camera-right={50}
+        shadow-camera-top={50}
+        shadow-camera-bottom={-50}
         shadow-bias={-0.0001}
       />
-      {/* City glow from outside */}
-      <pointLight position={[0, 8, -15]} intensity={2} color="#5e80a3" distance={40} />
+      {/* Point lights for "zones" */}
+      <pointLight position={[30, 20, 20]} intensity={1.5} color="#ffaa00" distance={40} />
+      <pointLight position={[-30, 20, 20]} intensity={1.5} color="#ffaa00" distance={40} />
 
-      {/* Warm lamp lights */}
-      <pointLight position={[12, 5, 10]} intensity={0.8} color="#ffaa00" distance={15} />
-      <pointLight position={[-12, 5, 10]} intensity={0.8} color="#ffaa00" distance={15} />
+      {/* 3. ARCHITECTURE (Scaled up 2.5x) */}
 
-      {/* --- ARCHITECTURE --- */}
-
-      {/* Floor: Luxury hardwood */}
+      {/* Floor: 120x120 (Was 50x50) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[50, 50]} />
+        <planeGeometry args={[120, 120]} />
         <meshStandardMaterial
           map={woodTex}
           roughness={0.5}
@@ -87,281 +106,157 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
         />
       </mesh>
 
-      {/* Ceiling (to catch bounce light, though often culled, adds containment) */}
-      <mesh position={[0, 12, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[40, 40]} />
-        <meshStandardMaterial color="#ffffff" roughness={1} />
-      </mesh>
+      {/* Background City */}
+      <Cityscape />
 
-      {/* Back Wall - Huge Windows */}
-      <group position={[0, 6, -15]}>
-        {/* Wall Frame Top */}
-        <mesh position={[0, 5, 0]}>
-          <boxGeometry args={[40, 2, 1]} />
-          <meshStandardMaterial color={wallColor} roughness={0.8} />
+      {/* Back Wall (Window View) */}
+      <group position={[0, 15, -45]}>
+        {/* Top Frame */}
+        <mesh position={[0, 15, 0]}>
+          <boxGeometry args={[100, 5, 2]} />
+          <meshStandardMaterial color={wallColor} />
         </mesh>
-        {/* Wall Frame Bottom */}
-        <mesh position={[0, -5, 0]}>
-          <boxGeometry args={[40, 2, 1]} />
-          <meshStandardMaterial color={wallColor} roughness={0.8} />
+        {/* Bottom Frame */}
+        <mesh position={[0, -15, 0]}>
+          <boxGeometry args={[100, 5, 2]} />
+          <meshStandardMaterial color={wallColor} />
         </mesh>
-        {/* Wall Frame Left/Right */}
-        <mesh position={[-19, 0, 0]}>
-          <boxGeometry args={[2, 10, 1]} />
-          <meshStandardMaterial color={wallColor} roughness={0.8} />
+        {/* Side Frames */}
+        <mesh position={[-48, 0, 0]}>
+          <boxGeometry args={[4, 35, 2]} />
+          <meshStandardMaterial color={wallColor} />
         </mesh>
-        <mesh position={[19, 0, 0]}>
-          <boxGeometry args={[2, 10, 1]} />
-          <meshStandardMaterial color={wallColor} roughness={0.8} />
+        <mesh position={[48, 0, 0]}>
+          <boxGeometry args={[4, 35, 2]} />
+          <meshStandardMaterial color={wallColor} />
         </mesh>
-        {/* Vertical Mullions - Black Steel */}
-        <mesh position={[-6, 0, 0]}>
-          <boxGeometry args={[0.3, 10, 0.3]} />
-          <meshStandardMaterial color="#111" roughness={0.2} metalness={0.8} />
-        </mesh>
-        <mesh position={[6, 0, 0]}>
-          <boxGeometry args={[0.3, 10, 0.3]} />
-          <meshStandardMaterial color="#111" roughness={0.2} metalness={0.8} />
-        </mesh>
+        {/* Mullions */}
+        {[-24, 0, 24].map(x => (
+          <mesh key={x} position={[x, 0, 0]}>
+            <boxGeometry args={[1, 30, 1]} />
+            <meshStandardMaterial color="#111" />
+          </mesh>
+        ))}
+        {/* Glass */}
         <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[0.3, 10, 0.3]} />
-          <meshStandardMaterial color="#111" roughness={0.2} metalness={0.8} />
-        </mesh>
-        {/* Glass Panes */}
-        <mesh position={[0, 0, 0]}>
-          <planeGeometry args={[36, 10]} />
+          <planeGeometry args={[100, 30]} />
           <meshPhysicalMaterial
             color="#88ccff"
-            roughness={0.0}
-            metalness={0.1}
-            transmission={0.8}
+            transmission={0.9}
+            opacity={0.3}
             transparent
-            opacity={0.2}
+            roughness={0}
           />
         </mesh>
       </group>
 
-      {/* Cityscape Background */}
-      <Cityscape />
-
-      {/* Left Wall - Solid Accent */}
-      <mesh position={[-19, 6, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-        <boxGeometry args={[30, 12, 1]} />
-        <meshStandardMaterial color={accentColor} roughness={0.9} />
+      {/* Left Wall (Solid) - BackSide rendering to hide when behind */}
+      <mesh position={[-50, 20, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
+        <planeGeometry args={[100, 40]} />
+        <meshStandardMaterial color={accentColor} side={THREE.FrontSide} />
       </mesh>
 
-      {/* Right Wall - Standard Paint */}
-      <mesh position={[19, 6, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
-        <boxGeometry args={[30, 12, 1]} />
-        <meshStandardMaterial color={wallColor} roughness={0.9} />
+      {/* Right Wall (Solid) */}
+      <mesh position={[50, 20, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
+        <planeGeometry args={[100, 40]} />
+        <meshStandardMaterial color={wallColor} side={THREE.FrontSide} />
       </mesh>
 
-      {/* Baseboards */}
-      <mesh position={[0, 0.5, -14.4]}>
-        <boxGeometry args={[40, 1, 0.2]} />
-        <meshStandardMaterial color="#fff" />
-      </mesh>
-      <mesh position={[-18.4, 0.5, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <boxGeometry args={[30, 1, 0.2]} />
-        <meshStandardMaterial color="#fff" />
-      </mesh>
-      <mesh position={[18.4, 0.5, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <boxGeometry args={[30, 1, 0.2]} />
-        <meshStandardMaterial color="#fff" />
-      </mesh>
 
-      {/* --- ZONES --- */}
+      {/* --- ZONES (Scaled & Repositioned) --- */}
 
-      {/* 1. LOUNGE (Center/Back) - Replaces "Home" building */}
-      {/* Massive modern rug */}
-      <group position={[0, 0.02, 2]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('home'); }}>
+      {/* 1. LOUNGE (Center Interaction) */}
+      <group position={[0, 0, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('home'); }}>
+        {/* Rug: 15u radius */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <circleGeometry args={[6, 64]} />
-          <meshStandardMaterial color="#b0b8c2" roughness={1.0} metalness={0} /> {/* Plush soft grey */}
+          <circleGeometry args={[15, 64]} />
+          <meshStandardMaterial color="#b0b8c2" roughness={1} />
         </mesh>
-        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
-          {/* Hitbox for home */}
-          <circleGeometry args={[6, 32]} />
-        </mesh>
-        {/* L-Shaped Sectional Sofa */}
-        <group position={[-2, 0, 2]}>
-          <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
-            <boxGeometry args={[7, 0.8, 2.5]} />
-            <meshStandardMaterial color="#3d4450" roughness={0.9} />
+        {/* Sofa: 2.5x larger */}
+        <group position={[-6, 0, 6]}>
+          <mesh position={[0, 1, 0]} castShadow receiveShadow>
+            <boxGeometry args={[18, 2, 6]} />
+            <meshStandardMaterial color="#3d4450" />
           </mesh>
-          <mesh position={[2.25, 0.4, 2.25]} castShadow receiveShadow>
-            <boxGeometry args={[2.5, 0.8, 7]} />
-            <meshStandardMaterial color="#3d4450" roughness={0.9} />
-          </mesh>
-          {/* Pillows */}
-          <mesh position={[-2, 0.9, 0.5]} rotation={[0.5, 0.5, 0]} castShadow>
-            <boxGeometry args={[1, 0.8, 0.3]} />
-            <meshStandardMaterial color="#e74c3c" />
-          </mesh>
-          <mesh position={[2, 0.9, 4]} rotation={[0.5, 0, 0.2]} castShadow>
-            <boxGeometry args={[1, 0.8, 0.3]} />
-            <meshStandardMaterial color="#f39c12" />
+          <mesh position={[6, 1, 6]} castShadow receiveShadow>
+            <boxGeometry args={[6, 2, 18]} />
+            <meshStandardMaterial color="#3d4450" />
           </mesh>
         </group>
-        {/* Modern Coffee Table */}
-        <mesh position={[1, 0.3, 1]} castShadow receiveShadow>
-          <cylinderGeometry args={[1.5, 1.2, 0.6, 6]} />
-          <meshStandardMaterial color="#222" roughness={0.1} metalness={0.5} />
-        </mesh>
-        {/* Coffee Table Props */}
-        <mesh position={[1, 0.65, 1]} castShadow>
-          <boxGeometry args={[0.5, 0.1, 0.7]} />
-          <meshStandardMaterial color="#fff" /> {/* Book */}
+        {/* Coffee Table */}
+        <mesh position={[3, 0.8, 3]} castShadow>
+          <cylinderGeometry args={[4, 3, 1.5, 8]} />
+          <meshStandardMaterial color="#222" roughness={0.1} />
         </mesh>
       </group>
 
-
-      {/* 2. TECH STATION (Left Wall) - Replaces "Shop" building */}
-      <group position={[-14, 0, -2]} rotation={[0, Math.PI / 4, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('shop'); }}>
+      {/* 2. TECH STATION (Left Wall) */}
+      <group position={[-40, 0, -10]} rotation={[0, Math.PI / 4, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('shop'); }}>
         {/* Desk */}
-        <mesh position={[0, 1.5, 0]} castShadow>
-          <boxGeometry args={[5, 0.2, 2.5]} />
-          <meshStandardMaterial color="#1a1a1a" roughness={0.2} />
+        <mesh position={[0, 3, 0]} castShadow>
+          <boxGeometry args={[12, 0.5, 6]} />
+          <meshStandardMaterial color="#111" roughness={0.2} />
         </mesh>
-        <mesh position={[-2, 0.75, 0]} castShadow>
-          <cylinderGeometry args={[0.1, 0.1, 1.5]} />
-          <meshStandardMaterial color="#888" metalness={0.8} />
-        </mesh>
-        <mesh position={[2, 0.75, 0]} castShadow>
-          <cylinderGeometry args={[0.1, 0.1, 1.5]} />
-          <meshStandardMaterial color="#888" metalness={0.8} />
-        </mesh>
-        {/* Monitors */}
-        <group position={[0, 1.6, -0.5]}>
-          <mesh position={[-1.2, 1, 0]} rotation={[0, 0.2, 0]}>
-            <boxGeometry args={[2.5, 1.5, 0.1]} />
-            <meshStandardMaterial color="#111" />
-          </mesh>
-          <mesh position={[-1.2, 1, 0.06]} rotation={[0, 0.2, 0]}>
-            <planeGeometry args={[2.3, 1.3]} />
-            <meshStandardMaterial color="#000" emissive="#3498db" emissiveIntensity={0.6} /> {/* Glowing screen */}
-          </mesh>
+        {/* Legs */}
+        <mesh position={[-5, 1.5, 0]}><cylinderGeometry args={[0.3, 0.3, 3]} /><meshStandardMaterial color="#888" /></mesh>
+        <mesh position={[5, 1.5, 0]}><cylinderGeometry args={[0.3, 0.3, 3]} /><meshStandardMaterial color="#888" /></mesh>
 
-          <mesh position={[1.2, 1, 0]} rotation={[0, -0.2, 0]}>
-            <boxGeometry args={[2.5, 1.5, 0.1]} />
-            <meshStandardMaterial color="#111" />
-          </mesh>
-          <mesh position={[1.2, 1, 0.06]} rotation={[0, -0.2, 0]}>
-            <planeGeometry args={[2.3, 1.3]} />
-            <meshStandardMaterial color="#000" emissive="#9b59b6" emissiveIntensity={0.6} />
-          </mesh>
-        </group>
-        {/* Gaming Chair */}
-        <group position={[0, 0, 1.5]} rotation={[0, -0.5, 0]}>
-          <mesh position={[0, 1, 0]} castShadow>
-            <boxGeometry args={[1.5, 2, 0.2]} />
-            <meshStandardMaterial color="#e74c3c" />
-          </mesh>
-          <mesh position={[0, 0.5, 0.6]} castShadow>
-            <boxGeometry args={[1.5, 0.2, 1.5]} />
-            <meshStandardMaterial color="#333" />
-          </mesh>
-          <mesh position={[0, 0.25, 0]} castShadow>
-            <cylinderGeometry args={[0.3, 0.3, 0.5]} />
-            <meshStandardMaterial color="#555" />
-          </mesh>
-        </group>
-        {/* PC Tower */}
-        <mesh position={[2, 0.6, 0.5]} castShadow>
-          <boxGeometry args={[0.5, 1.2, 1.2]} />
-          <meshStandardMaterial color="#111" />
+        {/* Curved Monitor */}
+        <mesh position={[0, 4.5, -2]} rotation={[0, 0, 0]}>
+          <cylinderGeometry args={[8, 8, 3, 32, 1, true, Math.PI, Math.PI / 3]} />
+          <meshStandardMaterial color="#000" side={THREE.DoubleSide} />
         </mesh>
-        <mesh position={[2, 0.6, 1.11]}>
-          <planeGeometry args={[0.5, 1.2]} />
-          <meshStandardMaterial color="#000" emissive="#00ff00" emissiveIntensity={0.5} /> {/* RGB glass panel */}
+        <mesh position={[0, 4.5, -1.9]} rotation={[0, 0, 0]}>
+          <cylinderGeometry args={[7.9, 7.9, 2.8, 32, 1, true, Math.PI, Math.PI / 3]} />
+          <meshBasicMaterial color="#3498db" side={THREE.DoubleSide} /> {/* Screen */}
         </mesh>
+
+        {/* Chair */}
+        <group position={[0, 0, 4]} rotation={[0, -0.5, 0]}>
+          <mesh position={[0, 2, 0]}><boxGeometry args={[3, 4, 0.5]} /><meshStandardMaterial color="#e74c3c" /></mesh>
+          <mesh position={[0, 1, 1]}><boxGeometry args={[3, 0.5, 3]} /><meshStandardMaterial color="#333" /></mesh>
+        </group>
       </group>
 
-      {/* 3. AGILITY ZONE (Right/Back Corner) - Replaces "Agility" */}
-      {/* Massive Floor-to-Ceiling Cat Tree */}
-      <group position={[14, 0, -10]} rotation={[0, -Math.PI / 4, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('agility'); }}>
-        <mesh visible={false}><cylinderGeometry args={[3, 3, 8]} /></mesh> {/* Hitbox */}
-        {/* Main Pole */}
-        <mesh position={[0, 6, 0]} castShadow>
-          <cylinderGeometry args={[0.4, 0.4, 12, 16]} />
-          <meshStandardMaterial color="#d2b48c" roughness={1} /> {/* Sisal */}
+      {/* 3. AGILITY TOWER (Back Right) */}
+      <group position={[35, 0, -30]} rotation={[0, -Math.PI / 4, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('agility'); }}>
+        <mesh position={[0, 15, 0]} castShadow>
+          <cylinderGeometry args={[1, 1.2, 30]} />
+          <meshStandardMaterial color="#d2b48c" />
         </mesh>
-        {/* Platforms */}
-        {[2, 5, 8, 10].map((h, i) => (
-          <mesh key={i} position={[Math.sin(i * 2) * 1.5, h, Math.cos(i * 2) * 1.5]} rotation={[0, i, 0]} castShadow>
-            <cylinderGeometry args={[2, 2, 0.2, 8]} />
-            <meshStandardMaterial color="#555" roughness={0.8} /> {/* Carpet */}
+        {[5, 12, 20, 26].map((h, i) => (
+          <mesh key={i} position={[Math.sin(i) * 3, h, Math.cos(i) * 3]} castShadow>
+            <cylinderGeometry args={[5, 5, 0.5]} />
+            <meshStandardMaterial color="#666" />
           </mesh>
         ))}
-        {/* Hanging Toy */}
-        <mesh position={[1.5, 7.8, 1.5]}>
-          <cylinderGeometry args={[0.02, 0.02, 2]} />
-          <meshStandardMaterial color="#fff" />
-        </mesh>
-        <mesh position={[1.5, 6.8, 1.5]} castShadow>
-          <sphereGeometry args={[0.3]} />
-          <meshStandardMaterial color="#ff0055" />
-        </mesh>
       </group>
 
-      {/* 4. WELLNESS SPA (Front Left) - Replaces "Vet" */}
-      <group position={[-12, 0, 10]} rotation={[0, Math.PI / 2, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('vet'); }}>
-        {/* Massage Table / Grooming Station */}
-        <mesh position={[0, 1.2, 0]} castShadow>
-          <boxGeometry args={[4, 0.3, 2]} />
-          <meshStandardMaterial color="#fff" roughness={0.2} />
-        </mesh>
-        <mesh position={[-1.5, 0.6, 0]} castShadow>
-          <cylinderGeometry args={[0.2, 0.2, 1.2]} />
-          <meshStandardMaterial color="#ccc" metalness={0.8} />
-        </mesh>
-        <mesh position={[1.5, 0.6, 0]} castShadow>
-          <cylinderGeometry args={[0.2, 0.2, 1.2]} />
-          <meshStandardMaterial color="#ccc" metalness={0.8} />
-        </mesh>
-        {/* Shelves with bottles */}
-        <group position={[0, 0, -1.2]}>
-          <mesh position={[0, 2, 0]} castShadow>
-            <boxGeometry args={[3, 0.1, 0.6]} />
-            <meshStandardMaterial color="#e6e1d8" />
-          </mesh>
-          {/* Med bottles */}
-          <mesh position={[-1, 2.3, 0]} castShadow><boxGeometry args={[0.3, 0.5, 0.3]} /><meshStandardMaterial color="red" /></mesh>
-          <mesh position={[0, 2.3, 0]} castShadow><cylinderGeometry args={[0.2, 0.2, 0.5]} /><meshStandardMaterial color="cyan" /></mesh>
-          <mesh position={[1, 2.3, 0]} castShadow><boxGeometry args={[0.4, 0.4, 0.4]} /><meshStandardMaterial color="lime" /></mesh>
-        </group>
-        {/* Towel Stack */}
-        <mesh position={[1.2, 1.4, 0.5]} rotation={[0, 0.2, 0]} castShadow>
-          <boxGeometry args={[0.8, 0.2, 0.8]} />
+      {/* 4. SPA (Front Left) */}
+      <group position={[-35, 0, 30]} rotation={[0, Math.PI / 2, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('vet'); }}>
+        <mesh position={[0, 3, 0]} castShadow>
+          <boxGeometry args={[10, 1, 5]} />
           <meshStandardMaterial color="#fff" />
         </mesh>
+        <mesh position={[-4, 1.5, 0]}><cylinderGeometry args={[0.5, 0.5, 3]} /><meshStandardMaterial color="#ccc" /></mesh>
+        <mesh position={[4, 1.5, 0]}><cylinderGeometry args={[0.5, 0.5, 3]} /><meshStandardMaterial color="#ccc" /></mesh>
       </group>
 
-      {/* 5. KITCHENETTE (Front Right) - Replaces "Market" */}
-      <group position={[12, 0, 10]} rotation={[0, -Math.PI / 2, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('market'); }}>
-        {/* Island Counter */}
-        <mesh position={[0, 1.5, 0]} castShadow>
-          <boxGeometry args={[5, 3, 2]} />
-          <meshStandardMaterial color="#2c3e50" roughness={0.2} />
+      {/* 5. KITCHENETTE (Front Right) */}
+      <group position={[35, 0, 30]} rotation={[0, -Math.PI / 2, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('market'); }}>
+        <mesh position={[0, 3.5, 0]} castShadow>
+          <boxGeometry args={[12, 7, 5]} />
+          <meshStandardMaterial color="#2c3e50" />
         </mesh>
-        <mesh position={[0, 3.05, 0]} receiveShadow>
-          <boxGeometry args={[5.2, 0.1, 2.2]} />
-          <meshStandardMaterial color="#fff" roughness={0.1} metalness={0.1} /> {/* Marble */}
+        <mesh position={[0, 7.1, 0]}>
+          <boxGeometry args={[12.5, 0.2, 5.5]} />
+          <meshStandardMaterial color="#fff" roughness={0.1} />
         </mesh>
-        {/* Fancy Fountain Bowl */}
-        <mesh position={[-1, 3.2, 0]} castShadow>
-          <cylinderGeometry args={[0.6, 0.4, 0.3]} />
-          <meshStandardMaterial color="#ecf0f1" />
+        {/* Bowl */}
+        <mesh position={[-2, 7.5, 0]}>
+          <cylinderGeometry args={[1.5, 1, 0.8]} />
+          <meshStandardMaterial color="#eee" />
         </mesh>
-        <mesh position={[-1, 3.4, 0]} castShadow>
-          <sphereGeometry args={[0.2]} />
-          <meshStandardMaterial color="#3498db" metalness={0.8} roughness={0} /> {/* Water bubble */}
-        </mesh>
-        {/* Automatic Feeder */}
-        <group position={[1, 3.2, 0]}>
-          <mesh castShadow><boxGeometry args={[0.8, 0.8, 0.8]} /><meshStandardMaterial color="#bdc3c7" /></mesh>
-          <mesh position={[0, 0.3, 0.3]} rotation={[0.5, 0, 0]}><planeGeometry args={[0.6, 0.4]} /><meshStandardMaterial color="#000" /></mesh> {/* Digital display */}
-        </group>
       </group>
 
     </group>
