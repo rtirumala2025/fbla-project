@@ -45,10 +45,11 @@ function Cityscape() {
 export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: string) => void }) {
   const woodTex = useMemo(() => {
     const t = makeWoodTexture();
-    t.repeat.set(12.0, 12.0); // Increased repeat for larger floor
+    t.repeat.set(60.0, 60.0); // High repeat for clear resolution on large floor
     t.wrapS = THREE.RepeatWrapping;
     t.wrapT = THREE.RepeatWrapping;
     t.rotation = Math.PI / 4;
+    t.anisotropy = 16; // Fix blur at oblique angles
     return t;
   }, []);
 
@@ -59,13 +60,16 @@ export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: str
 
   return (
     <group>
+      {/* Dark background for interior feel, removing default light-blue */}
+      <color attach="background" args={['#101015']} />
       {/* 1. ATMOSPHERE / VOID FIX - Removed */}
       <InstancedInterior />
 
       {/* 2. LIGHTING (Adjusted for scale) */}
-      <ambientLight intensity={0.5} color="#ffdcb4" />
+      <ambientLight intensity={1.2} color="#ffffff" /> {/* Boosted ambient for clarity */}
+      <hemisphereLight intensity={0.5} groundColor="#404040" color="#ffffff" /> {/* Fill light */}
       <spotLight
-        position={[30, 60, 30]}
+        position={[30, 80, 50]} // Higher and further back for softer shadows
         angle={0.5}
         penumbra={0.5}
         intensity={2.5}
