@@ -199,10 +199,8 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
 
       if (updateError) {
         console.error('Failed to update wallet balance:', updateError);
-        alert("SYSTEM ERROR: Failed to fix wallet. " + updateError.message);
       } else {
         console.log('Wallet balance updated to 500.');
-        alert("SYSTEM SUCCESS: Wallet fixed! Balance set to 500. Please reload page if not visible.");
 
         // 2. Insert transaction record into BASE TABLE (finance_transactions)
         // This bypasses the 'transactions' view trigger, ensuring we don't double-add
