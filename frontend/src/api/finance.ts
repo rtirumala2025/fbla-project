@@ -185,33 +185,34 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
     userWallet = newWallet;
   }
 
-  // Auto-Fix: If wallet exists but balance is 0 and lifetime earned is 0 (broken state or old account),
-  // automatically add the starter allowance via transaction to fix it transparently.
-  if (userWallet && userWallet.balance === 0 && (userWallet.lifetime_earned === 0 || userWallet.lifetime_earned === null)) {
-    console.log('Detected 0-balance wallet state. Applying automatic Welcome Bonus...');
+  // Aggressive Auto-Fix: User requires non-zero starting balance.
+  // If balance is 0, valid game state requires funds to play.
+  if (userWallet && userWallet.balance === 0) {
+    console.log('Wallet balance is 0. Auto-funding 500 coins...');
     try {
+      // Check if we already gave them a starter pack to prevent infinite loops if something else is breaking
+      // But for now, just try to insert.
       const { error: fixError } = await supabase
-        .from('transactions') // Use the view with the trigger
+        .from('transactions')
         .insert({
           user_id: userId,
           amount: 500,
           transaction_type: 'allowance',
-          category: 'system_correction',
-          description: 'Welcome Bonus (System Fix)',
-          item_name: 'Starter Pack',
-          item_id: 'starter_pack'
+          category: 'starter_fund',
+          description: 'Starter Funds',
+          item_name: 'Starter Funds',
+          item_id: 'starter_funds'
         });
 
       if (!fixError) {
-        console.log('Welcome Bonus applied successfully.');
-        // Update local state so UI reflects it immediately
+        console.log('Starter Funds applied.');
         userWallet.balance = 500;
-        userWallet.lifetime_earned = 500;
+        userWallet.lifetime_earned = (userWallet.lifetime_earned || 0) + 500;
       } else {
-        console.error('Failed to apply Welcome Bonus:', fixError);
+        console.error('Failed to apply Starter Funds:', fixError);
       }
     } catch (err) {
-      console.error('Error auto-fixing wallet:', err);
+      console.error('Error auto-funding:', err);
     }
   }
 
