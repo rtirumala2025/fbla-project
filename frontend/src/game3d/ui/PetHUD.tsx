@@ -204,6 +204,7 @@ export function PetHUD({
     totalSpent = 0,
     balanceChange = null,
     nearbyBuilding = null,
+    nearbyZoneConfig = null,
     onEnterBuilding,
 }: {
     petName: string;
@@ -226,6 +227,7 @@ export function PetHUD({
     totalSpent?: number;
     balanceChange?: { amount: number; isPositive: boolean } | null;
     nearbyBuilding?: ActivityZone | null;
+    nearbyZoneConfig?: { label: string; icon?: string } | null;
     onEnterBuilding?: (zone: ActivityZone) => void;
 }) {
     const { sendMessage, toggleOpen, isOpen } = useAIAssistant();
@@ -394,8 +396,8 @@ export function PetHUD({
                             boxShadow: '0 8px 32px rgba(34, 197, 94, 0.4), 0 0 0 4px rgba(34, 197, 94, 0.2)'
                         }}
                     >
-                        <span className="text-2xl">{BUILDING_ICONS[nearbyBuilding]}</span>
-                        <span>Enter {BUILDING_NAMES[nearbyBuilding]}</span>
+                        <span className="text-2xl">{nearbyZoneConfig?.icon ? (nearbyZoneConfig.icon.length < 3 ? nearbyZoneConfig.icon : BUILDING_ICONS[nearbyBuilding] || '📍') : (BUILDING_ICONS[nearbyBuilding] || '📍')}</span>
+                        <span>{nearbyZoneConfig?.label || `Enter ${BUILDING_NAMES[nearbyBuilding] || 'Building'}`}</span>
                         <DoorOpen size={24} />
                     </button>
                 </div>

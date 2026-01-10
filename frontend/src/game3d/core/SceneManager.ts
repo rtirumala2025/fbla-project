@@ -153,12 +153,13 @@ export function usePetGame2State() {
     [pushVfx]
   );
 
-  const triggerNavigation = useCallback((zone: ActivityZone) => {
+  const triggerNavigation = useCallback((zone: ActivityZone, targetPosition?: [number, number, number]) => {
     setCameraMode(m => {
       if (m === 'drone') return 'drone';
 
       const startedAt = nowMs();
-      const endPosition = ACTIVITY_POSITIONS[zone];
+      // Use provided position or fallback to default (backward compat)
+      const endPosition = targetPosition || ACTIVITY_POSITIONS[zone];
 
       setNavigationState({
         target: zone,

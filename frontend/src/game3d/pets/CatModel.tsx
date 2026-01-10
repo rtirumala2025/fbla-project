@@ -3,16 +3,39 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { PetGame2State } from '../core/SceneManager';
 import { breathe, subtleNod } from '../animations/idle';
-import { pop, wobble } from '../animations/interact';
+import { pop } from '../animations/interact';
 import { ContactShadow } from '../core/ContactShadow';
-
+import { EmotionalPose, EMOTIONAL_POSES, getEmotionalPose, perlinNoise1D, EquippedAccessory } from '../core/BehaviourSystem';
 import { useKeyboardControls } from '../core/useKeyboardControls';
 import { getValidPosition, clampToBounds } from '../core/CollisionSystem';
 
-export function CatModel({ state, onPetTap, setPetPosition }: {
+// Weight shift state
+interface WeightShiftState {
+  nextShiftTime: number;
+  targetX: number;
+  targetZ: number;
+  currentX: number;
+  currentZ: number;
+  isShifting: boolean;
+  shiftStartTime: number;
+  shiftDuration: number;
+}
+
+// Ear twitch state
+interface EarTwitchState {
+  left: { nextTime: number; amplitude: number; duration: number; progress: number };
+  right: { nextTime: number; amplitude: number; duration: number; progress: number };
+}
+
+export function CatModel({ state, onPetTap, setPetPosition, stats, targetRef, isMovingRef, rotationRef, accessories = [] }: {
   state: PetGame2State;
   onPetTap: () => void;
   setPetPosition?: (pos: [number, number, number]) => void;
+  stats?: any;
+  targetRef?: React.MutableRefObject<THREE.Vector3>;
+  isMovingRef?: React.MutableRefObject<boolean>;
+  rotationRef?: React.MutableRefObject<THREE.Quaternion>;
+  accessories?: EquippedAccessory[];
 }) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
@@ -28,152 +51,195 @@ export function CatModel({ state, onPetTap, setPetPosition }: {
   // Keyboard Controls
   const keys = useKeyboardControls();
 
+  // AAA Idle Motion State
+  const weightShiftState = useRef<WeightShiftState>({
+    nextShiftTime: 0,
+    targetX: 0,
+    targetZ: 0,
+    currentX: 0,
+    currentZ: 0,
+    isShifting: false,
+    shiftStartTime: 0,
+    shiftDuration: 1200,
+  });
 
-  // Scale factor to match large environment
-  const SCALE = 2.4; // Cats are smaller than dogs
+  const earTwitchState = useRef<EarTwitchState>({
+    left: { nextTime: 0, amplitude: 0, duration: 0, progress: 1 },
+    right: { nextTime: 0, amplitude: 0, duration: 0, progress: 1 },
+  });
 
-  // AAA Color Variation: Tabby cat with subtle fur patterns
-  const fur = useMemo(() => new THREE.Color('#d1c8ba'), []); // Base fur (warmer)
-  const furVariant1 = useMemo(() => new THREE.Color('#dcd4c6'), []); // Light patches
-  const furVariant2 = useMemo(() => new THREE.Color('#c5bcae'), []); // Shadow areas
-  const stripe = useMemo(() => new THREE.Color('#8a7f70'), []); // Primary stripes
-  const stripeVariant = useMemo(() => new THREE.Color('#7e7366'), []); // Variation
+  const blinkState = useRef({ nextBlink: 0, progress: 1 });
+
+  // Optimize: Reuse vectors
+  const forward = useMemo(() => new THREE.Vector3(), []);
+  const lastPosUpdate = useRef(0);
+
+  // Scale factor to match large environment (Cats smaller than dogs)
+  const SCALE = 2.4;
+
+  // EMOTIONAL STATE SYSTEM
+  const emotionalPose = useMemo(() => getEmotionalPose(stats), [stats]);
+
+  // AAA Color Variation
+  const fur = useMemo(() => new THREE.Color('#d1c8ba'), []);
+  const furVariant1 = useMemo(() => new THREE.Color('#dcd4c6'), []);
+  const stripe = useMemo(() => new THREE.Color('#8a7f70'), []);
+  const stripeVariant = useMemo(() => new THREE.Color('#7e7366'), []);
   const eyeColor = useMemo(() => new THREE.Color('#0e0e0e'), []);
-  const noseColor = useMemo(() => new THREE.Color('#c77d77'), []); // Pink nose
+  const noseColor = useMemo(() => new THREE.Color('#c77d77'), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    const breathRate = 1.7 * emotionalPose.breathing_rate; // Cats breathe faster
 
     if (root.current) {
-      // Gentler breathing for feline character
-      const b = breathe(t, 1.7);
-      root.current.position.y = 0.02 + b * 0.04;
-      root.current.scale.y = 1.0 + b * 0.015;
+      // Breathing
+      const b = Math.sin(t * breathRate) * 0.04 * emotionalPose.chest_expansion;
+      root.current.position.y = 0.02 + b;
+      root.current.scale.y = SCALE * (1.0 + b * 0.4);
+      root.current.scale.x = SCALE;
+      root.current.scale.z = SCALE;
+
+      // Spine curve
+      root.current.rotation.z = emotionalPose.spine_curve * 1.5; // More flexible spine
     }
 
     if (head.current) {
-      const n = subtleNod(t, 1.25);
-      head.current.rotation.x = n * 0.06;
-      head.current.rotation.y = Math.sin(t * 0.45) * 0.22;
+      // Perlin drift
+      const driftPitch = (perlinNoise1D(t * 0.5, 1) * 2 - 1) * 0.05 * emotionalPose.micro_movement_scale;
+      const driftYaw = (perlinNoise1D(t * 0.3, 2) * 2 - 1) * 0.08 * emotionalPose.micro_movement_scale;
+
+      const nod = subtleNod(t, 1.25) * 0.06;
+
+      head.current.rotation.x = emotionalPose.head_pitch + nod + driftPitch;
+      head.current.rotation.y = driftYaw + emotionalPose.head_roll;
     }
 
     if (tail.current) {
-      tail.current.rotation.y = Math.sin(t * 2.2) * 0.25;
+      // Cat tail is very expressive
+      const wagSpeed = emotionalPose.tail_wag_speed * 0.5; // Cats wag slower/sinuous
+      tail.current.rotation.y = Math.sin(t * 2.2 + wagSpeed) * 0.25 * (emotionalPose.tail_wag_amp + 0.5) + emotionalPose.tail_offset;
       tail.current.rotation.x = Math.sin(t * 1.6) * 0.08;
     }
 
-    if (earL.current && earR.current) {
-      // More pronounced ear twitching with asymmetric timing
-      const twitchL = Math.max(0, Math.sin(t * 6.5) - 0.82) * 0.35;
-      const twitchR = Math.max(0, Math.sin(t * 6.8 + 0.3) - 0.82) * 0.35;
-      earL.current.rotation.z = 0.25 + twitchL;
-      earR.current.rotation.z = -0.25 - twitchR;
+    // Ear Twitch
+    const now = performance.now();
+    const et = earTwitchState.current;
+    // ... (Simple random twitch logic similar to dog but adapted)
+    if (now >= et.left.nextTime) {
+      et.left.nextTime = now + 4000 + Math.random() * 6000;
+      et.left.progress = 0;
+    }
+    if (et.left.progress < 1) {
+      et.left.progress += 0.05;
+      if (earL.current) earL.current.rotation.z = 0.25 + Math.sin(et.left.progress * Math.PI) * 0.3;
     }
 
-    // Navigation: Interpolate position based on progress
-    if (state.interaction.kind === 'navigating' && state.navigationState.target) {
+    if (now >= et.right.nextTime) {
+      et.right.nextTime = now + 4000 + Math.random() * 6000;
+      et.right.progress = 0;
+    }
+    if (et.right.progress < 1) {
+      et.right.progress += 0.05;
+      if (earR.current) earR.current.rotation.z = -0.25 - Math.sin(et.right.progress * Math.PI) * 0.3;
+    }
+
+    // MOVEMENT & NAVIGATION
+    if (state.interaction.kind === 'navigating' && state.navigationState.target && root.current) {
       const { startPosition, endPosition, progress } = state.navigationState;
       const x = startPosition[0] + (endPosition[0] - startPosition[0]) * progress;
       const y = startPosition[1] + (endPosition[1] - startPosition[1]) * progress;
       const z = startPosition[2] + (endPosition[2] - startPosition[2]) * progress;
-      if (root.current) {
-        root.current.position.set(x, y, z);
-        const dx = endPosition[0] - startPosition[0];
-        const dz = endPosition[2] - startPosition[2];
-        root.current.rotation.y = Math.atan2(dx, dz);
-        const walkCycle = Math.sin(progress * Math.PI * 8) * 0.08;
-        root.current.position.y = y + Math.abs(walkCycle);
-      }
+
+      root.current.position.set(x, y, z);
+      const dx = endPosition[0] - startPosition[0];
+      const dz = endPosition[2] - startPosition[2];
+      root.current.rotation.y = Math.atan2(dx, dz);
+
+      const walkCycle = Math.sin(progress * Math.PI * 16) * 0.1;
+      root.current.position.y = y + Math.abs(walkCycle);
+
       setPetPosition?.([x, y, z]);
-    }
-    else if (state.interaction.kind === 'atActivity' && state.navigationState.endPosition) {
+    } else if (state.interaction.kind === 'atActivity' && state.navigationState.endPosition && root.current) {
+      // Snap to activity
       const [x, y, z] = state.navigationState.endPosition;
-      if (root.current) root.current.position.set(x, y, z);
-      setPetPosition?.([x, y, z]);
+      root.current.position.set(x, y, z);
+    } else if (root.current) {
+      // Manual Movement
+      const isMovingManually = keys.forward || keys.backward || keys.left || keys.right;
+
+      if (state.currentPosition && !isMovingManually) {
+        const [cx, cy, cz] = state.currentPosition;
+        root.current.position.set(cx, cy, cz);
+      }
+
+      if (isMovingManually) {
+        const delta = 0.016;
+        const moveSpeed = 10.0 * delta; // Fast cat
+        const rotateSpeed = 3.5 * delta;
+
+        // COLLISION
+        const prevX = root.current.position.x;
+        const prevZ = root.current.position.z;
+
+        forward.set(0, 0, 1).applyQuaternion(root.current.quaternion);
+
+        if (keys.left) root.current.rotation.y += rotateSpeed;
+        if (keys.right) root.current.rotation.y -= rotateSpeed;
+
+        if (keys.forward) root.current.position.addScaledVector(forward, moveSpeed);
+        if (keys.backward) root.current.position.addScaledVector(forward, -moveSpeed * 0.5);
+
+        const [validX, validZ] = getValidPosition(prevX, prevZ, root.current.position.x, root.current.position.z);
+        root.current.position.x = validX;
+        root.current.position.z = validZ;
+
+        const [clampedX, clampedZ] = clampToBounds(root.current.position.x, root.current.position.z, 28); // Smaller room bounds
+        root.current.position.x = clampedX;
+        root.current.position.z = clampedZ;
+
+        // Sync
+        const now = performance.now();
+        if (now - lastPosUpdate.current > 100) {
+          setPetPosition?.([root.current.position.x, root.current.position.y, root.current.position.z]);
+          lastPosUpdate.current = now;
+        }
+
+        // Sync Refs
+        if (targetRef) targetRef.current.copy(root.current.position);
+        if (rotationRef) rotationRef.current.copy(root.current.quaternion);
+        if (isMovingRef) isMovingRef.current = true;
+
+        // Walk Cycle
+        const walkTime = t * 16;
+        const legAmplitude = 0.55;
+        if (legFL.current) legFL.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+        if (legBR.current) legBR.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+        if (legFR.current) legFR.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+        if (legBL.current) legBL.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+
+        // Banking
+        let targetBank = 0;
+        if (keys.left) targetBank = 0.2;
+        if (keys.right) targetBank = -0.2;
+        root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, targetBank, 0.15);
+      } else {
+        if (isMovingRef) isMovingRef.current = false;
+        // Reset
+        if (legFL.current) legFL.current.rotation.x = THREE.MathUtils.lerp(legFL.current.rotation.x, 0, 0.1);
+        if (legFR.current) legFR.current.rotation.x = THREE.MathUtils.lerp(legFR.current.rotation.x, 0, 0.1);
+        if (legBL.current) legBL.current.rotation.x = THREE.MathUtils.lerp(legBL.current.rotation.x, 0, 0.1);
+        if (legBR.current) legBR.current.rotation.x = THREE.MathUtils.lerp(legBR.current.rotation.x, 0, 0.1);
+        if (root.current) root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, emotionalPose.spine_curve * 1.5, 0.1);
+      }
     }
-    else if (state.interaction.kind !== 'idle') {
+
+    // Interactions Pop
+    if (state.interaction.kind !== 'idle' && root.current && state.interaction.kind !== 'navigating' && state.interaction.kind !== 'atActivity') {
       const startedAt = state.interaction.startedAt;
       const localT = Math.min(1, (performance.now() - startedAt) / 420);
       const s = SCALE * (1 + pop(localT) * 0.05);
-      if (root.current) root.current.scale.setScalar(s);
-      if (root.current) root.current.rotation.z = wobble(localT) * 0.06;
-    } else {
-      if (root.current) {
-        // SNAPPING & MANUAL MOVEMENT
-        const isMovingManually = keys.forward || keys.backward || keys.left || keys.right;
-
-        if (state.currentPosition && !isMovingManually) {
-          const [cx, cy, cz] = state.currentPosition;
-          root.current.position.set(cx, cy, cz);
-        }
-
-        if (isMovingManually) {
-          const delta = clock.getDelta(); // This might be tricky if used twice, but Cat doesn't use it elsewhere
-          const moveSpeed = 5.0 * 0.016; // Using fixed time step because clock.getDelta() behavior can be erratic
-          const rotateSpeed = 3.5 * 0.016;
-
-          // COLLISION DETECTION: Save position BEFORE movement
-          const prevX = root.current.position.x;
-          const prevZ = root.current.position.z;
-
-          const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(root.current.quaternion);
-
-          // Apply rotation first (doesn't need collision check)
-          if (keys.left) root.current.rotation.y += rotateSpeed;
-          if (keys.right) root.current.rotation.y -= rotateSpeed;
-
-          // Apply movement
-          if (keys.forward) root.current.position.add(forward.clone().multiplyScalar(moveSpeed));
-          if (keys.backward) root.current.position.add(forward.clone().multiplyScalar(-moveSpeed * 0.5));
-
-          // COLLISION CHECK: Get valid position (slides along walls if collision detected)
-          const [validX, validZ] = getValidPosition(
-            prevX,
-            prevZ,
-            root.current.position.x,
-            root.current.position.z
-          );
-
-          // Apply collision-corrected position
-          root.current.position.x = validX;
-          root.current.position.z = validZ;
-
-          // Boundaries (clamp to +/- 58 units)
-          const [clampedX, clampedZ] = clampToBounds(root.current.position.x, root.current.position.z, 58);
-          root.current.position.x = clampedX;
-          root.current.position.z = clampedZ;
-
-          setPetPosition?.([root.current.position.x, root.current.position.y, root.current.position.z]);
-
-          // PROCEDURAL ANIMATION: Faster Cat Trot
-          const walkTime = t * 16;
-          const legAmplitude = 0.55;
-
-          if (legFL.current) legFL.current.rotation.x = Math.sin(walkTime) * legAmplitude;
-          if (legBR.current) legBR.current.rotation.x = Math.sin(walkTime) * legAmplitude;
-
-          if (legFR.current) legFR.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
-          if (legBL.current) legBL.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
-
-          // Agile body banking
-          let targetBank = 0;
-          if (keys.left) targetBank = 0.2;
-          if (keys.right) targetBank = -0.2;
-
-          root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, targetBank, 0.15);
-        } else {
-          // Return to neutral
-          if (legFL.current) legFL.current.rotation.x = THREE.MathUtils.lerp(legFL.current.rotation.x, 0, 0.1);
-          if (legFR.current) legFR.current.rotation.x = THREE.MathUtils.lerp(legFR.current.rotation.x, 0, 0.1);
-          if (legBL.current) legBL.current.rotation.x = THREE.MathUtils.lerp(legBL.current.rotation.x, 0, 0.1);
-          if (legBR.current) legBR.current.rotation.x = THREE.MathUtils.lerp(legBR.current.rotation.x, 0, 0.1);
-          if (root.current) root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, 0, 0.1);
-        }
-
-        const targetScale = isHovered ? SCALE * 1.03 : SCALE;
-        root.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
-        root.current.rotation.z *= 0.85;
-      }
+      root.current.scale.setScalar(s);
     }
   });
 

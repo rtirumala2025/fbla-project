@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { makeWoodTexture } from '../core/AssetLoader';
 
-export function CozyRoom() {
+export function CozyRoom({ triggerNavigation }: { triggerNavigation?: (zone: string) => void }) {
   const woodTex = useMemo(() => {
     const t = makeWoodTexture();
     t.repeat.set(4.0, 4.0); // Reduced repeat for larger planks
@@ -73,6 +73,20 @@ export function CozyRoom() {
         </mesh>
       </group>
 
+      {/* --- INTERACTIVE PROPS --- */}
+
+      {/* SHOP: Laptop/Tablet on Sofa */}
+      <group position={[2.0, 0.45, 3.8]} rotation={[-0.2, -0.1, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('shop'); }}>
+        <mesh castShadow receiveShadow>
+          <boxGeometry args={[0.6, 0.04, 0.4]} />
+          <meshStandardMaterial color="#333" roughness={0.3} metalness={0.8} />
+        </mesh>
+        <mesh position={[0, 0.03, 0]} rotation={[0.05, 0, 0]}>
+          <planeGeometry args={[0.55, 0.35]} />
+          <meshStandardMaterial color="#2a2a2a" emissive="#4f86f7" emissiveIntensity={0.5} />
+        </mesh>
+      </group>
+
       {/* Rug - Anchors the center */}
       <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[2.5, 64]} />
@@ -81,6 +95,11 @@ export function CozyRoom() {
           roughness={1.0}
           metalness={0}
         />
+      </mesh>
+
+      {/* HOME: Rug Interaction */}
+      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={false} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('home'); }}>
+        <circleGeometry args={[2.5, 32]} />
       </mesh>
 
       {/* --- PROPS --- */}
@@ -103,6 +122,11 @@ export function CozyRoom() {
           <mesh position={[0.02, 0, -0.07]} castShadow><dodecahedronGeometry args={[0.04]} /><meshStandardMaterial color="#8b5a2b" /></mesh>
         </group>
       </group>
+
+      {/* MARKET: Bowls Interaction Zone */}
+      <mesh position={[3.0, 0.2, -2.5]} visible={false} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('market'); }}>
+        <boxGeometry args={[2, 0.5, 2]} />
+      </mesh>
 
       {/* Stainless Steel Water Bowl - Specular highlights */}
       <group position={[3.5, 0, -2.2]} rotation={[0, 0.2, 0]}>
@@ -151,6 +175,11 @@ export function CozyRoom() {
         </mesh>
       </group>
 
+      {/* AGILITY: Scratching Post Interaction */}
+      <mesh position={[-4.0, 0.5, -2.0]} visible={false} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('agility'); }}>
+        <cylinderGeometry args={[0.5, 0.5, 2, 8]} />
+      </mesh>
+
       {/* Fabric Toy - Soft, casual placement */}
       <group position={[1.2, 0.08, -3.2]} rotation={[0.4, 0.6, 0.2]}>
         <mesh castShadow receiveShadow>
@@ -171,6 +200,19 @@ export function CozyRoom() {
         <mesh position={[0, 1.25, 0]} castShadow>
           <cylinderGeometry args={[0.04, 0.06, 2.5]} />
           <meshStandardMaterial color="#333" />
+        </mesh>
+      </group>
+
+      {/* VET: First Aid Kit near Lamp */}
+      <group position={[-5, 0, 2]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('vet'); }}>
+        <mesh position={[0.8, 0.15, 0.5]} rotation={[0, 0.5, 0]} castShadow>
+          <boxGeometry args={[0.6, 0.3, 0.4]} />
+          <meshStandardMaterial color="#e0e0e0" />
+        </mesh>
+        {/* Red Cross */}
+        <mesh position={[0.8, 0.31, 0.5]} rotation={[-Math.PI / 2, 0, 0.5]}>
+          <planeGeometry args={[0.2, 0.2]} />
+          <meshStandardMaterial color="#ff0000" />
         </mesh>
       </group>
     </group>

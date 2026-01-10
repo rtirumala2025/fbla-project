@@ -303,7 +303,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   useEffect(() => {
     if (!pet || !userId || isSupabaseMock()) return;
     const sub = supabase.channel(`pet-realtime-${pet.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'pets', filter: `id=eq.${pet.id}` }, () => loadPet()).subscribe();
-    const inv = setInterval(() => processStatDecay(), 60000);
+    const inv = setInterval(() => processStatDecay(), 300000); // Every 5 minutes (reduced from 60s to lower egress)
     return () => { supabase.removeChannel(sub); clearInterval(inv); };
   }, [pet?.id, userId, processStatDecay, loadPet]);
 

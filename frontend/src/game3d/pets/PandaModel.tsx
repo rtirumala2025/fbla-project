@@ -5,17 +5,36 @@ import type { PetGame2State } from '../core/SceneManager';
 import { breathe } from '../animations/idle';
 import { pop, wobble } from '../animations/interact';
 import { ContactShadow } from '../core/ContactShadow';
-
+import { EmotionalPose, EMOTIONAL_POSES, getEmotionalPose, perlinNoise1D, EquippedAccessory } from '../core/BehaviourSystem';
 import { useKeyboardControls } from '../core/useKeyboardControls';
 import { getValidPosition, clampToBounds } from '../core/CollisionSystem';
 
-export function PandaModel({ state, onPetTap, setPetPosition }: {
+// Weight shift state
+interface WeightShiftState {
+  nextShiftTime: number;
+  targetX: number;
+  targetZ: number;
+  currentX: number;
+  currentZ: number;
+  isShifting: boolean;
+  shiftStartTime: number;
+  shiftDuration: number;
+}
+
+export function PandaModel({ state, onPetTap, setPetPosition, stats, targetRef, isMovingRef, rotationRef, accessories = [] }: {
   state: PetGame2State;
   onPetTap: () => void;
   setPetPosition?: (pos: [number, number, number]) => void;
+  stats?: any;
+  targetRef?: React.MutableRefObject<THREE.Vector3>;
+  isMovingRef?: React.MutableRefObject<boolean>;
+  rotationRef?: React.MutableRefObject<THREE.Quaternion>;
+  accessories?: EquippedAccessory[];
 }) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
+  const earL = useRef<THREE.Mesh>(null);
+  const earR = useRef<THREE.Mesh>(null);
   const legFL = useRef<THREE.Mesh>(null);
   const legFR = useRef<THREE.Mesh>(null);
   const legBL = useRef<THREE.Mesh>(null);
@@ -26,162 +45,172 @@ export function PandaModel({ state, onPetTap, setPetPosition }: {
   // Keyboard Controls
   const keys = useKeyboardControls();
 
+  // AAA Idle Motion State
+  const weightShiftState = useRef<WeightShiftState>({
+    nextShiftTime: 0,
+    targetX: 0,
+    targetZ: 0,
+    currentX: 0,
+    currentZ: 0,
+    isShifting: false,
+    shiftStartTime: 0,
+    shiftDuration: 1200,
+  });
 
-  // Scale factor to match large environment
-  const SCALE = 3.2; // Pandas are bulky like dogs
+  const blinkState = useRef({ nextBlink: 0, progress: 1 });
 
-  // AAA Two-Tone PBR: White fur (sheen) vs Black patches (deep absorption)
-  // Critical: Avoid pure white/black - add subtle undertones
-  const white = useMemo(() => new THREE.Color('#f8f6f4'), []); // Warm white (slight cream)
-  const whiteVariant = useMemo(() => new THREE.Color('#fdfbf9'), []); // Lightest areas
-  const whiteShadow = useMemo(() => new THREE.Color('#f0ede9'), []); // Shadow areas (still light)
-  const black = useMemo(() => new THREE.Color('#1a1a1a'), []); // Primary black (subtle warmth)
-  const blackVariant = useMemo(() => new THREE.Color('#242424'), []); // Lighter black patches
-  const eyeColor = useMemo(() => new THREE.Color('#080808'), []); // Deep black
+  // Optimize: Reuse vectors
+  const forward = useMemo(() => new THREE.Vector3(), []);
+  const lastPosUpdate = useRef(0);
+
+  // Scale factor (Pandas are bulky)
+  const SCALE = 3.2;
+
+  // EMOTIONAL STATE SYSTEM
+  const emotionalPose = useMemo(() => getEmotionalPose(stats), [stats]);
+
+  // AAA Two-Tone PBR
+  const white = useMemo(() => new THREE.Color('#f8f6f4'), []);
+  const whiteVariant = useMemo(() => new THREE.Color('#fdfbf9'), []);
+  const whiteShadow = useMemo(() => new THREE.Color('#f0ede9'), []);
+  const black = useMemo(() => new THREE.Color('#1a1a1a'), []);
+  const blackVariant = useMemo(() => new THREE.Color('#242424'), []);
+  const eyeColor = useMemo(() => new THREE.Color('#080808'), []);
   const noseColor = useMemo(() => new THREE.Color('#1c1c1c'), []);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    const breathRate = 1.2 * emotionalPose.breathing_rate; // Slower, deeper breath
 
     if (root.current) {
-      // Most pronounced breathing for rotund body
-      const b = breathe(t, 1.2);
-      root.current.position.y = 0.04 + b * 0.14;
-      root.current.scale.y = 1.0 + b * 0.04;
-      root.current.rotation.y = Math.sin(t * 0.4) * 0.12;
+      const b = Math.sin(t * breathRate) * 0.14 * emotionalPose.chest_expansion;
+      root.current.position.y = 0.04 + b;
+      // Heavy breathing expands width too
+      root.current.scale.set(SCALE * (1 + b * 0.2), SCALE * (1 + b * 0.3), SCALE * (1 + b * 0.2));
+
+      root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, emotionalPose.spine_curve, 0.1);
     }
 
     if (head.current) {
-      // Camera/head tracking
+      // Camera/head tracking mixed with emotion
       const cameraDirection = new THREE.Vector3();
       camera.getWorldDirection(cameraDirection);
-
-      // Track camera horizontally
       const targetRotationY = Math.atan2(cameraDirection.x, cameraDirection.z) * 0.3;
+
+      // Perlin drift
+      const driftPitch = (perlinNoise1D(t * 0.4, 1) * 2 - 1) * 0.05;
+
       head.current.rotation.y = THREE.MathUtils.lerp(
         head.current.rotation.y,
-        targetRotationY + Math.sin(t * 0.4) * 0.15,
+        targetRotationY + emotionalPose.head_roll,
         0.05
       );
-
-      // Slight vertical head movement
-      head.current.rotation.x = Math.sin(t * 0.35) * 0.08;
+      head.current.rotation.x = Math.sin(t * 0.35) * 0.08 + emotionalPose.head_pitch + driftPitch;
     }
 
-    // Navigation: Interpolate position
-    if (state.interaction.kind === 'navigating' && state.navigationState.target) {
+    // Pandas don't have tails visible enough to wag in this model, but ears twitch
+    if (earL.current) earL.current.rotation.z = Math.sin(t * 5 + 1) * 0.05; // Gentle twitch
+    if (earR.current) earR.current.rotation.z = Math.sin(t * 4) * 0.05;
+
+    // MOVEMENT & NAVIGATION
+    if (state.interaction.kind === 'navigating' && state.navigationState.target && root.current) {
       const { startPosition, endPosition, progress } = state.navigationState;
       const x = startPosition[0] + (endPosition[0] - startPosition[0]) * progress;
       const y = startPosition[1] + (endPosition[1] - startPosition[1]) * progress;
       const z = startPosition[2] + (endPosition[2] - startPosition[2]) * progress;
-      if (root.current) {
-        root.current.position.set(x, y, z);
-        const dx = endPosition[0] - startPosition[0];
-        const dz = endPosition[2] - startPosition[2];
-        root.current.rotation.y = Math.atan2(dx, dz);
-        const walkCycle = Math.sin(progress * Math.PI * 6) * 0.08;
-        root.current.position.y = y + Math.abs(walkCycle);
-      }
+
+      root.current.position.set(x, y, z);
+      const dx = endPosition[0] - startPosition[0];
+      const dz = endPosition[2] - startPosition[2];
+      root.current.rotation.y = Math.atan2(dx, dz);
+
+      const walkCycle = Math.sin(progress * Math.PI * 6) * 0.08;
+      root.current.position.y = y + Math.abs(walkCycle);
+
       setPetPosition?.([x, y, z]);
-    }
-    else if (state.interaction.kind === 'atActivity' && state.navigationState.endPosition) {
+    } else if (state.interaction.kind === 'atActivity' && state.navigationState.endPosition && root.current) {
+      // Snap to activity
       const [x, y, z] = state.navigationState.endPosition;
-      if (root.current) root.current.position.set(x, y, z);
-      setPetPosition?.([x, y, z]);
-    }
-    // Species-specific reaction: Panda bounces and spins
-    else if (state.interaction.kind !== 'idle') {
+      root.current.position.set(x, y, z);
+    } else if (state.interaction.kind !== 'idle') {
       const startedAt = state.interaction.startedAt;
       const localT = Math.min(1, (performance.now() - startedAt) / 600);
 
-      if (state.interaction.kind === 'petTap') {
-        const s = 1 + pop(localT) * 0.08;
-        if (root.current) root.current.scale.setScalar(s);
-        if (root.current) root.current.rotation.z = wobble(localT) * 0.08;
-      } else {
-        // Action reactions - bigger bounce
-        const s = 1 + pop(localT) * 0.15;
-        if (root.current) {
-          root.current.scale.setScalar(s);
-          // Panda happy spin
-          root.current.rotation.y += Math.sin(localT * Math.PI) * 0.3;
+      // Panda Bouncy Reaction
+      const s = SCALE * (1 + pop(localT) * 0.15);
+      if (root.current) {
+        root.current.scale.setScalar(s);
+        if (state.interaction.kind === 'action' && state.interaction.action === 'play') {
+          root.current.rotation.y += Math.sin(localT * Math.PI) * 0.3; // Spin
         }
       }
-    } else {
-      if (root.current) {
-        // SNAPPING & MANUAL MOVEMENT
-        const isMovingManually = keys.forward || keys.backward || keys.left || keys.right;
+    } else if (root.current) {
+      // Manual Movement
+      const isMovingManually = keys.forward || keys.backward || keys.left || keys.right;
 
-        if (state.currentPosition && !isMovingManually) {
-          const [cx, cy, cz] = state.currentPosition;
-          root.current.position.set(cx, cy, cz);
-        }
+      if (state.currentPosition && !isMovingManually) {
+        const [cx, cy, cz] = state.currentPosition;
+        root.current.position.set(cx, cy, cz);
+      }
 
-        if (isMovingManually) {
-          const moveSpeed = 5.0 * 0.016;
-          const rotateSpeed = 3.2 * 0.016;
+      if (isMovingManually) {
+        const delta = 0.016;
+        const moveSpeed = 6.0 * delta; // Slower Panda
+        const rotateSpeed = 2.5 * delta;
 
-          // COLLISION DETECTION: Save position BEFORE movement
-          const prevX = root.current.position.x;
-          const prevZ = root.current.position.z;
+        // COLLISION
+        const prevX = root.current.position.x;
+        const prevZ = root.current.position.z;
 
-          const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(root.current.quaternion);
+        forward.set(0, 0, 1).applyQuaternion(root.current.quaternion);
 
-          // Apply rotation first (doesn't need collision check)
-          if (keys.left) root.current.rotation.y += rotateSpeed;
-          if (keys.right) root.current.rotation.y -= rotateSpeed;
+        if (keys.left) root.current.rotation.y += rotateSpeed;
+        if (keys.right) root.current.rotation.y -= rotateSpeed;
 
-          // Apply movement
-          if (keys.forward) root.current.position.add(forward.clone().multiplyScalar(moveSpeed));
-          if (keys.backward) root.current.position.add(forward.clone().multiplyScalar(-moveSpeed * 0.5));
+        if (keys.forward) root.current.position.addScaledVector(forward, moveSpeed);
+        if (keys.backward) root.current.position.addScaledVector(forward, -moveSpeed * 0.5);
 
-          // COLLISION CHECK: Get valid position (slides along walls if collision detected)
-          const [validX, validZ] = getValidPosition(
-            prevX,
-            prevZ,
-            root.current.position.x,
-            root.current.position.z
-          );
+        const [validX, validZ] = getValidPosition(prevX, prevZ, root.current.position.x, root.current.position.z);
+        root.current.position.x = validX;
+        root.current.position.z = validZ;
 
-          // Apply collision-corrected position
-          root.current.position.x = validX;
-          root.current.position.z = validZ;
+        const [clampedX, clampedZ] = clampToBounds(root.current.position.x, root.current.position.z, 28);
+        root.current.position.x = clampedX;
+        root.current.position.z = clampedZ;
 
-          // Boundaries (clamp to +/- 58 units)
-          const [clampedX, clampedZ] = clampToBounds(root.current.position.x, root.current.position.z, 58);
-          root.current.position.x = clampedX;
-          root.current.position.z = clampedZ;
-
+        // Sync
+        const now = performance.now();
+        if (now - lastPosUpdate.current > 100) {
           setPetPosition?.([root.current.position.x, root.current.position.y, root.current.position.z]);
-
-          // PROCEDURAL ANIMATION: Heavy Panda Waddle
-          const walkTime = t * 10;
-          const legAmplitude = 0.4;
-
-          if (legFL.current) legFL.current.rotation.x = Math.sin(walkTime) * legAmplitude;
-          if (legBR.current) legBR.current.rotation.x = Math.sin(walkTime) * legAmplitude;
-
-          if (legFR.current) legFR.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
-          if (legBL.current) legBL.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
-
-          // Heavy Banking (Lumbering feel)
-          let targetBank = 0;
-          if (keys.left) targetBank = 0.25;
-          if (keys.right) targetBank = -0.25;
-
-          root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, targetBank, 0.05); // Slower response
-        } else {
-          // Return to neutral
-          if (legFL.current) legFL.current.rotation.x = THREE.MathUtils.lerp(legFL.current.rotation.x, 0, 0.1);
-          if (legFR.current) legFR.current.rotation.x = THREE.MathUtils.lerp(legFR.current.rotation.x, 0, 0.1);
-          if (legBL.current) legBL.current.rotation.x = THREE.MathUtils.lerp(legBL.current.rotation.x, 0, 0.1);
-          if (legBR.current) legBR.current.rotation.x = THREE.MathUtils.lerp(legBR.current.rotation.x, 0, 0.1);
-          if (root.current) root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, 0, 0.1);
+          lastPosUpdate.current = now;
         }
 
-        const targetScale = isHovered ? SCALE * 1.05 : SCALE;
-        root.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
-        root.current.rotation.z *= 0.85;
+        // Sync Refs
+        if (targetRef) targetRef.current.copy(root.current.position);
+        if (rotationRef) rotationRef.current.copy(root.current.quaternion);
+        if (isMovingRef) isMovingRef.current = true;
+
+        // Walk Cycle (Waddle)
+        const walkTime = t * 10;
+        const legAmplitude = 0.45;
+        if (legFL.current) legFL.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+        if (legBR.current) legBR.current.rotation.x = Math.sin(walkTime) * legAmplitude;
+        if (legFR.current) legFR.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+        if (legBL.current) legBL.current.rotation.x = Math.sin(walkTime + Math.PI) * legAmplitude;
+
+        // Heavy Banking
+        let targetBank = 0;
+        if (keys.left) targetBank = 0.3;
+        if (keys.right) targetBank = -0.3;
+        root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, targetBank, 0.08); // Slow roll
+      } else {
+        if (isMovingRef) isMovingRef.current = false;
+        // Reset
+        if (legFL.current) legFL.current.rotation.x = THREE.MathUtils.lerp(legFL.current.rotation.x, 0, 0.1);
+        if (legFR.current) legFR.current.rotation.x = THREE.MathUtils.lerp(legFR.current.rotation.x, 0, 0.1);
+        if (legBL.current) legBL.current.rotation.x = THREE.MathUtils.lerp(legBL.current.rotation.x, 0, 0.1);
+        if (legBR.current) legBR.current.rotation.x = THREE.MathUtils.lerp(legBR.current.rotation.x, 0, 0.1);
+        if (root.current) root.current.rotation.z = THREE.MathUtils.lerp(root.current.rotation.z, emotionalPose.spine_curve, 0.1);
       }
     }
   });
@@ -265,11 +294,11 @@ export function PandaModel({ state, onPetTap, setPetPosition }: {
         </mesh>
 
         {/* Black ears - Matte finish for contrast with head */}
-        <mesh position={[0.16, 0.22, 0]} castShadow>
+        <mesh ref={earL} position={[0.16, 0.22, 0]} castShadow>
           <sphereGeometry args={[0.09, 14, 14]} />
           <meshStandardMaterial color={black} roughness={0.76} metalness={0.02} />
         </mesh>
-        <mesh position={[-0.16, 0.22, 0]} castShadow>
+        <mesh ref={earR} position={[-0.16, 0.22, 0]} castShadow>
           <sphereGeometry args={[0.09, 14, 14]} />
           <meshStandardMaterial color={blackVariant} roughness={0.76} metalness={0.02} />
         </mesh>

@@ -15,6 +15,8 @@ import { PandaModel } from './pets/PandaModel.tsx';
 import { SceneVfx } from './core/SceneVfx.tsx';
 import { PetHUD } from './ui/PetHUD.tsx';
 import type { PetGame2Action } from './core/SceneManager.ts';
+import { useInteractionSystem } from './core/InteractionSystem';
+import { DOG_PARK_CONFIG, CAT_ROOM_CONFIG, PANDA_FOREST_CONFIG } from './data/EnvironmentConfigs';
 import { PerformanceMonitor } from './components/PerformanceMonitor';
 
 function PetModel({
@@ -133,33 +135,20 @@ export function PetGame2Scene({
   }, []);
 
   // Calculate nearby building for Enter button (only for dog park)
-  const nearbyBuilding = useMemo<ActivityZone | null>(() => {
-    if (petType !== 'dog') return null; // Only dog park has buildings
-    if (state.indoorLocation) return null; // Already inside
+  const envConfig = useMemo(() => {
+    if (petType === 'cat') return CAT_ROOM_CONFIG;
+    if (petType === 'panda') return PANDA_FOREST_CONFIG;
+    return DOG_PARK_CONFIG;
+  }, [petType]);
 
-    const proximityThreshold = 12;
-    // Exclude outdoor-only zones
-    const excludedZones: ActivityZone[] = ['play', 'rest', 'center'];
+  const { nearbyZone, activeZoneConfig } = useInteractionSystem(state.currentPosition, envConfig);
 
-    const petPos = state.currentPosition;
-    let nearest: { zone: ActivityZone; distance: number } | null = null;
-
-    for (const [zone, pos] of Object.entries(ACTIVITY_POSITIONS)) {
-      if (excludedZones.includes(zone as ActivityZone)) continue;
-
-      const dx = petPos[0] - pos[0];
-      const dz = petPos[2] - pos[2];
-      const distance = Math.sqrt(dx * dx + dz * dz);
-
-      if (distance < proximityThreshold) {
-        if (!nearest || distance < nearest.distance) {
-          nearest = { zone: zone as ActivityZone, distance };
-        }
-      }
-    }
-
-    return nearest?.zone ?? null;
-  }, [petType, state.currentPosition, state.indoorLocation]);
+  // Wrapper for navigation that uses the config positions
+  const handleNavigation = (zone: any) => {
+    const targetPos = envConfig.zones.find(z => z.id === zone)?.position;
+    // Pass specific target position if found, otherwise let SceneManager use default
+    triggerNavigation(zone, targetPos);
+  };
 
   return (
     <div className="w-full h-full relative overflow-hidden">
@@ -193,7 +182,9 @@ export function PetGame2Scene({
         balance={balance}
         totalSpent={totalSpent}
         balanceChange={balanceChange}
-        nearbyBuilding={nearbyBuilding}
+        balanceChange={balanceChange}
+        nearbyBuilding={nearbyZone}
+        nearbyZoneConfig={activeZoneConfig}
         onEnterBuilding={onEnterBuilding}
       />
 
@@ -225,7 +216,7 @@ export function PetGame2Scene({
           <Environment
             petType={petType}
             state={state}
-            triggerNavigation={triggerNavigation}
+            triggerNavigation={handleNavigation}
             onEnterBuilding={onEnterBuilding}
             onPurchase={onPurchase}
           />

@@ -127,7 +127,7 @@ function BambooStalk({ position, height = 6, thickness = 0.08, variant = 0, tilt
 }
 
 // -- 3. Forest Environment --
-export function BambooForest() {
+export function BambooForest({ triggerNavigation }: { triggerNavigation?: (zone: string) => void }) {
   const floorTex = useMemo(() => {
     const t = makeForestFloorTexture();
     t.repeat.set(8, 8);
@@ -208,35 +208,117 @@ export function BambooForest() {
         <dodecahedronGeometry args={[0.4]} />
         <meshStandardMaterial color="#4a5c4a" roughness={0.9} />
       </mesh>
+    </group>
+
+      {/* --- INTERACTIVE STATIONS --- */ }
+
+  {/* SHOP: Bamboo Merchant Cart */ }
+  <group position={[4, 0, 4]} rotation={[0, -0.7, 0]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('shop'); }}>
+    {/* Cart Base */}
+    <mesh position={[0, 0.4, 0]} castShadow>
+      <boxGeometry args={[1.5, 0.8, 1]} />
+      <meshStandardMaterial color="#8b4513" />
+    </mesh>
+    {/* Wheels */}
+    <mesh position={[0.6, 0.2, 0.5]} rotation={[0, 0, Math.PI / 2]} castShadow>
+      <cylinderGeometry args={[0.3, 0.3, 0.1]} />
+      <meshStandardMaterial color="#333" />
+    </mesh>
+    <mesh position={[-0.6, 0.2, 0.5]} rotation={[0, 0, Math.PI / 2]} castShadow>
+      <cylinderGeometry args={[0.3, 0.3, 0.1]} />
+      <meshStandardMaterial color="#333" />
+    </mesh>
+    {/* Canopy */}
+    <mesh position={[0, 1.4, 0]} castShadow>
+      <coneGeometry args={[1.2, 0.6, 4]} />
+      <meshStandardMaterial color="#d32f2f" />
+    </mesh>
+  </group>
+
+  {/* AGILITY: Training logs */ }
+  <group position={[-4, 0, -4]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('agility'); }}>
+    <mesh position={[0, 0.2, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+      <cylinderGeometry args={[0.2, 0.2, 2]} />
+      <meshStandardMaterial color="#5d4037" />
+    </mesh>
+    <mesh position={[0.5, 0.2, 0.8]} rotation={[0, 0.5, Math.PI / 2]} castShadow>
+      <cylinderGeometry args={[0.15, 0.15, 1.5]} />
+      <meshStandardMaterial color="#5d4037" />
+    </mesh>
+  </group>
+
+  {/* VET: Hot Spring */ }
+  <group position={[-6, 0.1, 6]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('vet'); }}>
+    {/* Steam particles could go here */}
+    <mesh rotation={[-Math.PI / 2, 0, 0]}>
+      <circleGeometry args={[2.5, 32]} />
+      <meshStandardMaterial color="#4fc3f7" transparent opacity={0.6} roughness={0.1} />
+    </mesh>
+    <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[2.5, 3.0, 32]} />
+      <meshStandardMaterial color="#555" />
+    </mesh>
+  </group>
+
+  {/* MARKET: Bamboo Pile */ }
+  <group position={[0, 0, 5]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('market'); }}>
+    <mesh position={[0, 0.3, 0]} rotation={[0.2, 0, 0.4]} castShadow>
+      <cylinderGeometry args={[0.05, 0.06, 1.2]} />
+      <meshStandardMaterial color="#7cb342" />
+    </mesh>
+    <mesh position={[0.3, 0.3, 0]} rotation={[-0.2, 0.5, 0.4]} castShadow>
+      <cylinderGeometry args={[0.05, 0.06, 1.2]} />
+      <meshStandardMaterial color="#7cb342" />
+    </mesh>
+    <mesh position={[-0.2, 0.3, 0.2]} rotation={[0.1, -0.5, -0.4]} castShadow>
+      <cylinderGeometry args={[0.05, 0.06, 1.2]} />
+      <meshStandardMaterial color="#7cb342" />
+    </mesh>
+  </group>
+
+  {/* HOME: Cave Entrance */ }
+      <group position={[0, 0, -8]} onClick={(e) => { e.stopPropagation(); triggerNavigation?.('home'); }}>
+          <mesh position={[0, 1.5, 0]}>
+              <sphereGeometry args={[2.5, 32, 16, 0, Math.PI, 0, Math.PI]} />
+              <meshStandardMaterial color="#424242" side={THREE.DoubleSide} />
+          </mesh>
+          <mesh position={[0, 1.5, -0.5]}>
+              <sphereGeometry args={[2.3, 32, 16, 0, Math.PI, 0, Math.PI]} />
+              <meshStandardMaterial color="#000" side={THREE.BackSide} />
+          </mesh>
+      </group>
+
       <mesh position={[2.5, 0.15, -0.5]} castShadow rotation={[0.4, 0.6, 0]}>
         <dodecahedronGeometry args={[0.3]} />
         <meshStandardMaterial color="#3d4f3d" roughness={0.9} />
       </mesh>
 
-      {/* Bamboo Stalks */}
-      {stalks.map((s, i) => (
-        <BambooStalk
-          key={i}
-          position={s.pos}
-          height={s.h}
-          thickness={s.thick}
-          variant={s.var}
-          tilt={s.tilt}
-        />
-      ))}
+  {/* Bamboo Stalks */ }
+  {
+    stalks.map((s, i) => (
+      <BambooStalk
+        key={i}
+        position={s.pos}
+        height={s.h}
+        thickness={s.thick}
+        variant={s.var}
+        tilt={s.tilt}
+      />
+    ))
+  }
 
-      {/* Foreground Blurred Elements for Depth */}
-      <group position={[0, 0, 4.5]}>
-        <BambooStalk position={[-1.5, 0, 0]} height={4} thickness={0.1} variant={1} tilt={0.1} />
-        <BambooStalk position={[2.2, 0, 0.5]} height={5} thickness={0.09} variant={0} tilt={-0.1} />
-      </group>
+  {/* Foreground Blurred Elements for Depth */ }
+  <group position={[0, 0, 4.5]}>
+    <BambooStalk position={[-1.5, 0, 0]} height={4} thickness={0.1} variant={1} tilt={0.1} />
+    <BambooStalk position={[2.2, 0, 0.5]} height={5} thickness={0.09} variant={0} tilt={-0.1} />
+  </group>
 
-      {/* Volumetric Height Fog Box */}
-      <mesh position={[0, 3, 0]}>
-        <boxGeometry args={[40, 8, 40]} />
-        {/* @ts-ignore */}
-        <heightFogMaterial ref={fogRef} transparent depthWrite={false} side={THREE.DoubleSide} />
-      </mesh>
-    </group>
+  {/* Volumetric Height Fog Box */ }
+  <mesh position={[0, 3, 0]}>
+    <boxGeometry args={[40, 8, 40]} />
+    {/* @ts-ignore */}
+    <heightFogMaterial ref={fogRef} transparent depthWrite={false} side={THREE.DoubleSide} />
+  </mesh>
+    </group >
   );
 }

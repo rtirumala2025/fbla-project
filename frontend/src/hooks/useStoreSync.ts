@@ -90,7 +90,7 @@ export function useStoreSync() {
     const interval = setInterval(() => {
       syncProfile();
       syncQuests();
-    }, 30000);
+    }, 120000); // Every 2 minutes (reduced from 30s to lower egress)
 
     return () => clearInterval(interval);
   }, [currentUser?.uid, syncProfile, syncQuests]);

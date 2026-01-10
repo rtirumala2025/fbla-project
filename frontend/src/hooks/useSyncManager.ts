@@ -75,7 +75,7 @@ export function useSyncManager(): SyncManagerResult {
           setStatus('idle');
           setConflicts(result.conflicts);
           setLastSynced(Date.now());
-          
+
           // Update cloud state
           const response = await fetchCloudState();
           setCloudState(response.state);
@@ -105,7 +105,7 @@ export function useSyncManager(): SyncManagerResult {
         if (result.success || result.restored) {
           setStatus('idle');
           setConflicts(result.conflicts);
-          
+
           // Update cloud state
           const response = await fetchCloudState();
           setCloudState(response.state);
@@ -180,10 +180,10 @@ export function useSyncManager(): SyncManagerResult {
 
     const handleOnline = async () => {
       setStatus('syncing');
-      
+
       // Process queued operations
       const { processed, failed } = await processSyncQueue(userId);
-      
+
       // Update queued count
       const queued = await offlineStorage.getQueuedOperations();
       setQueuedOperations(queued.length);
@@ -211,7 +211,7 @@ export function useSyncManager(): SyncManagerResult {
 
     const timeoutId = setTimeout(() => {
       // Only auto-save if online and not recently synced
-      if (navigator.onLine && (!lastSynced || Date.now() - lastSynced > 30000)) {
+      if (navigator.onLine && (!lastSynced || Date.now() - lastSynced > 120000)) {
         void save({ silent: true });
       }
     }, 5000); // 5 second debounce
@@ -228,7 +228,7 @@ export function useSyncManager(): SyncManagerResult {
       setQueuedOperations(queued.length);
     };
 
-    const interval = setInterval(updateQueueCount, 10000); // Every 10 seconds
+    const interval = setInterval(updateQueueCount, 60000); // Every 60 seconds (reduced from 10s to lower egress)
     updateQueueCount();
 
     return () => clearInterval(interval);
@@ -246,14 +246,14 @@ export function useSyncManager(): SyncManagerResult {
   const enqueueChange = useCallback(
     async (change: Record<string, unknown>) => {
       if (!userId) return;
-      
+
       try {
         await offlineStorage.queueOperation({
           type: 'update',
           table: 'app_state',
           data: change,
         });
-        
+
         // Update queued count
         const queued = await offlineStorage.getQueuedOperations();
         setQueuedOperations(queued.length);
