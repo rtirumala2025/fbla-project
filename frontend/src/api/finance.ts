@@ -101,42 +101,35 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
   let careScore = 0;
   let walletError: any = null;
 
-  // Try fetching wallet with profile join first
-  const { data: walletWithProfile, error: joinError } = await supabase
+
+
+  // 1. Fetch Wallet
+  const { data: walletData, error: initialWalletError } = await supabase
     .from('finance_wallets')
-    .select('*, profiles!inner(care_score)') // Try joining via user_id
+    .select('*')
     .eq('user_id', userId)
-    .maybeSingle();
+    .maybeSingle(); // Use maybeSingle to avoid 406 on missing rows
 
-  if (joinError && (joinError.code === '42P01' || joinError.code === 'PGRST100')) { // relation doesn't exist or bad request
-    console.warn("Finance wallet join failed, trying simple fetch and separate profile fetch");
-    // Fallback to simple wallet fetch
-    const { data: walletSimple, error: simpleWalletError } = await supabase
-      .from('finance_wallets')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+  if (initialWalletError) {
+    console.error('Wallet fetch failed:', initialWalletError);
+    throw initialWalletError;
+  }
 
-    if (simpleWalletError) {
-      walletError = simpleWalletError;
-    } else {
-      userWallet = walletSimple;
-      // Fetch profile separately
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('care_score')
-        .eq('id', userId)
-        .single();
-      careScore = profile?.care_score || 0;
+  userWallet = walletData;
+
+  // 2. Fetch Profile (Care Score)
+  try {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('care_score')
+      .eq('id', userId)
+      .single();
+
+    if (profileData) {
+      careScore = profileData.care_score;
     }
-  } else if (joinError) {
-    walletError = joinError;
-  } else {
-    userWallet = walletWithProfile;
-    if (userWallet && (userWallet as any).profiles) {
-      careScore = (userWallet as any).profiles.care_score || 0;
-      delete (userWallet as any).profiles; // Clean up the joined data
-    }
+  } catch (e) {
+    console.warn('Profile fetch failed (non-critical):', e);
   }
 
   if (walletError && walletError.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -185,31 +178,52 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
     userWallet = newWallet;
   }
 
-  // Aggressive Auto-Fix: User requires non-zero starting balance.
-  // If balance is 0, valid game state requires funds to play.
-  if (userWallet && userWallet.balance === 0) {
-    console.log('Wallet balance is 0. Auto-funding 500 coins...');
-    try {
-      // Check if we already gave them a starter pack to prevent infinite loops if something else is breaking
-      // But for now, just try to insert.
-      const { error: fixError } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: userId,
-          amount: 500,
-          transaction_type: 'allowance',
-          category: 'starter_fund',
-          description: 'Starter Funds',
-          item_name: 'Starter Funds',
-          item_id: 'starter_funds'
-        });
+  // DEBUG: Show actual balance seen
+  const currentBalance = userWallet ? userWallet.balance : 'null';
+  console.log(`DEBUG: Wallet found? ${!!userWallet}, Balance=${currentBalance}`);
 
-      if (!fixError) {
-        console.log('Starter Funds applied.');
+  if (userWallet && userWallet.balance <= 0) {
+    alert(`DEBUG: Balance is 0. Attempting fix...`); // Keep this one alert for the fix
+
+    console.log('Wallet balance is 0. Auto-funding 500 coins directly...');
+    alert("SYSTEM: Your balance is 0. Attempting to fix now...");
+    try {
+      // 1. Directly update wallet (Bypass view trigger logic which might be failing)
+      const { error: updateError } = await supabase
+        .from('finance_wallets')
+        .update({
+          balance: 500,
+          lifetime_earned: (userWallet.lifetime_earned || 0) + 500
+        })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Failed to update wallet balance:', updateError);
+        alert("SYSTEM ERROR: Failed to fix wallet. " + updateError.message);
+      } else {
+        console.log('Wallet balance updated to 500.');
+        alert("SYSTEM SUCCESS: Wallet fixed! Balance set to 500. Please reload page if not visible.");
+
+        // 2. Insert transaction record into BASE TABLE (finance_transactions)
+        // This bypasses the 'transactions' view trigger, ensuring we don't double-add
+        const { error: txError } = await supabase
+          .from('finance_transactions')
+          .insert({
+            user_id: userId,
+            amount: 500,
+            wallet_id: userWallet.id, // Needed for base table
+            transaction_type: 'allowance',
+            category: 'starter_fund',
+            description: 'Starter Funds',
+            item_name: 'Starter Funds',
+            item_id: 'starter_funds'
+          });
+
+        if (txError) console.error('Failed to log transaction:', txError);
+
+        // 3. Update local state
         userWallet.balance = 500;
         userWallet.lifetime_earned = (userWallet.lifetime_earned || 0) + 500;
-      } else {
-        console.error('Failed to apply Starter Funds:', fixError);
       }
     } catch (err) {
       console.error('Error auto-funding:', err);
