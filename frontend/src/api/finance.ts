@@ -310,8 +310,25 @@ export async function getLeaderboard(metric: 'balance' | 'care_score'): Promise<
   return apiRequest<LeaderboardEntry[]>(`${API_BASE}/leaderboard?metric=${metric}`);
 }
 
+async function getShopCatalogFromSupabase(): Promise<ShopItemEntry[]> {
+  const { data, error } = await supabase
+    .from('shop_items')
+    .select('*')
+    .order('category');
+
+  if (error) throw error;
+
+  return data || [];
+}
+
 export async function getShopCatalog(): Promise<ShopItemEntry[]> {
-  return apiRequest<ShopItemEntry[]>(`/api/shop/items`);
+  return cachedRequest(
+    'shop-catalog',
+    async () => {
+      return await getShopCatalogFromSupabase();
+    },
+    60000 // Cache for 1 minute
+  );
 }
 
 export async function getInventory(): Promise<InventoryEntry[]> {

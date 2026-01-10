@@ -46,10 +46,11 @@ const CATEGORIES = [
     { id: 'health', name: 'Health', icon: Heart, color: '#ef4444' },
     { id: 'grooming', name: 'Grooming', icon: Scissors, color: '#06b6d4' },
     { id: 'care', name: 'Care', icon: Sparkles, color: '#a855f7' },
+    { id: 'energy', name: 'Energy', icon: Zap, color: '#eab308' },
 ];
 
 // Non-equippable categories only
-const CONSUMABLE_CATEGORIES = ['food', 'toy', 'furniture', 'health', 'grooming', 'care', 'deals'];
+const CONSUMABLE_CATEGORIES = ['food', 'toy', 'furniture', 'health', 'grooming', 'care', 'deals', 'energy'];
 
 // Map a category to an icon for display
 const getCategoryIcon = (category: string): string => {
@@ -62,6 +63,7 @@ const getCategoryIcon = (category: string): string => {
         health: '💊',
         grooming: '✂️',
         deals: '🔥',
+        energy: '⚡',
     };
     return icons[category?.toLowerCase()] || '📦';
 };
