@@ -54,19 +54,31 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .eq('user_id', currentUser.uid)
           .single();
 
-        if (error && error.code !== 'PGRST116') {
+        if (error) {
           // PGRST116 = no rows, which is okay (first time user)
-          console.warn('Error loading theme preferences:', error);
-          // Fallback to defaults only
+          // 42703 = column doesn't exist (migration not applied)
+          // PGRST301 = 406 Not Acceptable (table/column access issues)
+          const isExpectedError = error.code === 'PGRST116' ||
+            error.code === '42703' ||
+            error.code === 'PGRST301' ||
+            (error.message && error.message.includes('does not exist'));
+          if (!isExpectedError) {
+            console.warn('Error loading theme preferences:', error);
+          }
+          // Fallback to defaults
           setThemeState(getSystemPreference());
           setColorBlindModeState(false);
         } else if (data) {
           // Load from Supabase
           if (data.theme === 'light' || data.theme === 'dark') {
             setThemeState(data.theme);
+          } else {
+            setThemeState(getSystemPreference());
           }
           if (typeof data.color_blind_mode === 'boolean') {
             setColorBlindModeState(data.color_blind_mode);
+          } else {
+            setColorBlindModeState(false);
           }
         } else {
           // No preferences found - use defaults

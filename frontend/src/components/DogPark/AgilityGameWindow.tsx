@@ -76,6 +76,7 @@ export function AgilityGameWindow({
         if (!isOpen) {
             setGameState('menu');
             resetGameState();
+            setIsStartingGame(false); // Reset button state when window closes
         }
         return () => {
             if (animationFrameRef.current) {

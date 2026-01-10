@@ -21,6 +21,45 @@ export interface AppState {
 }
 
 /**
+ * Safe query wrapper that handles 406, 429, and other errors gracefully
+ * Returns null for single queries or empty array for list queries on error
+ * Works with Supabase's thenable PostgrestBuilder
+ */
+async function safeQuery<T>(
+  queryFn: () => PromiseLike<{ data: T | null; error: any }>,
+  fallback: T,
+  operationName: string
+): Promise<T> {
+  try {
+    const result = await queryFn();
+    const { data, error } = result;
+    if (error) {
+      // PGRST116 = no rows found, which is not an error
+      if (error.code !== 'PGRST116') {
+        // Silently handle 406 (Not Acceptable) and 429 (Too Many Requests)
+        // These are often transient issues that shouldn't block the app
+        const errorCode = error.code || error.status;
+        if (errorCode === '406' || errorCode === 406 || errorCode === '429' || errorCode === 429) {
+          console.debug(`State capture (${operationName}): ${errorCode} error, using fallback`);
+        } else {
+          console.warn(`Failed to capture ${operationName}:`, error.message || error);
+        }
+      }
+      return fallback;
+    }
+    return data ?? fallback;
+  } catch (e) {
+    console.warn(`Error in ${operationName}:`, e);
+    return fallback;
+  }
+}
+
+/**
+ * Delay helper for rate limiting protection
+ */
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
  * Capture complete application state for cloud save
  */
 export async function captureAppState(userId: string): Promise<SyncSnapshot> {
@@ -34,181 +73,106 @@ export async function captureAppState(userId: string): Promise<SyncSnapshot> {
   }
 
   try {
-    // Capture all state in parallel
-    const [
-      petData,
-      profileData,
-      preferencesData,
-      walletData,
-      transactionsData,
-      goalsData,
-      inventoryData,
-      accessoriesData,
-      gameSessionsData,
-      gameRoundsData,
-      userQuestsData,
-    ] = await Promise.all([
-      // Pet state
-      supabase
-        .from('pets')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-        .then(({ data, error }) => {
-          if (error && error.code !== 'PGRST116') {
-            console.warn('Failed to capture pet state:', error);
-          }
-          return data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null;
-        }),
+    // Batch 1: Core user data (most critical)
+    const [petData, profileData, walletData] = await Promise.all([
+      safeQuery<Record<string, any> | null>(
+        () => supabase.from('pets').select('*').eq('user_id', userId).single(),
+        null,
+        'pet'
+      ).then((data: any) => data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null),
 
-      // Profile state
-      supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-        .then(({ data, error }) => {
-          if (error && error.code !== 'PGRST116') {
-            console.warn('Failed to capture profile state:', error);
-          }
-          return data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null;
-        }),
+      safeQuery<Record<string, any> | null>(
+        () => supabase.from('profiles').select('*').eq('user_id', userId).single(),
+        null,
+        'profile'
+      ).then((data: any) => data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null),
 
-      // User preferences
-      supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-        .then(({ data, error }) => {
-          if (error && error.code !== 'PGRST116') {
-            console.warn('Failed to capture preferences state:', error);
-          }
-          return data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null;
-        }),
+      safeQuery<Record<string, any> | null>(
+        () => supabase.from('finance_wallets').select('*').eq('user_id', userId).single(),
+        null,
+        'wallet'
+      ).then((data: any) => data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null),
+    ]);
 
-      // Wallet state
-      supabase
-        .from('finance_wallets')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-        .then(({ data, error }) => {
-          if (error && error.code !== 'PGRST116') {
-            console.warn('Failed to capture wallet state:', error);
-          }
-          return data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null;
-        }),
+    // Small delay to avoid rate limiting
+    await delay(50);
 
-      // Transactions (last 100)
-      supabase
-        .from('finance_transactions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(100)
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('Failed to capture transactions state:', error);
-          }
-          return (data || []).map((item) => ({
-            ...item,
-            updated_at: item.created_at || new Date().toISOString(),
-          }));
-        }),
+    // Batch 2: User settings and inventory
+    const [preferencesData, inventoryData, accessoriesData, goalsData] = await Promise.all([
+      safeQuery<Record<string, any> | null>(
+        () => supabase.from('user_preferences').select('*').eq('user_id', userId).single(),
+        null,
+        'preferences'
+      ).then((data: any) => data ? { ...data, updated_at: data.updated_at || new Date().toISOString() } : null),
 
-      // Goals
-      supabase
-        .from('finance_goals')
-        .select('*')
-        .eq('user_id', userId)
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('Failed to capture goals state:', error);
-          }
-          return (data || []).map((item) => ({
-            ...item,
-            updated_at: item.updated_at || new Date().toISOString(),
-          }));
-        }),
+      safeQuery(
+        () => supabase.from('finance_inventory').select('*').eq('user_id', userId),
+        [] as any[],
+        'inventory'
+      ).then(data => (data || []).map((item: any) => ({
+        ...item,
+        updated_at: item.updated_at || new Date().toISOString(),
+      }))),
 
-      // Inventory
-      supabase
-        .from('finance_inventory')
-        .select('*')
-        .eq('user_id', userId)
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('Failed to capture inventory state:', error);
-          }
-          return (data || []).map((item) => ({
-            ...item,
-            updated_at: item.updated_at || new Date().toISOString(),
-          }));
-        }),
+      safeQuery(
+        () => supabase.from('user_accessories').select('*').eq('user_id', userId),
+        [] as any[],
+        'accessories'
+      ).then(data => (data || []).map((item: any) => ({
+        ...item,
+        updated_at: item.updated_at || new Date().toISOString(),
+      }))),
 
-      // Accessories
-      supabase
-        .from('user_accessories')
-        .select('*')
-        .eq('user_id', userId)
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('Failed to capture accessories state:', error);
-          }
-          return (data || []).map((item) => ({
-            ...item,
-            updated_at: item.updated_at || new Date().toISOString(),
-          }));
-        }),
+      safeQuery(
+        () => supabase.from('finance_goals').select('*').eq('user_id', userId),
+        [] as any[],
+        'goals'
+      ).then(data => (data || []).map((item: any) => ({
+        ...item,
+        updated_at: item.updated_at || new Date().toISOString(),
+      }))),
+    ]);
 
-      // Game sessions (last 50)
-      supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(50)
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('Failed to capture game sessions state:', error);
-          }
-          return (data || []).map((item) => ({
-            ...item,
-            updated_at: item.created_at || new Date().toISOString(),
-          }));
-        }),
+    // Small delay to avoid rate limiting
+    await delay(50);
 
-      // Game rounds (active only)
-      supabase
-        .from('game_rounds')
-        .select('*')
-        .eq('user_id', userId)
-        .in('status', ['pending', 'active'])
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('Failed to capture game rounds state:', error);
-          }
-          return (data || []).map((item) => ({
-            ...item,
-            updated_at: item.updated_at || new Date().toISOString(),
-          }));
-        }),
+    // Batch 3: Game data and transactions (can be skipped if batches 1&2 had issues)
+    const [transactionsData, gameSessionsData, gameRoundsData, userQuestsData] = await Promise.all([
+      safeQuery(
+        () => supabase.from('finance_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
+        [] as any[],
+        'transactions'
+      ).then(data => (data || []).map((item: any) => ({
+        ...item,
+        updated_at: item.created_at || new Date().toISOString(),
+      }))),
 
-      // User quests
-      supabase
-        .from('user_quests')
-        .select('*')
-        .eq('user_id', userId)
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('Failed to capture user quests state:', error);
-          }
-          return (data || []).map((item) => ({
-            ...item,
-            updated_at: item.updated_at || new Date().toISOString(),
-          }));
-        }),
+      safeQuery(
+        () => supabase.from('game_sessions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+        [] as any[],
+        'gameSessions'
+      ).then(data => (data || []).map((item: any) => ({
+        ...item,
+        updated_at: item.created_at || new Date().toISOString(),
+      }))),
+
+      safeQuery(
+        () => supabase.from('game_rounds').select('*').eq('user_id', userId).in('status', ['pending', 'active']),
+        [] as any[],
+        'gameRounds'
+      ).then(data => (data || []).map((item: any) => ({
+        ...item,
+        updated_at: item.updated_at || new Date().toISOString(),
+      }))),
+
+      safeQuery(
+        () => supabase.from('user_quests').select('*').eq('user_id', userId),
+        [] as any[],
+        'userQuests'
+      ).then(data => (data || []).map((item: any) => ({
+        ...item,
+        updated_at: item.updated_at || new Date().toISOString(),
+      }))),
     ]);
 
     // Build snapshot with all state
@@ -216,7 +180,7 @@ export async function captureAppState(userId: string): Promise<SyncSnapshot> {
       pets: petData ? [petData] : [],
       inventory: [
         ...inventoryData,
-        ...accessoriesData.map((acc) => ({ ...acc, type: 'accessory' })),
+        ...accessoriesData.map((acc: Record<string, any>) => ({ ...acc, type: 'accessory' })),
       ],
       quests: userQuestsData,
       progress: {

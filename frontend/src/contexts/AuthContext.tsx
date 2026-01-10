@@ -118,11 +118,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { isNew, hasPet: petExists };
     } catch (error) {
       onboardingLogger.error('Error checking user profile', error, { userId });
-      return { isNew: true, hasPet: false }; // Assume new user if error occurs
+      // CRITICAL: Fail-safe to prevent redirect loops during DB issues
+      // Return hasPet: true to prevent redirect to pet selection when we can't confirm
+      return { isNew: false, hasPet: true };
     }
   }, []); // checkPetWithRetry is defined above and doesn't need to be in deps
 
   // Method to refresh user state after profile creation or update
+  // CRITICAL: This does NOT reset hasPet on failure to prevent redirect loops
   const refreshUserState = useCallback(async () => {
     onboardingLogger.authInit('Refreshing user state');
     try {
@@ -149,8 +152,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setHasPet(petExists);
         setCurrentUser(updatedUser);
       }
+      // NOTE: If no session, we intentionally do NOT reset hasPet
+      // This prevents redirect loops during transient auth hiccups
     } catch (error) {
-      onboardingLogger.error('Error refreshing user state', error);
+      // CRITICAL: Do NOT reset hasPet on error - preserve current state
+      // This prevents redirect loops when DB is rate limited or temporarily unavailable
+      onboardingLogger.error('Error refreshing user state (preserving current hasPet)', error);
     }
   }, []); // checkPetWithRetry is defined above and doesn't need to be in deps
 
@@ -343,9 +350,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setHasPet(false);
         }
       } catch (profileError) {
-        onboardingLogger.error('Error checking user profile in auth change', profileError);
-        setIsNewUser(false); // Default to not new user if check fails
-        setHasPet(false);
+        // CRITICAL: Fail-safe to prevent redirect loops during DB/timeout issues
+        // Keep hasPet true to prevent redirect to pet selection when check fails
+        onboardingLogger.error('Error checking user profile in auth change (fail-safe: keeping hasPet=true)', profileError);
+        setIsNewUser(false);
+        // Do NOT reset hasPet to false here - it causes redirect loops
       }
 
       setCurrentUser(mappedUser);
