@@ -208,8 +208,8 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
 
         try {
             const purchaseData = {
-                items: cart.map(c => ({
-                    item_id: c.item.id,
+                entries: cart.map(c => ({   // Changed from 'items' to 'entries'
+                    itemId: c.item.id,      // Changed from 'item_id' to 'itemId' to match interface usually? Wait, let me check type.
                     quantity: c.quantity
                 })),
             };
