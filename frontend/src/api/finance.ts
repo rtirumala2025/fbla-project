@@ -185,6 +185,36 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
     userWallet = newWallet;
   }
 
+  // Auto-Fix: If wallet exists but balance is 0 and lifetime earned is 0 (broken state or old account),
+  // automatically add the starter allowance via transaction to fix it transparently.
+  if (userWallet && userWallet.balance === 0 && (userWallet.lifetime_earned === 0 || userWallet.lifetime_earned === null)) {
+    console.log('Detected 0-balance wallet state. Applying automatic Welcome Bonus...');
+    try {
+      const { error: fixError } = await supabase
+        .from('transactions') // Use the view with the trigger
+        .insert({
+          user_id: userId,
+          amount: 500,
+          transaction_type: 'allowance',
+          category: 'system_correction',
+          description: 'Welcome Bonus (System Fix)',
+          item_name: 'Starter Pack',
+          item_id: 'starter_pack'
+        });
+
+      if (!fixError) {
+        console.log('Welcome Bonus applied successfully.');
+        // Update local state so UI reflects it immediately
+        userWallet.balance = 500;
+        userWallet.lifetime_earned = 500;
+      } else {
+        console.error('Failed to apply Welcome Bonus:', fixError);
+      }
+    } catch (err) {
+      console.error('Error auto-fixing wallet:', err);
+    }
+  }
+
   // Fetch today's transactions
   const { data: todayTransactions, error: todayTxError } = await supabase
     .from('finance_transactions')

@@ -766,24 +766,6 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                     </motion.div>
                 )}
             </AnimatePresence>
-            {balance < 100 && (
-                <div className="absolute bottom-4 left-4">
-                    <button
-                        onClick={async () => {
-                            try {
-                                await claimBetaAllowance();
-                                await refreshBalance();
-                                alert("Added 500 coins!");
-                            } catch (e: any) {
-                                alert("Failed to add coins: " + e.message);
-                            }
-                        }}
-                        className="px-3 py-1 bg-yellow-600/50 hover:bg-yellow-600 text-yellow-100 text-xs rounded-full border border-yellow-500/30 transition-colors"
-                    >
-                        + 500 Coins (Beta)
-                    </button>
-                </div>
-            )}
         </BuildingInteractionWindow>
     );
 }
