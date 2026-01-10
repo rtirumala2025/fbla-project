@@ -766,9 +766,7 @@ export function GiftShopWindow({ isOpen, onClose, onPurchaseComplete }: GiftShop
                     </motion.div>
                 )}
             </AnimatePresence>
-                )}
-        </AnimatePresence>
-        </BuildingInteractionWindow >
+        </BuildingInteractionWindow>
     );
 }
 
