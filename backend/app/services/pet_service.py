@@ -508,6 +508,235 @@ class PetService:
         assert refreshed is not None
         return refreshed
 
+    async def use_inventory_item(
+        self,
+        user_id: str,
+        item_id: str,
+        quantity: int = 1,
+    ) -> Dict[str, Any]:
+        """
+        Use a consumable inventory item (food, hygiene, toy).
+        Decrements inventory and applies stat effects to pet.
+        
+        Returns dict with:
+        - success: bool
+        - remaining_quantity: int
+        - stat_updates: Dict[str, int] - changes applied
+        - message: str
+        """
+        pool = await self._require_pool()
+        
+        async with pool.acquire() as connection:
+            # Get item from inventory
+            inv_row = await connection.fetchrow(
+                """
+                SELECT fi.id, fi.item_id, fi.quantity, fi.shop_item_id,
+                       fsi.usage_type, fsi.stat_effects, fsi.name
+                FROM public.finance_inventory fi
+                LEFT JOIN public.finance_shop_items fsi ON fi.shop_item_id = fsi.id
+                WHERE fi.user_id = $1 AND fi.item_id = $2
+                """,
+                user_id,
+                item_id,
+            )
+            
+            if inv_row is None:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory.")
+            
+            if inv_row["quantity"] < quantity:
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    f"Not enough items. Have {inv_row['quantity']}, need {quantity}."
+                )
+            
+            usage_type = inv_row.get("usage_type")
+            if usage_type not in ("food", "hygiene", "toy"):
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    f"Item type '{usage_type}' cannot be used. Only food, hygiene, and toy items are consumable."
+                )
+            
+            # Get stat effects from item or use defaults
+            stat_effects = inv_row.get("stat_effects") or {}
+            if not stat_effects:
+                if usage_type == "food":
+                    stat_effects = {"hunger": 15, "health": 5}
+                elif usage_type == "hygiene":
+                    stat_effects = {"hygiene": 25, "health": 3}
+                elif usage_type == "toy":
+                    stat_effects = {"energy": -10, "xp": 15}
+            
+            # Decrement inventory
+            new_quantity = inv_row["quantity"] - quantity
+            if new_quantity <= 0:
+                await connection.execute(
+                    "DELETE FROM public.finance_inventory WHERE id = $1",
+                    inv_row["id"],
+                )
+            else:
+                await connection.execute(
+                    "UPDATE public.finance_inventory SET quantity = $1, updated_at = NOW() WHERE id = $2",
+                    new_quantity,
+                    inv_row["id"],
+                )
+        
+        # Apply stat effects to pet
+        pet_response = await self.get_pet(user_id)
+        if pet_response is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Pet not found.")
+        
+        pet = self._response_to_domain(pet_response)
+        stats = pet.stats
+        
+        applied_changes: Dict[str, int] = {}
+        for _ in range(quantity):
+            for stat_name, change in stat_effects.items():
+                if stat_name == "hunger":
+                    old_val = stats.hunger
+                    stats.hunger = self._clamp(stats.hunger + change)
+                    applied_changes["hunger"] = applied_changes.get("hunger", 0) + (stats.hunger - old_val)
+                elif stat_name == "hygiene":
+                    old_val = stats.hygiene
+                    stats.hygiene = self._clamp(stats.hygiene + change)
+                    applied_changes["hygiene"] = applied_changes.get("hygiene", 0) + (stats.hygiene - old_val)
+                elif stat_name == "energy":
+                    old_val = stats.energy
+                    stats.energy = self._clamp(stats.energy + change)
+                    applied_changes["energy"] = applied_changes.get("energy", 0) + (stats.energy - old_val)
+                elif stat_name == "health":
+                    old_val = stats.health
+                    stats.health = self._clamp(stats.health + change)
+                    applied_changes["health"] = applied_changes.get("health", 0) + (stats.health - old_val)
+                elif stat_name == "xp":
+                    stats.xp += change
+                    applied_changes["xp"] = applied_changes.get("xp", 0) + change
+        
+        # Recalculate derived stats
+        stats.xp, stats.level = self._recalculate_level(stats.xp, stats.level)
+        stats.evolution_stage = self._determine_stage(stats.level).value
+        stats.mood = self._calculate_base_mood(stats.hunger, stats.hygiene, stats.energy, stats.health)
+        stats.is_sick = self._is_sick(stats.hunger, stats.hygiene, stats.energy, stats.health)
+        
+        updated_pet = Pet(
+            id=pet.id,
+            user_id=pet.user_id,
+            name=pet.name,
+            species=pet.species,
+            breed=pet.breed,
+            color=pet.color,
+            created_at=pet.created_at,
+            updated_at=datetime.now(timezone.utc),
+            stats=stats,
+            diary=pet.diary,
+        )
+        
+        await self._persist_pet_state(user_id, updated_pet)
+        
+        item_name = inv_row.get("name") or item_id
+        return {
+            "success": True,
+            "remaining_quantity": max(0, new_quantity),
+            "stat_updates": applied_changes,
+            "message": f"Used {item_name}! " + ", ".join(
+                f"{k}: {'+' if v > 0 else ''}{v}" for k, v in applied_changes.items()
+            ),
+        }
+
+    async def toggle_equip_item(
+        self,
+        user_id: str,
+        item_id: str,
+        slot: str,
+    ) -> Dict[str, Any]:
+        """
+        Toggle an accessory in the pet's equipped_loadout.
+        If item is equipped in the slot, unequip it. Otherwise, equip it.
+        
+        Valid slots: collar, hat, glasses, bandana, back
+        """
+        pool = await self._require_pool()
+        
+        valid_slots = {"collar", "hat", "glasses", "bandana", "back"}
+        if slot not in valid_slots:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Invalid slot '{slot}'. Valid slots: {', '.join(valid_slots)}"
+            )
+        
+        async with pool.acquire() as connection:
+            # Verify item is in inventory and is an accessory
+            inv_row = await connection.fetchrow(
+                """
+                SELECT fi.id, fi.item_id, fi.quantity, fsi.usage_type, fsi.metadata
+                FROM public.finance_inventory fi
+                LEFT JOIN public.finance_shop_items fsi ON fi.shop_item_id = fsi.id
+                WHERE fi.user_id = $1 AND fi.item_id = $2
+                """,
+                user_id,
+                item_id,
+            )
+            
+            if inv_row is None:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory.")
+            
+            usage_type = inv_row.get("usage_type")
+            metadata = inv_row.get("metadata") or {}
+            
+            if usage_type != "accessory" and not metadata.get("equippable"):
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    "This item cannot be equipped. Only accessories can be equipped."
+                )
+            
+            # Get current equipped loadout
+            pet_row = await connection.fetchrow(
+                "SELECT id, equipped_loadout FROM public.pets WHERE user_id = $1",
+                user_id,
+            )
+            
+            if pet_row is None:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "Pet not found.")
+            
+            equipped_loadout: Dict[str, str] = pet_row.get("equipped_loadout") or {}
+            
+            # Toggle equip
+            action: str
+            if equipped_loadout.get(slot) == item_id:
+                del equipped_loadout[slot]
+                action = "unequipped"
+            else:
+                equipped_loadout[slot] = item_id
+                action = "equipped"
+            
+            import json
+            await connection.execute(
+                "UPDATE public.pets SET equipped_loadout = $1::jsonb, updated_at = NOW() WHERE user_id = $2",
+                json.dumps(equipped_loadout),
+                user_id,
+            )
+        
+        return {
+            "success": True,
+            "action": action,
+            "slot": slot,
+            "item_id": item_id if action == "equipped" else None,
+            "equipped_loadout": equipped_loadout,
+        }
+
+    async def get_equipped_loadout(self, user_id: str) -> Dict[str, str]:
+        """Get the current equipped loadout for the user's pet."""
+        pool = await self._require_pool()
+        
+        async with pool.acquire() as connection:
+            row = await connection.fetchrow(
+                "SELECT equipped_loadout FROM public.pets WHERE user_id = $1",
+                user_id,
+            )
+            if row is None:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "Pet not found.")
+            
+            return row.get("equipped_loadout") or {}
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------

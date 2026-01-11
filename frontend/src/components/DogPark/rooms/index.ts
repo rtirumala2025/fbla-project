@@ -1,0 +1,8 @@
+/**
+ * Room components index
+ */
+export { RoomSwitcher, type RoomType, ROOMS } from './RoomSwitcher';
+export { LivingRoom } from './LivingRoom';
+export { KitchenView } from './KitchenView';
+export { BathroomView } from './BathroomView';
+export { ClosetView } from './ClosetView';

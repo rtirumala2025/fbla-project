@@ -136,6 +136,87 @@ async def process_game_loop(
     return await game_loop_service.process_game_loop(current_user.id)
 
 
+# ========== Room System Endpoints (Multi-Room Hub) ==========
+
+from pydantic import BaseModel
+from typing import Dict, Any, Optional
+
+
+class UseItemRequest(BaseModel):
+    """Request payload for using an inventory item."""
+    quantity: int = 1
+
+
+class EquipItemRequest(BaseModel):
+    """Request payload for equipping/unequipping an accessory."""
+    slot: str  # collar, hat, glasses, bandana, back
+
+
+@router.post("/inventory/{item_id}/use", summary="Use a consumable inventory item")
+async def use_inventory_item(
+    item_id: str,
+    payload: UseItemRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    service: PetService = Depends(get_pet_service),
+) -> Dict[str, Any]:
+    """
+    Use a consumable item (food, hygiene, toy) from inventory.
+    Applies stat effects to the pet and decrements inventory quantity.
+    
+    Returns:
+    - success: bool
+    - remaining_quantity: int
+    - stat_updates: Dict[str, int] - changes applied
+    - message: str
+    """
+    return await service.use_inventory_item(
+        user_id=current_user.id,
+        item_id=item_id,
+        quantity=payload.quantity,
+    )
+
+
+@router.post("/inventory/{item_id}/equip", summary="Toggle equip/unequip an accessory")
+async def toggle_equip_item(
+    item_id: str,
+    payload: EquipItemRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    service: PetService = Depends(get_pet_service),
+) -> Dict[str, Any]:
+    """
+    Toggle an accessory's equipped state in a specific slot.
+    If item is already equipped in the slot, it will be unequipped.
+    
+    Valid slots: collar, hat, glasses, bandana, back
+    
+    Returns:
+    - success: bool
+    - action: 'equipped' | 'unequipped'
+    - slot: str
+    - item_id: str | None
+    - equipped_loadout: Dict[str, str]
+    """
+    return await service.toggle_equip_item(
+        user_id=current_user.id,
+        item_id=item_id,
+        slot=payload.slot,
+    )
+
+
+@router.get("/equipped", summary="Get currently equipped accessories")
+async def get_equipped_loadout(
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    service: PetService = Depends(get_pet_service),
+) -> Dict[str, str]:
+    """
+    Get the pet's current equipped accessory loadout.
+    
+    Returns a dictionary mapping slot names to item IDs.
+    Example: {"collar": "acc-collar-fancy", "hat": "acc-hat-crown"}
+    """
+    return await service.get_equipped_loadout(current_user.id)
+
+
 VET_VISIT_COST = 25  # Cost of a vet visit in coins
 
 
