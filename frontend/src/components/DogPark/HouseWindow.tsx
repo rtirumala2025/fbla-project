@@ -239,65 +239,74 @@ export function HouseWindow({
                 </div>
             )}
 
-            {/* Room Switcher */}
-            <RoomSwitcher
-                activeRoom={activeRoom}
-                onRoomChange={setActiveRoom}
-            />
-
-            {/* Room Content */}
-            <AnimatePresence mode="wait">
-                {activeRoom === 'living' && (
-                    <LivingRoom
-                        key="living"
-                        petName={petName}
-                        petType={petType}
-                        petBreed={petBreed}
-                        currentEnergy={currentEnergy}
-                        onSleepComplete={onSleepComplete}
-                        toys={toyItems}
-                        onUseToy={useItem}
+            {/* Full Container - Gradient background covers everything */}
+            <div className={`h-full w-full flex flex-col overflow-hidden bg-gradient-to-b ${activeRoom === 'living' ? 'from-indigo-950 via-purple-900 to-orange-900' :
+                    activeRoom === 'kitchen' ? 'from-orange-900 via-orange-600 to-amber-400' :
+                        activeRoom === 'bathroom' ? 'from-sky-900 via-cyan-600 to-cyan-300' :
+                            'from-slate-950 via-purple-950 to-indigo-950'
+                }`}>
+                {/* Room Switcher */}
+                <div className="shrink-0 bg-black/20 border-b border-white/10">
+                    <RoomSwitcher
+                        activeRoom={activeRoom}
+                        onRoomChange={setActiveRoom}
                     />
-                )}
+                </div>
 
-                {activeRoom === 'kitchen' && (
-                    <KitchenView
-                        key="kitchen"
-                        petName={petName}
-                        petType={petType}
-                        petBreed={petBreed}
-                        foodItems={foodItems}
-                        onFeedItem={useItem}
-                        isFeeding={isProcessing}
-                    />
-                )}
+                {/* Room Content - takes remaining space */}
+                <AnimatePresence mode="wait">
+                    {activeRoom === 'living' && (
+                        <LivingRoom
+                            key="living"
+                            petName={petName}
+                            petType={petType}
+                            petBreed={petBreed}
+                            currentEnergy={currentEnergy}
+                            onSleepComplete={onSleepComplete}
+                            toys={toyItems}
+                            onUseToy={useItem}
+                        />
+                    )}
 
-                {activeRoom === 'bathroom' && (
-                    <BathroomView
-                        key="bathroom"
-                        petName={petName}
-                        petType={petType}
-                        petBreed={petBreed}
-                        hygieneItems={hygieneItems}
-                        currentHygiene={currentHygiene}
-                        onUseItem={useItem}
-                        onQuickWash={handleQuickWash}
-                        isWashing={isProcessing}
-                    />
-                )}
+                    {activeRoom === 'kitchen' && (
+                        <KitchenView
+                            key="kitchen"
+                            petName={petName}
+                            petType={petType}
+                            petBreed={petBreed}
+                            foodItems={foodItems}
+                            onFeedItem={useItem}
+                            isFeeding={isProcessing}
+                        />
+                    )}
 
-                {activeRoom === 'closet' && (
-                    <ClosetView
-                        key="closet"
-                        petName={petName}
-                        petType={petType}
-                        petBreed={petBreed}
-                        accessories={accessoryItems}
-                        equippedLoadout={equippedLoadout}
-                        onToggleEquip={toggleEquip}
-                    />
-                )}
-            </AnimatePresence>
+                    {activeRoom === 'bathroom' && (
+                        <BathroomView
+                            key="bathroom"
+                            petName={petName}
+                            petType={petType}
+                            petBreed={petBreed}
+                            hygieneItems={hygieneItems}
+                            currentHygiene={currentHygiene}
+                            onUseItem={useItem}
+                            onQuickWash={handleQuickWash}
+                            isWashing={isProcessing}
+                        />
+                    )}
+
+                    {activeRoom === 'closet' && (
+                        <ClosetView
+                            key="closet"
+                            petName={petName}
+                            petType={petType}
+                            petBreed={petBreed}
+                            accessories={accessoryItems}
+                            equippedLoadout={equippedLoadout}
+                            onToggleEquip={toggleEquip}
+                        />
+                    )}
+                </AnimatePresence>
+            </div>
         </BuildingInteractionWindow>
     );
 }

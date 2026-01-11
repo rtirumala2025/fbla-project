@@ -1,7 +1,5 @@
 /**
- * RoomSwitcher.tsx
- * 
- * Bottom navigation component for switching between rooms in the Pet House Multi-Room Hub.
+ * RoomSwitcher.tsx - Top navigation for room switching (positioned inside gradient)
  */
 
 import React from 'react';
@@ -31,45 +29,21 @@ interface RoomSwitcherProps {
 
 export function RoomSwitcher({ activeRoom, onRoomChange }: RoomSwitcherProps) {
     return (
-        <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 8,
-            padding: '12px 16px',
-            background: 'rgba(0, 0, 0, 0.3)',
-            borderRadius: 16,
-            margin: '-20px -20px 20px -20px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        }}>
+        <div className="flex justify-center gap-2 py-3 shrink-0">
             {ROOMS.map((room) => (
                 <motion.button
                     key={room.id}
                     onClick={() => onRoomChange(room.id)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: 4,
-                        padding: '10px 16px',
-                        borderRadius: 12,
-                        border: 'none',
-                        cursor: 'pointer',
-                        background: activeRoom === room.id
-                            ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5))'
-                            : 'transparent',
-                        color: activeRoom === room.id ? '#fff' : 'rgba(255, 255, 255, 0.6)',
-                        transition: 'all 0.2s ease',
-                        minWidth: 70,
-                    }}
+                    className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl border-none cursor-pointer transition-all min-w-[70px]
+                        ${activeRoom === room.id
+                            ? 'bg-white/20 text-white shadow-lg'
+                            : 'bg-transparent text-white/60 hover:text-white hover:bg-white/10'
+                        }`}
                 >
-                    <span style={{ fontSize: '1.25rem' }}>{room.emoji}</span>
-                    <span style={{
-                        fontSize: '0.7rem',
-                        fontWeight: activeRoom === room.id ? 600 : 400,
-                        whiteSpace: 'nowrap',
-                    }}>
+                    <span className="text-xl">{room.emoji}</span>
+                    <span className={`text-xs whitespace-nowrap ${activeRoom === room.id ? 'font-semibold' : 'font-normal'}`}>
                         {room.label}
                     </span>
                 </motion.button>
