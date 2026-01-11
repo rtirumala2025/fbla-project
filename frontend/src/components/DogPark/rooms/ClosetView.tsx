@@ -2,12 +2,12 @@
  * ClosetView.tsx
  * 
  * Closet room for equipping accessories on the pet.
- * Split layout: Pet preview on left, accessory grid on right.
+ * Premium split-screen layout: Large pet preview on left, accessory grid on right.
  */
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shirt, Check, X } from 'lucide-react';
+import { Shirt, Check, Sparkles } from 'lucide-react';
 import type { InventoryEntry } from '../../../types/finance';
 
 interface ClosetViewProps {
@@ -18,14 +18,13 @@ interface ClosetViewProps {
 }
 
 const getSlotFromItem = (item: InventoryEntry): string => {
-    // Try to extract slot from item metadata or guess from name
     const name = item.item_name.toLowerCase();
     if (name.includes('collar') || name.includes('bowtie')) return 'collar';
     if (name.includes('hat') || name.includes('crown')) return 'hat';
     if (name.includes('glasses') || name.includes('shades')) return 'glasses';
     if (name.includes('bandana')) return 'bandana';
     if (name.includes('cape') || name.includes('wings')) return 'back';
-    return 'collar'; // default
+    return 'collar';
 };
 
 const getAccessoryEmoji = (itemName: string): string => {
@@ -55,167 +54,235 @@ export function ClosetView({
     equippedLoadout,
     onToggleEquip,
 }: ClosetViewProps) {
-    // Group accessories by inferred slot
-    const accessoriesBySlot = accessories.reduce((acc, item) => {
-        const slot = getSlotFromItem(item);
-        if (!acc[slot]) acc[slot] = [];
-        acc[slot].push(item);
-        return acc;
-    }, {} as Record<string, InventoryEntry[]>);
-
     const isEquipped = (itemId: string): boolean => {
         return Object.values(equippedLoadout).includes(itemId);
     };
+
+    const equippedCount = Object.keys(equippedLoadout).length;
 
     return (
         <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            style={{ display: 'flex', gap: 20 }}
+            style={{
+                display: 'flex',
+                gap: 32,
+                height: '100%',
+                minHeight: 'calc(100vh - 180px)',
+                padding: '20px 0',
+            }}
         >
-            {/* Left: Pet Preview */}
+            {/* Left: Large Pet Preview Panel (45% width) */}
             <div style={{
-                flex: '0 0 160px',
+                flex: '0 0 45%',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%)',
+                borderRadius: 24,
+                padding: 32,
+                border: '1px solid rgba(139, 92, 246, 0.2)',
             }}>
+                {/* Header */}
                 <div style={{
-                    width: 140,
-                    height: 180,
-                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.1))',
-                    borderRadius: 16,
+                    fontSize: '1.1rem',
+                    fontWeight: 600,
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    marginBottom: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                }}>
+                    <Sparkles size={18} /> Preview
+                </div>
+
+                {/* Large Pet Display */}
+                <div style={{
+                    width: 280,
+                    height: 320,
+                    background: 'rgba(20, 20, 30, 0.6)',
+                    borderRadius: 24,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: 16,
                     position: 'relative',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
                 }}>
-                    <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: 8 }}>Preview</div>
+                    {/* Spotlight effect */}
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 200,
+                        height: 150,
+                        background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
+                        pointerEvents: 'none',
+                    }} />
 
                     {/* Pet with equipped items visualization */}
-                    <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative', marginTop: 20 }}>
                         {/* Hat slot indicator */}
-                        {equippedLoadout.hat && (
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                style={{
-                                    position: 'absolute',
-                                    top: -15,
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    fontSize: '1.3rem',
-                                }}
-                            >
-                                👑
-                            </motion.div>
-                        )}
+                        <AnimatePresence>
+                            {equippedLoadout.hat && (
+                                <motion.div
+                                    initial={{ scale: 0, y: 10 }}
+                                    animate={{ scale: 1, y: 0 }}
+                                    exit={{ scale: 0 }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: -40,
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        fontSize: '3rem',
+                                    }}
+                                >
+                                    👑
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         {/* Glasses slot indicator */}
-                        {equippedLoadout.glasses && (
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                style={{
-                                    position: 'absolute',
-                                    top: 8,
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    fontSize: '1rem',
-                                }}
-                            >
-                                🕶️
-                            </motion.div>
-                        )}
+                        <AnimatePresence>
+                            {equippedLoadout.glasses && (
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    exit={{ scale: 0 }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 20,
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        fontSize: '2rem',
+                                    }}
+                                >
+                                    🕶️
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                        {/* Pet */}
+                        {/* Pet - Large */}
                         <motion.div
-                            animate={{ y: [0, -3, 0] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            style={{ fontSize: '3.5rem' }}
+                            animate={{ y: [0, -8, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                            style={{ fontSize: '8rem' }}
                         >
                             🐕
                         </motion.div>
 
                         {/* Collar/bandana slot indicator */}
-                        {(equippedLoadout.collar || equippedLoadout.bandana) && (
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                style={{
-                                    position: 'absolute',
-                                    bottom: 8,
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    fontSize: '0.9rem',
-                                }}
-                            >
-                                {equippedLoadout.collar ? '📿' : '🧣'}
-                            </motion.div>
-                        )}
+                        <AnimatePresence>
+                            {(equippedLoadout.collar || equippedLoadout.bandana) && (
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    exit={{ scale: 0 }}
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: 15,
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        fontSize: '2rem',
+                                    }}
+                                >
+                                    {equippedLoadout.collar ? '📿' : '🧣'}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         {/* Back slot indicator */}
-                        {equippedLoadout.back && (
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                style={{
-                                    position: 'absolute',
-                                    bottom: 20,
-                                    right: -20,
-                                    fontSize: '1.2rem',
-                                }}
-                            >
-                                🦸
-                            </motion.div>
-                        )}
-                    </div>
-
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 12 }}>
-                        {petName}
+                        <AnimatePresence>
+                            {equippedLoadout.back && (
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    exit={{ scale: 0 }}
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: 40,
+                                        right: -50,
+                                        fontSize: '2.5rem',
+                                    }}
+                                >
+                                    🦸
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
 
-                {/* Equipped count */}
+                {/* Pet Name & Equipped Count */}
                 <div style={{
-                    marginTop: 10,
-                    fontSize: '0.75rem',
-                    color: '#94a3b8',
+                    marginTop: 24,
                     textAlign: 'center',
                 }}>
-                    {Object.keys(equippedLoadout).length} items equipped
+                    <div style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: 6 }}>
+                        {petName}
+                    </div>
+                    <div style={{
+                        fontSize: '0.9rem',
+                        color: equippedCount > 0 ? 'rgba(139, 92, 246, 0.9)' : 'rgba(255, 255, 255, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                    }}>
+                        <Shirt size={14} />
+                        {equippedCount} {equippedCount === 1 ? 'item' : 'items'} equipped
+                    </div>
                 </div>
             </div>
 
-            {/* Right: Accessory Grid */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <h4 style={{
-                    margin: '0 0 12px 0',
-                    fontSize: '0.95rem',
+            {/* Right: Accessory Grid (55% width) */}
+            <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 0,
+            }}>
+                <h3 style={{
+                    margin: '0 0 20px 0',
+                    fontSize: '1.2rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
+                    gap: 10,
+                    fontWeight: 600,
                 }}>
-                    <Shirt size={16} /> Accessories
-                </h4>
+                    <Shirt size={22} /> Your Wardrobe
+                </h3>
 
                 {accessories.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 30, color: '#64748b' }}>
-                        <Shirt size={36} style={{ marginBottom: 12, opacity: 0.5 }} />
-                        <p style={{ fontSize: '0.9rem' }}>No accessories</p>
-                        <p style={{ fontSize: '0.8rem' }}>Buy accessories from the shop!</p>
+                    <div style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'rgba(255, 255, 255, 0.5)',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: 20,
+                        padding: 40,
+                    }}>
+                        <Shirt size={64} style={{ marginBottom: 20, opacity: 0.3 }} />
+                        <p style={{ fontSize: '1.1rem', fontWeight: 500 }}>No accessories yet</p>
+                        <p style={{ fontSize: '0.9rem', marginTop: 8 }}>
+                            Visit the Gift Shop to buy accessories!
+                        </p>
                     </div>
                 ) : (
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
-                        gap: 10,
-                        maxHeight: 280,
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                        gap: 16,
+                        flex: 1,
                         overflowY: 'auto',
-                        paddingRight: 4,
+                        paddingRight: 8,
+                        alignContent: 'start',
                     }}>
                         {accessories.map(item => {
                             const slot = getSlotFromItem(item);
@@ -225,55 +292,71 @@ export function ClosetView({
                                 <motion.button
                                     key={item.item_id}
                                     onClick={() => onToggleEquip(item, slot)}
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.97 }}
+                                    whileHover={{ scale: 1.04, y: -4 }}
+                                    whileTap={{ scale: 0.96 }}
                                     style={{
-                                        padding: 12,
-                                        borderRadius: 10,
+                                        padding: 20,
+                                        borderRadius: 16,
                                         border: equipped
-                                            ? '2px solid #10b981'
-                                            : '1px solid rgba(255, 255, 255, 0.1)',
+                                            ? '2px solid rgba(16, 185, 129, 0.6)'
+                                            : '1px solid rgba(255, 255, 255, 0.12)',
                                         background: equipped
-                                            ? 'rgba(16, 185, 129, 0.15)'
-                                            : 'rgba(255, 255, 255, 0.05)',
+                                            ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%)'
+                                            : 'rgba(35, 35, 45, 0.7)',
                                         cursor: 'pointer',
                                         textAlign: 'center',
                                         position: 'relative',
                                         color: '#fff',
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: equipped
+                                            ? '0 8px 24px rgba(16, 185, 129, 0.2)'
+                                            : '0 4px 12px rgba(0, 0, 0, 0.2)',
                                     }}
                                 >
                                     {/* Equipped badge */}
                                     {equipped && (
-                                        <div style={{
-                                            position: 'absolute',
-                                            top: 4,
-                                            right: 4,
-                                            width: 18,
-                                            height: 18,
-                                            borderRadius: '50%',
-                                            background: '#10b981',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}>
-                                            <Check size={12} />
-                                        </div>
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: 8,
+                                                right: 8,
+                                                width: 24,
+                                                height: 24,
+                                                borderRadius: '50%',
+                                                background: '#10b981',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
+                                            }}
+                                        >
+                                            <Check size={14} />
+                                        </motion.div>
                                     )}
 
-                                    <div style={{ fontSize: '1.6rem', marginBottom: 4 }}>
+                                    <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>
                                         {getAccessoryEmoji(item.item_name)}
                                     </div>
                                     <div style={{
-                                        fontSize: '0.75rem',
+                                        fontSize: '0.9rem',
                                         fontWeight: 600,
-                                        marginBottom: 2,
+                                        marginBottom: 6,
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
                                         whiteSpace: 'nowrap',
                                     }}>
                                         {item.item_name}
                                     </div>
-                                    <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                                    <div style={{
+                                        fontSize: '0.75rem',
+                                        color: 'rgba(255, 255, 255, 0.5)',
+                                        background: 'rgba(255, 255, 255, 0.06)',
+                                        padding: '4px 10px',
+                                        borderRadius: 8,
+                                        display: 'inline-block',
+                                    }}>
                                         {SLOT_LABELS[slot] || slot}
                                     </div>
                                 </motion.button>
