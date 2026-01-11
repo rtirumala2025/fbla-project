@@ -1,16 +1,20 @@
 /**
  * KitchenView.tsx
  * 
- * Kitchen room for feeding the pet. Centered immersive layout with large item cards.
+ * Kitchen room for feeding the pet. Features static 3D pet display.
  */
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UtensilsCrossed, Apple, Heart, Zap } from 'lucide-react';
+import { Apple, Heart } from 'lucide-react';
 import type { InventoryEntry } from '../../../types/finance';
+import type { PetGame2PetType } from '../../../game3d/core/SceneManager';
+import { PetViewer3D } from './PetViewer3D';
 
 interface KitchenViewProps {
     petName: string;
+    petType?: PetGame2PetType;
+    petBreed?: string;
     foodItems: InventoryEntry[];
     onFeedItem: (item: InventoryEntry) => void;
     isFeeding?: boolean;
@@ -32,6 +36,8 @@ const getFoodEmoji = (itemName: string): string => {
 
 export function KitchenView({
     petName,
+    petType = 'dog',
+    petBreed = 'labrador',
     foodItems,
     onFeedItem,
     isFeeding = false,
@@ -64,69 +70,36 @@ export function KitchenView({
                 alignItems: 'center',
                 marginBottom: 40,
             }}>
-                {/* Kitchen Header with Pet */}
+                {/* Kitchen Header with 3D Pet */}
                 <div style={{
                     textAlign: 'center',
-                    padding: '30px 50px',
+                    padding: '24px 40px',
                     background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, rgba(234, 88, 12, 0.08) 100%)',
                     borderRadius: 24,
                     border: '1px solid rgba(249, 115, 22, 0.2)',
                     marginBottom: 20,
                 }}>
-                    {/* Feeding Animation Zone */}
-                    <div style={{ position: 'relative', marginBottom: 16 }}>
-                        <motion.div
-                            animate={isFeeding ? {
-                                scale: [1, 1.15, 1],
-                                rotate: [0, -5, 5, 0],
-                            } : {
-                                y: [0, -5, 0],
-                            }}
-                            transition={isFeeding ? {
-                                duration: 0.5,
-                                repeat: 2,
-                            } : {
-                                duration: 2,
-                                repeat: Infinity,
-                                ease: 'easeInOut',
-                            }}
-                            style={{ fontSize: '6rem' }}
-                        >
-                            🐕
-                        </motion.div>
-
-                        {/* Food flying animation */}
-                        <AnimatePresence>
-                            {selectedItem && (
-                                <motion.div
-                                    initial={{ x: -100, y: 50, opacity: 0, scale: 0.5 }}
-                                    animate={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0 }}
-                                    transition={{ duration: 0.4 }}
-                                    style={{
-                                        position: 'absolute',
-                                        top: 20,
-                                        right: -30,
-                                        fontSize: '2.5rem',
-                                    }}
-                                >
-                                    {getFoodEmoji(selectedItem.item_name)}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                    {/* 3D Pet Display */}
+                    <div style={{ marginBottom: 16 }}>
+                        <PetViewer3D
+                            petType={petType}
+                            breed={petBreed as any}
+                            size={160}
+                            interactive={false}
+                        />
                     </div>
 
                     <h2 style={{
                         margin: 0,
-                        fontSize: '1.4rem',
+                        fontSize: '1.3rem',
                         fontWeight: 700,
-                        marginBottom: 8,
+                        marginBottom: 6,
                     }}>
                         {petName}'s Kitchen
                     </h2>
                     <p style={{
                         margin: 0,
-                        fontSize: '0.95rem',
+                        fontSize: '0.9rem',
                         color: 'rgba(255, 255, 255, 0.6)',
                     }}>
                         Select food to feed your pet
@@ -150,7 +123,7 @@ export function KitchenView({
                 </div>
             </div>
 
-            {/* Food Grid - Large Cards */}
+            {/* Food Grid */}
             {foodItems.length === 0 ? (
                 <div style={{
                     flex: 1,
@@ -162,68 +135,52 @@ export function KitchenView({
                     maxWidth: 400,
                     textAlign: 'center',
                 }}>
-                    <Apple size={80} style={{ marginBottom: 24, opacity: 0.3 }} />
-                    <p style={{ fontSize: '1.2rem', fontWeight: 500, marginBottom: 8 }}>
-                        Kitchen is empty
-                    </p>
-                    <p style={{ fontSize: '0.95rem' }}>
-                        Buy food from the Supermarket to feed your pet!
+                    <Apple size={64} style={{ marginBottom: 20, opacity: 0.3 }} />
+                    <p style={{ fontSize: '1.1rem', fontWeight: 500 }}>Kitchen is empty</p>
+                    <p style={{ fontSize: '0.9rem', marginTop: 8 }}>
+                        Buy food from the Supermarket!
                     </p>
                 </div>
             ) : (
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-                    gap: 20,
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                    gap: 16,
                     width: '100%',
-                    maxWidth: 800,
-                    padding: '0 20px',
+                    maxWidth: 700,
                 }}>
                     {foodItems.map(item => (
                         <motion.button
                             key={item.item_id}
                             onClick={() => !isFeeding && handleFeed(item)}
-                            whileHover={{ scale: 1.05, y: -6 }}
+                            whileHover={{ scale: 1.05, y: -4 }}
                             whileTap={{ scale: 0.95 }}
                             disabled={isFeeding}
                             style={{
                                 cursor: isFeeding ? 'not-allowed' : 'pointer',
                                 border: '1px solid rgba(255, 255, 255, 0.1)',
                                 textAlign: 'center',
-                                padding: 24,
+                                padding: 20,
                                 opacity: isFeeding ? 0.6 : 1,
                                 background: 'rgba(35, 35, 45, 0.7)',
-                                borderRadius: 20,
+                                borderRadius: 16,
                                 color: '#fff',
-                                transition: 'all 0.2s ease',
-                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+                                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)',
                             }}
                         >
-                            <motion.div
-                                style={{ fontSize: '3rem', marginBottom: 12 }}
-                                animate={isFeeding && selectedItem?.item_id === item.item_id ? {
-                                    rotate: [0, -15, 15, 0],
-                                    scale: [1, 1.2, 1],
-                                } : {}}
-                                transition={{ duration: 0.3 }}
-                            >
+                            <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>
                                 {getFoodEmoji(item.item_name)}
-                            </motion.div>
-                            <div style={{
-                                fontWeight: 600,
-                                fontSize: '1rem',
-                                marginBottom: 8,
-                            }}>
+                            </div>
+                            <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: 6 }}>
                                 {item.item_name}
                             </div>
                             <div style={{
-                                fontSize: '0.85rem',
+                                fontSize: '0.8rem',
                                 color: '#10b981',
                                 background: 'rgba(16, 185, 129, 0.15)',
-                                padding: '6px 14px',
-                                borderRadius: 10,
+                                padding: '4px 10px',
+                                borderRadius: 8,
                                 display: 'inline-block',
-                                fontWeight: 500,
                             }}>
                                 x{item.quantity}
                             </div>
@@ -235,12 +192,11 @@ export function KitchenView({
             {/* Bottom Tip */}
             <div style={{
                 marginTop: 'auto',
-                paddingTop: 30,
-                fontSize: '0.9rem',
+                paddingTop: 24,
+                fontSize: '0.85rem',
                 color: 'rgba(255, 255, 255, 0.4)',
-                textAlign: 'center',
             }}>
-                💡 Tip: Regular feeding keeps your pet happy and healthy!
+                💡 Regular feeding keeps your pet happy!
             </div>
         </motion.div>
     );

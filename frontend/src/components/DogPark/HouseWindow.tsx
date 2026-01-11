@@ -28,6 +28,8 @@ interface HouseWindowProps {
     isOpen: boolean;
     onClose: () => void;
     petName?: string;
+    petType?: 'dog' | 'cat' | 'panda';
+    petBreed?: string;
     currentEnergy?: number;
     currentHygiene?: number;
     onSleepComplete?: (energyRestored: number) => void;
@@ -53,6 +55,8 @@ export function HouseWindow({
     isOpen,
     onClose,
     petName = 'Your pet',
+    petType = 'dog',
+    petBreed = 'labrador',
     currentEnergy = 50,
     currentHygiene = 50,
     onSleepComplete,
@@ -246,6 +250,8 @@ export function HouseWindow({
                     <LivingRoom
                         key="living"
                         petName={petName}
+                        petType={petType}
+                        petBreed={petBreed}
                         currentEnergy={currentEnergy}
                         onSleepComplete={onSleepComplete}
                         toys={toyItems}
@@ -257,6 +263,8 @@ export function HouseWindow({
                     <KitchenView
                         key="kitchen"
                         petName={petName}
+                        petType={petType}
+                        petBreed={petBreed}
                         foodItems={foodItems}
                         onFeedItem={useItem}
                         isFeeding={isProcessing}
@@ -267,6 +275,8 @@ export function HouseWindow({
                     <BathroomView
                         key="bathroom"
                         petName={petName}
+                        petType={petType}
+                        petBreed={petBreed}
                         hygieneItems={hygieneItems}
                         currentHygiene={currentHygiene}
                         onUseItem={useItem}
@@ -279,6 +289,8 @@ export function HouseWindow({
                     <ClosetView
                         key="closet"
                         petName={petName}
+                        petType={petType}
+                        petBreed={petBreed}
                         accessories={accessoryItems}
                         equippedLoadout={equippedLoadout}
                         onToggleEquip={toggleEquip}

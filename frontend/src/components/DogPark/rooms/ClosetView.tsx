@@ -2,29 +2,49 @@
  * ClosetView.tsx
  * 
  * Closet room for equipping accessories on the pet.
- * Premium split-screen layout: Large pet preview on left, accessory grid on right.
+ * Features: Interactive 3D pet preview with OrbitControls, accessory grid.
  */
 
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Shirt, Check, Sparkles } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Shirt, Check, Sparkles, RotateCcw } from 'lucide-react';
 import type { InventoryEntry } from '../../../types/finance';
+import type { EquippedAccessory } from '../../../game3d/core/BehaviourSystem';
+import type { PetGame2PetType } from '../../../game3d/core/SceneManager';
+import type { PetBreed } from '../../../game3d/core/SceneManager';
+import { PetViewer3D } from './PetViewer3D';
 
 interface ClosetViewProps {
     petName: string;
+    petType?: PetGame2PetType;
+    petBreed?: string;
     accessories: InventoryEntry[];
     equippedLoadout: Record<string, string>; // slot -> item_id
     onToggleEquip: (item: InventoryEntry, slot: string) => void;
 }
 
-const getSlotFromItem = (item: InventoryEntry): string => {
+const getSlotFromItem = (item: InventoryEntry): 'collar' | 'hat' | 'bandana' | 'glasses' | 'back' => {
     const name = item.item_name.toLowerCase();
     if (name.includes('collar') || name.includes('bowtie')) return 'collar';
     if (name.includes('hat') || name.includes('crown')) return 'hat';
     if (name.includes('glasses') || name.includes('shades')) return 'glasses';
     if (name.includes('bandana')) return 'bandana';
-    if (name.includes('cape') || name.includes('wings')) return 'back';
+    if (name.includes('cape') || name.includes('wings') || name.includes('coat')) return 'back';
     return 'collar';
+};
+
+const getAccessoryColor = (itemName: string): string => {
+    const name = itemName.toLowerCase();
+    if (name.includes('gold') || name.includes('fancy')) return '#ffd700';
+    if (name.includes('red') || name.includes('ruby')) return '#dc2626';
+    if (name.includes('blue') || name.includes('sapphire')) return '#2563eb';
+    if (name.includes('pink')) return '#ec4899';
+    if (name.includes('green') || name.includes('emerald')) return '#16a34a';
+    if (name.includes('purple')) return '#9333ea';
+    if (name.includes('silver')) return '#94a3b8';
+    if (name.includes('rainbow')) return '#f97316';
+    if (name.includes('rainy') || name.includes('rain')) return '#0ea5e9';
+    return '#8b5cf6'; // Default purple
 };
 
 const getAccessoryEmoji = (itemName: string): string => {
@@ -36,7 +56,7 @@ const getAccessoryEmoji = (itemName: string): string => {
     if (name.includes('bowtie')) return '🎀';
     if (name.includes('cape')) return '🦸';
     if (name.includes('wings')) return '👼';
-    if (name.includes('party')) return '🎉';
+    if (name.includes('coat')) return '🧥';
     return '✨';
 };
 
@@ -50,6 +70,8 @@ const SLOT_LABELS: Record<string, string> = {
 
 export function ClosetView({
     petName,
+    petType = 'dog',
+    petBreed = 'labrador',
     accessories,
     equippedLoadout,
     onToggleEquip,
@@ -57,6 +79,19 @@ export function ClosetView({
     const isEquipped = (itemId: string): boolean => {
         return Object.values(equippedLoadout).includes(itemId);
     };
+
+    // Convert equipped loadout to EquippedAccessory format for 3D viewer
+    const equippedAccessories: EquippedAccessory[] = useMemo(() => {
+        return Object.entries(equippedLoadout).map(([slot, itemId]) => {
+            const item = accessories.find(a => a.item_id === itemId);
+            return {
+                id: itemId,
+                slot: slot as EquippedAccessory['slot'],
+                color: item ? getAccessoryColor(item.item_name) : '#8b5cf6',
+                name: item?.item_name,
+            };
+        }).filter(acc => acc.slot);
+    }, [equippedLoadout, accessories]);
 
     const equippedCount = Object.keys(equippedLoadout).length;
 
@@ -73,7 +108,7 @@ export function ClosetView({
                 padding: '20px 0',
             }}
         >
-            {/* Left: Large Pet Preview Panel (45% width) */}
+            {/* Left: 3D Pet Preview Panel (45% width) */}
             <div style={{
                 flex: '0 0 45%',
                 display: 'flex',
@@ -90,135 +125,38 @@ export function ClosetView({
                     fontSize: '1.1rem',
                     fontWeight: 600,
                     color: 'rgba(255, 255, 255, 0.7)',
-                    marginBottom: 24,
+                    marginBottom: 16,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
                 }}>
-                    <Sparkles size={18} /> Preview
+                    <Sparkles size={18} /> 3D Preview
                 </div>
 
-                {/* Large Pet Display */}
+                {/* 3D Pet Viewer */}
+                <PetViewer3D
+                    petType={petType}
+                    breed={petBreed as PetBreed}
+                    accessories={equippedAccessories}
+                    interactive={true}
+                    size={280}
+                />
+
+                {/* Rotation hint */}
                 <div style={{
-                    width: 280,
-                    height: 320,
-                    background: 'rgba(20, 20, 30, 0.6)',
-                    borderRadius: 24,
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+                    gap: 6,
+                    marginTop: 16,
+                    fontSize: '0.85rem',
+                    color: 'rgba(255, 255, 255, 0.5)',
                 }}>
-                    {/* Spotlight effect */}
-                    <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        width: 200,
-                        height: 150,
-                        background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
-                        pointerEvents: 'none',
-                    }} />
-
-                    {/* Pet with equipped items visualization */}
-                    <div style={{ position: 'relative', marginTop: 20 }}>
-                        {/* Hat slot indicator */}
-                        <AnimatePresence>
-                            {equippedLoadout.hat && (
-                                <motion.div
-                                    initial={{ scale: 0, y: 10 }}
-                                    animate={{ scale: 1, y: 0 }}
-                                    exit={{ scale: 0 }}
-                                    style={{
-                                        position: 'absolute',
-                                        top: -40,
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        fontSize: '3rem',
-                                    }}
-                                >
-                                    👑
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Glasses slot indicator */}
-                        <AnimatePresence>
-                            {equippedLoadout.glasses && (
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    exit={{ scale: 0 }}
-                                    style={{
-                                        position: 'absolute',
-                                        top: 20,
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        fontSize: '2rem',
-                                    }}
-                                >
-                                    🕶️
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Pet - Large */}
-                        <motion.div
-                            animate={{ y: [0, -8, 0] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                            style={{ fontSize: '8rem' }}
-                        >
-                            🐕
-                        </motion.div>
-
-                        {/* Collar/bandana slot indicator */}
-                        <AnimatePresence>
-                            {(equippedLoadout.collar || equippedLoadout.bandana) && (
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    exit={{ scale: 0 }}
-                                    style={{
-                                        position: 'absolute',
-                                        bottom: 15,
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        fontSize: '2rem',
-                                    }}
-                                >
-                                    {equippedLoadout.collar ? '📿' : '🧣'}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Back slot indicator */}
-                        <AnimatePresence>
-                            {equippedLoadout.back && (
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    exit={{ scale: 0 }}
-                                    style={{
-                                        position: 'absolute',
-                                        bottom: 40,
-                                        right: -50,
-                                        fontSize: '2.5rem',
-                                    }}
-                                >
-                                    🦸
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    <RotateCcw size={14} /> Drag to rotate
                 </div>
 
                 {/* Pet Name & Equipped Count */}
                 <div style={{
-                    marginTop: 24,
+                    marginTop: 16,
                     textAlign: 'center',
                 }}>
                     <div style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: 6 }}>
