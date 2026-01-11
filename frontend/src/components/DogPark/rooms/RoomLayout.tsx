@@ -47,7 +47,7 @@ export function RoomLayout({
     room,
     stageContent,
     dockContent,
-    dockHeight = '30%',
+    dockHeight = '35%',
 }: RoomLayoutProps) {
     const theme = ROOM_THEMES[room];
 
@@ -56,7 +56,7 @@ export function RoomLayout({
             style={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: 'calc(100vh - 120px)', // Account for header + room switcher
+                height: '100%', // Fill parent container instead of vh
                 width: '100%',
                 overflow: 'hidden',
             }}
@@ -104,21 +104,22 @@ export function RoomLayout({
 
             {/* Dock: Glassmorphism Interaction Panel */}
             <motion.div
-                initial={{ y: 50, opacity: 0 }}
+                initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1 }}
                 style={{
                     height: dockHeight,
-                    minHeight: 200,
-                    maxHeight: 320,
-                    background: 'rgba(15, 15, 25, 0.85)',
+                    minHeight: 160,
+                    maxHeight: 220,
+                    background: 'rgba(15, 15, 25, 0.9)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
                     borderTop: '1px solid rgba(255, 255, 255, 0.1)',
                     display: 'flex',
                     flexDirection: 'column',
-                    padding: '16px 24px',
+                    padding: '12px 20px',
                     overflow: 'hidden',
+                    flexShrink: 0,
                 }}
             >
                 {dockContent}
@@ -151,12 +152,12 @@ export function DockItemCard({
         <motion.button
             onClick={onClick}
             disabled={disabled}
-            whileHover={{ scale: 1.05, y: -4 }}
+            whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             style={{
-                minWidth: 100,
-                height: 110,
-                padding: 12,
+                minWidth: 90,
+                height: 95,
+                padding: 10,
                 borderRadius: 16,
                 border: isEquipped
                     ? `2px solid ${accentColor}`
