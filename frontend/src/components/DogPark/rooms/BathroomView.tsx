@@ -67,7 +67,7 @@ export function BathroomView({
                 </AnimatePresence>
 
                 <motion.div animate={isWashing ? { rotate: [0, -3, 3, 0] } : {}} transition={{ duration: 0.5, repeat: isWashing ? Infinity : 0 }}>
-                    <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={false} />
+                    <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={true} />
                 </motion.div>
 
                 <h2 className="mt-4 text-2xl font-bold text-white drop-shadow-lg relative z-10">{petName}'s Spa</h2>

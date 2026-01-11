@@ -29,14 +29,15 @@ function createIdleState(breed: PetBreed): PetGame2State {
         breed,
         currentPosition: [0, 0, 0] as [number, number, number],
         interaction: { kind: 'idle' },
+        cameraMode: 'follow',
+        vfx: [],
         navigationState: {
             target: null,
-            isNavigating: false,
             startPosition: [0, 0, 0] as [number, number, number],
-            endPosition: null,
+            endPosition: [0, 0, 0] as [number, number, number],
             progress: 0,
         },
-        activityZone: null,
+        indoorLocation: null,
     };
 }
 

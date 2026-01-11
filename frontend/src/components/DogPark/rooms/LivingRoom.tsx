@@ -94,7 +94,7 @@ export function LivingRoom({
 
                 {/* 3D Pet */}
                 <motion.div animate={isSleeping ? { y: [0, -8, 0] } : {}} transition={{ duration: 3, repeat: Infinity }}>
-                    <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={false} />
+                    <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={true} />
                 </motion.div>
 
                 <h2 className="mt-4 text-2xl font-bold text-white drop-shadow-lg relative z-10">{petName}</h2>

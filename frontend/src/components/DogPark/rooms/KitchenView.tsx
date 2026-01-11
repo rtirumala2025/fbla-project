@@ -52,7 +52,7 @@ export function KitchenView({
                 <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
 
                 <motion.div animate={feedingItem ? { scale: [1, 1.1, 1] } : {}} transition={{ duration: 0.4 }}>
-                    <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={false} />
+                    <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={true} />
                 </motion.div>
 
                 <h2 className="mt-4 text-2xl font-bold text-white drop-shadow-lg relative z-10">{petName}</h2>
