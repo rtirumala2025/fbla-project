@@ -154,10 +154,11 @@ export function BuildingInteractionWindow({
                         <AnimatePresence>
                             {!isMinimized && (
                                 <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
                                     transition={{ duration: 0.2 }}
+                                    style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
                                 >
                                     <div className={`building-window-content${fullBleed ? ' full-bleed' : ''}`}>
                                         {children}

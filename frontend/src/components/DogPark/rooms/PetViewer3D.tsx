@@ -272,9 +272,7 @@ export function PetViewer3D({
         <div style={{
             width: size,
             height: size,
-            borderRadius: 16,
-            overflow: 'hidden',
-            background: 'rgba(20, 20, 30, 0.6)',
+            overflow: 'visible',
         }}>
             <Canvas
                 camera={{ position: [0, 0.5, 1.5], fov: 45 }}
