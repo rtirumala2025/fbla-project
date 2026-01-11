@@ -13,21 +13,23 @@ import { motion } from 'framer-motion';
 
 export const ROOM_THEMES = {
     living: {
-        gradient: 'from-indigo-950 via-purple-900 to-orange-900',
+        gradient: 'from-amber-950 via-orange-950 to-stone-900',
         accent: '#f59e0b',
     },
     kitchen: {
-        gradient: 'from-orange-900 via-orange-600 to-amber-400',
+        gradient: 'from-slate-900 via-blue-950 to-sky-950',
         accent: '#f97316',
     },
     bathroom: {
-        gradient: 'from-sky-900 via-cyan-600 to-cyan-300',
+        gradient: 'from-cyan-950 via-blue-950 to-cyan-900',
         accent: '#06b6d4',
     },
     closet: {
-        gradient: 'from-slate-950 via-purple-950 to-indigo-950',
+        gradient: 'from-zinc-900 via-neutral-950 to-black',
         accent: '#8b5cf6',
     },
+
+
 } as const;
 
 export type RoomTheme = keyof typeof ROOM_THEMES;

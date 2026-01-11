@@ -71,29 +71,36 @@ export function ClosetView({
             className="flex-1 flex flex-col overflow-hidden"
         >
             {/* Stage */}
-            <div className="flex-1 relative flex flex-col items-center justify-center min-h-0">
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-
-                {/* Spotlight */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
-
+            <div className="flex-1 relative min-h-0">
+                {/* 3D Canvas - fills entire stage */}
                 <PetViewer3D
                     petType={petType}
                     breed={petBreed as any}
                     accessories={equippedAccessories}
                     interactive={true}
-                    size={300}
+                    currentRoom="closet"
                 />
 
-                <div className="flex items-center gap-2 mt-4 text-sm text-white/50 bg-black/30 px-4 py-2 rounded-lg relative z-10">
-                    <RotateCcw size={14} /> Drag to rotate
-                </div>
+                {/* Floating UI overlays */}
+                <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-end pb-8">
+                    <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent" />
 
-                <h2 className="mt-3 text-2xl font-bold text-white drop-shadow-lg relative z-10">{petName}</h2>
-                <div className={`flex items-center gap-2 text-sm relative z-10 ${equippedCount > 0 ? 'text-purple-300' : 'text-white/50'}`}>
-                    <Shirt size={14} /> {equippedCount} items equipped
+                    {/* Spotlight */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+
+                    <div className="relative z-10 flex flex-col items-center pointer-events-auto">
+                        <div className="flex items-center gap-2 text-sm text-white/50 bg-black/30 px-4 py-2 rounded-lg">
+                            <RotateCcw size={14} /> Drag to rotate
+                        </div>
+
+                        <h2 className="mt-3 text-2xl font-bold text-white drop-shadow-lg">{petName}</h2>
+                        <div className={`flex items-center gap-2 text-sm ${equippedCount > 0 ? 'text-purple-300' : 'text-white/50'}`}>
+                            <Shirt size={14} /> {equippedCount} items equipped
+                        </div>
+                    </div>
                 </div>
             </div>
+
 
             {/* Dock */}
             <div className="h-[200px] shrink-0 bg-black/80 backdrop-blur-xl border-t border-white/10 px-6 py-4 flex flex-col">

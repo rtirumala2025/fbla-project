@@ -48,59 +48,64 @@ export function BathroomView({
             className="flex-1 flex flex-col overflow-hidden"
         >
             {/* Stage */}
-            <div className="flex-1 relative flex flex-col items-center justify-center min-h-0">
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+            <div className="flex-1 relative min-h-0">
+                {/* 3D Canvas - fills entire stage */}
+                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="bathroom" />
 
-                {/* Bubbles */}
-                <AnimatePresence>
-                    {showBubbles && [...Array(12)].map((_, i) => (
-                        <motion.div
-                            key={i}
-                            initial={{ opacity: 0, y: 50, x: (Math.random() - 0.5) * 200 }}
-                            animate={{ opacity: [0, 1, 0], y: -150 }}
-                            transition={{ duration: 2, delay: i * 0.1 }}
-                            className="absolute text-3xl pointer-events-none"
-                        >
-                            🫧
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
+                {/* Floating UI overlays */}
+                <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-end pb-8">
+                    <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent" />
 
-                <motion.div animate={isWashing ? { rotate: [0, -3, 3, 0] } : {}} transition={{ duration: 0.5, repeat: isWashing ? Infinity : 0 }}>
-                    <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={true} />
-                </motion.div>
+                    {/* Bubbles */}
+                    <AnimatePresence>
+                        {showBubbles && [...Array(12)].map((_, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 50, x: (Math.random() - 0.5) * 200 }}
+                                animate={{ opacity: [0, 1, 0], y: -150 }}
+                                transition={{ duration: 2, delay: i * 0.1 }}
+                                className="absolute text-3xl"
+                            >
+                                🫧
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
 
-                <h2 className="mt-4 text-2xl font-bold text-white drop-shadow-lg relative z-10">{petName}'s Spa</h2>
+                    <div className="relative z-10 flex flex-col items-center pointer-events-auto">
+                        <h2 className="text-2xl font-bold text-white drop-shadow-lg">{petName}'s Spa</h2>
 
-                {/* Hygiene Bar */}
-                <div className="w-48 mt-3 relative z-10">
-                    <div className="flex justify-between text-sm mb-1 text-white">
-                        <span className="flex items-center gap-1"><Droplets size={14} className="text-cyan-400" /> Cleanliness</span>
-                        <span className="font-bold">{currentHygiene}%</span>
-                    </div>
-                    <div className="h-2 bg-black/30 rounded-full overflow-hidden">
-                        <motion.div
-                            animate={{ width: `${currentHygiene}%` }}
-                            className={`h-full rounded-full ${currentHygiene > 60 ? 'bg-cyan-400' : currentHygiene > 30 ? 'bg-amber-400' : 'bg-red-400'}`}
-                        />
+                        {/* Hygiene Bar */}
+                        <div className="w-48 mt-3">
+                            <div className="flex justify-between text-sm mb-1 text-white">
+                                <span className="flex items-center gap-1"><Droplets size={14} className="text-cyan-400" /> Cleanliness</span>
+                                <span className="font-bold">{currentHygiene}%</span>
+                            </div>
+                            <div className="h-2 bg-black/30 rounded-full overflow-hidden">
+                                <motion.div
+                                    animate={{ width: `${currentHygiene}%` }}
+                                    className={`h-full rounded-full ${currentHygiene > 60 ? 'bg-cyan-400' : currentHygiene > 30 ? 'bg-amber-400' : 'bg-red-400'}`}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Quick Wash */}
+                        {onQuickWash && (
+                            <motion.button
+                                onClick={handleQuickWash}
+                                disabled={isWashing}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`mt-5 px-8 py-4 text-lg font-semibold rounded-2xl flex items-center gap-3 text-white
+                                    bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30
+                                    ${isWashing ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-cyan-500/50'}`}
+                            >
+                                {isWashing ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }}>🫧</motion.span> Washing...</> : <><Bath size={22} /> Bubble Bath</>}
+                            </motion.button>
+                        )}
                     </div>
                 </div>
-
-                {/* Quick Wash */}
-                {onQuickWash && (
-                    <motion.button
-                        onClick={handleQuickWash}
-                        disabled={isWashing}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`mt-5 px-8 py-4 text-lg font-semibold rounded-2xl flex items-center gap-3 relative z-10 text-white
-                            bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30
-                            ${isWashing ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-cyan-500/50'}`}
-                    >
-                        {isWashing ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }}>🫧</motion.span> Washing...</> : <><Bath size={22} /> Bubble Bath</>}
-                    </motion.button>
-                )}
             </div>
+
 
             {/* Dock */}
             <div className="h-[200px] shrink-0 bg-black/80 backdrop-blur-xl border-t border-white/10 px-6 py-4 flex flex-col">

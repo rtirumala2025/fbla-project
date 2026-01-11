@@ -14,6 +14,9 @@ import type { EquippedAccessory } from '../../../game3d/core/BehaviourSystem';
 import { DogModel } from '../../../game3d/pets/DogModel';
 import { CatModel } from '../../../game3d/pets/CatModel';
 import { PandaModel } from '../../../game3d/pets/PandaModel';
+import type { RoomType } from './RoomSwitcher';
+import { RoomStage } from './RoomStage';
+
 
 interface PetViewer3DProps {
     petType: PetGame2PetType;
@@ -21,6 +24,7 @@ interface PetViewer3DProps {
     accessories?: EquippedAccessory[];
     interactive?: boolean; // Enable OrbitControls
     size?: number; // Container size in pixels
+    currentRoom?: RoomType;
 }
 
 // Create a static idle state for the viewer (no movement)
@@ -61,7 +65,7 @@ function PetModelViewer({
     switch (petType) {
         case 'cat':
             return (
-                <group scale={0.6} position={[0, -0.3, 0]}>
+                <group scale={1.1} position={[0, -0.05, 0]} rotation={[0, Math.PI, 0]}>
                     <CatModel
                         state={state}
                         onPetTap={noopFn}
@@ -71,7 +75,7 @@ function PetModelViewer({
             );
         case 'panda':
             return (
-                <group scale={0.6} position={[0, -0.3, 0]}>
+                <group scale={1.1} position={[0, -0.05, 0]} rotation={[0, Math.PI, 0]}>
                     <PandaModel
                         state={state}
                         onPetTap={noopFn}
@@ -81,7 +85,7 @@ function PetModelViewer({
             );
         default:
             return (
-                <group scale={0.7} position={[0, -0.4, 0]}>
+                <group scale={1.2} position={[0, -0.05, 0]} rotation={[0, Math.PI, 0]}>
                     <DogModel
                         state={state}
                         onPetTap={noopFn}
@@ -100,20 +104,29 @@ export function PetViewer3D({
     breed = 'labrador',
     accessories = [],
     interactive = false,
-    size = 260,
+    size, // Optional - if not provided, fills parent container
+    currentRoom = 'living',
 }: PetViewer3DProps) {
+    // If size is provided, use fixed dimensions; otherwise fill parent
+    const containerStyle: React.CSSProperties = size
+        ? { width: size, height: size }
+        : { position: 'absolute', inset: 0, width: '100%', height: '100%' };
+
     return (
-        <div style={{ width: size, height: size }}>
+        <div style={containerStyle}>
             <Canvas
-                camera={{ position: [0, 0.5, 2], fov: 40 }}
+                camera={{ position: [0, 2, 6], fov: 50 }}
                 gl={{ antialias: true, alpha: true }}
                 style={{ background: 'transparent' }}
             >
                 <Suspense fallback={null}>
-                    {/* Lighting - Match main game lighting */}
-                    <ambientLight intensity={0.5} />
-                    <directionalLight position={[3, 5, 2]} intensity={0.8} />
+                    {/* Lighting - Dollhouse style */}
+                    <ambientLight intensity={0.7} />
+                    <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
                     <directionalLight position={[-2, 3, -1]} intensity={0.3} />
+
+                    {/* Room Stage */}
+                    <RoomStage room={currentRoom} />
 
                     {/* The actual pet model from main game */}
                     <PetModelViewer
@@ -139,3 +152,4 @@ export function PetViewer3D({
 }
 
 export default PetViewer3D;
+

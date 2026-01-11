@@ -240,11 +240,23 @@ export function HouseWindow({
             )}
 
             {/* Full Container - Gradient background covers everything */}
-            <div className={`h-full w-full flex flex-col overflow-hidden bg-gradient-to-b ${activeRoom === 'living' ? 'from-indigo-950 via-purple-900 to-orange-900' :
-                    activeRoom === 'kitchen' ? 'from-orange-900 via-orange-600 to-amber-400' :
-                        activeRoom === 'bathroom' ? 'from-sky-900 via-cyan-600 to-cyan-300' :
-                            'from-slate-950 via-purple-950 to-indigo-950'
-                }`}>
+            <div
+                className="h-full w-full flex flex-col overflow-hidden relative transition-colors duration-700"
+                style={{
+                    background: activeRoom === 'living'
+                        ? 'linear-gradient(to bottom, #F7E7CE 50%, #8B5A2B 50%)'
+                        : activeRoom === 'kitchen'
+                            ? 'linear-gradient(to bottom, #FFF3E0 50%, #BF360C 50%)'
+                            : activeRoom === 'bathroom'
+                                ? 'linear-gradient(to bottom, #E0F7FA 50%, #006064 50%)'
+                                : 'linear-gradient(to bottom, #F3E5F5 50%, #4A148C 50%)'
+                }}
+
+            >
+
+
+
+
                 {/* Room Switcher */}
                 <div className="shrink-0 bg-black/20 border-b border-white/10">
                     <RoomSwitcher

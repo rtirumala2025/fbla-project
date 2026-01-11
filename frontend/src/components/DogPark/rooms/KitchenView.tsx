@@ -48,20 +48,26 @@ export function KitchenView({
             className="flex-1 flex flex-col overflow-hidden"
         >
             {/* Stage */}
-            <div className="flex-1 relative flex flex-col items-center justify-center min-h-0">
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+            <div className="flex-1 relative min-h-0">
+                {/* 3D Canvas - fills entire stage */}
+                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="kitchen" />
 
-                <motion.div animate={feedingItem ? { scale: [1, 1.1, 1] } : {}} transition={{ duration: 0.4 }}>
-                    <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={true} />
-                </motion.div>
+                {/* Floating UI overlays */}
+                <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-end pb-8">
+                    <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent" />
 
-                <h2 className="mt-4 text-2xl font-bold text-white drop-shadow-lg relative z-10">{petName}</h2>
+                    <motion.div animate={feedingItem ? { scale: [1, 1.1, 1] } : {}} transition={{ duration: 0.4 }} className="pointer-events-auto" />
 
-                <div className="flex gap-4 mt-3 px-4 py-2 bg-black/30 rounded-xl relative z-10">
-                    <span className="flex items-center gap-1 text-sm text-white"><Apple size={16} className="text-orange-400" /> +15 Hunger</span>
-                    <span className="flex items-center gap-1 text-sm text-white"><Heart size={16} className="text-red-400" /> +5 Health</span>
+                    <div className="relative z-10 flex flex-col items-center pointer-events-auto">
+                        <h2 className="text-2xl font-bold text-white drop-shadow-lg">{petName}</h2>
+                        <div className="flex gap-4 mt-3 px-4 py-2 bg-black/30 rounded-xl">
+                            <span className="flex items-center gap-1 text-sm text-white"><Apple size={16} className="text-orange-400" /> +15 Hunger</span>
+                            <span className="flex items-center gap-1 text-sm text-white"><Heart size={16} className="text-red-400" /> +5 Health</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+
 
             {/* Dock */}
             <div className="h-[200px] shrink-0 bg-black/80 backdrop-blur-xl border-t border-white/10 px-6 py-4 flex flex-col">
