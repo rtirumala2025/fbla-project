@@ -1,7 +1,5 @@
 /**
- * BathroomView.tsx
- * 
- * Bathroom/Spa with Stage (3D Pet + cyan/blue gradient) + Dock (hygiene items)
+ * BathroomView.tsx - Full-screen Stage + Dock layout
  */
 
 import React, { useState } from 'react';
@@ -23,24 +21,16 @@ interface BathroomViewProps {
     isWashing?: boolean;
 }
 
-const getHygieneEmoji = (itemName: string): string => {
-    const name = itemName.toLowerCase();
-    if (name.includes('shampoo')) return '🧴';
-    if (name.includes('brush')) return '🪥';
-    if (name.includes('soap')) return '🧼';
-    if (name.includes('towel')) return '🛁';
+const getHygieneEmoji = (name: string): string => {
+    const n = name.toLowerCase();
+    if (n.includes('shampoo')) return '🧴';
+    if (n.includes('brush')) return '🪥';
+    if (n.includes('soap')) return '🧼';
     return '✨';
 };
 
 export function BathroomView({
-    petName,
-    petType = 'dog',
-    petBreed = 'labrador',
-    hygieneItems,
-    currentHygiene,
-    onUseItem,
-    onQuickWash,
-    isWashing = false,
+    petName, petType = 'dog', petBreed = 'labrador', hygieneItems, currentHygiene, onUseItem, onQuickWash, isWashing = false,
 }: BathroomViewProps) {
     const [showBubbles, setShowBubbles] = useState(false);
 
@@ -51,28 +41,16 @@ export function BathroomView({
     };
 
     const stageContent = (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            zIndex: 1,
-        }}>
+        <>
             {/* Bubbles Animation */}
             <AnimatePresence>
-                {showBubbles && [...Array(15)].map((_, i) => (
+                {showBubbles && [...Array(12)].map((_, i) => (
                     <motion.div
                         key={i}
-                        initial={{ opacity: 0, y: 100, x: (Math.random() - 0.5) * 300 }}
-                        animate={{ opacity: [0, 1, 0], y: -200 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0, y: 50, x: (Math.random() - 0.5) * 200 }}
+                        animate={{ opacity: [0, 1, 0], y: -150 }}
                         transition={{ duration: 2, delay: i * 0.1 }}
-                        style={{
-                            position: 'absolute',
-                            fontSize: '2rem',
-                            pointerEvents: 'none',
-                        }}
+                        className="absolute text-3xl pointer-events-none"
                     >
                         🫧
                     </motion.div>
@@ -80,123 +58,61 @@ export function BathroomView({
             </AnimatePresence>
 
             {/* 3D Pet */}
-            <motion.div animate={isWashing ? { rotate: [0, -5, 5, 0] } : {}} transition={{ duration: 0.5, repeat: isWashing ? Infinity : 0 }}>
-                <PetViewer3D
-                    petType={petType}
-                    breed={petBreed as any}
-                    size={280}
-                    interactive={false}
-                />
+            <motion.div animate={isWashing ? { rotate: [0, -3, 3, 0] } : {}} transition={{ duration: 0.5, repeat: isWashing ? Infinity : 0 }}>
+                <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={false} />
             </motion.div>
 
-            {/* Pet Name + Hygiene */}
-            <h2 style={{
-                marginTop: 16,
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                textShadow: '0 2px 8px rgba(0,0,0,0.5)',
-            }}>
-                {petName}'s Spa
-            </h2>
+            {/* Pet Name */}
+            <h2 className="mt-4 text-2xl font-bold text-white drop-shadow-lg">{petName}'s Spa</h2>
 
             {/* Hygiene Bar */}
-            <div style={{
-                width: 200,
-                marginTop: 12,
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.85rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Droplets size={14} /> Cleanliness
-                    </span>
-                    <span style={{ fontWeight: 700 }}>{currentHygiene}%</span>
+            <div className="w-48 mt-3">
+                <div className="flex justify-between text-sm mb-1">
+                    <span className="flex items-center gap-1"><Droplets size={14} className="text-cyan-400" /> Cleanliness</span>
+                    <span className="font-bold">{currentHygiene}%</span>
                 </div>
-                <div style={{ height: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 4, overflow: 'hidden' }}>
+                <div className="h-2 bg-black/30 rounded-full overflow-hidden">
                     <motion.div
                         animate={{ width: `${currentHygiene}%` }}
-                        style={{
-                            height: '100%',
-                            background: currentHygiene > 60 ? '#0ea5e9' : currentHygiene > 30 ? '#f59e0b' : '#ef4444',
-                            borderRadius: 4,
-                        }}
+                        className={`h-full rounded-full ${currentHygiene > 60 ? 'bg-cyan-400' : currentHygiene > 30 ? 'bg-amber-400' : 'bg-red-400'}`}
                     />
                 </div>
             </div>
 
-            {/* Quick Wash Button */}
+            {/* Quick Wash */}
             {onQuickWash && (
                 <motion.button
                     onClick={handleQuickWash}
                     disabled={isWashing}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    style={{
-                        marginTop: 20,
-                        padding: '14px 32px',
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        border: 'none',
-                        borderRadius: 14,
-                        background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
-                        color: '#fff',
-                        cursor: isWashing ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        boxShadow: '0 4px 20px rgba(14, 165, 233, 0.4)',
-                        opacity: isWashing ? 0.7 : 1,
-                    }}
+                    className={`mt-5 px-8 py-4 text-lg font-semibold rounded-2xl flex items-center gap-3
+                        bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/30
+                        ${isWashing ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-cyan-500/50'}`}
                 >
-                    {isWashing ? (
-                        <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }}>🫧</motion.span> Washing...</>
-                    ) : (
-                        <><Bath size={20} /> Quick Bubble Bath</>
-                    )}
+                    {isWashing ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }}>🫧</motion.span> Washing...</> : <><Bath size={22} /> Bubble Bath</>}
                 </motion.button>
             )}
-        </div>
+        </>
     );
 
     const dockContent = (
         <>
-            {/* Dock Header */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 12,
-                color: 'rgba(255, 255, 255, 0.8)',
-            }}>
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-3 text-white/80">
                 <Sparkles size={18} />
-                <span style={{ fontWeight: 600 }}>Spa Supplies</span>
-                <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
-                    {hygieneItems.length} items
-                </span>
+                <span className="font-semibold">Spa Supplies</span>
+                <span className="ml-auto text-sm text-white/50">{hygieneItems.length} items</span>
             </div>
 
-            {/* Items Grid */}
-            {hygieneItems.length === 0 ? (
-                <div style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'rgba(255,255,255,0.4)',
-                    gap: 10,
-                }}>
-                    <Bath size={24} />
-                    <span>No spa supplies - visit the shop!</span>
-                </div>
-            ) : (
-                <div style={{
-                    display: 'flex',
-                    gap: 12,
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    paddingBottom: 8,
-                    flex: 1,
-                    alignItems: 'center',
-                }}>
-                    {hygieneItems.map(item => (
+            {/* Items */}
+            <div className="flex gap-3 overflow-x-auto flex-1 items-center pb-2">
+                {hygieneItems.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center text-white/40 gap-2">
+                        <Bath size={24} /> No supplies - visit the shop!
+                    </div>
+                ) : (
+                    hygieneItems.map(item => (
                         <DockItemCard
                             key={item.item_id}
                             emoji={getHygieneEmoji(item.item_name)}
@@ -206,19 +122,13 @@ export function BathroomView({
                             disabled={isWashing}
                             accentColor={ROOM_THEMES.bathroom.accent}
                         />
-                    ))}
-                </div>
-            )}
+                    ))
+                )}
+            </div>
         </>
     );
 
-    return (
-        <RoomLayout
-            room="bathroom"
-            stageContent={stageContent}
-            dockContent={dockContent}
-        />
-    );
+    return <RoomLayout room="bathroom" stageContent={stageContent} dockContent={dockContent} />;
 }
 
 export default BathroomView;

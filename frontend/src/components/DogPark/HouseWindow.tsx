@@ -215,6 +215,7 @@ export function HouseWindow({
             icon={<Home />}
             width={600}
             minHeight={480}
+            fullBleed
         >
             {/* Toast notification */}
             {toast && (

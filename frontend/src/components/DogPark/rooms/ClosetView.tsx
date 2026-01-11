@@ -1,7 +1,5 @@
 /**
- * ClosetView.tsx
- * 
- * Closet with Stage (3D Pet + spotlight gradient + OrbitControls) + Dock (accessories)
+ * ClosetView.tsx - Full-screen Stage + Dock layout
  */
 
 import React, { useMemo } from 'react';
@@ -11,7 +9,7 @@ import type { InventoryEntry } from '../../../types/finance';
 import type { EquippedAccessory } from '../../../game3d/core/BehaviourSystem';
 import type { PetGame2PetType } from '../../../game3d/core/SceneManager';
 import { PetViewer3D } from './PetViewer3D';
-import { RoomLayout, DockItemCard, ROOM_THEMES } from './RoomLayout';
+import { RoomLayout, ROOM_THEMES } from './RoomLayout';
 
 interface ClosetViewProps {
     petName: string;
@@ -23,180 +21,98 @@ interface ClosetViewProps {
 }
 
 const getSlotFromItem = (item: InventoryEntry): 'collar' | 'hat' | 'bandana' | 'glasses' | 'back' => {
-    const name = item.item_name.toLowerCase();
-    if (name.includes('collar') || name.includes('bowtie')) return 'collar';
-    if (name.includes('hat') || name.includes('crown')) return 'hat';
-    if (name.includes('glasses') || name.includes('shades')) return 'glasses';
-    if (name.includes('bandana')) return 'bandana';
-    if (name.includes('cape') || name.includes('wings') || name.includes('coat')) return 'back';
+    const n = item.item_name.toLowerCase();
+    if (n.includes('collar') || n.includes('bowtie')) return 'collar';
+    if (n.includes('hat') || n.includes('crown')) return 'hat';
+    if (n.includes('glasses') || n.includes('shades')) return 'glasses';
+    if (n.includes('bandana')) return 'bandana';
+    if (n.includes('cape') || n.includes('wings') || n.includes('coat')) return 'back';
     return 'collar';
 };
 
-const getAccessoryColor = (itemName: string): string => {
-    const name = itemName.toLowerCase();
-    if (name.includes('gold') || name.includes('fancy')) return '#ffd700';
-    if (name.includes('red')) return '#dc2626';
-    if (name.includes('blue')) return '#2563eb';
-    if (name.includes('pink')) return '#ec4899';
-    if (name.includes('green')) return '#16a34a';
-    if (name.includes('purple')) return '#9333ea';
-    if (name.includes('silver')) return '#94a3b8';
-    if (name.includes('rainy') || name.includes('rain')) return '#0ea5e9';
+const getAccessoryColor = (name: string): string => {
+    const n = name.toLowerCase();
+    if (n.includes('gold') || n.includes('fancy')) return '#ffd700';
+    if (n.includes('red')) return '#dc2626';
+    if (n.includes('blue')) return '#2563eb';
+    if (n.includes('pink')) return '#ec4899';
+    if (n.includes('green')) return '#16a34a';
+    if (n.includes('rainy')) return '#0ea5e9';
     return '#8b5cf6';
 };
 
-const getAccessoryEmoji = (itemName: string): string => {
-    const name = itemName.toLowerCase();
-    if (name.includes('collar')) return '📿';
-    if (name.includes('hat') || name.includes('crown')) return '👑';
-    if (name.includes('glasses') || name.includes('shades')) return '🕶️';
-    if (name.includes('bandana')) return '🧣';
-    if (name.includes('bowtie')) return '🎀';
-    if (name.includes('cape')) return '🦸';
-    if (name.includes('coat')) return '🧥';
+const getAccessoryEmoji = (name: string): string => {
+    const n = name.toLowerCase();
+    if (n.includes('collar')) return '📿';
+    if (n.includes('hat') || n.includes('crown')) return '👑';
+    if (n.includes('glasses') || n.includes('shades')) return '🕶️';
+    if (n.includes('bandana')) return '🧣';
+    if (n.includes('bowtie')) return '🎀';
+    if (n.includes('cape')) return '🦸';
+    if (n.includes('coat')) return '🧥';
     return '✨';
 };
 
-const SLOT_LABELS: Record<string, string> = {
-    collar: 'Neck',
-    hat: 'Head',
-    glasses: 'Eyes',
-    bandana: 'Neck',
-    back: 'Back',
-};
+const SLOT_LABELS: Record<string, string> = { collar: 'Neck', hat: 'Head', glasses: 'Eyes', bandana: 'Neck', back: 'Back' };
 
 export function ClosetView({
-    petName,
-    petType = 'dog',
-    petBreed = 'labrador',
-    accessories,
-    equippedLoadout,
-    onToggleEquip,
+    petName, petType = 'dog', petBreed = 'labrador', accessories, equippedLoadout, onToggleEquip,
 }: ClosetViewProps) {
-    const isEquipped = (itemId: string): boolean => Object.values(equippedLoadout).includes(itemId);
+    const isEquipped = (id: string) => Object.values(equippedLoadout).includes(id);
 
     const equippedAccessories: EquippedAccessory[] = useMemo(() => {
         return Object.entries(equippedLoadout).map(([slot, itemId]) => {
             const item = accessories.find(a => a.item_id === itemId);
-            return {
-                id: itemId,
-                slot: slot as EquippedAccessory['slot'],
-                color: item ? getAccessoryColor(item.item_name) : '#8b5cf6',
-                name: item?.item_name,
-            };
+            return { id: itemId, slot: slot as EquippedAccessory['slot'], color: item ? getAccessoryColor(item.item_name) : '#8b5cf6' };
         }).filter(acc => acc.slot);
     }, [equippedLoadout, accessories]);
 
     const equippedCount = Object.keys(equippedLoadout).length;
 
     const stageContent = (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            zIndex: 1,
-        }}>
+        <>
             {/* Spotlight effect */}
-            <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 400,
-                height: 400,
-                background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)',
-                pointerEvents: 'none',
-            }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
 
-            {/* 3D Pet - LARGE with interactive controls */}
+            {/* 3D Pet - Interactive */}
             <PetViewer3D
                 petType={petType}
                 breed={petBreed as any}
                 accessories={equippedAccessories}
                 interactive={true}
-                size={320}
+                size={300}
             />
 
             {/* Rotation hint */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                marginTop: 16,
-                fontSize: '0.85rem',
-                color: 'rgba(255, 255, 255, 0.6)',
-                background: 'rgba(0,0,0,0.3)',
-                padding: '6px 14px',
-                borderRadius: 8,
-            }}>
+            <div className="flex items-center gap-2 mt-4 text-sm text-white/50 bg-black/30 px-4 py-2 rounded-lg">
                 <RotateCcw size={14} /> Drag to rotate
             </div>
 
-            {/* Pet Name + Stats */}
-            <h2 style={{
-                marginTop: 12,
-                fontSize: '1.4rem',
-                fontWeight: 700,
-                textShadow: '0 2px 8px rgba(0,0,0,0.5)',
-            }}>
-                {petName}
-            </h2>
-            <div style={{
-                fontSize: '0.9rem',
-                color: equippedCount > 0 ? ROOM_THEMES.closet.accent : 'rgba(255,255,255,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-            }}>
-                <Shirt size={14} />
-                {equippedCount} {equippedCount === 1 ? 'item' : 'items'} equipped
+            {/* Pet info */}
+            <h2 className="mt-3 text-2xl font-bold text-white drop-shadow-lg">{petName}</h2>
+            <div className={`flex items-center gap-2 text-sm ${equippedCount > 0 ? 'text-purple-300' : 'text-white/50'}`}>
+                <Shirt size={14} /> {equippedCount} items equipped
             </div>
-        </div>
+        </>
     );
 
     const dockContent = (
         <>
-            {/* Dock Header */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 12,
-                color: 'rgba(255, 255, 255, 0.8)',
-            }}>
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-3 text-white/80">
                 <Sparkles size={18} />
-                <span style={{ fontWeight: 600 }}>Your Wardrobe</span>
-                <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
-                    Tap to equip
-                </span>
+                <span className="font-semibold">Your Wardrobe</span>
+                <span className="ml-auto text-sm text-white/50">Tap to equip</span>
             </div>
 
-            {/* Accessories Grid */}
-            {accessories.length === 0 ? (
-                <div style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'rgba(255,255,255,0.4)',
-                    gap: 10,
-                }}>
-                    <Shirt size={24} />
-                    <span>No accessories - visit the Gift Shop!</span>
-                </div>
-            ) : (
-                <div style={{
-                    display: 'flex',
-                    gap: 12,
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    paddingBottom: 8,
-                    flex: 1,
-                    alignItems: 'center',
-                }}>
-                    {accessories.map(item => {
+            {/* Items */}
+            <div className="flex gap-3 overflow-x-auto flex-1 items-center pb-2">
+                {accessories.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center text-white/40 gap-2">
+                        <Shirt size={24} /> No accessories - visit the Gift Shop!
+                    </div>
+                ) : (
+                    accessories.map(item => {
                         const slot = getSlotFromItem(item);
                         const equipped = isEquipped(item.item_id);
 
@@ -204,85 +120,31 @@ export function ClosetView({
                             <motion.button
                                 key={item.item_id}
                                 onClick={() => onToggleEquip(item, slot)}
-                                whileHover={{ scale: 1.05, y: -4 }}
+                                whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                style={{
-                                    minWidth: 110,
-                                    height: 120,
-                                    padding: 12,
-                                    borderRadius: 16,
-                                    border: equipped
-                                        ? '2px solid #10b981'
-                                        : '1px solid rgba(255, 255, 255, 0.1)',
-                                    background: equipped
-                                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.1) 100%)'
-                                        : 'rgba(255, 255, 255, 0.05)',
-                                    cursor: 'pointer',
-                                    textAlign: 'center',
-                                    color: '#fff',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 6,
-                                    flexShrink: 0,
-                                    position: 'relative',
-                                    boxShadow: equipped
-                                        ? '0 4px 20px rgba(16, 185, 129, 0.3)'
-                                        : '0 4px 12px rgba(0,0,0,0.3)',
-                                }}
+                                className={`min-w-[100px] h-[120px] p-3 rounded-2xl flex flex-col items-center justify-center gap-1 shrink-0 relative
+                                    ${equipped
+                                        ? 'bg-emerald-500/20 border-2 border-emerald-400 shadow-lg shadow-emerald-500/20'
+                                        : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                                    }`}
                             >
                                 {equipped && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: 6,
-                                        right: 6,
-                                        width: 20,
-                                        height: 20,
-                                        borderRadius: '50%',
-                                        background: '#10b981',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}>
+                                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-400 flex items-center justify-center">
                                         <Check size={12} />
                                     </div>
                                 )}
-                                <span style={{ fontSize: '2rem' }}>{getAccessoryEmoji(item.item_name)}</span>
-                                <span style={{
-                                    fontSize: '0.8rem',
-                                    fontWeight: 600,
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    maxWidth: '100%',
-                                }}>
-                                    {item.item_name}
-                                </span>
-                                <span style={{
-                                    fontSize: '0.7rem',
-                                    color: 'rgba(255, 255, 255, 0.5)',
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    padding: '2px 8px',
-                                    borderRadius: 6,
-                                }}>
-                                    {SLOT_LABELS[slot] || slot}
-                                </span>
+                                <span className="text-3xl">{getAccessoryEmoji(item.item_name)}</span>
+                                <span className="text-sm font-semibold truncate max-w-full">{item.item_name}</span>
+                                <span className="text-xs text-white/50 bg-white/10 px-2 py-0.5 rounded">{SLOT_LABELS[slot]}</span>
                             </motion.button>
                         );
-                    })}
-                </div>
-            )}
+                    })
+                )}
+            </div>
         </>
     );
 
-    return (
-        <RoomLayout
-            room="closet"
-            stageContent={stageContent}
-            dockContent={dockContent}
-        />
-    );
+    return <RoomLayout room="closet" stageContent={stageContent} dockContent={dockContent} />;
 }
 
 export default ClosetView;

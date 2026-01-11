@@ -19,6 +19,7 @@ export interface BuildingWindowProps {
     footer?: React.ReactNode;
     width?: number | string;
     minHeight?: number;
+    fullBleed?: boolean; // Remove padding for full-screen room layouts
 }
 
 export function BuildingInteractionWindow({
@@ -30,6 +31,7 @@ export function BuildingInteractionWindow({
     footer,
     width = 600,
     minHeight = 400,
+    fullBleed = false,
 }: BuildingWindowProps) {
     const [isMinimized, setIsMinimized] = useState(false);
     const windowRef = useRef<HTMLDivElement>(null);
@@ -157,7 +159,7 @@ export function BuildingInteractionWindow({
                                     exit={{ height: 0, opacity: 0 }}
                                     transition={{ duration: 0.2 }}
                                 >
-                                    <div className="building-window-content">
+                                    <div className={`building-window-content${fullBleed ? ' full-bleed' : ''}`}>
                                         {children}
                                     </div>
 

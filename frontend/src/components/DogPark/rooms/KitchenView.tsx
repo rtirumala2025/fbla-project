@@ -1,7 +1,5 @@
 /**
- * KitchenView.tsx
- * 
- * Kitchen room with Stage (3D Pet + orange gradient) + Dock (food inventory)
+ * KitchenView.tsx - Full-screen Stage + Dock layout
  */
 
 import React, { useState } from 'react';
@@ -21,26 +19,18 @@ interface KitchenViewProps {
     isFeeding?: boolean;
 }
 
-const getFoodEmoji = (itemName: string): string => {
-    const name = itemName.toLowerCase();
-    if (name.includes('apple')) return '🍎';
-    if (name.includes('bone')) return '🦴';
-    if (name.includes('treat')) return '🦴';
-    if (name.includes('fish')) return '🐟';
-    if (name.includes('meat')) return '🥩';
-    if (name.includes('milk')) return '🥛';
-    if (name.includes('carrot')) return '🥕';
-    if (name.includes('cookie')) return '🍪';
+const getFoodEmoji = (name: string): string => {
+    const n = name.toLowerCase();
+    if (n.includes('apple')) return '🍎';
+    if (n.includes('bone') || n.includes('treat')) return '🦴';
+    if (n.includes('fish')) return '🐟';
+    if (n.includes('meat')) return '🥩';
+    if (n.includes('milk')) return '🥛';
     return '🍖';
 };
 
 export function KitchenView({
-    petName,
-    petType = 'dog',
-    petBreed = 'labrador',
-    foodItems,
-    onFeedItem,
-    isFeeding = false,
+    petName, petType = 'dog', petBreed = 'labrador', foodItems, onFeedItem, isFeeding = false,
 }: KitchenViewProps) {
     const [feedingItem, setFeedingItem] = useState<string | null>(null);
 
@@ -52,101 +42,40 @@ export function KitchenView({
     };
 
     const stageContent = (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            zIndex: 1,
-        }}>
-            {/* 3D Pet - Large */}
-            <motion.div
-                animate={feedingItem ? { scale: [1, 1.1, 1] } : {}}
-                transition={{ duration: 0.4 }}
-            >
-                <PetViewer3D
-                    petType={petType}
-                    breed={petBreed as any}
-                    size={280}
-                    interactive={false}
-                />
+        <>
+            {/* 3D Pet */}
+            <motion.div animate={feedingItem ? { scale: [1, 1.1, 1] } : {}} transition={{ duration: 0.4 }}>
+                <PetViewer3D petType={petType} breed={petBreed as any} size={260} interactive={false} />
             </motion.div>
 
             {/* Pet Name */}
-            <h2 style={{
-                marginTop: 16,
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                textShadow: '0 2px 8px rgba(0,0,0,0.5)',
-            }}>
-                {petName}
-            </h2>
+            <h2 className="mt-4 text-2xl font-bold text-white drop-shadow-lg">{petName}</h2>
 
             {/* Stats Preview */}
-            <div style={{
-                display: 'flex',
-                gap: 16,
-                marginTop: 12,
-                padding: '8px 20px',
-                background: 'rgba(0,0,0,0.3)',
-                borderRadius: 12,
-            }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9rem' }}>
-                    <Apple size={16} color="#f97316" /> +15 Hunger
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9rem' }}>
-                    <Heart size={16} color="#ef4444" /> +5 Health
-                </span>
+            <div className="flex gap-4 mt-3 px-4 py-2 bg-black/30 rounded-xl">
+                <span className="flex items-center gap-1 text-sm"><Apple size={16} className="text-orange-400" /> +15 Hunger</span>
+                <span className="flex items-center gap-1 text-sm"><Heart size={16} className="text-red-400" /> +5 Health</span>
             </div>
-        </div>
+        </>
     );
 
     const dockContent = (
         <>
-            {/* Dock Header */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 12,
-                color: 'rgba(255, 255, 255, 0.8)',
-            }}>
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-3 text-white/80">
                 <Utensils size={18} />
-                <span style={{ fontWeight: 600 }}>Food Inventory</span>
-                <span style={{
-                    marginLeft: 'auto',
-                    fontSize: '0.8rem',
-                    color: 'rgba(255,255,255,0.5)'
-                }}>
-                    {foodItems.length} items
-                </span>
+                <span className="font-semibold">Food Inventory</span>
+                <span className="ml-auto text-sm text-white/50">{foodItems.length} items</span>
             </div>
 
-            {/* Horizontal Scroll Grid */}
-            {foodItems.length === 0 ? (
-                <div style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'rgba(255,255,255,0.4)',
-                    gap: 10,
-                }}>
-                    <Apple size={24} />
-                    <span>Kitchen is empty - visit the Supermarket!</span>
-                </div>
-            ) : (
-                <div style={{
-                    display: 'flex',
-                    gap: 12,
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    paddingBottom: 8,
-                    flex: 1,
-                    alignItems: 'center',
-                }}>
-                    {foodItems.map(item => (
+            {/* Items */}
+            <div className="flex gap-3 overflow-x-auto flex-1 items-center pb-2">
+                {foodItems.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center text-white/40 gap-2">
+                        <Apple size={24} /> Kitchen is empty - visit the Supermarket!
+                    </div>
+                ) : (
+                    foodItems.map(item => (
                         <DockItemCard
                             key={item.item_id}
                             emoji={getFoodEmoji(item.item_name)}
@@ -156,19 +85,13 @@ export function KitchenView({
                             disabled={isFeeding}
                             accentColor={ROOM_THEMES.kitchen.accent}
                         />
-                    ))}
-                </div>
-            )}
+                    ))
+                )}
+            </div>
         </>
     );
 
-    return (
-        <RoomLayout
-            room="kitchen"
-            stageContent={stageContent}
-            dockContent={dockContent}
-        />
-    );
+    return <RoomLayout room="kitchen" stageContent={stageContent} dockContent={dockContent} />;
 }
 
 export default KitchenView;
