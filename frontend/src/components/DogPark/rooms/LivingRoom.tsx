@@ -1,5 +1,7 @@
 /**
- * LivingRoom.tsx - Main hub room with Rest/Play and 3D pet
+ * LivingRoom.tsx
+ * 
+ * Living Room with Stage (3D Pet + warm amber gradient) + Dock (sleep/play controls)
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -8,6 +10,7 @@ import { Moon, Zap, Bell, BellOff, Clock, Gamepad2 } from 'lucide-react';
 import type { InventoryEntry } from '../../../types/finance';
 import type { PetGame2PetType } from '../../../game3d/core/SceneManager';
 import { PetViewer3D } from './PetViewer3D';
+import { RoomLayout, DockItemCard, ROOM_THEMES } from './RoomLayout';
 
 const SLEEP_DURATIONS = [
     { label: 'Quick Nap', seconds: 30, energyRestore: 20, icon: '😴' },
@@ -25,7 +28,15 @@ interface LivingRoomProps {
     onUseToy?: (item: InventoryEntry) => void;
 }
 
-export function LivingRoom({ petName, petType = 'dog', petBreed = 'labrador', currentEnergy, onSleepComplete, toys, onUseToy }: LivingRoomProps) {
+export function LivingRoom({
+    petName,
+    petType = 'dog',
+    petBreed = 'labrador',
+    currentEnergy,
+    onSleepComplete,
+    toys,
+    onUseToy,
+}: LivingRoomProps) {
     const [isSleeping, setIsSleeping] = useState(false);
     const [sleepDuration, setSleepDuration] = useState(0);
     const [remainingTime, setRemainingTime] = useState(0);
@@ -84,81 +95,220 @@ export function LivingRoom({ petName, petType = 'dog', petBreed = 'labrador', cu
     const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
     const sleepProgress = sleepDuration > 0 ? ((sleepDuration - remainingTime) / sleepDuration) * 100 : 0;
 
-    return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ minHeight: 'calc(100vh - 180px)', padding: '20px 0' }}>
-            {/* Sub-tabs */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 28, justifyContent: 'center' }}>
-                {[{ id: 'rest', icon: <Moon size={18} />, label: 'Rest' }, { id: 'play', icon: <Gamepad2 size={18} />, label: 'Play' }].map(tab => (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id as 'rest' | 'play')} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer', background: activeTab === tab.id ? 'rgba(99, 102, 241, 0.3)' : 'transparent', color: activeTab === tab.id ? '#fff' : 'rgba(255, 255, 255, 0.6)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.95rem', fontWeight: 500, transition: 'all 0.2s' }}>{tab.icon} {tab.label}</button>
+    const stageContent = (
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            zIndex: 1,
+        }}>
+            {/* Sleeping Z's Animation */}
+            <AnimatePresence>
+                {isSleeping && [...Array(3)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: 80, y: 0 }}
+                        animate={{ opacity: [0, 1, 0], x: 120, y: -100 }}
+                        transition={{ duration: 2, repeat: Infinity, delay: i * 0.6 }}
+                        style={{
+                            position: 'absolute',
+                            top: '30%',
+                            fontSize: '2rem',
+                            fontWeight: 700,
+                            color: ROOM_THEMES.living.accent,
+                            pointerEvents: 'none',
+                        }}
+                    >
+                        Z
+                    </motion.div>
                 ))}
+            </AnimatePresence>
+
+            {/* 3D Pet */}
+            <motion.div animate={isSleeping ? { y: [0, -5, 0] } : {}} transition={{ duration: 3, repeat: Infinity }}>
+                <PetViewer3D
+                    petType={petType}
+                    breed={petBreed as any}
+                    size={280}
+                    interactive={false}
+                />
+            </motion.div>
+
+            {/* Pet Name */}
+            <h2 style={{
+                marginTop: 16,
+                fontSize: '1.5rem',
+                fontWeight: 700,
+                textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+            }}>
+                {petName}
+            </h2>
+
+            {/* Energy Bar */}
+            <div style={{ width: 200, marginTop: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.85rem' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Zap size={14} color="#fbbf24" /> Energy
+                    </span>
+                    <span style={{ fontWeight: 700 }}>
+                        {Math.min(100, currentEnergy + (isSleeping && selectedSleep ? Math.floor((sleepProgress / 100) * selectedSleep.energyRestore) : 0))}%
+                    </span>
+                </div>
+                <div style={{ height: 8, background: 'rgba(0,0,0,0.3)', borderRadius: 4, overflow: 'hidden' }}>
+                    <motion.div
+                        animate={{ width: `${Math.min(100, currentEnergy + (isSleeping && selectedSleep ? (sleepProgress / 100) * selectedSleep.energyRestore : 0))}%` }}
+                        style={{
+                            height: '100%',
+                            background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                            borderRadius: 4,
+                        }}
+                    />
+                </div>
             </div>
 
-            <AnimatePresence mode="wait">
-                {activeTab === 'rest' ? (
-                    <motion.div key="rest" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        {/* 3D Pet Display */}
-                        <div style={{ marginBottom: 24 }}>
-                            <PetViewer3D
-                                petType={petType}
-                                breed={petBreed as any}
-                                size={200}
-                                interactive={false}
+            {/* Sleep Progress (when sleeping) */}
+            {isSleeping && (
+                <div style={{ textAlign: 'center', marginTop: 16 }}>
+                    <div style={{
+                        fontSize: '2rem',
+                        fontWeight: 700,
+                        fontFamily: 'monospace',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                    }}>
+                        <Clock size={24} /> {formatTime(remainingTime)}
+                    </div>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: 6 }}>
+                        {selectedSleep?.label}... (+{selectedSleep?.energyRestore} energy)
+                    </p>
+                    <button
+                        onClick={cancelSleep}
+                        style={{
+                            marginTop: 12,
+                            padding: '8px 20px',
+                            borderRadius: 10,
+                            border: 'none',
+                            background: 'rgba(255, 80, 80, 0.25)',
+                            color: '#ff8888',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                        }}
+                    >
+                        Wake Up
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+
+    const dockContent = (
+        <>
+            {/* Tab Switcher */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                {[{ id: 'rest', icon: <Moon size={16} />, label: 'Rest' }, { id: 'play', icon: <Gamepad2 size={16} />, label: 'Play' }].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as 'rest' | 'play')}
+                        style={{
+                            padding: '8px 20px',
+                            borderRadius: 8,
+                            border: 'none',
+                            cursor: 'pointer',
+                            background: activeTab === tab.id ? 'rgba(245, 158, 11, 0.3)' : 'rgba(255,255,255,0.05)',
+                            color: activeTab === tab.id ? '#fff' : 'rgba(255, 255, 255, 0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            fontSize: '0.9rem',
+                            fontWeight: 500,
+                        }}
+                    >
+                        {tab.icon} {tab.label}
+                    </button>
+                ))}
+
+                {/* Notification toggle */}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+                    {notificationsEnabled ? <Bell size={14} color="#10b981" /> : <BellOff size={14} />}
+                    {notificationPermission !== 'granted' ? (
+                        <button onClick={requestNotificationPermission} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: 'rgba(99, 102, 241, 0.3)', color: '#fff', cursor: 'pointer', fontSize: '0.75rem' }}>Enable</button>
+                    ) : (
+                        <button onClick={() => setNotificationsEnabled(!notificationsEnabled)} style={{ width: 36, height: 20, borderRadius: 10, background: notificationsEnabled ? '#10b981' : 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', position: 'relative' }}>
+                            <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: notificationsEnabled ? 18 : 4, transition: 'left 0.2s' }} />
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Content based on tab */}
+            {activeTab === 'rest' ? (
+                <div style={{ display: 'flex', gap: 12, overflowX: 'auto', flex: 1, alignItems: 'center' }}>
+                    {SLEEP_DURATIONS.map(sleep => (
+                        <motion.button
+                            key={sleep.label}
+                            whileHover={{ scale: 1.05, y: -4 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => !isSleeping && startSleep(sleep)}
+                            disabled={isSleeping}
+                            style={{
+                                minWidth: 110,
+                                height: 110,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 6,
+                                padding: 12,
+                                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.1) 100%)',
+                                borderRadius: 16,
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                cursor: isSleeping ? 'not-allowed' : 'pointer',
+                                color: '#fff',
+                                opacity: isSleeping ? 0.5 : 1,
+                                flexShrink: 0,
+                            }}
+                        >
+                            <span style={{ fontSize: '2rem' }}>{sleep.icon}</span>
+                            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{sleep.label}</span>
+                            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>{formatTime(sleep.seconds)}</span>
+                            <span style={{ fontSize: '0.7rem', color: '#10b981' }}>+{sleep.energyRestore} <Zap size={10} style={{ verticalAlign: 'middle' }} /></span>
+                        </motion.button>
+                    ))}
+                </div>
+            ) : (
+                <div style={{ display: 'flex', gap: 12, overflowX: 'auto', flex: 1, alignItems: 'center' }}>
+                    {toys.length === 0 ? (
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', gap: 10 }}>
+                            <Gamepad2 size={24} />
+                            <span>No toys - visit the shop!</span>
+                        </div>
+                    ) : (
+                        toys.map(toy => (
+                            <DockItemCard
+                                key={toy.item_id}
+                                emoji="🧸"
+                                name={toy.item_name}
+                                quantity={toy.quantity}
+                                onClick={() => onUseToy?.(toy)}
+                                accentColor={ROOM_THEMES.living.accent}
                             />
-                        </div>
+                        ))
+                    )}
+                </div>
+            )}
+        </>
+    );
 
-                        {/* Energy Bar */}
-                        <div style={{ width: '100%', maxWidth: 320, marginBottom: 24 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}><span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Zap size={18} color="#fbbf24" /> Energy</span><span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{Math.min(100, currentEnergy + (isSleeping && selectedSleep ? Math.floor((sleepProgress / 100) * selectedSleep.energyRestore) : 0))}%</span></div>
-                            <div style={{ height: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 5, overflow: 'hidden' }}><motion.div animate={{ width: `${Math.min(100, currentEnergy + (isSleeping && selectedSleep ? (sleepProgress / 100) * selectedSleep.energyRestore : 0))}%` }} style={{ height: '100%', background: 'linear-gradient(90deg, #fbbf24, #f59e0b)', borderRadius: 5 }} /></div>
-                        </div>
-
-                        {isSleeping ? (
-                            <div style={{ textAlign: 'center', width: '100%', maxWidth: 320 }}>
-                                <div style={{ fontSize: '2.2rem', fontWeight: 700, marginBottom: 8, fontFamily: 'monospace' }}><Clock size={22} style={{ marginRight: 8, verticalAlign: 'middle' }} />{formatTime(remainingTime)}</div>
-                                <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden', marginBottom: 14 }}><motion.div animate={{ width: `${sleepProgress}%` }} style={{ height: '100%', background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', borderRadius: 3 }} /></div>
-                                <p style={{ color: '#94a3b8', marginBottom: 14, fontSize: '0.9rem' }}>{petName} is {selectedSleep?.label.toLowerCase()}... (+{selectedSleep?.energyRestore})</p>
-                                <button onClick={cancelSleep} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: 'rgba(255, 80, 80, 0.2)', color: '#ff8888', cursor: 'pointer', fontWeight: 600 }}>Wake Up Early</button>
-                            </div>
-                        ) : (
-                            <>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, padding: '10px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: 10, fontSize: '0.9rem' }}>
-                                    {notificationsEnabled ? <Bell size={16} color="#10b981" /> : <BellOff size={16} color="#64748b" />}
-                                    <span style={{ flex: 1 }}>{notificationsEnabled ? "Notify when pet wakes" : "Enable notifications"}</span>
-                                    {notificationPermission !== 'granted' ? <button onClick={requestNotificationPermission} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: 'rgba(99, 102, 241, 0.3)', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>Enable</button> : <button onClick={() => setNotificationsEnabled(!notificationsEnabled)} style={{ width: 40, height: 22, borderRadius: 11, background: notificationsEnabled ? '#10b981' : 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', position: 'relative' }}><div style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: notificationsEnabled ? 20 : 4, transition: 'left 0.2s' }} /></button>}
-                                </div>
-                                <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                                    {SLEEP_DURATIONS.map(sleep => (
-                                        <motion.button key={sleep.label} whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.96 }} onClick={() => startSleep(sleep)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 20px', minWidth: 110, background: 'rgba(99, 102, 241, 0.25)', borderRadius: 14, border: '1px solid rgba(99, 102, 241, 0.3)', cursor: 'pointer', color: '#fff' }}>
-                                            <span style={{ fontSize: '1.8rem', marginBottom: 6 }}>{sleep.icon}</span>
-                                            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{sleep.label}</span>
-                                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{formatTime(sleep.seconds)}</span>
-                                            <span style={{ fontSize: '0.75rem', color: '#10b981', marginTop: 4 }}>+{sleep.energyRestore} <Zap size={10} style={{ verticalAlign: 'middle' }} /></span>
-                                        </motion.button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
-                    </motion.div>
-                ) : (
-                    <motion.div key="play" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <h3 style={{ textAlign: 'center', marginBottom: 20, color: '#94a3b8', fontSize: '1.1rem' }}>🎮 Your Toys</h3>
-                        {toys.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}><Gamepad2 size={56} style={{ marginBottom: 16, opacity: 0.3 }} /><p style={{ fontSize: '1rem' }}>No toys in inventory</p><p style={{ fontSize: '0.9rem' }}>Visit the shop to buy toys!</p></div>
-                        ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 16, width: '100%', maxWidth: 550 }}>
-                                {toys.map(toy => (
-                                    <motion.button key={toy.item_id} onClick={() => onUseToy?.(toy)} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} style={{ cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', padding: 16, background: 'rgba(35, 35, 45, 0.7)', borderRadius: 14, color: '#fff' }}>
-                                        <div style={{ fontSize: '2rem', marginBottom: 8 }}>🧸</div>
-                                        <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 4 }}>{toy.item_name}</div>
-                                        <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>x{toy.quantity}</div>
-                                    </motion.button>
-                                ))}
-                            </div>
-                        )}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </motion.div>
+    return (
+        <RoomLayout
+            room="living"
+            stageContent={stageContent}
+            dockContent={dockContent}
+        />
     );
 }
 

@@ -1,15 +1,16 @@
 /**
  * KitchenView.tsx
  * 
- * Kitchen room for feeding the pet. Features static 3D pet display.
+ * Kitchen room with Stage (3D Pet + orange gradient) + Dock (food inventory)
  */
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Apple, Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Apple, Heart, Utensils } from 'lucide-react';
 import type { InventoryEntry } from '../../../types/finance';
 import type { PetGame2PetType } from '../../../game3d/core/SceneManager';
 import { PetViewer3D } from './PetViewer3D';
+import { RoomLayout, DockItemCard, ROOM_THEMES } from './RoomLayout';
 
 interface KitchenViewProps {
     petName: string;
@@ -30,7 +31,6 @@ const getFoodEmoji = (itemName: string): string => {
     if (name.includes('milk')) return '🥛';
     if (name.includes('carrot')) return '🥕';
     if (name.includes('cookie')) return '🍪';
-    if (name.includes('snack')) return '🍖';
     return '🍖';
 };
 
@@ -42,163 +42,132 @@ export function KitchenView({
     onFeedItem,
     isFeeding = false,
 }: KitchenViewProps) {
-    const [selectedItem, setSelectedItem] = useState<InventoryEntry | null>(null);
+    const [feedingItem, setFeedingItem] = useState<string | null>(null);
 
     const handleFeed = (item: InventoryEntry) => {
-        setSelectedItem(item);
+        if (isFeeding) return;
+        setFeedingItem(item.item_id);
         onFeedItem(item);
-        setTimeout(() => setSelectedItem(null), 1000);
+        setTimeout(() => setFeedingItem(null), 800);
     };
 
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                minHeight: 'calc(100vh - 180px)',
-                padding: '30px 20px',
-            }}
-        >
-            {/* Central Interactive Zone */}
+    const stageContent = (
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            zIndex: 1,
+        }}>
+            {/* 3D Pet - Large */}
+            <motion.div
+                animate={feedingItem ? { scale: [1, 1.1, 1] } : {}}
+                transition={{ duration: 0.4 }}
+            >
+                <PetViewer3D
+                    petType={petType}
+                    breed={petBreed as any}
+                    size={280}
+                    interactive={false}
+                />
+            </motion.div>
+
+            {/* Pet Name */}
+            <h2 style={{
+                marginTop: 16,
+                fontSize: '1.5rem',
+                fontWeight: 700,
+                textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+            }}>
+                {petName}
+            </h2>
+
+            {/* Stats Preview */}
             <div style={{
                 display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                marginBottom: 40,
+                gap: 16,
+                marginTop: 12,
+                padding: '8px 20px',
+                background: 'rgba(0,0,0,0.3)',
+                borderRadius: 12,
             }}>
-                {/* Kitchen Header with 3D Pet */}
-                <div style={{
-                    textAlign: 'center',
-                    padding: '24px 40px',
-                    background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, rgba(234, 88, 12, 0.08) 100%)',
-                    borderRadius: 24,
-                    border: '1px solid rgba(249, 115, 22, 0.2)',
-                    marginBottom: 20,
-                }}>
-                    {/* 3D Pet Display */}
-                    <div style={{ marginBottom: 16 }}>
-                        <PetViewer3D
-                            petType={petType}
-                            breed={petBreed as any}
-                            size={160}
-                            interactive={false}
-                        />
-                    </div>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9rem' }}>
+                    <Apple size={16} color="#f97316" /> +15 Hunger
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9rem' }}>
+                    <Heart size={16} color="#ef4444" /> +5 Health
+                </span>
+            </div>
+        </div>
+    );
 
-                    <h2 style={{
-                        margin: 0,
-                        fontSize: '1.3rem',
-                        fontWeight: 700,
-                        marginBottom: 6,
-                    }}>
-                        {petName}'s Kitchen
-                    </h2>
-                    <p style={{
-                        margin: 0,
-                        fontSize: '0.9rem',
-                        color: 'rgba(255, 255, 255, 0.6)',
-                    }}>
-                        Select food to feed your pet
-                    </p>
-                </div>
-
-                {/* Stats Boost Preview */}
-                <div style={{
-                    display: 'flex',
-                    gap: 20,
-                    padding: '12px 24px',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: 12,
+    const dockContent = (
+        <>
+            {/* Dock Header */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 12,
+                color: 'rgba(255, 255, 255, 0.8)',
+            }}>
+                <Utensils size={18} />
+                <span style={{ fontWeight: 600 }}>Food Inventory</span>
+                <span style={{
+                    marginLeft: 'auto',
+                    fontSize: '0.8rem',
+                    color: 'rgba(255,255,255,0.5)'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9rem' }}>
-                        <Apple size={16} color="#f97316" /> Hunger +15
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.9rem' }}>
-                        <Heart size={16} color="#ef4444" /> Health +5
-                    </div>
-                </div>
+                    {foodItems.length} items
+                </span>
             </div>
 
-            {/* Food Grid */}
+            {/* Horizontal Scroll Grid */}
             {foodItems.length === 0 ? (
                 <div style={{
                     flex: 1,
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    maxWidth: 400,
-                    textAlign: 'center',
+                    color: 'rgba(255,255,255,0.4)',
+                    gap: 10,
                 }}>
-                    <Apple size={64} style={{ marginBottom: 20, opacity: 0.3 }} />
-                    <p style={{ fontSize: '1.1rem', fontWeight: 500 }}>Kitchen is empty</p>
-                    <p style={{ fontSize: '0.9rem', marginTop: 8 }}>
-                        Buy food from the Supermarket!
-                    </p>
+                    <Apple size={24} />
+                    <span>Kitchen is empty - visit the Supermarket!</span>
                 </div>
             ) : (
                 <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                    gap: 16,
-                    width: '100%',
-                    maxWidth: 700,
+                    display: 'flex',
+                    gap: 12,
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    paddingBottom: 8,
+                    flex: 1,
+                    alignItems: 'center',
                 }}>
                     {foodItems.map(item => (
-                        <motion.button
+                        <DockItemCard
                             key={item.item_id}
-                            onClick={() => !isFeeding && handleFeed(item)}
-                            whileHover={{ scale: 1.05, y: -4 }}
-                            whileTap={{ scale: 0.95 }}
+                            emoji={getFoodEmoji(item.item_name)}
+                            name={item.item_name}
+                            quantity={item.quantity}
+                            onClick={() => handleFeed(item)}
                             disabled={isFeeding}
-                            style={{
-                                cursor: isFeeding ? 'not-allowed' : 'pointer',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                textAlign: 'center',
-                                padding: 20,
-                                opacity: isFeeding ? 0.6 : 1,
-                                background: 'rgba(35, 35, 45, 0.7)',
-                                borderRadius: 16,
-                                color: '#fff',
-                                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)',
-                            }}
-                        >
-                            <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>
-                                {getFoodEmoji(item.item_name)}
-                            </div>
-                            <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: 6 }}>
-                                {item.item_name}
-                            </div>
-                            <div style={{
-                                fontSize: '0.8rem',
-                                color: '#10b981',
-                                background: 'rgba(16, 185, 129, 0.15)',
-                                padding: '4px 10px',
-                                borderRadius: 8,
-                                display: 'inline-block',
-                            }}>
-                                x{item.quantity}
-                            </div>
-                        </motion.button>
+                            accentColor={ROOM_THEMES.kitchen.accent}
+                        />
                     ))}
                 </div>
             )}
+        </>
+    );
 
-            {/* Bottom Tip */}
-            <div style={{
-                marginTop: 'auto',
-                paddingTop: 24,
-                fontSize: '0.85rem',
-                color: 'rgba(255, 255, 255, 0.4)',
-            }}>
-                💡 Regular feeding keeps your pet happy!
-            </div>
-        </motion.div>
+    return (
+        <RoomLayout
+            room="kitchen"
+            stageContent={stageContent}
+            dockContent={dockContent}
+        />
     );
 }
 
