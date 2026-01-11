@@ -2,14 +2,14 @@
  * RoomLayout.tsx
  * 
  * Stage + Dock layout wrapper for Pet House rooms.
- * Stage: Dynamic themed background with 3D pet (70% height)
- * Dock: Glassmorphism bottom panel for inventory (30% height)
+ * Stage: Dynamic themed background with 3D pet (fills available space)
+ * Dock: Fixed bottom panel for inventory
  */
 
 import React from 'react';
 import { motion } from 'framer-motion';
 
-// Room theme configurations with Tailwind-compatible CSS
+// Room theme configurations
 export const ROOM_THEMES = {
     living: {
         stage: 'linear-gradient(180deg, #1e1b4b 0%, #312e81 30%, #4c1d95 70%, #7c2d12 100%)',
@@ -27,7 +27,6 @@ export const ROOM_THEMES = {
         label: 'Bathroom',
     },
     closet: {
-        // Radial spotlight effect
         stage: 'radial-gradient(ellipse at 50% 30%, #4c1d95 0%, #1e1b4b 50%, #0f0f23 100%)',
         accent: '#8b5cf6',
         label: 'Closet',
@@ -40,14 +39,12 @@ interface RoomLayoutProps {
     room: RoomTheme;
     stageContent: React.ReactNode;
     dockContent: React.ReactNode;
-    dockHeight?: string; // e.g., '30%' or '280px'
 }
 
 export function RoomLayout({
     room,
     stageContent,
     dockContent,
-    dockHeight = '35%',
 }: RoomLayoutProps) {
     const theme = ROOM_THEMES[room];
 
@@ -56,9 +53,12 @@ export function RoomLayout({
             style={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: '100%', // Fill parent container instead of vh
+                // Use fixed heights that work within the modal window
+                height: 'calc(100vh - 180px)', // Modal header + room switcher + padding
+                maxHeight: 600, // Cap max height
                 width: '100%',
-                overflow: 'hidden',
+                margin: '-28px -32px', // Negate parent padding to go edge-to-edge
+                padding: 0,
             }}
         >
             {/* Stage: 3D Pet + Themed Background */}
@@ -67,6 +67,7 @@ export function RoomLayout({
                 animate={{ opacity: 1 }}
                 style={{
                     flex: 1,
+                    minHeight: 280,
                     background: theme.stage,
                     display: 'flex',
                     flexDirection: 'column',
@@ -74,61 +75,50 @@ export function RoomLayout({
                     justifyContent: 'center',
                     position: 'relative',
                     overflow: 'hidden',
-                    minHeight: 0,
                 }}
             >
-                {/* Subtle pattern overlay for depth */}
+                {/* Subtle overlay */}
                 <div style={{
                     position: 'absolute',
                     inset: 0,
-                    background: `
-                        radial-gradient(circle at 50% 100%, rgba(255,255,255,0.08) 0%, transparent 50%),
-                        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.03) 0%, transparent 30%)
-                    `,
+                    background: 'radial-gradient(circle at 50% 100%, rgba(255,255,255,0.08) 0%, transparent 50%)',
                     pointerEvents: 'none',
                 }} />
 
-                {/* Floor/Ground effect */}
+                {/* Floor effect */}
                 <div style={{
                     position: 'absolute',
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    height: '40%',
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%)',
+                    height: '35%',
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 100%)',
                     pointerEvents: 'none',
                 }} />
 
                 {stageContent}
             </motion.div>
 
-            {/* Dock: Glassmorphism Interaction Panel */}
-            <motion.div
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
+            {/* Dock: Fixed bottom panel */}
+            <div
                 style={{
-                    height: dockHeight,
-                    minHeight: 160,
-                    maxHeight: 220,
-                    background: 'rgba(15, 15, 25, 0.9)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
+                    height: 180,
+                    flexShrink: 0,
+                    background: 'rgba(15, 15, 25, 0.95)',
                     borderTop: '1px solid rgba(255, 255, 255, 0.1)',
                     display: 'flex',
                     flexDirection: 'column',
-                    padding: '12px 20px',
+                    padding: '12px 24px',
                     overflow: 'hidden',
-                    flexShrink: 0,
                 }}
             >
                 {dockContent}
-            </motion.div>
+            </div>
         </div>
     );
 }
 
-// Reusable Dock Item Card
+// Dock Item Card
 interface DockItemCardProps {
     emoji: string;
     name: string;
@@ -152,13 +142,13 @@ export function DockItemCard({
         <motion.button
             onClick={onClick}
             disabled={disabled}
-            whileHover={{ scale: 1.05, y: -2 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             style={{
-                minWidth: 90,
-                height: 95,
-                padding: 10,
-                borderRadius: 16,
+                minWidth: 85,
+                height: 90,
+                padding: 8,
+                borderRadius: 14,
                 border: isEquipped
                     ? `2px solid ${accentColor}`
                     : '1px solid rgba(255, 255, 255, 0.1)',
@@ -173,34 +163,31 @@ export function DockItemCard({
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 6,
+                gap: 4,
                 flexShrink: 0,
                 position: 'relative',
-                boxShadow: isEquipped
-                    ? `0 4px 20px ${accentColor}44`
-                    : '0 4px 12px rgba(0,0,0,0.3)',
             }}
         >
             {isEquipped && (
                 <div style={{
                     position: 'absolute',
-                    top: 6,
-                    right: 6,
-                    width: 18,
-                    height: 18,
+                    top: 4,
+                    right: 4,
+                    width: 16,
+                    height: 16,
                     borderRadius: '50%',
                     background: accentColor,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '0.65rem',
+                    fontSize: '0.6rem',
                 }}>
                     ✓
                 </div>
             )}
-            <span style={{ fontSize: '2rem' }}>{emoji}</span>
+            <span style={{ fontSize: '1.8rem' }}>{emoji}</span>
             <span style={{
-                fontSize: '0.8rem',
+                fontSize: '0.75rem',
                 fontWeight: 600,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -211,11 +198,11 @@ export function DockItemCard({
             </span>
             {quantity !== undefined && (
                 <span style={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.65rem',
                     color: 'rgba(255, 255, 255, 0.6)',
                     background: 'rgba(255, 255, 255, 0.1)',
-                    padding: '2px 8px',
-                    borderRadius: 6,
+                    padding: '1px 6px',
+                    borderRadius: 4,
                 }}>
                     x{quantity}
                 </span>
