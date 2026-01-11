@@ -17,9 +17,9 @@ export function SceneVfx({ vfx }: { vfx: PetGame2Vfx[] }) {
           (Math.random() - 0.5) * 0.8 + 0.8
         ];
 
-        // sparkleBurst - general tap interaction
+        // sparkleBurst - disabled (was general tap interaction)
         if (fx.kind === 'sparkleBurst') {
-          return <ParticleSystem key={fx.id} type="star" count={8} color="#ffd700" position={position} duration={2} />;
+          return null;
         }
 
         // foodPuff - feed action: hearts (love/care)
