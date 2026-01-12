@@ -8,7 +8,7 @@
 import React, { Suspense, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+// import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { PetGame2PetType, PetGame2State, PetBreed } from '../../../game3d/core/SceneManager';
 import type { EquippedAccessory } from '../../../game3d/core/BehaviourSystem';
@@ -86,7 +86,7 @@ function PetModelViewer({
             );
         default:
             return (
-                <group scale={1.2} position={[0, -0.05, 0]} rotation={[0, Math.PI, 0]}>
+                <group scale={1.2} position={[0, -0.05, 0]} rotation={[0, -0.6, 0]}>
                     <DogModel
                         state={state}
                         onPetTap={noopFn}
@@ -123,20 +123,21 @@ export function PetViewer3D({
             >
                 <Suspense fallback={null}>
                     {/* Warm Cozy Lighting */}
-                    <hemisphereLight intensity={0.6} color="#FFFAF0" groundColor="#FFD700" />
+                    <hemisphereLight intensity={0.7} color="#FFFAF0" groundColor="#FFD700" />
                     <ambientLight intensity={0.2} color="#FFF8DC" />
                     <directionalLight
                         position={[8, 12, 6]}
                         intensity={1.2}
                         color="#FFF5E1"
                         castShadow
-                        shadow-mapSize={[1024, 1024]}
+                        shadow-mapSize={[2048, 2048]}
                         shadow-camera-far={40}
                         shadow-camera-left={-12}
                         shadow-camera-right={12}
                         shadow-camera-top={12}
                         shadow-camera-bottom={-12}
                         shadow-bias={-0.0001}
+                        shadow-radius={10}
                     />
                     {/* Warm fill from window side */}
                     <directionalLight position={[-4, 6, 2]} intensity={0.4} color="#FFE4B5" />
@@ -172,6 +173,7 @@ export function PetViewer3D({
                     )}
 
                     {/* Post-Processing: Dreamy Bloom */}
+                    {/* Post-Processing removed due to runtime error */}{/*
                     <EffectComposer>
                         <Bloom
                             intensity={0.5}
@@ -180,6 +182,7 @@ export function PetViewer3D({
                             mipmapBlur
                         />
                     </EffectComposer>
+                    */}
 
                 </Suspense>
             </Canvas>

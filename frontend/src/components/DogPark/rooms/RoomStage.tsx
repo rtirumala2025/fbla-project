@@ -35,9 +35,9 @@ export function RoomStage({ room }: RoomStageProps) {
 function LivingRoomProps() {
     return (
         <group>
-            {/* Fluffy Rug */}
-            <Cylinder args={[2.5, 2.5, 0.08, 32]} position={[0, 0.04, 0]} receiveShadow>
-                <meshStandardMaterial color="#FFCDD2" />
+            {/* Large Round Rug - Pastel Blue */}
+            <Cylinder args={[3.2, 3.2, 0.08, 64]} position={[0, 0.04, 0]} receiveShadow>
+                <meshStandardMaterial color="#E1F5FE" />
             </Cylinder>
 
             {/* The Bed */}
@@ -74,6 +74,28 @@ function LivingRoomProps() {
                         toneMapped={false}
                     />
                 </Cylinder>
+            </group>
+
+            {/* Potted Plant in corner (Right side) */}
+            <group position={[4, 0, -2]}>
+                {/* Pot */}
+                <Cylinder args={[0.3, 0.25, 0.5]} position={[0, 0.25, 0]} castShadow>
+                    <meshStandardMaterial color="#8D6E63" />
+                </Cylinder>
+                {/* Soil */}
+                <Cylinder args={[0.28, 0.28, 0.05]} position={[0, 0.48, 0]}>
+                    <meshStandardMaterial color="#3E2723" />
+                </Cylinder>
+                {/* Plant Leaves (3 Spheres) */}
+                <Sphere args={[0.25]} position={[0, 0.7, 0]} castShadow>
+                    <meshStandardMaterial color="#4CAF50" />
+                </Sphere>
+                <Sphere args={[0.2]} position={[0.15, 0.85, 0.1]} castShadow>
+                    <meshStandardMaterial color="#66BB6A" />
+                </Sphere>
+                <Sphere args={[0.2]} position={[-0.15, 0.65, -0.1]} castShadow>
+                    <meshStandardMaterial color="#81C784" />
+                </Sphere>
             </group>
         </group>
     );

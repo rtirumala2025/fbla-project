@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { Box } from '@react-three/drei';
+import { Box, Sphere } from '@react-three/drei';
 
 interface HouseShellProps {
     room?: 'living' | 'kitchen' | 'bathroom' | 'closet';
@@ -15,13 +15,13 @@ interface HouseShellProps {
 // Color palette for cozy home
 const COLORS = {
     warmCream: '#FDF5E6',      // Walls
-    polishedOak: '#E1C699',    // Floor
+    polishedOak: '#5D4037',    // Floor - Rich Dark Walnut
     darkWood: '#8B4513',       // Shelves, furniture
     white: '#FFFFFF',          // Trim, baseboards
-    navyCabinet: '#2C3E50',    // Kitchen cabinets
+    navyCabinet: '#1A237E',    // Kitchen cabinets - Deep Navy
     marble: '#D3D3D3',         // Countertops
     stainlessSteel: '#C0C0C0', // Fridge
-    skyBlue: '#87CEEB',        // Window
+    skyBlue: '#B0E0E6',        // Window - Soft Sky Blue
 };
 
 export function HouseShell({ room = 'living' }: HouseShellProps) {
@@ -38,9 +38,9 @@ export function HouseShell({ room = 'living' }: HouseShellProps) {
             </mesh>
 
             {/* === CEILING (prevents seeing void) === */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 6.5, -5]}>
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 8, 0]}>
                 <planeGeometry args={[50, 40]} />
-                <meshStandardMaterial color={COLORS.white} />
+                <meshStandardMaterial color="#F5F5F5" side={2} />
             </mesh>
 
             {/* === BACK WALL WITH ARCHWAY === */}
@@ -120,31 +120,31 @@ function DistantKitchen() {
                 <meshStandardMaterial color={COLORS.warmCream} />
             </Box>
 
-            {/* Lower cabinets - Navy Blue */}
+            {/* Lower cabinets - Navy Blue (slightly darker for depth) */}
             <Box args={[5, 1.2, 0.6]} position={[0, 0.6, -0.5]} castShadow receiveShadow>
-                <meshStandardMaterial color={COLORS.navyCabinet} />
+                <meshStandardMaterial color="#1f2d3a" roughness={0.8} />
             </Box>
 
-            {/* Marble countertop */}
+            {/* Marble countertop (less shiny to sit in bg) */}
             <Box args={[5.2, 0.08, 0.7]} position={[0, 1.24, -0.5]} castShadow>
-                <meshStandardMaterial color={COLORS.marble} roughness={0.2} metalness={0.1} />
+                <meshStandardMaterial color={COLORS.marble} roughness={0.7} metalness={0.05} />
             </Box>
 
             {/* Upper cabinets - Navy Blue */}
             <Box args={[2, 1, 0.4]} position={[-1.2, 3.5, -0.7]} castShadow>
-                <meshStandardMaterial color={COLORS.navyCabinet} />
+                <meshStandardMaterial color="#1f2d3a" roughness={0.8} />
             </Box>
             <Box args={[2, 1, 0.4]} position={[1.2, 3.5, -0.7]} castShadow>
-                <meshStandardMaterial color={COLORS.navyCabinet} />
+                <meshStandardMaterial color="#1f2d3a" roughness={0.8} />
             </Box>
 
-            {/* Cabinet handles (gold accents) */}
-            <Box args={[0.3, 0.04, 0.06]} position={[-1.2, 3.2, -0.45]}>
-                <meshStandardMaterial color="#D4AF37" metalness={0.7} roughness={0.3} />
-            </Box>
-            <Box args={[0.3, 0.04, 0.06]} position={[1.2, 3.2, -0.45]}>
-                <meshStandardMaterial color="#D4AF37" metalness={0.7} roughness={0.3} />
-            </Box>
+            {/* Cabinet handles (Gold Spheres) */}
+            <Sphere args={[0.08]} position={[-1.2, 3.2, -0.45]}>
+                <meshStandardMaterial color="#FFD700" metalness={0.8} roughness={0.2} />
+            </Sphere>
+            <Sphere args={[0.08]} position={[1.2, 3.2, -0.45]}>
+                <meshStandardMaterial color="#FFD700" metalness={0.8} roughness={0.2} />
+            </Sphere>
 
             {/* Stainless Steel Fridge */}
             <Box args={[1.2, 3.5, 1]} position={[3, 1.75, 0]} castShadow receiveShadow>
@@ -214,34 +214,44 @@ function LivingRoomDecor() {
     return (
         <group position={[3, 3, -5.8]}>
             {/* === LARGE WINDOW === */}
+            {/* === LARGE WINDOW === */}
             <group position={[0, 0.5, 0]}>
-                {/* Window glass (warm sunset glow - high emissive for bloom) */}
+                {/* Window glass (Soft Sky Blue, Transparent) */}
                 <Box args={[3, 2.5, 0.05]}>
                     <meshStandardMaterial
-                        color="#FFE4B5"
-                        emissive="#FFD700"
-                        emissiveIntensity={2.0}
-                        toneMapped={false}
+                        color={COLORS.skyBlue}
+                        transparent
+                        opacity={0.6}
+                        roughness={0.1}
                     />
                 </Box>
-                {/* Window frame - outer (white) */}
-                <Box args={[3.3, 0.18, 0.12]} position={[0, 1.34, 0.03]}>
+
+                {/* Window Frame: White Cross */}
+                {/* Vertical Mullion */}
+                <Box args={[0.15, 2.5, 0.1]} position={[0, 0, 0.06]}>
                     <meshStandardMaterial color={COLORS.white} />
                 </Box>
-                <Box args={[3.3, 0.18, 0.12]} position={[0, -1.34, 0.03]}>
+                {/* Horizontal Mullion */}
+                <Box args={[3, 0.15, 0.1]} position={[0, 0.5, 0.06]}>
                     <meshStandardMaterial color={COLORS.white} />
                 </Box>
-                <Box args={[0.18, 2.86, 0.12]} position={[-1.56, 0, 0.03]}>
+
+                {/* Outer Frame (Top/Bottom/Sides) */}
+                <Box args={[3.3, 0.15, 0.12]} position={[0, 1.32, 0.03]}>
                     <meshStandardMaterial color={COLORS.white} />
                 </Box>
-                <Box args={[0.18, 2.86, 0.12]} position={[1.56, 0, 0.03]}>
+                <Box args={[3.3, 0.15, 0.12]} position={[0, -1.32, 0.03]}>
                     <meshStandardMaterial color={COLORS.white} />
                 </Box>
-                {/* Cross frame mullions */}
-                <Box args={[3, 0.1, 0.1]} position={[0, 0, 0.05]}>
+                <Box args={[0.15, 2.8, 0.12]} position={[-1.58, 0, 0.03]}>
                     <meshStandardMaterial color={COLORS.white} />
                 </Box>
-                <Box args={[0.1, 2.5, 0.1]} position={[0, 0, 0.05]}>
+                <Box args={[0.15, 2.8, 0.12]} position={[1.58, 0, 0.03]}>
+                    <meshStandardMaterial color={COLORS.white} />
+                </Box>
+
+                {/* Window Sill (Shelf at bottom) */}
+                <Box args={[3.6, 0.1, 0.4]} position={[0, -1.35, 0.15]} castShadow>
                     <meshStandardMaterial color={COLORS.white} />
                 </Box>
             </group>
