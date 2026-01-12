@@ -8,6 +8,7 @@
 import React, { Suspense, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { PetGame2PetType, PetGame2State, PetBreed } from '../../../game3d/core/SceneManager';
 import type { EquippedAccessory } from '../../../game3d/core/BehaviourSystem';
@@ -115,18 +116,36 @@ export function PetViewer3D({
     return (
         <div style={containerStyle}>
             <Canvas
-                camera={{ position: [0, 2, 6], fov: 50 }}
+                camera={{ position: [0, 3, 9], fov: 45 }}
                 gl={{ antialias: true, alpha: true }}
                 style={{ background: 'transparent' }}
+                shadows
             >
                 <Suspense fallback={null}>
-                    {/* Lighting - Dollhouse style */}
-                    <ambientLight intensity={0.7} />
-                    <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
-                    <directionalLight position={[-2, 3, -1]} intensity={0.3} />
+                    {/* Warm Cozy Lighting */}
+                    <hemisphereLight intensity={0.6} color="#FFFAF0" groundColor="#FFD700" />
+                    <ambientLight intensity={0.2} color="#FFF8DC" />
+                    <directionalLight
+                        position={[8, 12, 6]}
+                        intensity={1.2}
+                        color="#FFF5E1"
+                        castShadow
+                        shadow-mapSize={[1024, 1024]}
+                        shadow-camera-far={40}
+                        shadow-camera-left={-12}
+                        shadow-camera-right={12}
+                        shadow-camera-top={12}
+                        shadow-camera-bottom={-12}
+                        shadow-bias={-0.0001}
+                    />
+                    {/* Warm fill from window side */}
+                    <directionalLight position={[-4, 6, 2]} intensity={0.4} color="#FFE4B5" />
+
+
 
                     {/* Room Stage */}
                     <RoomStage room={currentRoom} />
+
 
                     {/* The actual pet model from main game */}
                     <PetModelViewer
@@ -135,16 +154,33 @@ export function PetViewer3D({
                         accessories={accessories}
                     />
 
-                    {/* Controls for Closet (drag to rotate) */}
+                    {/* Controls - Strictly Locked Viewport */}
                     {interactive && (
                         <OrbitControls
                             enablePan={false}
                             enableZoom={false}
-                            minPolarAngle={Math.PI / 4}
-                            maxPolarAngle={Math.PI / 2}
+                            // Strict horizontal clamp (~17 degrees)
+                            minAzimuthAngle={-0.3}
+                            maxAzimuthAngle={0.3}
+                            // Vertical: Keep looking at the dog
+                            minPolarAngle={1.2}
+                            maxPolarAngle={1.5}
                             autoRotate={false}
+                            enableDamping
+                            dampingFactor={0.08}
                         />
                     )}
+
+                    {/* Post-Processing: Dreamy Bloom */}
+                    <EffectComposer>
+                        <Bloom
+                            intensity={0.5}
+                            luminanceThreshold={0.9}
+                            luminanceSmoothing={0.9}
+                            mipmapBlur
+                        />
+                    </EffectComposer>
+
                 </Suspense>
             </Canvas>
         </div>

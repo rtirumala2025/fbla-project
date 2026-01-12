@@ -239,31 +239,29 @@ export function HouseWindow({
                 </div>
             )}
 
-            {/* Full Container - Gradient background covers everything */}
+            {/* Full Container - Warm peach background (cozy indoor feel) */}
             <div
-                className="h-full w-full flex flex-col overflow-hidden relative transition-colors duration-700"
-                style={{
-                    background: activeRoom === 'living'
-                        ? 'linear-gradient(to bottom, #F7E7CE 50%, #8B5A2B 50%)'
-                        : activeRoom === 'kitchen'
-                            ? 'linear-gradient(to bottom, #FFF3E0 50%, #BF360C 50%)'
-                            : activeRoom === 'bathroom'
-                                ? 'linear-gradient(to bottom, #E0F7FA 50%, #006064 50%)'
-                                : 'linear-gradient(to bottom, #F3E5F5 50%, #4A148C 50%)'
-                }}
-
+                className="h-full w-full flex flex-col overflow-hidden relative"
+                style={{ background: '#FFDAB9' }}
             >
-
-
+                {/* Subtle vignette */}
+                <div
+                    className="absolute inset-0 pointer-events-none z-50"
+                    style={{
+                        background: 'radial-gradient(circle at center 55%, transparent 45%, rgba(0,0,0,0.25) 100%)'
+                    }}
+                />
 
 
                 {/* Room Switcher */}
-                <div className="shrink-0 bg-black/20 border-b border-white/10">
+                <div className="shrink-0 bg-black/40 backdrop-blur-sm border-b border-white/10 relative z-40">
                     <RoomSwitcher
                         activeRoom={activeRoom}
                         onRoomChange={setActiveRoom}
                     />
                 </div>
+
+
 
                 {/* Room Content - takes remaining space */}
                 <AnimatePresence mode="wait">
