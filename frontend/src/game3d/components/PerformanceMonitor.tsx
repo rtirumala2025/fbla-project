@@ -36,7 +36,7 @@ export const PerformanceMonitor: React.FC = () => {
     }, []);
 
     return (
-        <div className="fixed top-20 left-4 z-50 bg-black/70 text-white px-4 py-2 rounded font-mono text-sm pointer-events-none select-none">
+        <div className="fixed bottom-6 left-56 z-50 bg-black/70 text-white px-4 py-2 rounded font-mono text-sm pointer-events-none select-none">
             <div className="font-bold text-green-400">FPS: {fps}</div>
             {memoryUsage > 0 && <div className="text-blue-300">Memory: {memoryUsage} MB</div>}
         </div>

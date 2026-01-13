@@ -571,6 +571,30 @@ export const DashboardPage = React.memo(function DashboardPage() {
               <ShoppingBag className="h-4 w-4" />
               <span>Shop</span>
             </button>
+            <button
+              onClick={async () => {
+                if (!pet) return;
+                try {
+                  await updatePetStats({
+                    health: 100,
+                    hunger: 100,
+                    happiness: 100,
+                    energy: 100,
+                    cleanliness: 100,
+                  });
+                  await refreshPet();
+                  success('Stats maximized! 🚀');
+                } catch (err) {
+                  console.error('Failed to max stats:', err);
+                  toastError('Failed to max stats');
+                }
+              }}
+              className="flex items-center gap-2 rounded-lg bg-rose-500 px-4 py-2 text-white shadow-md transition hover:bg-rose-600 hover:shadow-lg"
+              title="Debug: Reset all stats to 100"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Max Stats</span>
+            </button>
 
           </div>
         </header>

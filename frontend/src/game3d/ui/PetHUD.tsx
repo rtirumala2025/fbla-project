@@ -334,7 +334,7 @@ export function PetHUD({
 
 
             {/* Right Sidebar: Stats - moved from bottom-left to avoid overlapping viewport */}
-            <div className="absolute top-48 right-6 z-20 pointer-events-none">
+            <div className="absolute top-64 right-6 z-20 pointer-events-none">
                 <div className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-white/15 shadow-2xl w-[220px]">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="text-white/70 text-xs font-bold uppercase tracking-widest">Pet Stats</h3>

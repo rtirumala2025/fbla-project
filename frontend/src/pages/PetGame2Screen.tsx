@@ -529,8 +529,28 @@ export const PetGame2Screen: React.FC = () => {
           }}
         />
       )}
-      {/* Dev Tools */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-2">
+        <button
+          onClick={async () => {
+            if (!stats) return;
+            try {
+              await updatePetStats({
+                health: 100,
+                hunger: 100,
+                happiness: 100,
+                energy: 100,
+                cleanliness: 100,
+              });
+              await refreshPet();
+              showSuccess('debug', 'Stats Maximized! 🚀');
+            } catch (err) {
+              console.error('Failed to max stats', err);
+            }
+          }}
+          className="px-3 py-1 bg-rose-500/80 hover:bg-rose-600 text-white text-xs rounded-full border border-white/20 backdrop-blur-sm transition-colors flex items-center gap-1"
+        >
+          ✨ Max Stats
+        </button>
         <button
           onClick={() => {
             const types: PetGame2PetType[] = ['dog', 'cat', 'panda'];
