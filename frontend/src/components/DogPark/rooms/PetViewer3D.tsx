@@ -7,7 +7,7 @@
 
 import React, { Suspense, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, ContactShadows } from '@react-three/drei';
 // import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { PetGame2PetType, PetGame2State, PetBreed } from '../../../game3d/core/SceneManager';
@@ -86,7 +86,7 @@ function PetModelViewer({
             );
         default:
             return (
-                <group scale={1.2} position={[0, -0.05, 0]} rotation={[0, -0.6, 0]}>
+                <group scale={1.2} position={[0, -0.05, 0]} rotation={[0, -Math.PI / 6, 0]}>
                     <DogModel
                         state={state}
                         onPetTap={noopFn}
@@ -111,24 +111,26 @@ export function PetViewer3D({
     // If size is provided, use fixed dimensions; otherwise fill parent
     const containerStyle: React.CSSProperties = size
         ? { width: size, height: size }
-        : { position: 'absolute', inset: 0, width: '100%', height: '100%' };
+        : { position: 'absolute', inset: 0, width: '100%', height: '100%', backgroundColor: '#FFDAB9' };
 
     return (
         <div style={containerStyle}>
             <Canvas
-                camera={{ position: [0, 3, 9], fov: 45 }}
+                camera={{ position: [0, 4, 10], fov: 35 }}
                 gl={{ antialias: true, alpha: true }}
                 style={{ background: 'transparent' }}
                 shadows
             >
                 <Suspense fallback={null}>
-                    {/* Warm Cozy Lighting */}
-                    <hemisphereLight intensity={0.7} color="#FFFAF0" groundColor="#FFD700" />
-                    <ambientLight intensity={0.2} color="#FFF8DC" />
+                    {/* Golden Hour Lighting - Cozy Overhaul */}
+                    {/* Soft Lavender Ambient for better shadow visibility */}
+                    <ambientLight intensity={0.8} color="#E6E6FA" />
+
+                    {/* Low Warm Sun - Softened */}
                     <directionalLight
-                        position={[8, 12, 6]}
+                        position={[5, 5, 5]}
                         intensity={1.2}
-                        color="#FFF5E1"
+                        color="#ff9800"
                         castShadow
                         shadow-mapSize={[2048, 2048]}
                         shadow-camera-far={40}
@@ -139,14 +141,22 @@ export function PetViewer3D({
                         shadow-bias={-0.0001}
                         shadow-radius={10}
                     />
-                    {/* Warm fill from window side */}
-                    <directionalLight position={[-4, 6, 2]} intensity={0.4} color="#FFE4B5" />
 
+                    {/* Subtle Fill from front */}
+                    <directionalLight position={[0, 2, 5]} intensity={0.4} color="#ffffff" />
 
+                    {/* Grounded Soft Contact Shadows */}
+                    <ContactShadows
+                        position={[0, -0.75, 0]}
+                        opacity={0.6}
+                        scale={40}
+                        blur={2.5}
+                        far={4}
+                        color="#000000"
+                    />
 
                     {/* Room Stage */}
                     <RoomStage room={currentRoom} />
-
 
                     {/* The actual pet model from main game */}
                     <PetModelViewer
