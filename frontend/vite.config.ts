@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: './',
   plugins: [
 
     react({
