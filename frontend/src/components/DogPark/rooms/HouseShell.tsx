@@ -60,6 +60,29 @@ function BackWall() {
             <RoundedBox args={[20, 10, 0.5]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
                 <meshStandardMaterial color={COLORS.warmCream} />
             </RoundedBox>
+
+            {/* === WALL ART === */}
+            <group position={[-2, 1, 0.3]}>
+                {/* Frame (Dark Wood) */}
+                <RoundedBox args={[2.2, 1.6, 0.08]} position={[0, 0, 0]} radius={0.04} smoothness={4} castShadow>
+                    <meshStandardMaterial color="#3E2723" />
+                </RoundedBox>
+                {/* Canvas Background (Deep Blue) */}
+                <RoundedBox args={[2, 1.4, 0.02]} position={[0, 0, 0.04]} radius={0.02} smoothness={4}>
+                    <meshStandardMaterial color="#1A237E" />
+                </RoundedBox>
+                {/* Abstract Art: Sun (Yellow Circle) */}
+                <mesh position={[0.5, 0.3, 0.06]}>
+                    <circleGeometry args={[0.25, 32]} />
+                    <meshStandardMaterial color="#FFEB3B" emissive="#FFA000" emissiveIntensity={0.3} />
+                </mesh>
+                {/* Abstract Art: Mountain (White Triangle) */}
+                <mesh position={[-0.3, -0.2, 0.06]}>
+                    <coneGeometry args={[0.4, 0.6, 4]} />
+                    <meshStandardMaterial color="#ECEFF1" />
+                </mesh>
+            </group>
+
             {/* Baseboard - Height 0.4 -> Y = -5 (Bottom of wall) + 0.2 (Half height) = -4.8 */}
             <RoundedBox args={[20, 0.4, 0.6]} position={[0, -4.8, 0]} radius={0.02} smoothness={4}>
                 <meshStandardMaterial color={COLORS.white} />
@@ -91,17 +114,17 @@ function LeftWall({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void }) {
                 onPointerOver={() => document.body.style.cursor = 'pointer'}
                 onPointerOut={() => document.body.style.cursor = 'auto'}
             >
-                {/* Door Frame */}
-                <RoundedBox args={[1.8, 3.5, 0.1]} position={[0, 0, 0]} radius={0.05} smoothness={4}>
+                {/* Architectural Door Frame - Protruding */}
+                <RoundedBox args={[2.0, 3.8, 0.15]} position={[0, 0, 0]} radius={0.05} smoothness={4} castShadow>
                     <meshStandardMaterial color={COLORS.white} />
                 </RoundedBox>
-                {/* Door Panel */}
-                <RoundedBox args={[1.5, 3.2, 0.05]} position={[0, 0, 0.05]} radius={0.02} smoothness={4}>
+                {/* Door Panel - Inset into the frame/wall for shadow depth */}
+                <RoundedBox args={[1.6, 3.5, 0.05]} position={[0, -0.05, -0.04]} radius={0.02} smoothness={4} receiveShadow>
                     <meshStandardMaterial color={COLORS.warmCream} />
                 </RoundedBox>
-                {/* Doorknob */}
-                <Sphere args={[0.06]} position={[0.6, 0, 0.1]} castShadow>
-                    <meshStandardMaterial color="#FFD700" metalness={0.8} />
+                {/* Doorknob - Gold Sphere */}
+                <Sphere args={[0.08]} position={[0.65, 0, 0.04]} castShadow>
+                    <meshStandardMaterial color="#FFD700" metalness={0.9} roughness={0.1} />
                 </Sphere>
             </group>
 

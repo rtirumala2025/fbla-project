@@ -52,8 +52,12 @@ function LivingRoomProps({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void 
                 <RoundedBox args={[2, 0.25, 2]} position={[0, 0.475, 0]} radius={0.12} smoothness={4} castShadow>
                     <meshStandardMaterial color="#FFF8E1" />
                 </RoundedBox>
-                {/* Pillow */}
-                <RoundedBox args={[1.6, 0.25, 0.5]} position={[0, 0.725, -0.7]} radius={0.1} smoothness={4} castShadow>
+                {/* Duvet (Navy Blue) - Folded across bottom 2/3 */}
+                <RoundedBox args={[1.9, 0.15, 1.4]} position={[0, 0.55, 0.25]} radius={0.08} smoothness={4} castShadow>
+                    <meshStandardMaterial color="#1A237E" />
+                </RoundedBox>
+                {/* Pillow - Tilted for 'tossed' look */}
+                <RoundedBox args={[1.6, 0.25, 0.5]} position={[0, 0.725, -0.7]} rotation={[0, 0, 0.09]} radius={0.1} smoothness={4} castShadow>
                     <meshStandardMaterial color="#C62828" />
                 </RoundedBox>
             </group>
@@ -79,10 +83,7 @@ function LivingRoomProps({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void 
 
             {/* KITCHEN BACKGROUND (Interactive) */}
             <group position={[2, 0, -2.5]} rotation={[0, -0.1, 0]}>
-                {/* Fridge 
-                     Kickplate Height: 0.2 -> Y = 0.1
-                     Fridge Height: 3.5 -> Y = 0.2 (Kickplate top) + 1.75 (Half Height) = 1.95
-                 */}
+                {/* === SMART FRIDGE === */}
                 <group
                     position={[1.5, 0, 0]}
                     onClick={(e) => {
@@ -92,18 +93,32 @@ function LivingRoomProps({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void 
                     onPointerOver={() => document.body.style.cursor = 'pointer'}
                     onPointerOut={() => document.body.style.cursor = 'auto'}
                 >
-                    {/* Main Fridge Body */}
-                    <RoundedBox args={[1.2, 3.5, 1]} position={[0, 1.95, 0]} radius={0.1} smoothness={4} castShadow>
-                        <meshStandardMaterial color="#C0C0C0" metalness={0.6} roughness={0.2} />
-                    </RoundedBox>
                     {/* Kickplate */}
                     <RoundedBox args={[1.2, 0.2, 0.9]} position={[0, 0.1, 0]} radius={0.02} smoothness={4}>
                         <meshStandardMaterial color="#212121" />
                     </RoundedBox>
-                    {/* Handle */}
-                    <RoundedBox args={[0.04, 0.8, 0.08]} position={[-0.4, 2, 0.55]} radius={0.02}>
-                        <meshStandardMaterial color="#A0A0A0" />
+
+                    {/* Main Fridge Door (Bottom) - Height 3.0 */}
+                    <RoundedBox args={[1.18, 3.0, 0.95]} position={[0, 1.7, 0]} radius={0.05} smoothness={4} castShadow>
+                        <meshStandardMaterial color="#B0B0B0" metalness={0.7} roughness={0.15} />
                     </RoundedBox>
+                    {/* Main Handle (Cylinder) */}
+                    <Cylinder args={[0.03, 0.03, 0.7]} rotation={[0, 0, Math.PI / 2]} position={[-0.48, 2.2, 0.5]}>
+                        <meshStandardMaterial color="#E0E0E0" metalness={0.9} roughness={0.1} />
+                    </Cylinder>
+                    {/* Water Dispenser (Black Rectangle) */}
+                    <RoundedBox args={[0.3, 0.5, 0.05]} position={[0.2, 1.8, 0.48]} radius={0.02} smoothness={4}>
+                        <meshStandardMaterial color="#1A1A1A" />
+                    </RoundedBox>
+
+                    {/* Freezer Door (Top) - Height 1.2, Gap 0.05 from main */}
+                    <RoundedBox args={[1.18, 1.2, 0.95]} position={[0, 3.85, 0]} radius={0.05} smoothness={4} castShadow>
+                        <meshStandardMaterial color="#B8B8B8" metalness={0.7} roughness={0.15} />
+                    </RoundedBox>
+                    {/* Freezer Handle (Cylinder) */}
+                    <Cylinder args={[0.03, 0.03, 0.5]} rotation={[0, 0, Math.PI / 2]} position={[-0.48, 3.6, 0.5]}>
+                        <meshStandardMaterial color="#E0E0E0" metalness={0.9} roughness={0.1} />
+                    </Cylinder>
                 </group>
 
                 {/* Cabinets 
