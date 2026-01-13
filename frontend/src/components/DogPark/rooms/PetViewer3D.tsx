@@ -7,7 +7,7 @@
 
 import React, { Suspense, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, ContactShadows, SpotLight } from '@react-three/drei';
+import { OrbitControls, ContactShadows, SpotLight, PerspectiveCamera } from '@react-three/drei';
 // import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { PetGame2PetType, PetGame2State, PetBreed } from '../../../game3d/core/SceneManager';
@@ -118,12 +118,13 @@ export function PetViewer3D({
     return (
         <div style={containerStyle}>
             <Canvas
-                camera={{ position: [0, 8, 12], fov: 35 }}
                 gl={{ antialias: true, alpha: true }}
                 style={{ background: 'transparent' }}
                 shadows
             >
                 <Suspense fallback={null}>
+                    <PerspectiveCamera makeDefault position={[0, 6, 12]} fov={35} />
+
                     {/* Golden Hour Lighting - Cozy Overhaul */}
                     {/* Soft Lavender Ambient for better shadow visibility */}
                     <ambientLight intensity={0.8} color="#E6E6FA" />
@@ -181,6 +182,7 @@ export function PetViewer3D({
                     {/* Controls - Strictly Locked Viewport */}
                     {interactive && (
                         <OrbitControls
+                            makeDefault
                             target={[0, 0, 0]}
                             enablePan={false}
                             enableZoom={false}

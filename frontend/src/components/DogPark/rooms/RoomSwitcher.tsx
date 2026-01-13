@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sofa, UtensilsCrossed, Bath, Shirt } from 'lucide-react';
+import { Bed, UtensilsCrossed, Bath, Shirt } from 'lucide-react';
 
 export type RoomType = 'living' | 'kitchen' | 'bathroom' | 'closet';
 
@@ -16,7 +16,7 @@ interface RoomConfig {
 }
 
 const ROOMS: RoomConfig[] = [
-    { id: 'living', label: 'Living Room', icon: <Sofa size={20} />, emoji: '🛋️' },
+    { id: 'living', label: 'Bedroom', icon: <Bed size={20} />, emoji: '🛏️' },
     { id: 'kitchen', label: 'Kitchen', icon: <UtensilsCrossed size={20} />, emoji: '🍽️' },
     { id: 'bathroom', label: 'Bathroom', icon: <Bath size={20} />, emoji: '🛁' },
     { id: 'closet', label: 'Closet', icon: <Shirt size={20} />, emoji: '👕' },

@@ -176,6 +176,7 @@ export function CameraController({
           minPolarAngle={0.1}
           makeDefault
           enabled={true}
+          target={[0, 0, 0]}
         />
       )}
       <DroneControls

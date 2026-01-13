@@ -405,9 +405,9 @@ export function PetHUD({
                 </div>
             )}
 
-            {/* Bottom-center: Actions - centered to not overlap viewport */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-                <div className="flex gap-3 bg-slate-900/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-2xl">
+            {/* Bottom-center: Actions - Floating Island Dock */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto w-auto max-w-[90%]">
+                <div className="flex gap-3 bg-black/60 backdrop-blur-md p-3 rounded-3xl border border-white/10 shadow-2xl">
                     {!indoorLocation ? (
                         <>
                             <ActionButton

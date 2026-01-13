@@ -192,7 +192,7 @@ export function PetGame2Scene({
       <Canvas
         shadows
         dpr={dpr} // DPR is already capped at 2 in useMemo, could lower to 1.5 if needed
-        camera={{ fov: 45, near: 0.5, far: 1000, position: [0, 8, 12] }}
+        camera={{ fov: 45, near: 0.5, far: 1000, position: [0, 6, 12] }}
         gl={{
           antialias: false,
           alpha: false,

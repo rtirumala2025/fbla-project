@@ -131,11 +131,11 @@ export function LivingRoom({
                 </div>
             </div>
 
-            {/* Dock */}
-            <div className="h-[200px] shrink-0 bg-black/80 backdrop-blur-xl border-t border-white/10 px-6 py-4 flex flex-col">
+            {/* Dock - Floating Island */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90%] bg-black/60 backdrop-blur-md border border-white/10 rounded-3xl p-4 flex flex-col shadow-2xl">
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-3">
+                <div className="flex gap-2 mb-3 justify-center">
                     {[{ id: 'rest', icon: <Moon size={16} />, label: 'Rest' }, { id: 'play', icon: <Gamepad2 size={16} />, label: 'Play' }].map(tab => (
                         <button
                             key={tab.id}
@@ -149,7 +149,7 @@ export function LivingRoom({
                 </div>
 
                 {/* Items */}
-                <div className="flex gap-3 overflow-x-auto flex-1 items-center pb-2">
+                <div className="flex gap-3 overflow-x-auto flex-1 items-center pb-2 hide-scrollbar justify-center">
                     {activeTab === 'rest' ? (
                         SLEEP_DURATIONS.map(sleep => (
                             <motion.button
@@ -168,7 +168,7 @@ export function LivingRoom({
                             </motion.button>
                         ))
                     ) : toys.length === 0 ? (
-                        <div className="flex-1 flex items-center justify-center text-white/40 gap-2">
+                        <div className="flex-1 flex items-center justify-center text-white/40 gap-2 px-8">
                             <Gamepad2 size={24} /> No toys - visit the shop!
                         </div>
                     ) : (
