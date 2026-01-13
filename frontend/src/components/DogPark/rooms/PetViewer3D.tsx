@@ -7,7 +7,7 @@
 
 import React, { Suspense, useMemo, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, ContactShadows } from '@react-three/drei';
+import { OrbitControls, ContactShadows, SpotLight } from '@react-three/drei';
 // import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import type { PetGame2PetType, PetGame2State, PetBreed } from '../../../game3d/core/SceneManager';
@@ -26,6 +26,7 @@ interface PetViewer3DProps {
     interactive?: boolean; // Enable OrbitControls
     size?: number; // Container size in pixels
     currentRoom?: RoomType;
+    onSwitchRoom?: (room: any) => void;
 }
 
 // Create a static idle state for the viewer (no movement)
@@ -117,7 +118,7 @@ export function PetViewer3D({
     return (
         <div style={containerStyle}>
             <Canvas
-                camera={{ position: [0, 6, 12], fov: 40 }}
+                camera={{ position: [0, 8, 12], fov: 35 }}
                 gl={{ antialias: true, alpha: true }}
                 style={{ background: 'transparent' }}
                 shadows
@@ -146,6 +147,17 @@ export function PetViewer3D({
                     {/* Subtle Fill from front */}
                     <directionalLight position={[0, 2, 5]} intensity={0.4} color="#ffffff" />
 
+                    {/* === POOL OF LIGHT (Dollhouse Effect) === */}
+                    <SpotLight
+                        position={[0, 10, 0]}
+                        angle={0.5}
+                        penumbra={0.5}
+                        intensity={1.0}
+                        castShadow
+                        shadow-bias={-0.0001}
+                        color="#FFF8E1"
+                    />
+
                     {/* Grounded Soft Contact Shadows */}
                     <ContactShadows
                         position={[0, -0.75, 0]}
@@ -169,14 +181,15 @@ export function PetViewer3D({
                     {/* Controls - Strictly Locked Viewport */}
                     {interactive && (
                         <OrbitControls
+                            target={[0, 0, 0]}
                             enablePan={false}
                             enableZoom={false}
                             // Strict horizontal clamp (prevent peeking backstage)
-                            minAzimuthAngle={-0.4}
-                            maxAzimuthAngle={0.4}
-                            // Vertical: Keep looking at the dog
-                            minPolarAngle={1.2}
-                            maxPolarAngle={1.5}
+                            minAzimuthAngle={-0.2}
+                            maxAzimuthAngle={0.2}
+                            // Vertical: High Angle "Sims" View
+                            minPolarAngle={0.5}
+                            maxPolarAngle={1.4}
                             autoRotate={false}
                             enableDamping
                             dampingFactor={0.08}

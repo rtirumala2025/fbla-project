@@ -37,9 +37,9 @@ export function RoomStage({ room, onSwitchRoom }: RoomStageProps) {
 function LivingRoomProps({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void }) {
     return (
         <group>
-            {/* Large Round Rug - CENTERED (Just above floor) */}
-            <Cylinder args={[3.2, 3.2, 0.08, 64]} position={[0, 0.02, 0]} receiveShadow>
-                <meshStandardMaterial color="#E1F5FE" />
+            {/* Large Round Rug - EXPANDED radius 3.5 */}
+            <Cylinder args={[3.5, 3.5, 0.08, 64]} position={[0, 0.02, 0]} receiveShadow>
+                <meshStandardMaterial color="#F5F5DC" />
             </Cylinder>
 
             {/* The Bed - TUCKED LEFT */}
@@ -56,9 +56,9 @@ function LivingRoomProps({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void 
                 <RoundedBox args={[1.9, 0.15, 1.4]} position={[0, 0.55, 0.25]} radius={0.08} smoothness={4} castShadow>
                     <meshStandardMaterial color="#1A237E" />
                 </RoundedBox>
-                {/* Pillow - Tilted for 'tossed' look */}
+                {/* Pillow - Tilted for 'tossed' look (Sage Green) */}
                 <RoundedBox args={[1.6, 0.25, 0.5]} position={[0, 0.725, -0.7]} rotation={[0, 0, 0.09]} radius={0.1} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#C62828" />
+                    <meshStandardMaterial color="#8FBC8F" />
                 </RoundedBox>
             </group>
 
@@ -98,25 +98,25 @@ function LivingRoomProps({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void 
                         <meshStandardMaterial color="#212121" />
                     </RoundedBox>
 
-                    {/* Main Fridge Door (Bottom) - Height 3.0 */}
-                    <RoundedBox args={[1.18, 3.0, 0.95]} position={[0, 1.7, 0]} radius={0.05} smoothness={4} castShadow>
-                        <meshStandardMaterial color="#B0B0B0" metalness={0.7} roughness={0.15} />
+                    {/* Main Fridge Door (Bottom) - Slimmer Width 1.0 (approximating 1.5 total with gaps/bevelling logic) */}
+                    <RoundedBox args={[1.0, 3.0, 0.95]} position={[0, 1.7, 0]} radius={0.05} smoothness={4} castShadow>
+                        <meshStandardMaterial color="#D6D6D6" metalness={0.6} roughness={0.2} />
                     </RoundedBox>
-                    {/* Main Handle (Cylinder) */}
-                    <Cylinder args={[0.03, 0.03, 0.7]} rotation={[0, 0, Math.PI / 2]} position={[-0.48, 2.2, 0.5]}>
+                    {/* Main Handle (Cylinder) - Thinner */}
+                    <Cylinder args={[0.015, 0.015, 0.7]} rotation={[0, 0, Math.PI / 2]} position={[-0.42, 2.2, 0.5]}>
                         <meshStandardMaterial color="#E0E0E0" metalness={0.9} roughness={0.1} />
                     </Cylinder>
                     {/* Water Dispenser (Black Rectangle) */}
-                    <RoundedBox args={[0.3, 0.5, 0.05]} position={[0.2, 1.8, 0.48]} radius={0.02} smoothness={4}>
+                    <RoundedBox args={[0.25, 0.4, 0.05]} position={[0.15, 1.8, 0.48]} radius={0.02} smoothness={4}>
                         <meshStandardMaterial color="#1A1A1A" />
                     </RoundedBox>
 
-                    {/* Freezer Door (Top) - Height 1.2, Gap 0.05 from main */}
-                    <RoundedBox args={[1.18, 1.2, 0.95]} position={[0, 3.85, 0]} radius={0.05} smoothness={4} castShadow>
-                        <meshStandardMaterial color="#B8B8B8" metalness={0.7} roughness={0.15} />
+                    {/* Freezer Door (Top) - Slimmer */}
+                    <RoundedBox args={[1.0, 1.2, 0.95]} position={[0, 3.85, 0]} radius={0.05} smoothness={4} castShadow>
+                        <meshStandardMaterial color="#C0C0C0" metalness={0.6} roughness={0.2} />
                     </RoundedBox>
-                    {/* Freezer Handle (Cylinder) */}
-                    <Cylinder args={[0.03, 0.03, 0.5]} rotation={[0, 0, Math.PI / 2]} position={[-0.48, 3.6, 0.5]}>
+                    {/* Freezer Handle (Cylinder) - Thinner */}
+                    <Cylinder args={[0.015, 0.015, 0.5]} rotation={[0, 0, Math.PI / 2]} position={[-0.42, 3.6, 0.5]}>
                         <meshStandardMaterial color="#E0E0E0" metalness={0.9} roughness={0.1} />
                     </Cylinder>
                 </group>
