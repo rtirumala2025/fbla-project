@@ -107,6 +107,7 @@ export function PetViewer3D({
     interactive = false,
     size, // Optional - if not provided, fills parent container
     currentRoom = 'living',
+    onSwitchRoom,
 }: PetViewer3DProps) {
     // If size is provided, use fixed dimensions; otherwise fill parent
     const containerStyle: React.CSSProperties = size
@@ -116,7 +117,7 @@ export function PetViewer3D({
     return (
         <div style={containerStyle}>
             <Canvas
-                camera={{ position: [0, 4, 10], fov: 35 }}
+                camera={{ position: [0, 6, 12], fov: 40 }}
                 gl={{ antialias: true, alpha: true }}
                 style={{ background: 'transparent' }}
                 shadows
@@ -156,7 +157,7 @@ export function PetViewer3D({
                     />
 
                     {/* Room Stage */}
-                    <RoomStage room={currentRoom} />
+                    <RoomStage room={currentRoom} onSwitchRoom={onSwitchRoom} />
 
                     {/* The actual pet model from main game */}
                     <PetModelViewer
@@ -170,9 +171,9 @@ export function PetViewer3D({
                         <OrbitControls
                             enablePan={false}
                             enableZoom={false}
-                            // Strict horizontal clamp (~17 degrees)
-                            minAzimuthAngle={-0.3}
-                            maxAzimuthAngle={0.3}
+                            // Strict horizontal clamp (prevent peeking backstage)
+                            minAzimuthAngle={-0.4}
+                            maxAzimuthAngle={0.4}
                             // Vertical: Keep looking at the dog
                             minPolarAngle={1.2}
                             maxPolarAngle={1.5}

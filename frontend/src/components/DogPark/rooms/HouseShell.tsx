@@ -10,6 +10,7 @@ import { Box, Sphere, RoundedBox } from '@react-three/drei';
 
 interface HouseShellProps {
     room?: 'living' | 'kitchen' | 'bathroom' | 'closet';
+    onSwitchRoom?: (room: any) => void;
 }
 
 // Color palette for cozy home
@@ -24,69 +25,88 @@ const COLORS = {
     skyBlue: '#B0E0E6',        // Window - Soft Sky Blue
 };
 
-export function HouseShell({ room = 'living' }: HouseShellProps) {
+export function HouseShell({ room = 'living', onSwitchRoom }: HouseShellProps) {
     return (
-        <group position={[0, 0, -3]}>
-            {/* === ZONED FLOOR === */}
-            {/* Living Floor (Left) */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-15, 0, 0]} receiveShadow>
-                <planeGeometry args={[45, 60]} />
+        <group position={[0, 0, 0]}>
+            {/* === ZONED FLOOR (Thick Box, Top Surface = 0) === */}
+            <RoundedBox args={[60, 0.5, 60]} position={[0, -0.25, 0]} radius={0} smoothness={1} receiveShadow>
                 <meshStandardMaterial color={COLORS.polishedOak} roughness={0.4} />
-            </mesh>
-            {/* Kitchen Floor (Right - Tile) */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[22.5, 0, 0]} receiveShadow>
-                <planeGeometry args={[30, 60]} />
-                <meshStandardMaterial color="#E0E0E0" roughness={0.2} metalness={0.1} />
-            </mesh>
+            </RoundedBox>
 
             {/* === CEILING === */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 8, 0]}>
-                <planeGeometry args={[50, 40]} />
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 6, 0]}>
+                <planeGeometry args={[20, 20]} />
                 <meshStandardMaterial color="#F5F5F5" side={2} />
             </mesh>
 
-            {/* === ENCLOSED WALLS === */}
+            {/* === ENCLOSED WALLS (The Box) === */}
             <BackWall />
-            <LeftWall />
+            <LeftWall onSwitchRoom={onSwitchRoom} />
             <RightWall />
 
             {/* === KITCHEN ZONE (Right Side - Compressed) === */}
-            <group position={[3, 0, -2]}>
+            {/* <group position={[3, 0, -2]}>
                 <KitchenCabinets />
                 <DistantDining position={[0, 0, -4]} scale={0.8} />
-            </group>
+            </group> */}
         </group>
     );
 }
 
 function BackWall() {
     return (
-        <group position={[0, 4, -8]}>
-            <RoundedBox args={[40, 8, 0.2]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
+        <group position={[0, 5, -5]}>
+            {/* THICK Wall */}
+            <RoundedBox args={[20, 10, 0.5]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
                 <meshStandardMaterial color={COLORS.warmCream} />
             </RoundedBox>
-            {/* Baseboard */}
-            <RoundedBox args={[40, 0.3, 0.25]} position={[0, -3.85, 0.1]} radius={0.02} smoothness={4}>
+            {/* Baseboard - Height 0.4 -> Y = -5 (Bottom of wall) + 0.2 (Half height) = -4.8 */}
+            <RoundedBox args={[20, 0.4, 0.6]} position={[0, -4.8, 0]} radius={0.02} smoothness={4}>
                 <meshStandardMaterial color={COLORS.white} />
             </RoundedBox>
         </group>
     );
 }
 
-function LeftWall() {
+function LeftWall({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void }) {
     return (
-        <group position={[-20, 4, 0]} rotation={[0, Math.PI / 2, 0]}>
-            <RoundedBox args={[30, 8, 0.2]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
+        <group position={[-6, 5, 0]} rotation={[0, Math.PI / 2, 0]}>
+            {/* THICK Wall */}
+            <RoundedBox args={[20, 10, 0.5]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
                 <meshStandardMaterial color={COLORS.warmCream} />
             </RoundedBox>
 
-            {/* Window moved to Left Wall */}
-            <group position={[0, 0.5, 0.15]}>
+            {/* Window (Smaller, tighter) */}
+            <group position={[0, 0.5, 0.26]}>
                 <Window />
             </group>
 
+            {/* Closet Door (Interactive) */}
+            <group
+                position={[-3, -0.5, 0.26]}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSwitchRoom) onSwitchRoom('closet');
+                }}
+                onPointerOver={() => document.body.style.cursor = 'pointer'}
+                onPointerOut={() => document.body.style.cursor = 'auto'}
+            >
+                {/* Door Frame */}
+                <RoundedBox args={[1.8, 3.5, 0.1]} position={[0, 0, 0]} radius={0.05} smoothness={4}>
+                    <meshStandardMaterial color={COLORS.white} />
+                </RoundedBox>
+                {/* Door Panel */}
+                <RoundedBox args={[1.5, 3.2, 0.05]} position={[0, 0, 0.05]} radius={0.02} smoothness={4}>
+                    <meshStandardMaterial color={COLORS.warmCream} />
+                </RoundedBox>
+                {/* Doorknob */}
+                <Sphere args={[0.06]} position={[0.6, 0, 0.1]} castShadow>
+                    <meshStandardMaterial color="#FFD700" metalness={0.8} />
+                </Sphere>
+            </group>
+
             {/* Baseboard */}
-            <RoundedBox args={[30, 0.3, 0.25]} position={[0, -3.85, 0.1]} radius={0.02} smoothness={4}>
+            <RoundedBox args={[20, 0.4, 0.6]} position={[0, -4.8, 0]} radius={0.02} smoothness={4}>
                 <meshStandardMaterial color={COLORS.white} />
             </RoundedBox>
         </group>
@@ -95,12 +115,14 @@ function LeftWall() {
 
 function RightWall() {
     return (
-        <group position={[20, 4, 0]} rotation={[0, -Math.PI / 2, 0]}>
-            <RoundedBox args={[30, 8, 0.2]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
+        // Moved to x=8, y=5, z=5
+        <group position={[8, 5, 5]} rotation={[0, -Math.PI / 2, 0]}>
+            {/* THICK Wall - BoxGeometry for Solidity */}
+            <RoundedBox args={[20, 10, 0.5]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
                 <meshStandardMaterial color={COLORS.warmCream} />
             </RoundedBox>
             {/* Baseboard */}
-            <RoundedBox args={[30, 0.3, 0.25]} position={[0, -3.85, 0.1]} radius={0.02} smoothness={4}>
+            <RoundedBox args={[20, 0.4, 0.6]} position={[0, -4.8, 0]} radius={0.02} smoothness={4}>
                 <meshStandardMaterial color={COLORS.white} />
             </RoundedBox>
         </group>
