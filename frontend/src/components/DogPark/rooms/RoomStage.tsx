@@ -33,134 +33,61 @@ export function RoomStage({ room, onSwitchRoom }: RoomStageProps) {
 }
 
 
-// Living Room: Bed, Nightstand, Lamp, Rug
+// Living Room: High Precision "Flatten & Detail"
 function LivingRoomProps({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void }) {
     return (
         <group>
-            {/* Large Round Rug - EXPANDED radius 3.5 */}
-            <Cylinder args={[3.5, 3.5, 0.08, 64]} position={[0, 0.02, 0]} receiveShadow>
-                <meshStandardMaterial color="#F5F5DC" />
+            {/* === LEVEL 1: PAPER THIN RUG === */}
+            <RoundedBox args={[9, 0.05, 6]} position={[0, 0.025, -2]} radius={0.05} receiveShadow>
+                <meshStandardMaterial color="#F5F5F5" roughness={1.0} /> {/* Matte Fabric */}
+            </RoundedBox>
+
+            {/* === LEVEL 2: BED LAYERS (Low & Precise) === */}
+            <group position={[0, 0, -2]}>
+                {/* Cushion (y=0.1) */}
+                <mesh position={[0, 0.1, 0]} receiveShadow>
+                    <cylinderGeometry args={[1.4, 1.4, 0.1, 32]} />
+                    <meshStandardMaterial color="#FFF8E1" roughness={0.9} />
+                </mesh>
+                {/* Donut Rim (y=0.15) */}
+                <mesh position={[0, 0.15, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
+                    <torusGeometry args={[1.5, 0.3, 16, 32]} />
+                    <meshStandardMaterial color="#5D4037" roughness={0.4} /> {/* Leather Sheen */}
+                </mesh>
+            </group>
+
+            {/* === LEVEL 3: MCM NIGHTSTANDS (On Legs) === */}
+            {/* Left Nightstand */}
+            <Nightstand position={[-3.2, 0, -2]} />
+            {/* Right Nightstand */}
+            <Nightstand position={[3.2, 0, -2]} />
+        </group>
+    );
+}
+
+function Nightstand({ position }: { position: [number, number, number] }) {
+    return (
+        <group position={position}>
+            {/* Floating Body (Center y=0.8) */}
+            <RoundedBox args={[1, 0.6, 1]} position={[0, 0.8, 0]} radius={0.05} smoothness={4} castShadow>
+                <meshStandardMaterial color="#3E2723" roughness={0.2} /> {/* Polished Wood */}
+            </RoundedBox>
+
+            {/* Legs (Gold/Wood) */}
+            <group position={[0, 0, 0]}>
+                <Cylinder args={[0.04, 0.02, 0.5]} position={[-0.4, 0.25, -0.4]} castShadow><meshStandardMaterial color="#FFD700" metalness={0.8} /></Cylinder>
+                <Cylinder args={[0.04, 0.02, 0.5]} position={[0.4, 0.25, -0.4]} castShadow><meshStandardMaterial color="#FFD700" metalness={0.8} /></Cylinder>
+                <Cylinder args={[0.04, 0.02, 0.5]} position={[-0.4, 0.25, 0.4]} castShadow><meshStandardMaterial color="#FFD700" metalness={0.8} /></Cylinder>
+                <Cylinder args={[0.04, 0.02, 0.5]} position={[0.4, 0.25, 0.4]} castShadow><meshStandardMaterial color="#FFD700" metalness={0.8} /></Cylinder>
+            </group>
+
+            {/* Lamp (Top) */}
+            <Cylinder args={[0.05, 0.05, 0.4]} position={[0, 1.3, 0]} castShadow>
+                <meshStandardMaterial color="#FFD700" metalness={1.0} roughness={0.2} />
             </Cylinder>
-
-            {/* The Bed - TUCKED LEFT */}
-            <group position={[-2.5, 0, -1]} rotation={[0, 0.2, 0]}>
-                {/* Frame: Height 0.35 -> Y = 0.175 (Bottom at 0) */}
-                <RoundedBox args={[2.2, 0.35, 2.2]} position={[0, 0.175, 0]} radius={0.08} smoothness={4} castShadow receiveShadow>
-                    <meshStandardMaterial color="#5D4037" />
-                </RoundedBox>
-                {/* Mattress: Height 0.25 -> Mounted on top of 0.35 -> Center Y = 0.35 + (0.25/2) = 0.475 */}
-                <RoundedBox args={[2, 0.25, 2]} position={[0, 0.475, 0]} radius={0.12} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#FFF8E1" />
-                </RoundedBox>
-                {/* Duvet (Navy Blue) - Folded across bottom 2/3 */}
-                <RoundedBox args={[1.9, 0.15, 1.4]} position={[0, 0.55, 0.25]} radius={0.08} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#1A237E" />
-                </RoundedBox>
-                {/* Pillow - Tilted for 'tossed' look (Sage Green) */}
-                <RoundedBox args={[1.6, 0.25, 0.5]} position={[0, 0.725, -0.7]} rotation={[0, 0, 0.09]} radius={0.1} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#8FBC8F" />
-                </RoundedBox>
-            </group>
-
-            {/* Nightstand - NEXT TO BED */}
-            <group position={[-4, 0, -1.5]}>
-                {/* Height 0.55 -> Y = 0.275 */}
-                <RoundedBox args={[0.6, 0.55, 0.6]} position={[0, 0.275, 0]} radius={0.06} smoothness={4} castShadow receiveShadow>
-                    <meshStandardMaterial color="#8D6E63" />
-                </RoundedBox>
-                <Cylinder args={[0.06, 0.1, 0.2]} position={[0, 0.65, 0]}>
-                    <meshStandardMaterial color="#3E2723" />
-                </Cylinder>
-                <Cylinder args={[0.18, 0.25, 0.25]} position={[0, 0.85, 0]}>
-                    <meshStandardMaterial
-                        color="#FFF59D"
-                        emissive="#FFF59D"
-                        emissiveIntensity={2.5}
-                        toneMapped={false}
-                    />
-                </Cylinder>
-            </group>
-
-            {/* KITCHEN BACKGROUND (Interactive) - REMOVED PER USER REQUEST */}
-            {/* 
-            <group position={[2, 0, -2.5]} rotation={[0, -0.1, 0]}>
-                
-                <group
-                    position={[1.5, 0, 0]}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (onSwitchRoom) onSwitchRoom('kitchen');
-                    }}
-                    onPointerOver={() => document.body.style.cursor = 'pointer'}
-                    onPointerOut={() => document.body.style.cursor = 'auto'}
-                >
-                    
-                    <RoundedBox args={[1.2, 0.2, 0.9]} position={[0, 0.1, 0]} radius={0.02} smoothness={4}>
-                        <meshStandardMaterial color="#212121" />
-                    </RoundedBox>
-
-                    
-                    <RoundedBox args={[1.0, 3.0, 0.95]} position={[0, 1.7, 0]} radius={0.05} smoothness={4} castShadow>
-                        <meshStandardMaterial color="#D6D6D6" metalness={0.6} roughness={0.2} />
-                    </RoundedBox>
-                    
-                    <Cylinder args={[0.015, 0.015, 0.7]} rotation={[0, 0, Math.PI / 2]} position={[-0.42, 2.2, 0.5]}>
-                        <meshStandardMaterial color="#E0E0E0" metalness={0.9} roughness={0.1} />
-                    </Cylinder>
-                    
-                    <RoundedBox args={[0.25, 0.4, 0.05]} position={[0.15, 1.8, 0.48]} radius={0.02} smoothness={4}>
-                        <meshStandardMaterial color="#1A1A1A" />
-                    </RoundedBox>
-
-                    
-                    <RoundedBox args={[1.0, 1.2, 0.95]} position={[0, 3.85, 0]} radius={0.05} smoothness={4} castShadow>
-                        <meshStandardMaterial color="#C0C0C0" metalness={0.6} roughness={0.2} />
-                    </RoundedBox>
-                    
-                    <Cylinder args={[0.015, 0.015, 0.5]} rotation={[0, 0, Math.PI / 2]} position={[-0.42, 3.6, 0.5]}>
-                        <meshStandardMaterial color="#E0E0E0" metalness={0.9} roughness={0.1} />
-                    </Cylinder>
-                </group>
-
-                
-                <RoundedBox args={[2, 1.2, 0.8]} position={[-0.5, 0.8, 0]} radius={0.05} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#1A237E" />
-                </RoundedBox>
-                
-                <RoundedBox args={[1.8, 0.2, 0.7]} position={[-0.5, 0.1, 0.05]} radius={0.02} smoothness={4}>
-                    <meshStandardMaterial color="#212121" />
-                </RoundedBox>
-                
-                <RoundedBox args={[2.2, 0.08, 0.9]} position={[-0.5, 1.45, 0.05]} radius={0.02} smoothness={4}>
-                    <meshStandardMaterial color="#D3D3D3" />
-                </RoundedBox>
-                
-                <RoundedBox args={[2, 1, 0.5]} position={[-0.5, 3, -0.2]} radius={0.05} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#1A237E" />
-                </RoundedBox>
-            </group>
-            */}
-
-
-            {/* Clutter: Stack of Books - Center Table ish */}
-            <group position={[1.5, 0, 1.2]} rotation={[0, 0.4, 0]}>
-                <RoundedBox args={[0.4, 0.08, 0.3]} position={[0, 0.04, 0]} radius={0.02} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#E57373" />
-                </RoundedBox>
-                <RoundedBox args={[0.38, 0.08, 0.28]} position={[0, 0.12, 0.02]} rotation={[0, -0.2, 0]} radius={0.02} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#64B5F6" />
-                </RoundedBox>
-            </group>
-
-            {/* Potted Plant in corner (Left Corner) */}
-            <group position={[-4, 0, -0.5]}>
-                <Cylinder args={[0.3, 0.25, 0.5]} position={[0, 0.25, 0]} castShadow>
-                    <meshStandardMaterial color="#8D6E63" />
-                </Cylinder>
-                <Sphere args={[0.25]} position={[0, 0.7, 0]} castShadow>
-                    <meshStandardMaterial color="#4CAF50" />
-                </Sphere>
-            </group>
+            <Cylinder args={[0.25, 0.25, 0.3]} position={[0, 1.6, 0]}>
+                <meshStandardMaterial color="#FFF9C4" transparent opacity={0.9} />
+            </Cylinder>
         </group>
     );
 }

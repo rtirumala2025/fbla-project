@@ -13,335 +13,175 @@ interface HouseShellProps {
     onSwitchRoom?: (room: any) => void;
 }
 
-// Color palette for cozy home
+// Standard Palette (Kitchen/Bath)
 const COLORS = {
-    warmCream: '#FDF5E6',      // Walls
+    warmCream: '#E0EEE0',      // Walls - Soft Sage Green
     polishedOak: '#5D4037',    // Floor - Rich Dark Walnut
-    darkWood: '#8B4513',       // Shelves, furniture
+    darkWood: '#5D4037',       // Wainscoting/Furniture match
     white: '#FFFFFF',          // Trim, baseboards
-    navyCabinet: '#1A237E',    // Kitchen cabinets - Deep Navy
+    navyCabinet: '#1A237E',    // Kitchen cabinets
     marble: '#D3D3D3',         // Countertops
     stainlessSteel: '#C0C0C0', // Fridge
     skyBlue: '#B0E0E6',        // Window - Soft Sky Blue
 };
 
+// Luxury Color Palette - "Toll Brothers" Aesthetic
+const LUXURY_COLORS = {
+    Walls: "#CBC5B9", // Revere Pewter / Greige
+    Floor: "#E0C097", // Pale Honey Oak (Lighter & Warmer)
+    Trim: "#FFFFFF",  // High Gloss White
+    ArtFrame: "#2C2C2C", // Matte Black Frame
+    SconceGold: "#FDD835", // Brass
+};
+
 export function HouseShell({ room = 'living', onSwitchRoom }: HouseShellProps) {
     return (
         <group position={[0, 0, 0]}>
-            {/* === ZONED FLOOR (Thick Box, Top Surface = 0) === */}
-            <RoundedBox args={[60, 0.5, 60]} position={[0, -0.25, 0]} radius={0} smoothness={1} receiveShadow>
-                <meshStandardMaterial color={COLORS.polishedOak} roughness={0.4} />
+            {/* === ZONED FLOOR (Polished) === */}
+            <RoundedBox args={[16, 0.5, 16]} position={[0, -0.25, 0]} radius={0} smoothness={1} receiveShadow>
+                <meshStandardMaterial color={LUXURY_COLORS.Floor} roughness={0.1} />
             </RoundedBox>
 
-            {/* === CEILING === */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 6, 0]}>
-                <planeGeometry args={[20, 20]} />
-                <meshStandardMaterial color="#F5F5F5" side={2} />
+            {/* === CEILING (Sealed at top of walls) === */}
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 5, 0]}>
+                <planeGeometry args={[16, 16]} />
+                <meshStandardMaterial color="#FFFFFF" side={2} />
             </mesh>
 
-            {/* === CEILING LIGHT (Visual Cap) === */}
-            <group position={[0, 6, 0]}>
-                {/* Cord */}
-                <Cylinder args={[0.02, 0.02, 1]} position={[0, -0.5, 0]}>
-                    <meshStandardMaterial color="#1A1A1A" />
+            {/* === PENDANT LIGHT === */}
+            <group position={[0, 5, 0]}>
+                <Cylinder args={[0.02, 0.02, 1.5]} position={[0, -0.75, 0]}>
+                    <meshStandardMaterial color="#212121" />
                 </Cylinder>
-                {/* Shade (Cone) */}
-                <Cylinder args={[0.05, 0.6, 0.4]} position={[0, -1.2, 0]}>
-                    <meshStandardMaterial color={COLORS.white} side={2} />
+                <Cylinder args={[0.05, 0.4, 0.3]} position={[0, -1.5, 0]}>
+                    <meshStandardMaterial color={LUXURY_COLORS.Trim} side={2} />
                 </Cylinder>
-                {/* Bulb */}
-                <Sphere args={[0.15]} position={[0, -1.3, 0]}>
+                <Sphere args={[0.15]} position={[0, -1.6, 0]}>
                     <meshStandardMaterial color="#FFF59D" emissive="#FFF59D" emissiveIntensity={2} />
                 </Sphere>
             </group>
 
-            {/* === ENCLOSED WALLS (The Box) === */}
+            {/* === ENCLOSED WALLS (Shoebox) === */}
             <BackWall />
-            <LeftWall onSwitchRoom={onSwitchRoom} />
+            <LeftWall />
             <RightWall />
 
-            {/* === KITCHEN ZONE (Right Side - Compressed) === */}
-            {/* <group position={[3, 0, -2]}>
-                <KitchenCabinets />
-                <DistantDining position={[0, 0, -4]} scale={0.8} />
-            </group> */}
+            {/* FIDDLE LEAF FIG (Corner x=5, z=-3) */}
+            <group position={[5, 0, -3]}>
+                {/* Pot */}
+                <Cylinder args={[0.4, 0.3, 0.6]} position={[0, 0.3, 0]}>
+                    <meshStandardMaterial color="#3E2723" />
+                </Cylinder>
+                {/* Stem */}
+                <Cylinder args={[0.05, 0.05, 3]} position={[0, 1.5, 0]}>
+                    <meshStandardMaterial color="#5D4037" />
+                </Cylinder>
+                {/* Leaves */}
+                {[0, 1, 2, 3].map(i => (
+                    <group key={i} position={[0, 1.5 + i * 0.4, 0]} rotation={[0, i * 1.5, 0.5]}>
+                        <mesh scale={[1, 0.1, 1.5]} position={[0, 0, 0.5]}>
+                            <sphereGeometry args={[0.3, 8, 8]} />
+                            <meshStandardMaterial color="#2E7D32" />
+                        </mesh>
+                    </group>
+                ))}
+            </group>
         </group>
     );
 }
 
 function BackWall() {
     return (
-        <group position={[0, 5, -3]}>
-            {/* THICK Wall */}
-            <RoundedBox args={[20, 10, 0.5]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
-                <meshStandardMaterial color={COLORS.warmCream} />
+        <group position={[0, 5, -4]}>
+            {/* Upper Wall (Greige) */}
+            <RoundedBox args={[12, 8.5, 0.5]} position={[0, 0.75, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
+                <meshStandardMaterial color={LUXURY_COLORS.Walls} roughness={0.9} />
+            </RoundedBox>
+            {/* High Wainscoting (White) - Height 3.0 */}
+            <RoundedBox args={[12, 3.0, 0.6]} position={[0, -3.5, 0]} radius={0.02} smoothness={4} receiveShadow>
+                <meshStandardMaterial color={LUXURY_COLORS.Trim} />
+            </RoundedBox>
+            {/* Baseboard separation/detail */}
+            <RoundedBox args={[12, 0.1, 0.65]} position={[0, -2.0, 0]} radius={0.01}>
+                <meshStandardMaterial color={LUXURY_COLORS.Trim} />
             </RoundedBox>
 
-            {/* === WALL ART === */}
-            <group position={[-2, 1, 0.3]}>
-                {/* Frame (Dark Walnut Wood) */}
-                <RoundedBox args={[2.2, 1.6, 0.08]} position={[0, 0, 0]} radius={0.04} smoothness={4} castShadow>
-                    <meshStandardMaterial color={COLORS.polishedOak} />
+            {/* Crown Molding (Top) */}
+            <RoundedBox args={[12, 0.5, 0.6]} position={[0, 4.75, 0]} radius={0.02} smoothness={4}>
+                <meshStandardMaterial color={LUXURY_COLORS.Trim} />
+            </RoundedBox>
+
+            {/* STATEMENT ART (Focal Point High) */}
+            <group position={[0, 4.5, 0.3]}>
+                {/* Frame (Matte Black) */}
+                <RoundedBox args={[3.2, 2.2, 0.1]} position={[0, 0, 0]} radius={0.05}>
+                    <meshStandardMaterial color={LUXURY_COLORS.ArtFrame} roughness={0.9} />
                 </RoundedBox>
-                {/* Canvas Background (Deep Blue) */}
-                <RoundedBox args={[2, 1.4, 0.02]} position={[0, 0, 0.04]} radius={0.02} smoothness={4}>
-                    <meshStandardMaterial color="#1A237E" />
+                {/* Canvas (Deep Navy) */}
+                <RoundedBox args={[3, 2, 0.12]} position={[0, 0, 0]} radius={0.01}>
+                    <meshStandardMaterial color="#1A237E" roughness={0.8} />
                 </RoundedBox>
-                {/* Abstract Art: Sun (Yellow Circle) */}
-                <mesh position={[0.5, 0.3, 0.06]}>
-                    <circleGeometry args={[0.25, 32]} />
-                    <meshStandardMaterial color="#FFEB3B" emissive="#FFA000" emissiveIntensity={0.3} />
-                </mesh>
-                {/* Abstract Art: Mountain (White Triangle) */}
-                <mesh position={[-0.3, -0.2, 0.06]}>
-                    <coneGeometry args={[0.4, 0.6, 4]} />
-                    <meshStandardMaterial color="#ECEFF1" />
+                {/* Gold Accent (Abstract) */}
+                <mesh position={[0, 0, 0.07]}>
+                    <boxGeometry args={[1.5, 0.8, 0.05]} />
+                    <meshStandardMaterial color="#FFD700" metalness={1} roughness={0.2} />
                 </mesh>
             </group>
 
-            {/* Baseboard - Height 0.4 -> Y = -5 (Bottom of wall) + 0.2 (Half height) = -4.8 */}
-            <RoundedBox args={[20, 0.4, 0.6]} position={[0, -4.8, 0]} radius={0.02} smoothness={4}>
-                <meshStandardMaterial color={COLORS.white} />
-            </RoundedBox>
+            {/* SCONCES (Above Nightstands x=-2.5, x=2.5) */}
+            {/* Sconce Left */}
+            <group position={[-2.5, 2, 0.3]}>
+                <Cylinder args={[0.1, 0.1, 0.2]} rotation={[Math.PI / 2, 0, 0]}><meshStandardMaterial color={LUXURY_COLORS.SconceGold} /></Cylinder>
+                <Sphere args={[0.2]} position={[0, -0.2, 0.2]}><meshStandardMaterial color="#FFF9C4" emissive="#FFF9C4" emissiveIntensity={0.5} /></Sphere>
+            </group>
+            {/* Sconce Right */}
+            <group position={[2.5, 2, 0.3]}>
+                <Cylinder args={[0.1, 0.1, 0.2]} rotation={[Math.PI / 2, 0, 0]}><meshStandardMaterial color={LUXURY_COLORS.SconceGold} /></Cylinder>
+                <Sphere args={[0.2]} position={[0, -0.2, 0.2]}><meshStandardMaterial color="#FFF9C4" emissive="#FFF9C4" emissiveIntensity={0.5} /></Sphere>
+            </group>
         </group>
     );
 }
 
-function LeftWall({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void }) {
+function LeftWall() {
     return (
         <group position={[-6, 5, 0]} rotation={[0, Math.PI / 2, 0]}>
-            {/* THICK Wall */}
-            <RoundedBox args={[20, 10, 0.5]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
-                <meshStandardMaterial color={COLORS.warmCream} />
+            {/* Upper Wall */}
+            <RoundedBox args={[12, 8.5, 0.5]} position={[0, 0.75, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
+                <meshStandardMaterial color={LUXURY_COLORS.Walls} roughness={0.9} />
             </RoundedBox>
-
-            {/* Window (Smaller, tighter) */}
-            <group position={[0, 0.5, 0.26]}>
-                <Window />
-            </group>
-
-            {/* Closet Door (Interactive) */}
-            <group
-                position={[-3, -0.5, 0.26]}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (onSwitchRoom) onSwitchRoom('closet');
-                }}
-                onPointerOver={() => document.body.style.cursor = 'pointer'}
-                onPointerOut={() => document.body.style.cursor = 'auto'}
-            >
-                {/* Architectural Door Frame - Protruding (Wood) */}
-                <RoundedBox args={[2.0, 3.8, 0.15]} position={[0, 0, 0]} radius={0.05} smoothness={4} castShadow>
-                    <meshStandardMaterial color={COLORS.polishedOak} />
-                </RoundedBox>
-                {/* Door Panel - Inset (White) */}
-                <RoundedBox args={[1.6, 3.5, 0.05]} position={[0, -0.05, -0.04]} radius={0.02} smoothness={4} receiveShadow>
-                    <meshStandardMaterial color={COLORS.white} />
-                </RoundedBox>
-                {/* Doorknob - Gold Sphere */}
-                <Sphere args={[0.08]} position={[0.65, 0, 0.04]} castShadow>
-                    <meshStandardMaterial color="#FFD700" metalness={0.9} roughness={0.1} />
-                </Sphere>
-            </group>
-
-            {/* Baseboard */}
-            <RoundedBox args={[20, 0.4, 0.6]} position={[0, -4.8, 0]} radius={0.02} smoothness={4}>
-                <meshStandardMaterial color={COLORS.white} />
+            {/* Wainscoting - Height 3.0 */}
+            <RoundedBox args={[12, 3.0, 0.6]} position={[0, -3.5, 0]} radius={0.02} smoothness={4} receiveShadow>
+                <meshStandardMaterial color={LUXURY_COLORS.Trim} />
             </RoundedBox>
+            {/* Crown Molding */}
+            <RoundedBox args={[12, 0.5, 0.6]} position={[0, 4.75, 0]} radius={0.02} smoothness={4}>
+                <meshStandardMaterial color={LUXURY_COLORS.Trim} />
+            </RoundedBox>
+            {/* CLEAN - NO DECOR */}
         </group>
     );
 }
-
 
 
 function RightWall() {
     return (
-        // Moved to x=6 (closer), y=5, z=5
-        <group position={[6, 5, 5]} rotation={[0, -Math.PI / 2, 0]}>
-            {/* THICK Wall - BoxGeometry for Solidity */}
-            <RoundedBox args={[20, 10, 0.5]} position={[0, 0, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
-                <meshStandardMaterial color={COLORS.warmCream} />
+        <group position={[6, 5, 0]} rotation={[0, -Math.PI / 2, 0]}>
+            {/* Upper Wall */}
+            <RoundedBox args={[12, 8.5, 0.5]} position={[0, 0.75, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
+                <meshStandardMaterial color={LUXURY_COLORS.Walls} roughness={0.9} />
             </RoundedBox>
-            {/* Baseboard */}
-            <RoundedBox args={[20, 0.4, 0.6]} position={[0, -4.8, 0]} radius={0.02} smoothness={4}>
-                <meshStandardMaterial color={COLORS.white} />
+            {/* Wainscoting - Height 3.0 */}
+            <RoundedBox args={[12, 3.0, 0.6]} position={[0, -3.5, 0]} radius={0.02} smoothness={4} receiveShadow>
+                <meshStandardMaterial color={LUXURY_COLORS.Trim} />
             </RoundedBox>
+            {/* Crown Molding */}
+            <RoundedBox args={[12, 0.5, 0.6]} position={[0, 4.75, 0]} radius={0.02} smoothness={4}>
+                <meshStandardMaterial color={LUXURY_COLORS.Trim} />
+            </RoundedBox>
+            {/* CLEAN - Plant is added in main stage */}
         </group>
     );
 }
-
-function Window() {
-    return (
-        <group>
-            {/* Window glass */}
-            <RoundedBox args={[3, 2.5, 0.05]} radius={0.05} smoothness={4}>
-                <meshStandardMaterial color={COLORS.skyBlue} transparent opacity={0.6} roughness={0.1} />
-            </RoundedBox>
-
-            {/* Frame Cross */}
-            <RoundedBox args={[0.1, 2.5, 0.1]} position={[0, 0, 0.06]} radius={0.02} smoothness={4}>
-                <meshStandardMaterial color={COLORS.white} />
-            </RoundedBox>
-            <RoundedBox args={[3, 0.1, 0.1]} position={[0, 0.3, 0.06]} radius={0.02} smoothness={4}>
-                <meshStandardMaterial color={COLORS.white} />
-            </RoundedBox>
-
-            {/* Outer Frame */}
-            <RoundedBox args={[3.4, 0.2, 0.15]} position={[0, 1.3, 0.05]} radius={0.05} smoothness={4}>
-                <meshStandardMaterial color={COLORS.white} />
-            </RoundedBox>
-            <RoundedBox args={[3.4, 0.2, 0.15]} position={[0, -1.3, 0.05]} radius={0.05} smoothness={4}>
-                <meshStandardMaterial color={COLORS.white} />
-            </RoundedBox>
-            <RoundedBox args={[0.2, 2.7, 0.15]} position={[-1.6, 0.0, 0.05]} radius={0.05} smoothness={4}>
-                <meshStandardMaterial color={COLORS.white} />
-            </RoundedBox>
-            <RoundedBox args={[0.2, 2.7, 0.15]} position={[1.6, 0.0, 0.05]} radius={0.05} smoothness={4}>
-                <meshStandardMaterial color={COLORS.white} />
-            </RoundedBox>
-        </group>
-    );
-}
-
-// Breakfast bar removed
-
-function KitchenCabinets() {
-    return (
-        <group>
-            {/* Lower cabinets */}
-            <RoundedBox args={[1.2, 1.2, 5]} position={[6, 0.6, 0]} radius={0.08} smoothness={4} castShadow receiveShadow>
-                <meshStandardMaterial color={COLORS.navyCabinet} />
-            </RoundedBox>
-            {/* Countertop */}
-            <RoundedBox args={[1.3, 0.08, 5.2]} position={[6, 1.24, 0]} radius={0.02} smoothness={4} castShadow>
-                <meshStandardMaterial color={COLORS.marble} />
-            </RoundedBox>
-
-            {/* Fridge */}
-            <RoundedBox args={[1.4, 3.8, 1.6]} position={[6, 1.9, -4]} radius={0.1} smoothness={4} castShadow>
-                <meshStandardMaterial color={COLORS.stainlessSteel} />
-            </RoundedBox>
-        </group>
-    );
-}
-
-function DistantDining({ position, scale = 1 }: { position: [number, number, number], scale?: number }) {
-    return (
-        <group position={position} scale={scale}>
-            {/* Simplified Table */}
-            <RoundedBox args={[3, 0.12, 1.8]} position={[0, 1, 0]} radius={0.05} castShadow>
-                <meshStandardMaterial color={COLORS.darkWood} />
-            </RoundedBox>
-            {/* Simplified Chair */}
-            <group position={[0, 0, 1.5]}>
-                <RoundedBox args={[0.8, 0.08, 0.8]} position={[0, 0.6, 0]} radius={0.05} castShadow>
-                    <meshStandardMaterial color={COLORS.darkWood} />
-                </RoundedBox>
-                <RoundedBox args={[0.7, 0.06, 0.7]} position={[0, 0.68, 0]} radius={0.03}>
-                    <meshStandardMaterial color="#E57373" />
-                </RoundedBox>
-            </group>
-        </group>
-    );
-}
-
-// Living room wall decorations (shelves, window)
-function LivingRoomDecor() {
-    return (
-        <group position={[3, 3, -5.8]}>
-            {/* === LARGE WINDOW === */}
-            {/* === LARGE WINDOW === */}
-            <group position={[0, 0.5, 0]}>
-                {/* Window glass (Soft Sky Blue, Transparent) */}
-                <RoundedBox args={[3, 2.5, 0.05]} radius={0.05} smoothness={4}>
-                    <meshStandardMaterial
-                        color={COLORS.skyBlue}
-                        transparent
-                        opacity={0.6}
-                        roughness={0.1}
-                    />
-                </RoundedBox>
-
-                {/* Window Frame: White Cross */}
-                {/* Vertical Mullion */}
-                <RoundedBox args={[0.15, 2.5, 0.1]} position={[0, 0, 0.06]} radius={0.02} smoothness={4}>
-                    <meshStandardMaterial color={COLORS.white} />
-                </RoundedBox>
-                {/* Horizontal Mullion */}
-                <RoundedBox args={[3, 0.15, 0.1]} position={[0, 0.5, 0.06]} radius={0.02} smoothness={4}>
-                    <meshStandardMaterial color={COLORS.white} />
-                </RoundedBox>
-
-                {/* Outer Frame (Top/Bottom/Sides) */}
-                <RoundedBox args={[3.3, 0.15, 0.12]} position={[0, 1.32, 0.03]} radius={0.05} smoothness={4}>
-                    <meshStandardMaterial color={COLORS.white} />
-                </RoundedBox>
-                <RoundedBox args={[3.3, 0.15, 0.12]} position={[0, -1.32, 0.03]} radius={0.05} smoothness={4}>
-                    <meshStandardMaterial color={COLORS.white} />
-                </RoundedBox>
-                <RoundedBox args={[0.15, 2.8, 0.12]} position={[-1.58, 0, 0.03]} radius={0.05} smoothness={4}>
-                    <meshStandardMaterial color={COLORS.white} />
-                </RoundedBox>
-                <RoundedBox args={[0.15, 2.8, 0.12]} position={[1.58, 0, 0.03]} radius={0.05} smoothness={4}>
-                    <meshStandardMaterial color={COLORS.white} />
-                </RoundedBox>
-
-                {/* Window Sill (Shelf at bottom) */}
-                <RoundedBox args={[3.6, 0.1, 0.4]} position={[0, -1.35, 0.15]} radius={0.05} smoothness={4} castShadow>
-                    <meshStandardMaterial color={COLORS.white} />
-                </RoundedBox>
-            </group>
-
-            {/* === FLOATING SHELVES === */}
-            <group position={[-4.5, -0.5, 0]}>
-                {/* Shelf 1 - Dark rich wood */}
-                <RoundedBox args={[1.6, 0.12, 0.35]} position={[0, 0.8, 0.2]} radius={0.06} smoothness={4} castShadow receiveShadow>
-                    <meshStandardMaterial color={COLORS.darkWood} roughness={0.6} />
-                </RoundedBox>
-                {/* Shelf 2 */}
-                <RoundedBox args={[1.6, 0.12, 0.35]} position={[0, -0.4, 0.2]} radius={0.06} smoothness={4} castShadow receiveShadow>
-                    <meshStandardMaterial color={COLORS.darkWood} roughness={0.6} />
-                </RoundedBox>
-
-                {/* Books on top shelf */}
-                <RoundedBox args={[0.12, 0.35, 0.18]} position={[-0.5, 1.08, 0.22]} radius={0.02} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#1565C0" /> {/* Blue book */}
-                </RoundedBox>
-                <RoundedBox args={[0.10, 0.32, 0.18]} position={[-0.35, 1.06, 0.22]} radius={0.02} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#C62828" /> {/* Red book */}
-                </RoundedBox>
-                <RoundedBox args={[0.11, 0.34, 0.18]} position={[-0.2, 1.07, 0.22]} radius={0.02} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#2E7D32" /> {/* Green book */}
-                </RoundedBox>
-                <RoundedBox args={[0.09, 0.30, 0.18]} position={[-0.06, 1.05, 0.22]} radius={0.02} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#F9A825" /> {/* Yellow book */}
-                </RoundedBox>
-
-                {/* Plant on top shelf */}
-                <RoundedBox args={[0.22, 0.22, 0.22]} position={[0.4, 1.02, 0.22]} radius={0.05} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#8D6E63" /> {/* Terracotta pot */}
-                </RoundedBox>
-                <RoundedBox args={[0.25, 0.30, 0.15]} position={[0.4, 1.28, 0.22]} radius={0.05} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#4CAF50" /> {/* Plant leaves */}
-                </RoundedBox>
-
-                {/* Picture frame on bottom shelf */}
-                <RoundedBox args={[0.35, 0.28, 0.04]} position={[-0.3, -0.12, 0.28]} radius={0.02} smoothness={4} castShadow>
-                    <meshStandardMaterial color={COLORS.darkWood} />
-                </RoundedBox>
-                <RoundedBox args={[0.28, 0.22, 0.02]} position={[-0.3, -0.12, 0.32]} radius={0.01} smoothness={4}>
-                    <meshStandardMaterial color="#FFE4C4" /> {/* Photo inside */}
-                </RoundedBox>
-
-                {/* Small decor on bottom shelf */}
-                <RoundedBox args={[0.12, 0.18, 0.12]} position={[0.3, -0.21, 0.25]} radius={0.04} smoothness={4} castShadow>
-                    <meshStandardMaterial color="#E91E63" /> {/* Pink candle */}
-                </RoundedBox>
-            </group>
-        </group>
-    );
-}
-
-// Side walls removed in favor of explicit LeftWall/RightWall functions above
 
 export default HouseShell;

@@ -74,31 +74,21 @@ export function LivingRoom({
             {/* Stage */}
             <div className="flex-1 relative min-h-0">
                 {/* 3D Canvas - fills entire stage */}
-                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="living" />
+                <PetViewer3D
+                    petType={petType}
+                    breed={petBreed as any}
+                    interactive={true}
+                    currentRoom="living"
+                    isSleeping={isSleeping}
+                />
 
                 {/* Floating UI overlays */}
                 <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-end pb-8">
                     {/* Floor shadow */}
                     <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent" />
 
-                    {/* Sleeping Z's */}
-                    <AnimatePresence>
-                        {isSleeping && [0, 1, 2].map(i => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, x: 60, y: 0 }}
-                                animate={{ opacity: [0, 1, 0], x: 100, y: -80 }}
-                                transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }}
-                                className="absolute text-3xl font-bold text-amber-400"
-                                style={{ top: '35%', right: '30%' }}
-                            >
-                                Z
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-
-                    {/* Pet Name and Energy */}
-                    <div className="relative z-10 flex flex-col items-center pointer-events-auto">
+                    {/* Pet Name and Energy (Top Right) */}
+                    <div className="absolute top-6 right-6 z-50 flex flex-col items-end pointer-events-auto">
                         <h2 className="text-2xl font-bold text-white drop-shadow-lg">{petName}</h2>
 
                         {/* Energy Bar */}
@@ -117,8 +107,8 @@ export function LivingRoom({
 
                         {/* Sleep Progress */}
                         {isSleeping && (
-                            <div className="mt-4 text-center">
-                                <div className="text-3xl font-mono font-bold flex items-center gap-2 text-white">
+                            <div className="mt-4 text-right">
+                                <div className="text-3xl font-mono font-bold flex items-center justify-end gap-2 text-white">
                                     <Clock size={24} /> {formatTime(remainingTime)}
                                 </div>
                                 <p className="text-white/60 text-sm mt-1">{selectedSleep?.label}... (+{selectedSleep?.energyRestore})</p>
@@ -131,8 +121,8 @@ export function LivingRoom({
                 </div>
             </div>
 
-            {/* Dock - Floating Island */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-auto max-w-[90%] bg-black/60 backdrop-blur-md border border-white/10 rounded-3xl p-4 flex flex-col shadow-2xl">
+            {/* Dock - Floating Island (Bottom Left) */}
+            <div className="absolute bottom-6 left-6 z-50 w-auto max-w-[500px] bg-black/60 backdrop-blur-md border border-white/10 rounded-3xl p-4 flex flex-col shadow-2xl items-start">
 
                 {/* Tabs */}
                 <div className="flex gap-2 mb-3 justify-center">

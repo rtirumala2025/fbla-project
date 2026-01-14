@@ -253,8 +253,8 @@ export function HouseWindow({
                 />
 
 
-                {/* Room Switcher */}
-                <div className="shrink-0 bg-black/40 backdrop-blur-sm border-b border-white/10 relative z-40">
+                {/* Room Switcher (Floating Top Left) */}
+                <div className="absolute top-6 left-6 z-50">
                     <RoomSwitcher
                         activeRoom={activeRoom}
                         onRoomChange={setActiveRoom}
