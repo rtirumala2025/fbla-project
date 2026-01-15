@@ -17,7 +17,7 @@ import { CatModel } from '../../../game3d/pets/CatModel';
 import { PandaModel } from '../../../game3d/pets/PandaModel';
 import type { RoomType } from './RoomSwitcher';
 import { RoomStage } from './RoomStage';
-import { HouseShell } from './HouseShell';
+import { HouseShellFixed } from './HouseShellFixed';
 
 
 interface PetViewer3DProps {
@@ -198,7 +198,7 @@ export function PetViewer3D({
                     />
 
                     {/* House Shell (Background) */}
-                    <HouseShell />
+                    <HouseShellFixed />
 
                     {/* Room Stage (Foreground Props) */}
                     <RoomStage currentActivity={currentRoom} isSleeping={isSleeping} />
