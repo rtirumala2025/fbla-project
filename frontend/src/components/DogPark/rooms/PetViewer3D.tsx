@@ -68,8 +68,8 @@ function PetModelViewer({
 
     // Sleep transforms: Snap to Bed Logic
     // Bed Location: [0, 0, -2] (Centered)
-    // Height: 0.15 to stand on Cushion (Level A)
-    const finalPos: [number, number, number] = isSleeping ? [0, 0.15, -2] : [0, -0.05, 0];
+    // Height: 0.25 to stay on Cushion
+    const finalPos: [number, number, number] = isSleeping ? [0, 0.25, 0] : [0, -0.05, 0];
     // Side Roll for Sleep
     const sleepRot: [number, number, number] = [0, 0, Math.PI / 2];
 

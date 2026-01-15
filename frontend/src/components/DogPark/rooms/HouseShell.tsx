@@ -28,7 +28,7 @@ const COLORS = {
 // Luxury Color Palette - "Toll Brothers" Aesthetic
 const LUXURY_COLORS = {
     Walls: "#CBC5B9", // Revere Pewter / Greige
-    Floor: "#E0C097", // Pale Honey Oak (Lighter & Warmer)
+    Floor: "#D2B48C", // Honey Oak (Glossy)
     Trim: "#FFFFFF",  // High Gloss White
     ArtFrame: "#2C2C2C", // Matte Black Frame
     SconceGold: "#FDD835", // Brass
@@ -37,9 +37,9 @@ const LUXURY_COLORS = {
 export function HouseShell({ room = 'living', onSwitchRoom }: HouseShellProps) {
     return (
         <group position={[0, 0, 0]}>
-            {/* === ZONED FLOOR (Polished) === */}
+            {/* === ZONED FLOOR (Glossy Honey Oak) === */}
             <RoundedBox args={[16, 0.5, 16]} position={[0, -0.25, 0]} radius={0} smoothness={1} receiveShadow>
-                <meshStandardMaterial color={LUXURY_COLORS.Floor} roughness={0.1} />
+                <meshStandardMaterial color="#D4C4A8" roughness={0.1} metalness={0.1} />
             </RoundedBox>
 
             {/* === CEILING (Sealed at top of walls) === */}
@@ -92,7 +92,7 @@ export function HouseShell({ room = 'living', onSwitchRoom }: HouseShellProps) {
 
 function BackWall() {
     return (
-        <group position={[0, 5, -4]}>
+        <group position={[0, 5, -2.2]}>
             {/* Upper Wall (Greige) */}
             <RoundedBox args={[12, 8.5, 0.5]} position={[0, 0.75, 0]} radius={0.05} smoothness={4} receiveShadow castShadow>
                 <meshStandardMaterial color={LUXURY_COLORS.Walls} roughness={0.9} />
@@ -114,16 +114,16 @@ function BackWall() {
             {/* STATEMENT ART (Focal Point High) */}
             <group position={[0, 4.5, 0.3]}>
                 {/* Frame (Matte Black) */}
-                <RoundedBox args={[3.2, 2.2, 0.1]} position={[0, 0, 0]} radius={0.05}>
+                <RoundedBox args={[3.5, 2.5, 0.1]} position={[0, 0, 0]} radius={0.05}>
                     <meshStandardMaterial color={LUXURY_COLORS.ArtFrame} roughness={0.9} />
                 </RoundedBox>
-                {/* Canvas (Deep Navy) */}
-                <RoundedBox args={[3, 2, 0.12]} position={[0, 0, 0]} radius={0.01}>
-                    <meshStandardMaterial color="#1A237E" roughness={0.8} />
+                {/* Canvas (Deep Navy/Charcoal) */}
+                <RoundedBox args={[3.3, 2.3, 0.12]} position={[0, 0, 0]} radius={0.01}>
+                    <meshStandardMaterial color="#102030" roughness={0.8} />
                 </RoundedBox>
                 {/* Gold Accent (Abstract) */}
-                <mesh position={[0, 0, 0.07]}>
-                    <boxGeometry args={[1.5, 0.8, 0.05]} />
+                <mesh position={[0, 0, 0.08]}>
+                    <boxGeometry args={[1.5, 0.2, 0.05]} />
                     <meshStandardMaterial color="#FFD700" metalness={1} roughness={0.2} />
                 </mesh>
             </group>

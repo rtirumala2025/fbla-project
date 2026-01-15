@@ -1,208 +1,161 @@
-/**
- * RoomStage.tsx
- * 
- * "Open Floor Plan" - 3D Props in foreground with full house shell in background.
- */
-
 import React, { useRef } from 'react';
-import { Box, Cylinder, Sphere, RoundedBox } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
+import { Text, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import type { RoomType } from './RoomSwitcher';
-import { HouseShell } from './HouseShell';
 
 interface RoomStageProps {
-    room: RoomType;
-    onSwitchRoom?: (room: any) => void;
+    currentActivity: string;
+    isSleeping: boolean;
 }
 
-export function RoomStage({ room, onSwitchRoom }: RoomStageProps) {
-    return (
-        <group position={[0, 0, 0]}>
-            {/* === BACKGROUND: The Box === */}
-            <HouseShell room={room} onSwitchRoom={onSwitchRoom} />
+export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
+    const dogRef = useRef<THREE.Group>(null);
+    const zzzRef = useRef<THREE.Group>(null);
 
-            {/* === FOREGROUND: Clustered Props === */}
-            {room === 'living' && <LivingRoomProps onSwitchRoom={onSwitchRoom} />}
-            {/* Other rooms remain as is or adjust if necessary */}
-            {room === 'kitchen' && <KitchenProps />}
-            {room === 'bathroom' && <BathroomProps />}
-            {room === 'closet' && <ClosetProps />}
-        </group>
-    );
-}
+    // Animation Loop
+    useFrame((state) => {
+        // Floating Zzz Animation
+        if (zzzRef.current && isSleeping) {
+            zzzRef.current.position.y = 0.8 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+        }
 
-
-// Living Room: High Precision "Flatten & Detail"
-function LivingRoomProps({ onSwitchRoom }: { onSwitchRoom?: (room: any) => void }) {
-    return (
-        <group>
-            {/* === LEVEL 1: PAPER THIN RUG === */}
-            <RoundedBox args={[9, 0.05, 6]} position={[0, 0.025, -2]} radius={0.05} receiveShadow>
-                <meshStandardMaterial color="#F5F5F5" roughness={1.0} /> {/* Matte Fabric */}
-            </RoundedBox>
-
-            {/* === LEVEL 2: BED LAYERS (Low & Precise) === */}
-            <group position={[0, 0, -2]}>
-                {/* Cushion (y=0.1) */}
-                <mesh position={[0, 0.1, 0]} receiveShadow>
-                    <cylinderGeometry args={[1.4, 1.4, 0.1, 32]} />
-                    <meshStandardMaterial color="#FFF8E1" roughness={0.9} />
-                </mesh>
-                {/* Donut Rim (y=0.15) */}
-                <mesh position={[0, 0.15, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
-                    <torusGeometry args={[1.5, 0.3, 16, 32]} />
-                    <meshStandardMaterial color="#5D4037" roughness={0.4} /> {/* Leather Sheen */}
-                </mesh>
-            </group>
-
-            {/* === LEVEL 3: MCM NIGHTSTANDS (On Legs) === */}
-            {/* Left Nightstand */}
-            <Nightstand position={[-3.2, 0, -2]} />
-            {/* Right Nightstand */}
-            <Nightstand position={[3.2, 0, -2]} />
-        </group>
-    );
-}
-
-function Nightstand({ position }: { position: [number, number, number] }) {
-    return (
-        <group position={position}>
-            {/* Floating Body (Center y=0.8) */}
-            <RoundedBox args={[1, 0.6, 1]} position={[0, 0.8, 0]} radius={0.05} smoothness={4} castShadow>
-                <meshStandardMaterial color="#3E2723" roughness={0.2} /> {/* Polished Wood */}
-            </RoundedBox>
-
-            {/* Legs (Gold/Wood) */}
-            <group position={[0, 0, 0]}>
-                <Cylinder args={[0.04, 0.02, 0.5]} position={[-0.4, 0.25, -0.4]} castShadow><meshStandardMaterial color="#FFD700" metalness={0.8} /></Cylinder>
-                <Cylinder args={[0.04, 0.02, 0.5]} position={[0.4, 0.25, -0.4]} castShadow><meshStandardMaterial color="#FFD700" metalness={0.8} /></Cylinder>
-                <Cylinder args={[0.04, 0.02, 0.5]} position={[-0.4, 0.25, 0.4]} castShadow><meshStandardMaterial color="#FFD700" metalness={0.8} /></Cylinder>
-                <Cylinder args={[0.04, 0.02, 0.5]} position={[0.4, 0.25, 0.4]} castShadow><meshStandardMaterial color="#FFD700" metalness={0.8} /></Cylinder>
-            </group>
-
-            {/* Lamp (Top) */}
-            <Cylinder args={[0.05, 0.05, 0.4]} position={[0, 1.3, 0]} castShadow>
-                <meshStandardMaterial color="#FFD700" metalness={1.0} roughness={0.2} />
-            </Cylinder>
-            <Cylinder args={[0.25, 0.25, 0.3]} position={[0, 1.6, 0]}>
-                <meshStandardMaterial color="#FFF9C4" transparent opacity={0.9} />
-            </Cylinder>
-        </group>
-    );
-}
-
-// Kitchen: Placemat and Bowls - SHIFTED RIGHT (COMPRESSED)
-function KitchenProps() {
-    return (
-        <group position={[3, 0, 0]}>
-            {/* Floor Mat */}
-            <RoundedBox args={[2.2, 0.06, 1.4]} position={[0, 0.03, 0]} radius={0.03} smoothness={4} receiveShadow>
-                <meshStandardMaterial color="#90CAF9" />
-            </RoundedBox>
-
-            {/* Placemat */}
-            <RoundedBox args={[1.4, 0.03, 0.8]} position={[0, 0.075, 0]} radius={0.02} smoothness={4} receiveShadow>
-                <meshStandardMaterial color="#1976D2" />
-            </RoundedBox>
-
-            {/* Food Bowl */}
-            <group position={[0.35, 0.1, 0]}>
-                <Cylinder args={[0.25, 0.25, 0.18]} position={[0, 0.09, 0]} castShadow>
-                    <meshStandardMaterial color="#FFFFFF" />
-                </Cylinder>
-                <Cylinder args={[0.2, 0.2, 0.1]} position={[0, 0.14, 0]}>
-                    <meshStandardMaterial color="#795548" />
-                </Cylinder>
-            </group>
-
-            {/* Water Bowl */}
-            <group position={[-0.35, 0.1, 0]}>
-                <Cylinder args={[0.25, 0.25, 0.18]} position={[0, 0.09, 0]} castShadow>
-                    <meshStandardMaterial color="#FFFFFF" />
-                </Cylinder>
-                <Cylinder args={[0.2, 0.2, 0.1]} position={[0, 0.14, 0]}>
-                    <meshStandardMaterial color="#4FC3F7" transparent opacity={0.8} />
-                </Cylinder>
-            </group>
-        </group>
-    );
-}
-
-// Bathroom: Tub with Duck
-function BathroomProps() {
-    return (
-        <group>
-            {/* Bath Mat */}
-            <RoundedBox args={[2.4, 0.06, 2.8]} position={[0, 0.03, 0]} radius={0.03} smoothness={4} receiveShadow>
-                <meshStandardMaterial color="#80DEEA" />
-            </RoundedBox>
-
-            {/* The Tub */}
-            <group position={[0, 0.35, 0]}>
-                {/* Tub Exterior */}
-                <RoundedBox args={[1.8, 0.65, 2.2]} position={[0, 0, 0]} radius={0.15} smoothness={4} castShadow receiveShadow>
-                    <meshStandardMaterial color="#FFFFFF" />
-                </RoundedBox>
-                {/* Water */}
-                <RoundedBox args={[1.5, 0.5, 1.9]} position={[0, 0.1, 0]} radius={0.08} smoothness={4}>
-                    <meshStandardMaterial color="#4FC3F7" transparent opacity={0.7} />
-                </RoundedBox>
-                {/* Rim */}
-                <RoundedBox args={[2, 0.08, 2.4]} position={[0, 0.37, 0]} radius={0.05} smoothness={4}>
-                    <meshStandardMaterial color="#E0E0E0" />
-                </RoundedBox>
-            </group>
-
-            {/* Rubber Duck */}
-            <group position={[0.4, 0.75, 0.5]} rotation={[0, -0.4, 0]}>
-                <RoundedBox args={[0.18, 0.12, 0.22]} radius={0.04} smoothness={4}>
-                    <meshStandardMaterial color="#FFEB3B" />
-                </RoundedBox>
-                <RoundedBox args={[0.12, 0.12, 0.12]} position={[0, 0.1, 0.06]} radius={0.06} smoothness={4}>
-                    <meshStandardMaterial color="#FFEB3B" />
-                </RoundedBox>
-                <RoundedBox args={[0.08, 0.04, 0.08]} position={[0, 0.1, 0.14]} radius={0.02} smoothness={4}>
-                    <meshStandardMaterial color="#FF9800" />
-                </RoundedBox>
-            </group>
-
-            {/* Bubbles */}
-            <Sphere args={[0.1]} position={[-0.25, 0.8, 0.2]}>
-                <meshStandardMaterial color="#FFFFFF" transparent opacity={0.5} />
-            </Sphere>
-            <Sphere args={[0.07]} position={[0.15, 0.75, -0.3]}>
-                <meshStandardMaterial color="#FFFFFF" transparent opacity={0.5} />
-            </Sphere>
-        </group>
-    );
-}
-
-// Closet: Fashion Podium
-function ClosetProps() {
-    const podiumRef = useRef<THREE.Group>(null);
-    useFrame(({ clock }) => {
-        if (podiumRef.current) {
-            podiumRef.current.rotation.y = Math.sin(clock.elapsedTime * 0.3) * 0.06;
+        // Dog Sleep Animation (Smooth Lerp)
+        if (dogRef.current) {
+            if (isSleeping) {
+                // Go to Bed Position
+                dogRef.current.position.lerp(new THREE.Vector3(0, 0.35, 0), 0.1);
+                // Curl up (Scale Y down)
+                dogRef.current.scale.lerp(new THREE.Vector3(0.9, 0.7, 0.9), 0.1);
+            } else {
+                // Wake up (Stand on Bed)
+                dogRef.current.position.lerp(new THREE.Vector3(0, 0.25, 0), 0.1);
+                dogRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+            }
         }
     });
 
     return (
-        <group ref={podiumRef}>
-            {/* Podium Base */}
-            <Cylinder args={[1.6, 1.8, 0.2, 32]} position={[0, 0.1, 0]} receiveShadow>
-                <meshStandardMaterial color="#212121" />
-            </Cylinder>
+        <group>
+            {/* --- LAYER 1: The Paper-Thin Area Rug --- */}
+            <mesh position={[0, 0.015, 0]} receiveShadow>
+                {/* Width 7, Height 0.02 (Paper Thin), Depth 5 */}
+                <boxGeometry args={[7, 0.02, 5]} />
+                <meshStandardMaterial color="#F5F5F5" roughness={1.0} />
+            </mesh>
 
-            {/* Red Carpet */}
-            <Cylinder args={[1.4, 1.4, 0.06, 32]} position={[0, 0.23, 0]} receiveShadow>
-                <meshStandardMaterial color="#D50000" roughness={0.8} />
-            </Cylinder>
+            {/* --- LAYER 2: The Bed Stack --- */}
+            <group position={[0, 0, 0]}>
+                {/* A. The Mattress (Navy Blue) - Sits ON TOP of Rug */}
+                <mesh position={[0, 0.12, 0]} receiveShadow>
+                    <cylinderGeometry args={[1.4, 1.4, 0.2, 32]} />
+                    <meshStandardMaterial color="#283593" roughness={0.8} />
+                </mesh>
 
-            {/* Gold Rim */}
-            <Cylinder args={[1.42, 1.42, 0.03, 32]} position={[0, 0.28, 0]}>
-                <meshStandardMaterial color="#FFD700" metalness={0.8} roughness={0.2} />
-            </Cylinder>
+                {/* B. The Donut Rim (Brown) - Sits slightly higher */}
+                <mesh position={[0, 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
+                    <torusGeometry args={[1.5, 0.3, 16, 32]} />
+                    <meshStandardMaterial color="#5D4037" roughness={0.6} />
+                </mesh>
+            </group>
+
+            {/* --- LAYER 3: The Dog --- */}
+            <group ref={dogRef} position={[0, 0.25, 0]}>
+                {/* Placeholder Dog Geometry (Replace with your GLTF if you have one) */}
+                <mesh castShadow receiveShadow position={[0, 0.4, 0]}>
+                    <capsuleGeometry args={[0.3, 0.6, 4, 8]} />
+                    <meshStandardMaterial color="#E0C097" />
+                </mesh>
+                <mesh position={[0, 0.7, 0.2]}>
+                    <sphereGeometry args={[0.25]} />
+                    <meshStandardMaterial color="#E0C097" />
+                </mesh>
+                {/* Zzz Text Group */}
+                {isSleeping && (
+                    <group ref={zzzRef} position={[0.5, 0.8, 0]}>
+                        <Text fontSize={0.4} color="gold" anchorX="center" anchorY="middle">
+                            Zzz
+                        </Text>
+                    </group>
+                )}
+            </group>
+
+            {/* --- LAYER 4: The Nightstands (Legs Touch Rug) --- */}
+            {/* Left Nightstand */}
+            <group position={[-2.5, 0, 0]}>
+                {/* Legs */}
+                <mesh position={[0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[-0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[-0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                {/* Body */}
+                <mesh position={[0, 0.6, 0]} castShadow>
+                    <boxGeometry args={[1, 0.5, 1]} />
+                    <meshStandardMaterial color="#3E2723" roughness={0.2} />
+                </mesh>
+                {/* Lamp */}
+                <group position={[0, 0.85, 0]}>
+                    <mesh><cylinderGeometry args={[0.05, 0.1, 0.1]} /><meshStandardMaterial color="gold" /></mesh>
+                    <mesh position={[0, 0.2, 0]}><cylinderGeometry args={[0.25, 0.15, 0.3]} /><meshStandardMaterial color="white" transparent opacity={0.9} /></mesh>
+                    <pointLight intensity={0.5} color="#FFD700" distance={3} decay={2} />
+                </group>
+            </group>
+
+            {/* Right Nightstand */}
+            <group position={[2.5, 0, 0]}>
+                {/* Legs */}
+                <mesh position={[0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[-0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[-0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                {/* Body */}
+                <mesh position={[0, 0.6, 0]} castShadow>
+                    <boxGeometry args={[1, 0.5, 1]} />
+                    <meshStandardMaterial color="#3E2723" roughness={0.2} />
+                </mesh>
+                {/* Lamp */}
+                <group position={[0, 0.85, 0]}>
+                    <mesh><cylinderGeometry args={[0.05, 0.1, 0.1]} /><meshStandardMaterial color="gold" /></mesh>
+                    <mesh position={[0, 0.2, 0]}><cylinderGeometry args={[0.25, 0.15, 0.3]} /><meshStandardMaterial color="white" transparent opacity={0.9} /></mesh>
+                    <pointLight intensity={0.5} color="#FFD700" distance={3} decay={2} />
+                </group>
+            </group>
+
+            {/* --- LAYER 5: The Wall Art (FORCED VISIBILITY) --- */}
+            {/* Position Z = -4.8 ensures it sits IN FRONT of a wall at Z = -5 */}
+            <group position={[0, 3.5, -4.8]}>
+                {/* Frame */}
+                <mesh castShadow>
+                    <boxGeometry args={[3.5, 2.5, 0.1]} />
+                    <meshStandardMaterial color="#111" roughness={0.8} />
+                </mesh>
+                {/* Canvas */}
+                <mesh position={[0, 0, 0.06]}>
+                    <planeGeometry args={[3.2, 2.2]} />
+                    <meshStandardMaterial color="#1A237E" />
+                </mesh>
+                {/* Art Detail (Gold Circle) */}
+                <mesh position={[0, 0, 0.07]}>
+                    <circleGeometry args={[0.6, 32]} />
+                    <meshStandardMaterial color="#FFD700" metalness={0.6} roughness={0.2} />
+                </mesh>
+            </group>
+
+            {/* --- LAYER 6: The Plant (Corner Fill) --- */}
+            <group position={[4, 0, -3]}>
+                <mesh position={[0, 0.3, 0]} castShadow>
+                    <cylinderGeometry args={[0.4, 0.3, 0.6]} />
+                    <meshStandardMaterial color="#555" />
+                </mesh>
+                <mesh position={[0, 1.5, 0]}>
+                    <cylinderGeometry args={[0.05, 0.05, 2.5]} />
+                    <meshStandardMaterial color="#4E342E" />
+                </mesh>
+                <mesh position={[0, 2.5, 0]}>
+                    <sphereGeometry args={[0.8]} />
+                    <meshStandardMaterial color="#2E7D32" roughness={0.8} />
+                </mesh>
+            </group>
+
         </group>
     );
 }
