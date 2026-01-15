@@ -61,6 +61,7 @@ export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
             {/* --- LAYER 3: The Dog --- */}
             <group ref={dogRef} position={[0, 0.25, 0]}>
                 {/* Placeholder Dog Geometry (Replace with your GLTF if you have one) */}
+                {/* COMMENTED OUT to avoid duplication with PetModelViewer
                 <mesh castShadow receiveShadow position={[0, 0.4, 0]}>
                     <capsuleGeometry args={[0.3, 0.6, 4, 8]} />
                     <meshStandardMaterial color="#E0C097" />
@@ -69,6 +70,7 @@ export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
                     <sphereGeometry args={[0.25]} />
                     <meshStandardMaterial color="#E0C097" />
                 </mesh>
+                */}
                 {/* Zzz Text Group */}
                 {isSleeping && (
                     <group ref={zzzRef} position={[0.5, 0.8, 0]}>
@@ -121,8 +123,8 @@ export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
             </group>
 
             {/* --- LAYER 5: The Wall Art (FORCED VISIBILITY) --- */}
-            {/* Position Z = -4.8 ensures it sits IN FRONT of a wall at Z = -5 */}
-            <group position={[0, 3.5, -4.8]}>
+            {/* Position Z = -4.6 ensures it sits IN FRONT of the new thick Wainscoting at Z = -4.8 */}
+            <group position={[0, 3.5, -4.6]}>
                 {/* Frame */}
                 <mesh castShadow>
                     <boxGeometry args={[3.5, 2.5, 0.1]} />
@@ -140,18 +142,21 @@ export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
                 </mesh>
             </group>
 
-            {/* --- LAYER 6: The Plant (Corner Fill) --- */}
-            <group position={[4, 0, -3]}>
-                <mesh position={[0, 0.3, 0]} castShadow>
-                    <cylinderGeometry args={[0.4, 0.3, 0.6]} />
-                    <meshStandardMaterial color="#555" />
+            {/* --- LAYER 6: The Plant (Fixed Coordinates) --- */}
+            <group position={[5, 0, -2]}>
+                {/* Pot: Height 0.5, so y=0.25 puts it on floor */}
+                <mesh position={[0, 0.25, 0]} castShadow>
+                    <cylinderGeometry args={[0.4, 0.3, 0.5]} />
+                    <meshStandardMaterial color="#8D6E63" /> {/* Terracotta */}
                 </mesh>
-                <mesh position={[0, 1.5, 0]}>
-                    <cylinderGeometry args={[0.05, 0.05, 2.5]} />
+                {/* Stem */}
+                <mesh position={[0, 1.0, 0]}>
+                    <cylinderGeometry args={[0.05, 0.05, 1.5]} />
                     <meshStandardMaterial color="#4E342E" />
                 </mesh>
-                <mesh position={[0, 2.5, 0]}>
-                    <sphereGeometry args={[0.8]} />
+                {/* Leaves */}
+                <mesh position={[0, 1.8, 0]}>
+                    <sphereGeometry args={[0.7]} />
                     <meshStandardMaterial color="#2E7D32" roughness={0.8} />
                 </mesh>
             </group>
