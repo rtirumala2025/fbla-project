@@ -122,25 +122,7 @@ export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
                 </group>
             </group>
 
-            {/* --- LAYER 5: The Wall Art (FORCED VISIBILITY) --- */}
-            {/* Position Z = -4.6 ensures it sits IN FRONT of the new thick Wainscoting at Z = -4.8 */}
-            <group position={[0, 3.5, -4.6]}>
-                {/* Frame */}
-                <mesh castShadow>
-                    <boxGeometry args={[3.5, 2.5, 0.1]} />
-                    <meshStandardMaterial color="#111" roughness={0.8} />
-                </mesh>
-                {/* Canvas */}
-                <mesh position={[0, 0, 0.06]}>
-                    <planeGeometry args={[3.2, 2.2]} />
-                    <meshStandardMaterial color="#1A237E" />
-                </mesh>
-                {/* Art Detail (Gold Circle) */}
-                <mesh position={[0, 0, 0.07]}>
-                    <circleGeometry args={[0.6, 32]} />
-                    <meshStandardMaterial color="#FFD700" metalness={0.6} roughness={0.2} />
-                </mesh>
-            </group>
+            {/* LAYER 5 DELETED: Wall Art removed for French Doors */}
 
             {/* --- LAYER 6: The Plant (Fixed Coordinates) --- */}
             <group position={[5, 0, -2]}>
