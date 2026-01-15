@@ -5,14 +5,15 @@ import { ContactShadows } from '@react-three/drei';
  * HouseShellV2 - High-Poly Architectural Assembly
  * 
  * ARCHITECTURE SPEC:
- * - Back Wall: Z = -8 (global)
- * - Trim/Millwork: Z = -7.9 to -7.8 (forward to avoid z-fighting)
- * - Sky: Z = -12 (behind wall, uses meshBasicMaterial for glow)
+ * - Back Wall: Z = -8.00 (global)
+ * - Trim/Millwork: Z = -7.95 (forward 5cm to avoid z-fighting)
+ * - Sky: Z = -12 (behind wall)
+ * - Balcony Floor: Z = -10
  * 
- * MATERIALS ("Toll Brothers" Look):
+ * MATERIALS:
  * - Wall Paint: Matte Grey (roughness: 0.9)
  * - Trim/Millwork: Semi-Gloss White (roughness: 0.2)
- * - Glass: Full Transmission (transmission: 0.95, roughness: 0.0)
+ * - Glass: Full Transmission (transmission: 1.0, roughness: 0.0)
  */
 
 // === REUSABLE COMPONENT: Casement Window ===
@@ -40,7 +41,7 @@ function CasementWindow({ position }: { position: [number, number, number] }) {
                     color="#E8F4FD"
                     metalness={0.0}
                     roughness={0.0}
-                    transmission={0.95}
+                    transmission={1.0}
                     thickness={0.2}
                     transparent={true}
                     side={2}
@@ -112,7 +113,7 @@ function DoorPanel({ position, handleSide }: { position: [number, number, number
                     color="#E8F4FD"
                     metalness={0.0}
                     roughness={0.0}
-                    transmission={0.95}
+                    transmission={1.0}
                     thickness={0.2}
                     transparent={true}
                     side={2}
@@ -125,7 +126,7 @@ function DoorPanel({ position, handleSide }: { position: [number, number, number
                     color="#E8F4FD"
                     metalness={0.0}
                     roughness={0.0}
-                    transmission={0.95}
+                    transmission={1.0}
                     thickness={0.2}
                     transparent={true}
                     side={2}
@@ -159,6 +160,10 @@ export function HouseShellV2() {
     const wallColor = "#9E9E9E"; // Matte Grey
     const trimColor = "#FFFFFF"; // Semi-Gloss White
 
+    // Z-coordinates
+    const WALL_Z = -8.00;
+    const TRIM_Z = -7.95; // 5cm offset for Z-fighting fix
+
     return (
         <group>
             {/* === 1. THE FLOOR (Honey Oak) === */}
@@ -168,53 +173,74 @@ export function HouseShellV2() {
             </mesh>
             <ContactShadows resolution={1024} scale={30} blur={2} opacity={0.5} far={10} color="#000000" />
 
-            {/* === 2. THE SKY (Glowing Background) === */}
+            {/* === 2. THE BALCONY (Outdoor Floor) === */}
+            {/* Fixes the "Void" door issue */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, -10]} receiveShadow>
+                <planeGeometry args={[20, 4]} />
+                <meshStandardMaterial color="#5A5A5A" roughness={0.8} />
+            </mesh>
+
+            {/* === 3. THE SKY (Glowing Background) === */}
             {/* Z = -12 (well behind wall), meshBasicMaterial for daylight glow */}
             <mesh position={[0, 8, -12]}>
                 <planeGeometry args={[60, 40]} />
                 <meshBasicMaterial color="#87CEEB" />
             </mesh>
 
-            {/* === 3. THE BACK WALL COMPLEX (Z = -8) === */}
-            <group position={[0, 0, -8]}>
+            {/* === 4. THE BACK WALL COMPLEX === */}
+            <group position={[0, 0, 0]}> {/* Group at origin, using absolute Z for components */}
 
-                {/* --- WALL PANELS (Matte Grey, roughness: 0.9) --- */}
-                {/* Left Panel (x=-10 to x=-4.5) */}
-                <mesh position={[-7.25, 5, 0]} receiveShadow>
-                    <boxGeometry args={[5.5, 10, 0.8]} />
+                {/* --- WALL SEGMENTATION (Fixes Missing Windows) --- */}
+
+                {/* 1. Far Left Panel (x = -15, width 6) - Covers corner */}
+                <mesh position={[-15, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[6, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* Right Panel (x=4.5 to x=10) */}
-                <mesh position={[7.25, 5, 0]} receiveShadow>
-                    <boxGeometry args={[5.5, 10, 0.8]} />
+                {/* GAP 1: Left Window (x = -12 to -7) */}
+
+                {/* 2. Mid Left Pillar (x = -5.5, width 3) - Between window and door */}
+                <mesh position={[-5.5, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[3, 10, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+
+                {/* GAP 2: French Doors (x = -4 to 4) */}
+
+                {/* 3. Mid Right Pillar (x = 5.5, width 3) - Between door and window */}
+                <mesh position={[5.5, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[3, 10, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+
+                {/* GAP 3: Right Window (x = 7 to 12) */}
+
+                {/* 4. Far Right Panel (x = 15, width 6) */}
+                <mesh position={[15, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[6, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
                 {/* Top Header (Full width, above all openings) */}
-                <mesh position={[0, 10.5, 0]} receiveShadow>
-                    <boxGeometry args={[20, 3, 0.8]} />
+                <mesh position={[0, 10.5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[36, 3, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* Center Pillars (Between windows and door) */}
-                <mesh position={[-3.25, 5, 0]} receiveShadow>
-                    <boxGeometry args={[1, 10, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
-                <mesh position={[3.25, 5, 0]} receiveShadow>
-                    <boxGeometry args={[1, 10, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
 
-                {/* --- LEFT WINDOW (Casement Style) --- */}
-                <CasementWindow position={[-7.25, 5, 0]} />
+                {/* --- TRIM & MILLWORK (Applied at TRIM_Z = -7.95) --- */}
 
-                {/* --- RIGHT WINDOW (Casement Style) --- */}
-                <CasementWindow position={[7.25, 5, 0]} />
+                {/* --- LEFT WINDOW (Center of Gap 1: x = -9.5) --- */}
+                {/* Gap 1 is -12 to -7. Center is -9.5 */}
+                <CasementWindow position={[-9.5, 5, TRIM_Z]} />
 
-                {/* --- FRENCH DOORS (The Centerpiece) --- */}
-                <group position={[0, 4.2, 0]}>
+                {/* --- RIGHT WINDOW (Center of Gap 3: x = 9.5) --- */}
+                {/* Gap 3 is 7 to 12. Center is 9.5 */}
+                <CasementWindow position={[9.5, 5, TRIM_Z]} />
+
+                {/* --- FRENCH DOORS (Center of Gap 2: x = 0) --- */}
+                <group position={[0, 4.2, TRIM_Z]}>
                     {/* OUTER FRAME (Heavy trim surrounding doorway) */}
                     {/* Top Transom Frame */}
                     <mesh position={[0, 4, 0.1]}>
@@ -251,36 +277,42 @@ export function HouseShellV2() {
                 </group>
 
                 {/* --- BASEBOARD TRIM --- */}
-                <mesh position={[-7.25, 0.15, 0.45]} receiveShadow>
-                    <boxGeometry args={[5.5, 0.3, 0.12]} />
+                {/* Must be broken up to not cross door opening */}
+                {/* Left side */}
+                <mesh position={[-10, 0.15, TRIM_Z + 0.45]} receiveShadow>
+                    {/* Width approx covering Left Panel + Gap 1 + Mid Left Pillar */}
+                    {/* x=-15 to x=-4. Gap starts at -4. Length = 11? */}
+                    {/* Let's just place generic long pieces for now, user didn't specify segmenting baseboards but logical to stop at door */}
+                    <boxGeometry args={[14, 0.3, 0.12]} />
                     <meshStandardMaterial color={trimColor} roughness={0.2} />
                 </mesh>
-                <mesh position={[7.25, 0.15, 0.45]} receiveShadow>
-                    <boxGeometry args={[5.5, 0.3, 0.12]} />
+                {/* Right side */}
+                <mesh position={[10, 0.15, TRIM_Z + 0.45]} receiveShadow>
+                    <boxGeometry args={[14, 0.3, 0.12]} />
                     <meshStandardMaterial color={trimColor} roughness={0.2} />
                 </mesh>
 
                 {/* --- CROWN MOLDING --- */}
-                <mesh position={[0, 11.85, 0.45]}>
-                    <boxGeometry args={[20, 0.3, 0.15]} />
+                <mesh position={[0, 11.85, TRIM_Z + 0.45]}>
+                    <boxGeometry args={[36, 0.3, 0.15]} />
                     <meshStandardMaterial color={trimColor} roughness={0.2} />
                 </mesh>
 
             </group>
 
-            {/* === 4. SIDE WALLS === */}
-            <mesh position={[-12, 7, 0]} receiveShadow>
+            {/* === 5. SIDE WALLS === */}
+            <mesh position={[-18, 7, 0]} receiveShadow>
                 <boxGeometry args={[1, 14, 30]} />
                 <meshStandardMaterial color={wallColor} roughness={0.9} />
             </mesh>
-            <mesh position={[12, 7, 0]} receiveShadow>
+            <mesh position={[18, 7, 0]} receiveShadow>
                 <boxGeometry args={[1, 14, 30]} />
                 <meshStandardMaterial color={wallColor} roughness={0.9} />
             </mesh>
 
-            {/* === 5. CEILING === */}
+            {/* === 6. CEILING === */}
             <mesh position={[0, 14, 0]} rotation={[Math.PI / 2, 0, 0]}>
-                <planeGeometry args={[30, 30]} />
+                <planeGeometry args={[36, 30]} />
                 <meshStandardMaterial color="#F5F5F5" side={2} />
             </mesh>
 
