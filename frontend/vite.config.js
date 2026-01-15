@@ -120,6 +120,7 @@ export default defineConfig({
             'classnames',
             '@react-three/drei',
             'react-reconciler',
+            'react-reconciler/constants',
         ],
         // Exclude heavy dependencies that are lazy-loaded
         exclude: [

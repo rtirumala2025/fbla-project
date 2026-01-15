@@ -6,7 +6,7 @@
   "dependencies": {
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
-    "@react-three/postprocessing": "^3.0.4",
+    "@react-three/postprocessing": "^2.16.2",
     "@react-three/xr": "^6.6.28",
     "@supabase/supabase-js": "^2.76.1",
     "@testing-library/jest-dom": "^5.17.0",
