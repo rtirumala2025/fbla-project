@@ -594,7 +594,7 @@ export const PetGame2Screen: React.FC = () => {
         onClose={() => setOpenBuilding(null)}
         petName={petName}
         currentEnergy={stats?.energy ?? 50}
-        onSleepComplete={async (energyRestored) => {
+        onSleepComplete={async (energyRestored: number) => {
           try {
             const currentEnergy = stats?.energy ?? 0;
             const newEnergy = Math.min(100, currentEnergy + energyRestored);

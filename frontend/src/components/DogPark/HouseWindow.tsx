@@ -87,11 +87,11 @@ export function HouseWindow({
         item.category?.toLowerCase() === 'accessories'
     );
 
-    // Load inventory on open
+    // Load inventory on open (disabled loadEquippedLoadout to prevent crashes)
     useEffect(() => {
         if (isOpen) {
             loadInventory();
-            loadEquippedLoadout();
+            // loadEquippedLoadout(); // DISABLED - causes 500 errors
         }
     }, [isOpen]);
 
@@ -109,13 +109,9 @@ export function HouseWindow({
     };
 
     const loadEquippedLoadout = async () => {
-        try {
-            const response = await apiRequest<Record<string, string>>('/api/pets/equipped', { method: 'GET' });
-            setEquippedLoadout(response || {});
-        } catch (error) {
-            console.error('Failed to load equipped loadout:', error);
-            setEquippedLoadout({});
-        }
+        // DISABLED - this API call causes 500 errors with PgBouncer
+        // Accessories will start as empty loadout
+        setEquippedLoadout({});
     };
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
