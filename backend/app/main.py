@@ -38,14 +38,14 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS middleware must be added LAST so it runs FIRST on requests
-    # This ensures CORS headers are added to ALL responses, including errors from other middleware
+    # CORS middleware - MUST use specific origins for credentials (Auth headers)
+    # Wildcards ["*"] are INVALID for credentialed requests
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["http://localhost:3000", "http://localhost:3005"],
+        allow_credentials=True,  # Required for Supabase/Auth headers
         allow_methods=["*"],
         allow_headers=["*"],
-        allow_credentials=False,
     )
 
     app.add_middleware(

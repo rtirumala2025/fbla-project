@@ -595,23 +595,15 @@ export const PetGame2Screen: React.FC = () => {
         petName={petName}
         currentEnergy={stats?.energy ?? 50}
         onSleepComplete={async (energyRestored) => {
-          // Use PetContext's updatePetStats to persist energy change to Supabase
           try {
             const currentEnergy = stats?.energy ?? 0;
             const newEnergy = Math.min(100, currentEnergy + energyRestored);
-
             await updatePetStats({ energy: newEnergy });
-
-            // Update local state to match
             if (stats) {
               setStats(prev => prev ? { ...prev, energy: newEnergy } : prev);
             }
-
-            // Refresh removed to prevent race condition - updatePetStats handles context update
-            // await refreshPet();
           } catch (error) {
             console.error('Failed to save sleep energy:', error);
-            // Still update local state on error
             if (stats) {
               setStats(prev => prev ? {
                 ...prev,

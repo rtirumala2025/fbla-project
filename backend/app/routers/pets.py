@@ -214,7 +214,15 @@ async def get_equipped_loadout(
     Returns a dictionary mapping slot names to item IDs.
     Example: {"collar": "acc-collar-fancy", "hat": "acc-hat-crown"}
     """
-    return await service.get_equipped_loadout(current_user.id)
+    try:
+        return await service.get_equipped_loadout(current_user.id)
+    except Exception as e:
+        # Log the error but return safe default instead of crashing
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"CRASH AVOIDED in get_equipped_loadout: {e}")
+        # Return empty loadout so frontend loads without accessories
+        return {}
 
 
 VET_VISIT_COST = 25  # Cost of a vet visit in coins

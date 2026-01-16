@@ -173,12 +173,42 @@ export function HouseShellFixed() {
             </mesh>
             <ContactShadows resolution={1024} scale={30} blur={2} opacity={0.5} far={10} color="#000000" />
 
-            {/* === 2. THE BALCONY (Outdoor Floor) === */}
-            {/* Fixes the "Void" door issue */}
+            {/* === 2. THE BALCONY (Outdoor Floor - Dark Wood) === */}
+            {/* Fixes the "Void" door issue - doors open to visible outdoor floor */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, -12]} receiveShadow>
                 <planeGeometry args={[20, 4]} />
-                <meshStandardMaterial color="#5A5A5A" roughness={0.8} />
+                <meshStandardMaterial color="#4A3728" roughness={0.7} />
             </mesh>
+
+            {/* Balcony Railing - Iron with vertical pickets */}
+            <group position={[0, 0.5, -14]}>
+                {/* Top Rail */}
+                <mesh position={[0, 0.8, 0]}>
+                    <boxGeometry args={[20, 0.08, 0.08]} />
+                    <meshStandardMaterial color="#2C2C2C" metalness={0.8} roughness={0.3} />
+                </mesh>
+                {/* Bottom Rail */}
+                <mesh position={[0, 0.1, 0]}>
+                    <boxGeometry args={[20, 0.06, 0.06]} />
+                    <meshStandardMaterial color="#2C2C2C" metalness={0.8} roughness={0.3} />
+                </mesh>
+                {/* Vertical Pickets (spaced every 1 unit) */}
+                {[-9, -7, -5, -3, -1, 1, 3, 5, 7, 9].map((x) => (
+                    <mesh key={x} position={[x, 0.45, 0]}>
+                        <boxGeometry args={[0.05, 0.8, 0.05]} />
+                        <meshStandardMaterial color="#2C2C2C" metalness={0.8} roughness={0.3} />
+                    </mesh>
+                ))}
+                {/* Corner Posts */}
+                <mesh position={[-10, 0.45, 0]}>
+                    <boxGeometry args={[0.1, 1, 0.1]} />
+                    <meshStandardMaterial color="#2C2C2C" metalness={0.8} roughness={0.3} />
+                </mesh>
+                <mesh position={[10, 0.45, 0]}>
+                    <boxGeometry args={[0.1, 1, 0.1]} />
+                    <meshStandardMaterial color="#2C2C2C" metalness={0.8} roughness={0.3} />
+                </mesh>
+            </group>
 
             {/* === 3. THE SKY (Glowing Background) === */}
             {/* Z = -12 (well behind wall), meshBasicMaterial for daylight glow */}
