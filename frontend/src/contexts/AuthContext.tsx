@@ -329,13 +329,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (mappedUser) {
           // Check if user has a profile and pet - with timeout to prevent hanging
-          const profilePromise = checkUserProfile(mappedUser.uid);
-          const { isNew, hasPet: petExists } = await withTimeout(
-            profilePromise,
-            5000, // 5 second timeout for profile check
-            'Auth state profile check'
-          ) as any;
-          onboardingLogger.authStateChange('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
+          // Increased timeout from 5s to 15s to handle slow network conditions during token refresh
+          let isNew = false;
+          let petExists = hasPet; // Preserve current hasPet value as fallback
+          try {
+            const profilePromise = checkUserProfile(mappedUser.uid);
+            const profileData = await withTimeout(
+              profilePromise,
+              15000, // 15 second timeout - matches initial check timeout
+              'Auth state profile check'
+            ) as any;
+            isNew = profileData.isNew;
+            petExists = profileData.hasPet;
+            onboardingLogger.authStateChange('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
+          } catch (profileTimeoutError: any) {
+            // Use cached/default values on timeout - don't block auth flow
+            onboardingLogger.warn('Profile check timed out, using safe defaults', { userId: mappedUser.uid, preservedHasPet: petExists });
+            isNew = false;
+            // petExists keeps its fallback value from above
+          }
           setIsNewUser(isNew);
           setHasPet(petExists);
         } else {

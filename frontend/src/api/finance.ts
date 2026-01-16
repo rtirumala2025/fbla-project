@@ -122,7 +122,7 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
     const { data: profileData } = await supabase
       .from('profiles')
       .select('care_score')
-      .eq('id', userId)
+      .eq('user_id', userId)
       .single();
 
     if (profileData) {
@@ -343,11 +343,11 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, care_score, username')
-        .in('id', userIds);
+        .select('user_id, care_score, username')
+        .in('user_id', userIds);
 
       profiles?.forEach(p => {
-        profilesMap[p.id] = p;
+        profilesMap[p.user_id] = p;
       });
     }
 

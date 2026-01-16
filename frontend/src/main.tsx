@@ -10,6 +10,17 @@ import { logger } from './utils/logger';
 import './styles/globals.css';
 import './styles/print.css';
 
+// Suppress known zustand deprecation warning from @react-three/fiber
+// This warning comes from @react-three/fiber's internal zustand@3.7.2 dependency
+// Upgrading to @react-three/fiber v9 requires React 19, so we suppress until React upgrade
+const originalWarn = console.warn;
+console.warn = (...args: any[]) => {
+  if (args[0]?.includes?.('[DEPRECATED] Default export is deprecated')) {
+    return; // Suppress this specific warning
+  }
+  originalWarn.apply(console, args);
+};
+
 // #region agent log
 // fetch('http://127.0.0.1:7242/ingest/fcf8e63e-6bca-4626-ad62-00d2de1ac651',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.tsx:12',message:'main.tsx module loading',data:{entryPoint:'main.tsx'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
 // #endregion
