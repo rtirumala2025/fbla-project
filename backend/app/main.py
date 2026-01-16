@@ -38,6 +38,16 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # CORS middleware must be added LAST so it runs FIRST on requests
+    # This ensures CORS headers are added to ALL responses, including errors from other middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=False,
+    )
+
     app.add_middleware(
         JWTAuthenticationMiddleware,
         excluded_paths=(
@@ -53,14 +63,8 @@ def create_app() -> FastAPI:
 
     app.add_middleware(RateLimitMiddleware, max_requests=60, window_seconds=60)
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-        allow_credentials=False,
-    )
     app.middleware("http")(error_handling_middleware)
+
 
     register_exception_handlers(app)
 

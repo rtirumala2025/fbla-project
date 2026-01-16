@@ -28,7 +28,8 @@ class Database:
 
         logger.info("Creating asyncpg pool to Supabase instance")
         try:
-            self._pool = await asyncpg.create_pool(dsn, command_timeout=60)
+            # statement_cache_size=0 required for Supabase PgBouncer (transaction mode doesn't support prepared statements)
+            self._pool = await asyncpg.create_pool(dsn, command_timeout=60, statement_cache_size=0)
         except Exception as e:
             logger.error(f"Failed to connect to database: {e}. Running without DB connection.")
             self._pool = None
