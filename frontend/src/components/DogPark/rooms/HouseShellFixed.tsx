@@ -19,6 +19,7 @@ import { ContactShadows } from '@react-three/drei';
 // === REUSABLE COMPONENT: Casement Window ===
 function CasementWindow({ position }: { position: [number, number, number] }) {
     const trimColor = "#FFFFFF";
+    const curtainColor = "#2C3E50"; // Navy drapes
 
     return (
         <group position={position}>
@@ -64,6 +65,23 @@ function CasementWindow({ position }: { position: [number, number, number] }) {
             <mesh position={[0, -3.4, 0.2]}>
                 <boxGeometry args={[4.8, 0.2, 0.4]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
+            </mesh>
+
+            {/* === CURTAIN PANELS (Navy Drapes for Privacy) === */}
+            {/* Left Curtain */}
+            <mesh position={[-2.0, 0, 0.25]} castShadow>
+                <boxGeometry args={[0.6, 6.2, 0.08]} />
+                <meshStandardMaterial color={curtainColor} roughness={0.9} />
+            </mesh>
+            {/* Right Curtain */}
+            <mesh position={[2.0, 0, 0.25]} castShadow>
+                <boxGeometry args={[0.6, 6.2, 0.08]} />
+                <meshStandardMaterial color={curtainColor} roughness={0.9} />
+            </mesh>
+            {/* Curtain Rod */}
+            <mesh position={[0, 3.3, 0.3]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.04, 0.04, 5.2, 8]} />
+                <meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} />
             </mesh>
         </group>
     );

@@ -45,13 +45,13 @@ export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
 
             {/* --- LAYER 2: The Bed Stack --- */}
             <group position={[0, 0, 0]}>
-                {/* A. The Mattress (Navy Blue) - Sits ON TOP of Rug */}
-                <mesh position={[0, 0.12, 0]} receiveShadow>
-                    <cylinderGeometry args={[1.4, 1.4, 0.2, 32]} />
-                    <meshStandardMaterial color="#283593" roughness={0.8} />
+                {/* A. The Cushion (Beige Fabric) - Sunken center for cozy look */}
+                <mesh position={[0, 0.08, 0]} receiveShadow>
+                    <cylinderGeometry args={[1.3, 1.4, 0.12, 32]} />
+                    <meshStandardMaterial color="#F5F5DC" roughness={1.0} metalness={0} />
                 </mesh>
 
-                {/* B. The Donut Rim (Brown) - Sits slightly higher */}
+                {/* B. The Donut Rim (Brown Leather) - Raised edge */}
                 <mesh position={[0, 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
                     <torusGeometry args={[1.5, 0.3, 16, 32]} />
                     <meshStandardMaterial color="#5D4037" roughness={0.6} />
