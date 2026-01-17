@@ -9,7 +9,7 @@ const supabaseAnonKey = getEnv('SUPABASE_ANON_KEY');
 const createMockClient = (): SupabaseClient => {
   return {
     auth: {
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } }, error: null }),
       getSession: async () => ({ data: { session: null }, error: null }),
       signInWithPassword: async () => ({ data: { user: null }, error: null }),
       signInWithOAuth: async () => ({ data: { url: null }, error: null }),
@@ -34,22 +34,22 @@ const createMockClient = (): SupabaseClient => {
  */
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true, // Required: Persist session to localStorage
-        autoRefreshToken: true, // Required: Auto-refresh expired tokens
-        detectSessionInUrl: true, // Required: Automatically detect and process OAuth callback from URL hash
-        storage: window.localStorage, // Explicit storage
-      },
-    })
+    auth: {
+      persistSession: true, // Required: Persist session to localStorage
+      autoRefreshToken: true, // Required: Auto-refresh expired tokens
+      detectSessionInUrl: true, // Required: Automatically detect and process OAuth callback from URL hash
+      storage: window.localStorage, // Explicit storage
+    },
+  })
   : createMockClient();
 
 // Log the actual anon key being used (first 50 chars for security)
 if (supabaseUrl && supabaseAnonKey) {
   const anonPreview = supabaseAnonKey.substring(0, 50) + '...';
-  logger.info('Supabase client using anon key', { 
-    url: supabaseUrl, 
+  logger.info('Supabase client using anon key', {
+    url: supabaseUrl,
     anonKeyPreview: anonPreview,
-    anonKeyLength: supabaseAnonKey.length 
+    anonKeyLength: supabaseAnonKey.length
   });
 }
 
@@ -60,24 +60,24 @@ if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_
     hasKey: !!process.env.REACT_APP_SUPABASE_ANON_KEY,
     useMock: process.env.REACT_APP_USE_MOCK || 'false',
   });
-  } else {
-    // Decode anon key to verify project match
-    try {
-      const anonKeyParts = process.env.REACT_APP_SUPABASE_ANON_KEY.split('.');
-      if (anonKeyParts.length === 3) {
-        const anonPayload = JSON.parse(atob(anonKeyParts[1]));
-        const urlProjectRef = process.env.REACT_APP_SUPABASE_URL?.split('//')[1]?.split('.')[0];
-        const anonProjectRef = anonPayload.ref;
-      
+} else {
+  // Decode anon key to verify project match
+  try {
+    const anonKeyParts = process.env.REACT_APP_SUPABASE_ANON_KEY.split('.');
+    if (anonKeyParts.length === 3) {
+      const anonPayload = JSON.parse(atob(anonKeyParts[1]));
+      const urlProjectRef = process.env.REACT_APP_SUPABASE_URL?.split('//')[1]?.split('.')[0];
+      const anonProjectRef = anonPayload.ref;
+
       logger.info('Supabase client initialized', {
         sessionPersistence: true,
-    autoRefreshToken: true,
+        autoRefreshToken: true,
         detectSessionInUrl: true,
         urlProjectRef,
         anonKeyProjectRef: anonProjectRef,
         projectMatch: urlProjectRef === anonProjectRef,
       });
-      
+
       if (urlProjectRef !== anonProjectRef) {
         console.error('⚠️ WARNING: Supabase URL project does not match anon key project!', {
           urlProject: urlProjectRef,
@@ -104,7 +104,7 @@ export const isSupabaseMock = (): boolean => {
  */
 export async function withTimeout<T>(
   promise: Promise<T>,
-  timeoutMs: number = 10000,
+  timeoutMs: number = 30000,
   operation: string = 'Supabase operation'
 ): Promise<T> {
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -133,24 +133,24 @@ export async function withRetry<T>(
   operationName: string = 'Supabase operation'
 ): Promise<T> {
   let lastError: Error | null = null;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       // Don't retry on certain errors
       if (lastError.message.includes('PGRST116') || // Not found
-          lastError.message.includes('permission') ||
-          lastError.message.includes('unauthorized') ||
-          lastError.message.includes('duplicate') ||
-          lastError.message.includes('unique')) {
+        lastError.message.includes('permission') ||
+        lastError.message.includes('unauthorized') ||
+        lastError.message.includes('duplicate') ||
+        lastError.message.includes('unique')) {
         throw lastError;
       }
-      
+
       if (attempt < maxRetries) {
-        logger.warn(`Retrying ${operationName} (attempt ${attempt}/${maxRetries})`, { 
+        logger.warn(`Retrying ${operationName} (attempt ${attempt}/${maxRetries})`, {
           error: lastError.message,
           attempt,
           maxRetries,
@@ -159,7 +159,7 @@ export async function withRetry<T>(
       }
     }
   }
-  
+
   logger.error(`${operationName} failed after ${maxRetries} attempts`, {}, lastError!);
   throw new Error(lastError!.message || `${operationName} failed after ${maxRetries} attempts`);
 }

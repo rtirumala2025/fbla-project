@@ -14,7 +14,7 @@ export type CoachRefreshFn = () => Promise<void> | void;
  */
 export const useCoachRealtime = (refresh: CoachRefreshFn, userId?: string | null): void => {
   const refreshRef = useRef<CoachRefreshFn>(refresh);
-  
+
   // Update ref when refresh changes
   useEffect(() => {
     refreshRef.current = refresh;
@@ -36,55 +36,75 @@ export const useCoachRealtime = (refresh: CoachRefreshFn, userId?: string | null
       void refreshRef.current();
     };
 
-    const setupRealtime = async () => {
+    const setupRealtime = async (retries = 3) => {
       if (isSupabaseMock()) {
         return;
       }
 
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Supabase session retrieval failed', error);
-        return;
-      }
-
-      const sessionUserId = data.session?.user?.id;
-      if (!sessionUserId) {
-        return;
-      }
-
-      // Subscribe to pet stats changes
-      const realtimeChannel = supabase.channel(`coach-realtime-${sessionUserId}`);
-
-      realtimeChannel.on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'pets',
-          filter: `user_id=eq.${sessionUserId}`,
-        },
-        (payload) => {
-          // Only refresh if stats actually changed
-          if (payload.new && (
-            payload.new.health !== payload.old?.health ||
-            payload.new.happiness !== payload.old?.happiness ||
-            payload.new.energy !== payload.old?.energy ||
-            payload.new.hunger !== payload.old?.hunger ||
-            payload.new.cleanliness !== payload.old?.cleanliness ||
-            payload.new.mood !== payload.old?.mood
-          )) {
-            handleRefresh();
-          }
-        },
-      );
-
-      channel = realtimeChannel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Coach realtime subscription active');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Coach realtime subscription error');
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Supabase session retrieval failed', error);
+          return;
         }
-      });
+
+        const sessionUserId = data.session?.user?.id;
+        if (!sessionUserId) {
+          return;
+        }
+
+        // Subscribe to pet stats changes
+        const realtimeChannel = supabase.channel(`coach-realtime-${sessionUserId}`);
+
+        realtimeChannel.on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'pets',
+            filter: `user_id=eq.${sessionUserId}`,
+          },
+          (payload) => {
+            // Only refresh if stats actually changed
+            if (payload.new && (
+              payload.new.health !== payload.old?.health ||
+              payload.new.happiness !== payload.old?.happiness ||
+              payload.new.energy !== payload.old?.energy ||
+              payload.new.hunger !== payload.old?.hunger ||
+              payload.new.cleanliness !== payload.old?.cleanliness ||
+              payload.new.mood !== payload.old?.mood
+            )) {
+              handleRefresh();
+            }
+          },
+        );
+
+        channel = realtimeChannel.subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Coach realtime subscription active');
+          } else if (status === 'CHANNEL_ERROR') {
+            // Check for the specific "mismatch" error - this is a server config issue
+            const isMismatchError = err?.message?.includes('mismatch between server and client');
+            if (isMismatchError) {
+              console.warn('⚠️ Coach realtime disabled: Server/client binding mismatch (RLS/replication config issue)');
+              // Don't retry - this is a server-side configuration issue
+              return;
+            }
+            console.error('❌ Coach realtime subscription error:', err || 'Unknown channel error');
+            if (retries > 0 && isActive) {
+              console.log(`🔄 Retrying coach subscription (${retries} left)...`);
+              setTimeout(() => setupRealtime(retries - 1), 2000);
+            }
+          } else if (status === 'TIMED_OUT') {
+            console.warn('⚠️ Coach realtime subscription timed out');
+            if (retries > 0 && isActive) {
+              setTimeout(() => setupRealtime(retries - 1), 2000);
+            }
+          }
+        });
+      } catch (err) {
+        console.error('Coach realtime setup unexpected error:', err);
+      }
     };
 
     setupRealtime();

@@ -165,9 +165,14 @@ export const useAccessoriesRealtime = (
                 channel: `accessories-realtime-${petId}`,
               });
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              if (status === 'CLOSED') {
+                logger.debug('Accessories realtime channel closed', { petId });
+                return;
+              }
+
               logger.error('Accessories realtime channel error', { petId, status });
 
-              if (reconnectTimeoutRef.current) return;
+              if (!isActive || reconnectTimeoutRef.current) return;
 
               const attempt = reconnectAttemptRef.current;
               const delayMs = Math.min(30000, 1000 * Math.pow(2, attempt));

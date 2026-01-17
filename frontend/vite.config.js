@@ -121,12 +121,13 @@ export default defineConfig({
             'classnames',
             '@react-three/drei',
             'react-reconciler',
+            'react-reconciler/constants',
         ],
-        // Exclude heavy dependencies that are lazy-loaded
+        // Exclude heavy dependencies that are lazy-loaded or have complex exports
         exclude: [
             'three',
             '@react-three/xr',
-            '@react-three/fiber', // Exclude to avoid react-reconciler/constants.mjs issue
+            '@react-three/fiber',
         ],
         // Force resolution of React dependencies to prevent version conflicts
     },

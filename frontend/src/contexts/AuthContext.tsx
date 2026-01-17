@@ -144,28 +144,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch the latest profile data from the database
         const profile = await profileService.getProfile(session.user.id);
 
-        // Create updated user object with latest username from profile
-        const updatedUser: User = {
+        // Check for pet existence (always check, regardless of profile status)
+        let petExists = false;
+        try {
+          petExists = await withTimeout(
+            checkPetWithRetry(session.user.id),
+            30000,
+            "Refresh user state pet check"
+          );
+        } catch (e) {
+          onboardingLogger.warn('Refresh user state pet check timed out, using cache', { userId: session.user.id, cached: hasPetCacheRef.current });
+          petExists = hasPetCacheRef.current;
+        }
+
+        onboardingLogger.authInit('User state refreshed', { userId: session.user.id, isNew: profile === null, hasPet: petExists });
+        setIsNewUser(profile === null);
+        updateHasPet(petExists);
+        setCurrentUser({
           uid: session.user.id,
           email: session.user.email || null,
           displayName: profile?.username || session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || null,
-        };
-
-        const isNew = profile === null;
-
-        // Check for pet existence (always check, regardless of profile status)
-        let petExists = false;
-        petExists = await checkPetWithRetry(session.user.id);
-
-        onboardingLogger.authInit('User state refreshed', { userId: session.user.id, isNew, hasPet: petExists, displayName: updatedUser.displayName });
-        setIsNewUser(isNew);
-        updateHasPet(petExists);
-        setCurrentUser(updatedUser);
+        });
       }
     } catch (error) {
       onboardingLogger.error('Error refreshing user state', error);
     }
-  }, []); // checkPetWithRetry is defined above and doesn't need to be in deps
+  }, [checkUserProfile, hasPetCacheRef, updateHasPet]); // Added necessary deps
 
   // Method to directly mark user as not new (after successful profile creation)
   const markUserAsReturning = (hasPetValue?: boolean) => {
@@ -240,14 +244,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             try {
               const profileData = await withTimeout(
                 checkUserProfile(mappedUser.uid),
-                20000,
+                30000,
                 "Initial profile check"
               );
               isNew = profileData.isNew;
               petExists = profileData.hasPet;
             } catch (e) {
               console.warn('Profile check timed out or failed, using safe defaults', e);
-              // Default to safe values if check fails
+              // CRITICAL: Default to TRUE for hasPet if check fails, to prevent incorrect redirect
               isNew = false;
               petExists = true;
             }
@@ -343,6 +347,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const mappedUser = mapSupabaseUser(session?.user || null);
       onboardingLogger.authStateChange('Processing auth state change', { userId: mappedUser?.uid || undefined, email: mappedUser?.email || undefined });
 
+      // OPTIMIZATION: Skip profile check for TOKEN_REFRESHED if user is already authenticated
+      // This prevents 30-second profile check delays on every token refresh
+      // Use hasPetCacheRef.current to get the current value (avoids stale closure)
+      if (event === 'TOKEN_REFRESHED' && mappedUser && hasPetCacheRef.current) {
+        onboardingLogger.authStateChange('TOKEN_REFRESHED: User already authenticated with pet, skipping profile check');
+        setCurrentUser(mappedUser);
+        setLoading(false);
+        return;
+      }
+
       // Race condition fix: Set loading true immediately for sign-in events
       // This ensures ProtectedRoute waits for the profile check logic below
       // instead of seeing a null user and redirecting to login
@@ -360,7 +374,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const profilePromise = checkUserProfile(mappedUser.uid);
             const profileData = await withTimeout(
               profilePromise,
-              15000, // 15 second timeout - matches initial check timeout
+              30000,
               'Auth state profile check'
             ) as any;
             isNew = profileData.isNew;
@@ -370,7 +384,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Use cached/default values on timeout - don't block auth flow
             onboardingLogger.warn('Profile check timed out, using safe defaults', { userId: mappedUser.uid, preservedHasPet: petExists });
             isNew = false;
-            // petExists keeps its fallback value from above
+            // petExists keeps its fallback value (true or cached) from above
+            petExists = true;
           }
           setIsNewUser(isNew);
           updateHasPet(petExists);

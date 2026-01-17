@@ -26,7 +26,7 @@ export const petService = {
 
         const { data, error } = await withTimeout(
           query as unknown as Promise<any>,
-          10000,
+          30000,
           'Get pet'
         ) as any;
 
@@ -119,7 +119,7 @@ export const petService = {
 
       const { data, error } = await withTimeout(
         query as unknown as Promise<any>,
-        10000,
+        30000,
         'Update pet'
       ) as any;
 
@@ -180,7 +180,7 @@ export const petService = {
 
       const { data: pet, error: fetchError } = await withTimeout(
         query as unknown as Promise<any>,
-        10000,
+        30000,
         'Get pet for age increment'
       ) as any;
 
@@ -227,7 +227,7 @@ export const petService = {
 
       const { data: pet, error: fetchError } = await withTimeout(
         query as unknown as Promise<any>,
-        10000,
+        30000,
         'Get pet for level up'
       ) as any;
 
