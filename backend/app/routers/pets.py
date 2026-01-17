@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, status
 
 from app.models import AuthenticatedUser
 from app.schemas import (
+    HealthCheckRequest,
+    HealthCheckResponse,
     PetAction,
     PetActionRequest,
     PetActionResponse,
@@ -230,17 +232,16 @@ VET_VISIT_COST = 25  # Cost of a vet visit in coins
 
 @router.post("/health-check", summary="Perform a vet health check")
 async def perform_health_check(
-    payload: "HealthCheckRequest",
+    payload: HealthCheckRequest,
     current_user: AuthenticatedUser = Depends(get_current_user),
     service: PetService = Depends(get_pet_service),
-) -> "HealthCheckResponse":
+) -> HealthCheckResponse:
     """
     Perform a vet health check on the pet.
     
     Deducts the vet visit cost from the user's wallet and applies the health boost.
     The health boost amount is based on the mini-game score achieved in the frontend.
     """
-    from app.schemas.pets import HealthCheckRequest, HealthCheckResponse
     from asyncpg import Pool
     
     # Get the database pool from the service
