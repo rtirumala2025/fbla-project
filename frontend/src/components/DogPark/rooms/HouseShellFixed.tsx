@@ -256,9 +256,15 @@ export function HouseShellFixed() {
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* FILL 1: Left Window Wall (behind window glass) */}
-                <mesh position={[-9.5, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[5, 10, 0.8]} />
+                {/* GAP FILL: Left edge of left window (between far left panel and window frame) */}
+                <mesh position={[-11.75, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[0.5, 10, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+
+                {/* GAP FILL: Right edge of left window (between window frame and mid left pillar) */}
+                <mesh position={[-7.25, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[0.5, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
@@ -268,9 +274,15 @@ export function HouseShellFixed() {
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* FILL 2: French Door Wall (behind door glass) */}
-                <mesh position={[0, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[8, 10, 0.8]} />
+                {/* GAP FILL: Left edge of door (between mid left pillar and door frame) */}
+                <mesh position={[-3.75, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[0.5, 10, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+
+                {/* GAP FILL: Right edge of door (between door frame and mid right pillar) */}
+                <mesh position={[3.75, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[0.5, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
@@ -280,9 +292,15 @@ export function HouseShellFixed() {
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* FILL 3: Right Window Wall (behind window glass) */}
-                <mesh position={[9.5, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[5, 10, 0.8]} />
+                {/* GAP FILL: Left edge of right window (between mid right pillar and window frame) */}
+                <mesh position={[7.25, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[0.5, 10, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+
+                {/* GAP FILL: Right edge of right window (between window frame and far right panel) */}
+                <mesh position={[11.75, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[0.5, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
