@@ -6,8 +6,11 @@ import { ContactShadows } from '@react-three/drei';
  * 
  * CONSTRUCTION STRATEGY:
  * - Back Wall (Green): Built from 4 separate panels to create a physical window HOLE.
- * - Window Hole: Located at x=3, y=5.
- * - Left Wall: Extended depth to seal the camera view.
+ * - Left Panel: x = -7, Width = 16
+ * - Right Panel: x = 10, Width = 10
+ * - Top Header: x = 3, Width = 4
+ * - Bottom Apron: x = 3, Width = 4
+ * - Window Hole: x=3, y=5.
  * - Sky: Blue plane visible through the window hole.
  */
 
@@ -31,12 +34,12 @@ function KitchenWindowFrame({ position }: { position: [number, number, number] }
 
             {/* The GLASS (Transparent & Shiny) */}
             <mesh position={[0, 0, 0.05]}>
-                <planeGeometry args={[3.4, 2.4]} />
+                <planeGeometry args={[3.8, 2.8]} />
                 <meshPhysicalMaterial
                     color="#E3F2FD" // Very light blue tint
                     metalness={0.1}
                     roughness={0.0}
-                    transmission={0.95} // High transparency
+                    transmission={1.0} // Fully transparent
                     thickness={0.1}
                     transparent={true}
                     opacity={0.3} // Fallback opacity
@@ -70,33 +73,10 @@ export function KitchenShell() {
 
     // GEOMETRY CONSTANTS
     const WALL_Z = -4.5;
-    const WALL_THICKNESS = 0.5;
+    const WALL_THICKNESS = 1.0; // Thick walls for depth
 
-    // WINDOW HOLE COORDINATES
-    // Target Center: x=3, y=5
-    // Target Size: Width 4, Height 3
-    // Holes Edges: Left=1, Right=5, Bottom=3.5, Top=6.5
-
-    // PANEL A: LEFT HUGE WALL (From -10 to 1)
-    // Width = 11, Center X = -4.5
-    const PANEL_A_WIDTH = 11;
-    const PANEL_A_X = -4.5;
-
-    // PANEL B: RIGHT STRIP (From 5 to 10)
-    // Width = 5, Center X = 7.5
-    const PANEL_B_WIDTH = 5;
-    const PANEL_B_X = 7.5;
-
-    // PANEL C: TOP HEADER (From 1 to 5, Above y=6.5)
-    // Height = 10 - 6.5 = 3.5. Center Y = 8.25
-    const PANEL_C_HEIGHT = 3.5;
-    const PANEL_C_Y = 8.25;
-
-    // PANEL D: BOTTOM APRON (From 1 to 5, Below y=3.5)
-    // Height = 3.5. Center Y = 1.75
-    const PANEL_D_HEIGHT = 3.5;
-    const PANEL_D_Y = 1.75;
-
+    // 4-PANEL CONSTRUCTION COORDINATES
+    // Target Hole: x=3, y=5. Width=4, Height=3.5 (roughly)
 
     return (
         <group>
@@ -121,27 +101,27 @@ export function KitchenShell() {
 
             {/* === 3. THE BACK WALL (4-PANEL CONSTRUCTION) === */}
             <group>
-                {/* Panel A: Left Huge Wall */}
-                <mesh position={[PANEL_A_X, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[PANEL_A_WIDTH, 10, WALL_THICKNESS]} />
+                {/* Panel A: LEFT HUGE WALL (x=-7, Width 16) */}
+                <mesh position={[-7, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[16, 10, WALL_THICKNESS]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* Panel B: Right Strip */}
-                <mesh position={[PANEL_B_X, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[PANEL_B_WIDTH, 10, WALL_THICKNESS]} />
+                {/* Panel B: RIGHT STRIP (x=10, Width 10) */}
+                <mesh position={[10, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[10, 10, WALL_THICKNESS]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* Panel C: Top Header */}
-                <mesh position={[3, PANEL_C_Y, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[4, PANEL_C_HEIGHT, WALL_THICKNESS]} />
+                {/* Panel C: TOP HEADER (x=3, y=8.25, Width 4) */}
+                <mesh position={[3, 8.25, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[4, 3.5, WALL_THICKNESS]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* Panel D: Bottom Apron */}
-                <mesh position={[3, PANEL_D_Y, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[4, PANEL_D_HEIGHT, WALL_THICKNESS]} />
+                {/* Panel D: BOTTOM APRON (x=3, y=1.75, Width 4) */}
+                <mesh position={[3, 1.75, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[4, 3.5, WALL_THICKNESS]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
@@ -152,45 +132,35 @@ export function KitchenShell() {
 
             {/* === 4. SIDE WALLS (Sealed Room) === */}
             {/* Left Wall: Extended Depth to 15, Positioned at Z=0 to cover whole side */}
-            <mesh position={[-10, 5, 0]} receiveShadow>
-                <boxGeometry args={[WALL_THICKNESS, 10, 15]} />
+            <mesh position={[-15, 5, 0]} receiveShadow>
+                <boxGeometry args={[WALL_THICKNESS, 10, 20]} />
                 <meshStandardMaterial color={wallColor} roughness={0.9} />
             </mesh>
             {/* Right Wall */}
-            <mesh position={[10, 5, 0]} receiveShadow>
-                <boxGeometry args={[WALL_THICKNESS, 10, 15]} />
+            <mesh position={[15, 5, 0]} receiveShadow>
+                <boxGeometry args={[WALL_THICKNESS, 10, 20]} />
                 <meshStandardMaterial color={wallColor} roughness={0.9} />
             </mesh>
 
 
             {/* === 5. TRIM & FINISHES === */}
             {/* Baseboards (Back Wall) */}
-            <mesh position={[-4.5, 0.25, WALL_Z + 0.3]} receiveShadow>
-                <boxGeometry args={[11, 0.5, 0.1]} />
+            <mesh position={[-7, 0.25, WALL_Z + 0.55]} receiveShadow>
+                <boxGeometry args={[16, 0.5, 0.1]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
-            <mesh position={[7.5, 0.25, WALL_Z + 0.3]} receiveShadow>
-                <boxGeometry args={[5, 0.5, 0.1]} />
+            <mesh position={[10, 0.25, WALL_Z + 0.55]} receiveShadow>
+                <boxGeometry args={[10, 0.5, 0.1]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
-            <mesh position={[3, 0.25, WALL_Z + 0.3]} receiveShadow>
+            <mesh position={[3, 0.25, WALL_Z + 0.55]} receiveShadow>
                 <boxGeometry args={[4, 0.5, 0.1]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
 
-            {/* Baseboards (Side Walls) */}
-            <mesh position={[-9.7, 0.25, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-                <boxGeometry args={[15, 0.5, 0.1]} />
-                <meshStandardMaterial color={trimColor} roughness={0.2} />
-            </mesh>
-            <mesh position={[9.7, 0.25, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-                <boxGeometry args={[15, 0.5, 0.1]} />
-                <meshStandardMaterial color={trimColor} roughness={0.2} />
-            </mesh>
-
             {/* Crown Molding */}
-            <mesh position={[0, 9.75, WALL_Z + 0.3]}>
-                <boxGeometry args={[21, 0.5, 0.15]} />
+            <mesh position={[0, 9.75, WALL_Z + 0.55]}>
+                <boxGeometry args={[30, 0.5, 0.15]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
 
@@ -207,4 +177,3 @@ export function KitchenShell() {
         </group>
     );
 }
-
