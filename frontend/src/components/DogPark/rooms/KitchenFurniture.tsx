@@ -22,39 +22,59 @@ export function KitchenFurniture() {
     return (
         <group>
             {/* === REFRIGERATOR (Back Left, Against Wall) === */}
-            <group position={[-4, 0, -4]}>
-                {/* Main Body */}
+            <group position={[-5, 0, -4]}>
+                {/* Main Body (Slightly darker base) */}
                 <mesh position={[0, 2.5, 0]} castShadow receiveShadow>
                     <boxGeometry args={[1.8, 5, 1.2]} />
-                    <meshStandardMaterial color={applianceColor} metalness={0.3} roughness={0.4} />
+                    <meshStandardMaterial color="#BDBDBD" metalness={0.2} roughness={0.5} />
                 </mesh>
 
-                {/* Freezer Door (Top) */}
-                <mesh position={[0, 4.2, 0.62]} castShadow>
-                    <boxGeometry args={[1.7, 1.4, 0.04]} />
+                {/* Freezer Door (Top - Lighter panel) */}
+                <mesh position={[0, 4.3, 0.62]} castShadow>
+                    <boxGeometry args={[1.65, 1.3, 0.06]} />
                     <meshStandardMaterial color={applianceColor} metalness={0.4} roughness={0.3} />
                 </mesh>
 
-                {/* Fridge Door (Bottom) */}
+                {/* Fridge Door (Bottom - Lighter panel) */}
                 <mesh position={[0, 2.0, 0.62]} castShadow>
-                    <boxGeometry args={[1.7, 2.8, 0.04]} />
+                    <boxGeometry args={[1.65, 2.6, 0.06]} />
                     <meshStandardMaterial color={applianceColor} metalness={0.4} roughness={0.3} />
                 </mesh>
 
-                {/* Door Handles (Silver) */}
-                <mesh position={[0.7, 4.2, 0.68]} castShadow>
-                    <boxGeometry args={[0.06, 0.6, 0.06]} />
-                    <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
-                </mesh>
-                <mesh position={[0.7, 2.0, 0.68]} castShadow>
-                    <boxGeometry args={[0.06, 1.0, 0.06]} />
-                    <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
+                {/* === DOOR GAP (Dark horizontal line at y=3.5) === */}
+                <mesh position={[0, 3.5, 0.59]}>
+                    <boxGeometry args={[1.75, 0.12, 0.02]} />
+                    <meshStandardMaterial color="#424242" />
                 </mesh>
 
-                {/* Door Divider Line */}
-                <mesh position={[0, 3.45, 0.64]}>
-                    <boxGeometry args={[1.75, 0.04, 0.02]} />
-                    <meshStandardMaterial color="#9E9E9E" />
+                {/* === HANDLES (Vertical Cylinders - Silver) === */}
+                {/* Freezer Handle */}
+                <mesh position={[0.7, 4.3, 0.72]} rotation={[0, 0, 0]} castShadow>
+                    <cylinderGeometry args={[0.04, 0.04, 0.8, 12]} />
+                    <meshStandardMaterial color={accentColor} metalness={0.9} roughness={0.15} />
+                </mesh>
+                {/* Fridge Handle */}
+                <mesh position={[0.7, 2.0, 0.72]} rotation={[0, 0, 0]} castShadow>
+                    <cylinderGeometry args={[0.04, 0.04, 1.4, 12]} />
+                    <meshStandardMaterial color={accentColor} metalness={0.9} roughness={0.15} />
+                </mesh>
+
+                {/* Handle Mounting Brackets */}
+                <mesh position={[0.7, 4.7, 0.68]} castShadow>
+                    <boxGeometry args={[0.1, 0.06, 0.1]} />
+                    <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
+                </mesh>
+                <mesh position={[0.7, 3.9, 0.68]} castShadow>
+                    <boxGeometry args={[0.1, 0.06, 0.1]} />
+                    <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
+                </mesh>
+                <mesh position={[0.7, 2.7, 0.68]} castShadow>
+                    <boxGeometry args={[0.1, 0.06, 0.1]} />
+                    <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
+                </mesh>
+                <mesh position={[0.7, 1.3, 0.68]} castShadow>
+                    <boxGeometry args={[0.1, 0.06, 0.1]} />
+                    <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
                 </mesh>
             </group>
 
