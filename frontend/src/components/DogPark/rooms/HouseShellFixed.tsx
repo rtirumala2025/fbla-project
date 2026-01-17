@@ -24,20 +24,20 @@ function CasementWindow({ position }: { position: [number, number, number] }) {
     return (
         <group position={position}>
             {/* THE CASING (Thick outer frame, pops out z+0.1 from wall) */}
-            <mesh position={[0, 0, 0.1]}>
-                <boxGeometry args={[4.5, 6.5, 0.25]} />
+            <mesh position={[0, -0.25, 0.1]}>
+                <boxGeometry args={[4.5, 7.0, 0.25]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
 
             {/* INNER FRAME (Creates depth/reveal) */}
-            <mesh position={[0, 0, 0.15]}>
-                <boxGeometry args={[4, 6, 0.15]} />
+            <mesh position={[0, -0.25, 0.15]}>
+                <boxGeometry args={[4, 6.5, 0.15]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
 
             {/* THE GLASS (Transparent, set inside the frame) */}
-            <mesh position={[0, 0, 0.12]}>
-                <planeGeometry args={[3.4, 5.4]} />
+            <mesh position={[0, -0.25, 0.12]}>
+                <planeGeometry args={[3.4, 5.9]} />
                 <meshPhysicalMaterial
                     color="#E8F4FD"
                     metalness={0.0}
@@ -51,19 +51,19 @@ function CasementWindow({ position }: { position: [number, number, number] }) {
 
             {/* MULLIONS (3D Grid Bars - 4 pane look) */}
             {/* Vertical Center Bar */}
-            <mesh position={[0, 0, 0.18]}>
-                <boxGeometry args={[0.12, 5.6, 0.08]} />
+            <mesh position={[0, -0.25, 0.18]}>
+                <boxGeometry args={[0.12, 6.1, 0.08]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
             {/* Horizontal Center Bar */}
-            <mesh position={[0, 0, 0.18]}>
+            <mesh position={[0, -0.25, 0.18]}>
                 <boxGeometry args={[3.6, 0.12, 0.08]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
 
-            {/* WINDOW SILL (Bottom ledge) */}
-            <mesh position={[0, -3.4, 0.2]}>
-                <boxGeometry args={[4.8, 0.2, 0.4]} />
+            {/* WINDOW SILL (Bottom ledge - lowered) */}
+            <mesh position={[0, -3.65, 0.2]}>
+                <boxGeometry args={[4.8, 0.3, 0.5]} />
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
 
@@ -300,24 +300,24 @@ export function HouseShellFixed() {
                 {/* --- FRENCH DOORS (Center of Gap 2: x = 0) --- */}
                 <group position={[0, 4.2, TRIM_Z]}>
                     {/* OUTER FRAME (Heavy trim surrounding doorway) */}
-                    {/* Top Transom Frame */}
+                    {/* Top Transom Frame - Widened to overlap pillars */}
                     <mesh position={[0, 4, 0.1]}>
-                        <boxGeometry args={[6, 0.5, 0.3]} />
+                        <boxGeometry args={[6.4, 0.5, 0.3]} />
                         <meshStandardMaterial color={trimColor} roughness={0.2} />
                     </mesh>
-                    {/* Left Jamb */}
-                    <mesh position={[-2.85, 0, 0.1]}>
-                        <boxGeometry args={[0.35, 8.5, 0.3]} />
+                    {/* Left Jamb - Widened to overlap pillar */}
+                    <mesh position={[-3.0, 0, 0.1]}>
+                        <boxGeometry args={[0.6, 8.5, 0.3]} />
                         <meshStandardMaterial color={trimColor} roughness={0.2} />
                     </mesh>
-                    {/* Right Jamb */}
-                    <mesh position={[2.85, 0, 0.1]}>
-                        <boxGeometry args={[0.35, 8.5, 0.3]} />
+                    {/* Right Jamb - Widened to overlap pillar */}
+                    <mesh position={[3.0, 0, 0.1]}>
+                        <boxGeometry args={[0.6, 8.5, 0.3]} />
                         <meshStandardMaterial color={trimColor} roughness={0.2} />
                     </mesh>
-                    {/* Threshold (Floor level) */}
+                    {/* Threshold (Floor level) - Widened */}
                     <mesh position={[0, -4.1, 0.15]}>
-                        <boxGeometry args={[6, 0.3, 0.4]} />
+                        <boxGeometry args={[6.4, 0.3, 0.4]} />
                         <meshStandardMaterial color={trimColor} roughness={0.2} />
                     </mesh>
 
