@@ -10,6 +10,8 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { BedroomFurniture } from './BedroomFurniture';
 import { KitchenFurniture } from './KitchenFurniture';
+import { KitchenShell } from './KitchenShell';
+import { HouseShellFixed } from './HouseShellFixed';
 
 interface RoomStageProps {
     currentActivity: string;
@@ -38,39 +40,37 @@ export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
 
     return (
         <group>
-            {/* === SCENE SWAPPER: Conditional Furniture Rendering === */}
+            {/* === ENVIRONMENT SWAPPER: Shell + Furniture === */}
 
-            {/* Bedroom/Living Room (default) */}
-            {(currentActivity === 'living' || currentActivity === 'bedroom') && (
-                <BedroomFurniture isSleeping={isSleeping} />
-            )}
-
-            {/* Kitchen */}
-            {currentActivity === 'kitchen' && (
-                <KitchenFurniture />
-            )}
-
-            {/* Bathroom - placeholder for future */}
-            {currentActivity === 'bathroom' && (
+            {/* Kitchen Environment */}
+            {currentActivity === 'kitchen' ? (
                 <group>
-                    {/* TODO: Add BathroomFurniture component */}
-                    {/* For now, show basic floor mat */}
-                    <mesh position={[0, 0.015, 0]} receiveShadow>
-                        <boxGeometry args={[5, 0.02, 4]} />
-                        <meshStandardMaterial color="#B3E5FC" roughness={1.0} />
-                    </mesh>
+                    <KitchenShell />
+                    <KitchenFurniture />
+                </group>
+            ) : (
+                /* Default/Bedroom/Living Environment */
+                <group>
+                    <HouseShellFixed />
+                    <BedroomFurniture isSleeping={isSleeping} />
                 </group>
             )}
 
-            {/* Closet - placeholder for future */}
-            {currentActivity === 'closet' && (
+            {/* Extra Layers (Bathroom/Closet) - Show mats over persistent shell logic */}
+            {(currentActivity === 'bathroom' || currentActivity === 'closet') && (
                 <group>
-                    {/* TODO: Add ClosetFurniture component */}
-                    {/* For now, show basic floor mat */}
-                    <mesh position={[0, 0.015, 0]} receiveShadow>
-                        <boxGeometry args={[5, 0.02, 4]} />
-                        <meshStandardMaterial color="#F8BBD9" roughness={1.0} />
-                    </mesh>
+                    {currentActivity === 'bathroom' && (
+                        <mesh position={[0, 0.015, 0]} receiveShadow>
+                            <boxGeometry args={[5, 0.02, 4]} />
+                            <meshStandardMaterial color="#B3E5FC" roughness={1.0} />
+                        </mesh>
+                    )}
+                    {currentActivity === 'closet' && (
+                        <mesh position={[0, 0.015, 0]} receiveShadow>
+                            <boxGeometry args={[5, 0.02, 4]} />
+                            <meshStandardMaterial color="#F8BBD9" roughness={1.0} />
+                        </mesh>
+                    )}
                 </group>
             )}
         </group>
