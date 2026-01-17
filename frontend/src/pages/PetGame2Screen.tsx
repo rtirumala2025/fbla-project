@@ -657,6 +657,8 @@ export const PetGame2Screen: React.FC = () => {
         isOpen={openBuilding === 'home'}
         onClose={() => setOpenBuilding(null)}
         petName={petName}
+        petType={petType}
+        petBreed={state.breed}
         currentEnergy={stats?.energy ?? 50}
         onSleepComplete={async (energyRestored: number) => {
           try {
