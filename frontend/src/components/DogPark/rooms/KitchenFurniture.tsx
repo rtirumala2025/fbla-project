@@ -112,26 +112,22 @@ export function KitchenFurniture() {
                     <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
                 </mesh>
 
-                {/* Sink Basin (Inset) */}
-                <mesh position={[0, 1.52, 0]} receiveShadow>
-                    <boxGeometry args={[1.0, 0.15, 0.7]} />
-                    <meshStandardMaterial color="#78909C" metalness={0.6} roughness={0.2} />
+                {/* === UPDATED SINK DETAIL (User Requested) === */}
+                {/* 1. The Basin: Thin Black Box on top of counter */}
+                <mesh position={[0, 1.61, 0]} receiveShadow>
+                    <boxGeometry args={[1.4, 0.1, 0.8]} />
+                    <meshStandardMaterial color="#212121" roughness={0.2} metalness={0.5} />
                 </mesh>
 
-                {/* Faucet Base */}
-                <mesh position={[0, 1.75, -0.25]} castShadow>
-                    <cylinderGeometry args={[0.06, 0.08, 0.3]} />
-                    <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
+                {/* 2. Faucet (Cylinder) */}
+                <mesh position={[0, 1.7, -0.35]} castShadow>
+                    <cylinderGeometry args={[0.05, 0.07, 0.2]} />
+                    <meshStandardMaterial color={accentColor} metalness={0.9} roughness={0.2} />
                 </mesh>
-                {/* Faucet Spout (Curved arc) */}
-                <mesh position={[0, 1.95, 0]} rotation={[Math.PI / 4, 0, 0]} castShadow>
-                    <cylinderGeometry args={[0.03, 0.03, 0.5]} />
-                    <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
-                </mesh>
-                {/* Faucet Head */}
-                <mesh position={[0, 1.8, 0.18]} castShadow>
-                    <cylinderGeometry args={[0.04, 0.02, 0.08]} />
-                    <meshStandardMaterial color={accentColor} metalness={0.8} roughness={0.2} />
+                {/* Spout */}
+                <mesh position={[0, 1.9, -0.2]} rotation={[Math.PI / 3, 0, 0]} castShadow>
+                    <cylinderGeometry args={[0.03, 0.03, 0.4]} />
+                    <meshStandardMaterial color={accentColor} metalness={0.9} roughness={0.2} />
                 </mesh>
             </group>
 
