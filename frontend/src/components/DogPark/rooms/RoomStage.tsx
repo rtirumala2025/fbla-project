@@ -1,7 +1,15 @@
+/**
+ * RoomStage.tsx
+ * 
+ * Scene Swapper: Renders the appropriate furniture based on currentActivity.
+ * The HouseShellFixed (walls, windows, ceiling) is rendered separately in PetViewer3D.
+ */
+
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { BedroomFurniture } from './BedroomFurniture';
+import { KitchenFurniture } from './KitchenFurniture';
 
 interface RoomStageProps {
     currentActivity: string;
@@ -10,15 +18,9 @@ interface RoomStageProps {
 
 export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
     const dogRef = useRef<THREE.Group>(null);
-    const zzzRef = useRef<THREE.Group>(null);
 
-    // Animation Loop
-    useFrame((state) => {
-        // Floating Zzz Animation
-        if (zzzRef.current && isSleeping) {
-            zzzRef.current.position.y = 0.8 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
-        }
-
+    // Animation Loop for dog/pet positioning (sleep behavior)
+    useFrame(() => {
         // Dog Sleep Animation (Smooth Lerp)
         if (dogRef.current) {
             if (isSleeping) {
@@ -36,132 +38,41 @@ export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
 
     return (
         <group>
-            {/* --- LAYER 1: The Paper-Thin Area Rug --- */}
-            <mesh position={[0, 0.015, 0]} receiveShadow>
-                {/* Width 7, Height 0.02 (Paper Thin), Depth 5 */}
-                <boxGeometry args={[7, 0.02, 5]} />
-                <meshStandardMaterial color="#F5F5F5" roughness={1.0} />
-            </mesh>
+            {/* === SCENE SWAPPER: Conditional Furniture Rendering === */}
 
-            {/* --- LAYER 2: The Luxury Pet Bed --- */}
-            <group position={[0, 0, 0]}>
-                {/* A. The Bolster Rim (Thick Torus) - Stretched tall for plush look */}
-                <mesh position={[0, 0.35, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow scale={[1, 1, 2.5]}>
-                    <torusGeometry args={[1.5, 0.25, 16, 32]} />
-                    <meshStandardMaterial color="#5D4037" roughness={0.7} />
-                </mesh>
+            {/* Bedroom/Living Room (default) */}
+            {(currentActivity === 'living' || currentActivity === 'bedroom') && (
+                <BedroomFurniture isSleeping={isSleeping} />
+            )}
 
-                {/* B. The Mattress (Puffy Beige Cushion) - Raised for fluffy look */}
-                <mesh position={[0, 0.25, 0]} receiveShadow>
-                    <cylinderGeometry args={[1.25, 1.35, 0.25, 32]} />
-                    <meshStandardMaterial color="#F5F5DC" roughness={1.0} metalness={0} />
-                </mesh>
+            {/* Kitchen */}
+            {currentActivity === 'kitchen' && (
+                <KitchenFurniture />
+            )}
 
-                {/* C. Accent Pillows (Squashed Spheres at back of bed) */}
-                <group position={[0, 0.45, -0.6]}>
-                    {/* Left Pillow */}
-                    <mesh position={[-0.5, 0, 0]} scale={[0.5, 0.25, 0.4]} castShadow>
-                        <sphereGeometry args={[1, 16, 16]} />
-                        <meshStandardMaterial color="#1A237E" roughness={0.8} />
-                    </mesh>
-                    {/* Center Pillow */}
-                    <mesh position={[0, 0.05, 0.1]} scale={[0.6, 0.3, 0.45]} castShadow>
-                        <sphereGeometry args={[1, 16, 16]} />
-                        <meshStandardMaterial color="#283593" roughness={0.8} />
-                    </mesh>
-                    {/* Right Pillow */}
-                    <mesh position={[0.5, 0, 0]} scale={[0.5, 0.25, 0.4]} castShadow>
-                        <sphereGeometry args={[1, 16, 16]} />
-                        <meshStandardMaterial color="#1A237E" roughness={0.8} />
+            {/* Bathroom - placeholder for future */}
+            {currentActivity === 'bathroom' && (
+                <group>
+                    {/* TODO: Add BathroomFurniture component */}
+                    {/* For now, show basic floor mat */}
+                    <mesh position={[0, 0.015, 0]} receiveShadow>
+                        <boxGeometry args={[5, 0.02, 4]} />
+                        <meshStandardMaterial color="#B3E5FC" roughness={1.0} />
                     </mesh>
                 </group>
-            </group>
+            )}
 
-            {/* --- LAYER 3: The Dog --- */}
-            <group ref={dogRef} position={[0, 0.25, 0]}>
-                {/* Placeholder Dog Geometry (Replace with your GLTF if you have one) */}
-                {/* COMMENTED OUT to avoid duplication with PetModelViewer
-                <mesh castShadow receiveShadow position={[0, 0.4, 0]}>
-                    <capsuleGeometry args={[0.3, 0.6, 4, 8]} />
-                    <meshStandardMaterial color="#E0C097" />
-                </mesh>
-                <mesh position={[0, 0.7, 0.2]}>
-                    <sphereGeometry args={[0.25]} />
-                    <meshStandardMaterial color="#E0C097" />
-                </mesh>
-                */}
-                {/* Zzz Text Group */}
-                {isSleeping && (
-                    <group ref={zzzRef} position={[0.5, 0.8, 0]}>
-                        <Text fontSize={0.4} color="gold" anchorX="center" anchorY="middle">
-                            Zzz
-                        </Text>
-                    </group>
-                )}
-            </group>
-
-            {/* --- LAYER 4: The Nightstands (Legs Touch Rug) --- */}
-            {/* Left Nightstand */}
-            <group position={[-2.5, 0, 0]}>
-                {/* Legs */}
-                <mesh position={[0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
-                <mesh position={[-0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
-                <mesh position={[0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
-                <mesh position={[-0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
-                {/* Body */}
-                <mesh position={[0, 0.6, 0]} castShadow>
-                    <boxGeometry args={[1, 0.5, 1]} />
-                    <meshStandardMaterial color="#3E2723" roughness={0.2} />
-                </mesh>
-                {/* Lamp */}
-                <group position={[0, 0.85, 0]}>
-                    <mesh><cylinderGeometry args={[0.05, 0.1, 0.1]} /><meshStandardMaterial color="gold" /></mesh>
-                    <mesh position={[0, 0.2, 0]}><cylinderGeometry args={[0.25, 0.15, 0.3]} /><meshStandardMaterial color="white" transparent opacity={0.9} /></mesh>
-                    <pointLight intensity={0.5} color="#FFD700" distance={3} decay={2} />
+            {/* Closet - placeholder for future */}
+            {currentActivity === 'closet' && (
+                <group>
+                    {/* TODO: Add ClosetFurniture component */}
+                    {/* For now, show basic floor mat */}
+                    <mesh position={[0, 0.015, 0]} receiveShadow>
+                        <boxGeometry args={[5, 0.02, 4]} />
+                        <meshStandardMaterial color="#F8BBD9" roughness={1.0} />
+                    </mesh>
                 </group>
-            </group>
-
-            {/* Right Nightstand */}
-            <group position={[2.5, 0, 0]}>
-                {/* Legs */}
-                <mesh position={[0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
-                <mesh position={[-0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
-                <mesh position={[0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
-                <mesh position={[-0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
-                {/* Body */}
-                <mesh position={[0, 0.6, 0]} castShadow>
-                    <boxGeometry args={[1, 0.5, 1]} />
-                    <meshStandardMaterial color="#3E2723" roughness={0.2} />
-                </mesh>
-                {/* Lamp */}
-                <group position={[0, 0.85, 0]}>
-                    <mesh><cylinderGeometry args={[0.05, 0.1, 0.1]} /><meshStandardMaterial color="gold" /></mesh>
-                    <mesh position={[0, 0.2, 0]}><cylinderGeometry args={[0.25, 0.15, 0.3]} /><meshStandardMaterial color="white" transparent opacity={0.9} /></mesh>
-                    <pointLight intensity={0.5} color="#FFD700" distance={3} decay={2} />
-                </group>
-            </group>
-
-            {/* LAYER 5 DELETED: Wall Art removed for French Doors */}
-
-            {/* --- LAYER 6: The Plant (Fixed Coordinates) --- */}
-            <group position={[5, 0, -2]}>
-                {/* Pot: Height 0.5, so y=0.25 puts it on floor */}
-                <mesh position={[0, 0.25, 0]} castShadow>
-                    <cylinderGeometry args={[0.4, 0.3, 0.5]} />
-                    <meshStandardMaterial color="#8D6E63" /> {/* Terracotta */}
-                </mesh>
-                {/* Stem */}
-                <mesh position={[0, 1.0, 0]}>
-                    <cylinderGeometry args={[0.05, 0.05, 1.5]} />
-                    <meshStandardMaterial color="#4E342E" />
-                </mesh>
-                {/* Leaves */}
-                <mesh position={[0, 1.8, 0]}>
-                    <sphereGeometry args={[0.7]} />
-                    <meshStandardMaterial color="#2E7D32" roughness={0.8} />
-                </mesh>
-            </group>
-
+            )}
         </group>
     );
 }

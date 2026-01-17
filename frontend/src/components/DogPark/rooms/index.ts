@@ -8,6 +8,8 @@ export { BathroomView } from './BathroomView';
 export { ClosetView } from './ClosetView';
 export { PetViewer3D } from './PetViewer3D';
 export { RoomStage } from './RoomStage';
+export { BedroomFurniture } from './BedroomFurniture';
+export { KitchenFurniture } from './KitchenFurniture';
 
 export { RoomLayout, DockItemCard, ROOM_THEMES, type RoomTheme } from './RoomLayout';
 

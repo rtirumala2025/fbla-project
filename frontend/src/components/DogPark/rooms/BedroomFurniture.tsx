@@ -1,0 +1,140 @@
+/**
+ * BedroomFurniture.tsx
+ * 
+ * Extracted bedroom props from RoomStage.tsx.
+ * Rendered conditionally when currentActivity === 'living'
+ */
+
+import React, { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { Text } from '@react-three/drei';
+import * as THREE from 'three';
+
+interface BedroomFurnitureProps {
+    isSleeping?: boolean;
+}
+
+export function BedroomFurniture({ isSleeping = false }: BedroomFurnitureProps) {
+    const zzzRef = useRef<THREE.Group>(null);
+
+    // Floating Zzz Animation
+    useFrame((state) => {
+        if (zzzRef.current && isSleeping) {
+            zzzRef.current.position.y = 0.8 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+        }
+    });
+
+    return (
+        <group>
+            {/* --- LAYER 1: The Paper-Thin Area Rug --- */}
+            <mesh position={[0, 0.015, 0]} receiveShadow>
+                {/* Width 7, Height 0.02 (Paper Thin), Depth 5 */}
+                <boxGeometry args={[7, 0.02, 5]} />
+                <meshStandardMaterial color="#F5F5F5" roughness={1.0} />
+            </mesh>
+
+            {/* --- LAYER 2: The Luxury Pet Bed --- */}
+            <group position={[0, 0, 0]}>
+                {/* A. The Bolster Rim (Thick Torus) - Stretched tall for plush look */}
+                <mesh position={[0, 0.35, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow scale={[1, 1, 2.5]}>
+                    <torusGeometry args={[1.5, 0.25, 16, 32]} />
+                    <meshStandardMaterial color="#5D4037" roughness={0.7} />
+                </mesh>
+
+                {/* B. The Mattress (Puffy Beige Cushion) - Raised for fluffy look */}
+                <mesh position={[0, 0.25, 0]} receiveShadow>
+                    <cylinderGeometry args={[1.25, 1.35, 0.25, 32]} />
+                    <meshStandardMaterial color="#F5F5DC" roughness={1.0} metalness={0} />
+                </mesh>
+
+                {/* C. Accent Pillows (Squashed Spheres at back of bed) */}
+                <group position={[0, 0.45, -0.6]}>
+                    {/* Left Pillow */}
+                    <mesh position={[-0.5, 0, 0]} scale={[0.5, 0.25, 0.4]} castShadow>
+                        <sphereGeometry args={[1, 16, 16]} />
+                        <meshStandardMaterial color="#1A237E" roughness={0.8} />
+                    </mesh>
+                    {/* Center Pillow */}
+                    <mesh position={[0, 0.05, 0.1]} scale={[0.6, 0.3, 0.45]} castShadow>
+                        <sphereGeometry args={[1, 16, 16]} />
+                        <meshStandardMaterial color="#283593" roughness={0.8} />
+                    </mesh>
+                    {/* Right Pillow */}
+                    <mesh position={[0.5, 0, 0]} scale={[0.5, 0.25, 0.4]} castShadow>
+                        <sphereGeometry args={[1, 16, 16]} />
+                        <meshStandardMaterial color="#1A237E" roughness={0.8} />
+                    </mesh>
+                </group>
+            </group>
+
+            {/* --- LAYER 3: Sleeping Zzz (Floating text when isSleeping) --- */}
+            {isSleeping && (
+                <group ref={zzzRef} position={[0.5, 0.8, 0]}>
+                    <Text fontSize={0.4} color="gold" anchorX="center" anchorY="middle">
+                        Zzz
+                    </Text>
+                </group>
+            )}
+
+            {/* --- LAYER 4: The Nightstands (Legs Touch Rug) --- */}
+            {/* Left Nightstand */}
+            <group position={[-2.5, 0, 0]}>
+                {/* Legs */}
+                <mesh position={[0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[-0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[-0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                {/* Body */}
+                <mesh position={[0, 0.6, 0]} castShadow>
+                    <boxGeometry args={[1, 0.5, 1]} />
+                    <meshStandardMaterial color="#3E2723" roughness={0.2} />
+                </mesh>
+                {/* Lamp */}
+                <group position={[0, 0.85, 0]}>
+                    <mesh><cylinderGeometry args={[0.05, 0.1, 0.1]} /><meshStandardMaterial color="gold" /></mesh>
+                    <mesh position={[0, 0.2, 0]}><cylinderGeometry args={[0.25, 0.15, 0.3]} /><meshStandardMaterial color="white" transparent opacity={0.9} /></mesh>
+                    <pointLight intensity={0.5} color="#FFD700" distance={3} decay={2} />
+                </group>
+            </group>
+
+            {/* Right Nightstand */}
+            <group position={[2.5, 0, 0]}>
+                {/* Legs */}
+                <mesh position={[0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[-0.3, 0.2, 0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                <mesh position={[-0.3, 0.2, -0.3]} castShadow><cylinderGeometry args={[0.04, 0.02, 0.4]} /><meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} /></mesh>
+                {/* Body */}
+                <mesh position={[0, 0.6, 0]} castShadow>
+                    <boxGeometry args={[1, 0.5, 1]} />
+                    <meshStandardMaterial color="#3E2723" roughness={0.2} />
+                </mesh>
+                {/* Lamp */}
+                <group position={[0, 0.85, 0]}>
+                    <mesh><cylinderGeometry args={[0.05, 0.1, 0.1]} /><meshStandardMaterial color="gold" /></mesh>
+                    <mesh position={[0, 0.2, 0]}><cylinderGeometry args={[0.25, 0.15, 0.3]} /><meshStandardMaterial color="white" transparent opacity={0.9} /></mesh>
+                    <pointLight intensity={0.5} color="#FFD700" distance={3} decay={2} />
+                </group>
+            </group>
+
+            {/* --- LAYER 5: The Plant (Fixed Coordinates) --- */}
+            <group position={[5, 0, -2]}>
+                {/* Pot: Height 0.5, so y=0.25 puts it on floor */}
+                <mesh position={[0, 0.25, 0]} castShadow>
+                    <cylinderGeometry args={[0.4, 0.3, 0.5]} />
+                    <meshStandardMaterial color="#8D6E63" /> {/* Terracotta */}
+                </mesh>
+                {/* Stem */}
+                <mesh position={[0, 1.0, 0]}>
+                    <cylinderGeometry args={[0.05, 0.05, 1.5]} />
+                    <meshStandardMaterial color="#4E342E" />
+                </mesh>
+                {/* Leaves */}
+                <mesh position={[0, 1.8, 0]}>
+                    <sphereGeometry args={[0.7]} />
+                    <meshStandardMaterial color="#2E7D32" roughness={0.8} />
+                </mesh>
+            </group>
+        </group>
+    );
+}
