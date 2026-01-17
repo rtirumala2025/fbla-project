@@ -67,21 +67,31 @@ function CasementWindow({ position }: { position: [number, number, number] }) {
                 <meshStandardMaterial color={trimColor} roughness={0.2} />
             </mesh>
 
-            {/* === CURTAIN PANELS (Navy Drapes for Privacy) === */}
-            {/* Left Curtain */}
-            <mesh position={[-2.0, 0, 0.25]} castShadow>
-                <boxGeometry args={[0.6, 6.2, 0.08]} />
-                <meshStandardMaterial color={curtainColor} roughness={0.9} />
+            {/* === ELEGANT VELVET DRAPES (Full Length for Privacy) === */}
+            {/* Curtain Rod (Gold, spans full window width) */}
+            <mesh position={[0, 3.5, 0.35]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.08, 0.08, 6, 12]} />
+                <meshStandardMaterial color="#D4AF37" metalness={0.9} roughness={0.1} />
             </mesh>
-            {/* Right Curtain */}
-            <mesh position={[2.0, 0, 0.25]} castShadow>
-                <boxGeometry args={[0.6, 6.2, 0.08]} />
-                <meshStandardMaterial color={curtainColor} roughness={0.9} />
+            {/* Rod Finials (End Caps) */}
+            <mesh position={[-3, 3.5, 0.35]}>
+                <sphereGeometry args={[0.12, 12, 12]} />
+                <meshStandardMaterial color="#D4AF37" metalness={0.9} roughness={0.1} />
             </mesh>
-            {/* Curtain Rod */}
-            <mesh position={[0, 3.3, 0.3]} rotation={[0, 0, Math.PI / 2]}>
-                <cylinderGeometry args={[0.04, 0.04, 5.2, 8]} />
-                <meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} />
+            <mesh position={[3, 3.5, 0.35]}>
+                <sphereGeometry args={[0.12, 12, 12]} />
+                <meshStandardMaterial color="#D4AF37" metalness={0.9} roughness={0.1} />
+            </mesh>
+
+            {/* Left Drape Panel (Dark Velvet Blue) */}
+            <mesh position={[-2.3, 0, 0.3]} castShadow>
+                <boxGeometry args={[1.5, 7, 0.15]} />
+                <meshStandardMaterial color="#1A237E" roughness={0.9} />
+            </mesh>
+            {/* Right Drape Panel */}
+            <mesh position={[2.3, 0, 0.3]} castShadow>
+                <boxGeometry args={[1.5, 7, 0.15]} />
+                <meshStandardMaterial color="#1A237E" roughness={0.9} />
             </mesh>
         </group>
     );

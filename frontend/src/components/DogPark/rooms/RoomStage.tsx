@@ -43,19 +43,38 @@ export function RoomStage({ currentActivity, isSleeping }: RoomStageProps) {
                 <meshStandardMaterial color="#F5F5F5" roughness={1.0} />
             </mesh>
 
-            {/* --- LAYER 2: The Bed Stack --- */}
+            {/* --- LAYER 2: The Luxury Pet Bed --- */}
             <group position={[0, 0, 0]}>
-                {/* A. The Cushion (Beige Fabric) - Sunken center for cozy look */}
-                <mesh position={[0, 0.08, 0]} receiveShadow>
-                    <cylinderGeometry args={[1.3, 1.4, 0.12, 32]} />
+                {/* A. The Bolster Rim (Thick Torus) - Stretched tall for plush look */}
+                <mesh position={[0, 0.35, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow scale={[1, 1, 2.5]}>
+                    <torusGeometry args={[1.5, 0.25, 16, 32]} />
+                    <meshStandardMaterial color="#5D4037" roughness={0.7} />
+                </mesh>
+
+                {/* B. The Mattress (Puffy Beige Cushion) - Raised for fluffy look */}
+                <mesh position={[0, 0.25, 0]} receiveShadow>
+                    <cylinderGeometry args={[1.25, 1.35, 0.25, 32]} />
                     <meshStandardMaterial color="#F5F5DC" roughness={1.0} metalness={0} />
                 </mesh>
 
-                {/* B. The Donut Rim (Brown Leather) - Raised edge */}
-                <mesh position={[0, 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
-                    <torusGeometry args={[1.5, 0.3, 16, 32]} />
-                    <meshStandardMaterial color="#5D4037" roughness={0.6} />
-                </mesh>
+                {/* C. Accent Pillows (Squashed Spheres at back of bed) */}
+                <group position={[0, 0.45, -0.6]}>
+                    {/* Left Pillow */}
+                    <mesh position={[-0.5, 0, 0]} scale={[0.5, 0.25, 0.4]} castShadow>
+                        <sphereGeometry args={[1, 16, 16]} />
+                        <meshStandardMaterial color="#1A237E" roughness={0.8} />
+                    </mesh>
+                    {/* Center Pillow */}
+                    <mesh position={[0, 0.05, 0.1]} scale={[0.6, 0.3, 0.45]} castShadow>
+                        <sphereGeometry args={[1, 16, 16]} />
+                        <meshStandardMaterial color="#283593" roughness={0.8} />
+                    </mesh>
+                    {/* Right Pillow */}
+                    <mesh position={[0.5, 0, 0]} scale={[0.5, 0.25, 0.4]} castShadow>
+                        <sphereGeometry args={[1, 16, 16]} />
+                        <meshStandardMaterial color="#1A237E" roughness={0.8} />
+                    </mesh>
+                </group>
             </group>
 
             {/* --- LAYER 3: The Dog --- */}
