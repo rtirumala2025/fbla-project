@@ -279,6 +279,34 @@ export function HouseShellFixed() {
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
+                {/* --- STRUCTURAL FILLERS (Sealing the room) --- */}
+
+                {/* Window Aprons (Wall pieces below the windows) */}
+                <mesh position={[-9.5, 0.675, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[4.5, 1.35, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+                <mesh position={[9.5, 0.675, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[4.5, 1.35, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+
+                {/* Door Header (Wall piece above the door glass) */}
+                <mesh position={[0, 8.25, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[6.4, 1.5, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+
+                {/* Door Jamb Backing (Seals the floating frame effect) */}
+                <mesh position={[-3.0, 4.25, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[0.6, 9, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+                <mesh position={[3.0, 4.25, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[0.6, 9, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
+
                 {/* Top Header (Full width, above all openings) */}
                 <mesh position={[0, 10.5, WALL_Z]} receiveShadow>
                     <boxGeometry args={[36, 3, 0.8]} />
