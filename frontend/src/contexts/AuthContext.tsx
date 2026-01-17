@@ -193,9 +193,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     onboardingLogger.authInit('Initializing AuthContext', { supabaseInitialized: !!supabase });
 
     // Fallback timeout to ensure loading never gets stuck
+    // Increased to 30s to match Supabase operation timeouts
     const fallbackTimeout = setTimeout(() => {
+      onboardingLogger.warn('AuthContext initial load timed out after 30s, forcing loading to false');
       setLoading(false);
-    }, 3000); // 3 second timeout for localhost
+    }, 30000); // 30 second timeout for consistency
 
     // Get initial session - this restores the session from localStorage
     (async () => {

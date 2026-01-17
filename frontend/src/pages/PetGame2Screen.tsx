@@ -152,15 +152,21 @@ export const PetGame2Screen: React.FC = () => {
         'breed1': 'labrador',
         'breed2': 'shepherd',
         'breed3': 'pug',
-        // Direct mappings for any legacy/future breed names
+        // Common Breed Names
         'labrador': 'labrador',
         'shepherd': 'shepherd',
         'pug': 'pug',
         'golden-retriever': 'labrador',
         'german-shepherd': 'shepherd',
-        // Default case handled below
+        'bulldog': 'pug',
+        'beagle': 'labrador',
+        'poodle': 'shepherd',
+        'dalmatian': 'labrador',
+        'husky': 'shepherd',
+        'mixed': 'labrador',
       };
-      const mappedBreed = breedMap[pet.breed.toLowerCase()] || 'labrador';
+      const dbBreed = (pet.breed || '').toLowerCase().replace(/\s+/g, '');
+      const mappedBreed = breedMap[dbBreed] || 'labrador';
       console.log('PetGame2Screen: Syncing breed from database', {
         databaseBreed: pet.breed,
         mappedBreed

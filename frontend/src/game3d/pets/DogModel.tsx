@@ -167,7 +167,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
   const lastPosUpdate = useRef(0);
 
   // GET DNA
-  const dna = useMemo(() => BREED_DNA[state.breed], [state.breed]);
+  const dna = useMemo(() => BREED_DNA[state.breed] || BREED_DNA['labrador'], [state.breed]);
 
   // Scale factor to match large environment - NORMALIZED for Pro Scale
   const SCALE = 1.2;
