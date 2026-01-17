@@ -128,8 +128,8 @@ export const Shop = () => {
 
     try {
       const payload = {
-        items: Object.entries(cart).map(([itemId, quantity]) => ({
-          item_id: itemId,
+        entries: Object.entries(cart).map(([itemId, quantity]) => ({
+          itemId,
           quantity,
         })),
       };
@@ -143,7 +143,7 @@ export const Shop = () => {
       toast.success(
         `Purchase successful! ${itemCount} item${itemCount > 1 ? 's' : ''} added to your inventory! 🎉`,
       );
-      
+
       // Suggest going to inventory to use items
       setTimeout(() => {
         toast.info('Visit your inventory to use items on your pet!', 5000);
@@ -191,7 +191,7 @@ export const Shop = () => {
         <p className="text-gray-600 mb-8">
           Purchase items and add them to your inventory
         </p>
-        
+
         {loading && (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
@@ -205,11 +205,10 @@ export const Shop = () => {
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-xl font-semibold transition-all capitalize ${
-                selectedCategory === category
+              className={`px-4 py-2 rounded-xl font-semibold transition-all capitalize ${selectedCategory === category
                   ? 'bg-indigo-600 text-white shadow-lg'
                   : 'bg-white text-gray-700 hover:text-gray-900 border-2 border-gray-300 hover:border-gray-400'
-              }`}
+                }`}
             >
               {category}
             </button>

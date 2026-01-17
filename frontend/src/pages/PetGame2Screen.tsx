@@ -2,7 +2,7 @@
  * PetGame2Screen Page Component
  * Feature-complete Pet Game 2
  */
-import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef, Suspense } from 'react';
 import { usePet } from '@/context/PetContext';
 import { useAIAssistant } from '@/contexts/AIAssistantContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,8 +19,33 @@ import { getPetDiary, bathePetAction, restPetAction, feedPetAction, playWithPet 
 import { EvolutionAnimation } from '@/components/pets/EvolutionAnimation';
 import type { PetStats, PetActionResponse } from '@/types/pet';
 import type { ActivityZone } from '@/game3d/core/SceneManager';
-import { GiftShopWindow, HouseWindow, VetGameWindow, AgilityGameWindow } from '@/components/DogPark';
-import { SupermarketWindow } from '@/components/DogPark/SupermarketWindow';
+// HouseWindow is small, keep direct import. Lazy load heavy components (40KB+)
+import { HouseWindow } from '@/components/DogPark';
+
+// Lazy load heavy game window components for better initial load time
+const GiftShopWindow = React.lazy(() =>
+  import('@/components/DogPark/GiftShopWindow').then(m => ({ default: m.GiftShopWindow }))
+);
+const SupermarketWindow = React.lazy(() =>
+  import('@/components/DogPark/SupermarketWindow').then(m => ({ default: m.SupermarketWindow }))
+);
+const VetGameWindow = React.lazy(() =>
+  import('@/components/DogPark/VetGameWindow').then(m => ({ default: m.VetGameWindow }))
+);
+const AgilityGameWindow = React.lazy(() =>
+  import('@/components/DogPark/AgilityGameWindow').then(m => ({ default: m.AgilityGameWindow }))
+);
+
+// Loading fallback for lazy loaded components
+const WindowLoadingFallback = () => (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div className="bg-white/10 rounded-2xl p-8 flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+      <p className="text-white font-medium">Loading...</p>
+    </div>
+  </div>
+);
+
 
 export const PetGame2Screen: React.FC = () => {
   const { pet, loading, error, refreshPet, updatePetStats } = usePet();
@@ -598,24 +623,32 @@ export const PetGame2Screen: React.FC = () => {
         </button>
       </div>
 
-      {/* Building Windows */}
-      <GiftShopWindow
-        isOpen={openBuilding === 'shop'}
-        onClose={() => setOpenBuilding(null)}
-        onPurchaseComplete={() => {
-          refreshBalance();
-          loadInventory();
-        }}
-      />
+      {/* Building Windows - Lazy loaded with Suspense */}
+      {openBuilding === 'shop' && (
+        <Suspense fallback={<WindowLoadingFallback />}>
+          <GiftShopWindow
+            isOpen={true}
+            onClose={() => setOpenBuilding(null)}
+            onPurchaseComplete={() => {
+              refreshBalance();
+              loadInventory();
+            }}
+          />
+        </Suspense>
+      )}
 
-      <SupermarketWindow
-        isOpen={openBuilding === 'market'}
-        onClose={() => setOpenBuilding(null)}
-        onPurchaseComplete={() => {
-          refreshBalance();
-          loadInventory();
-        }}
-      />
+      {openBuilding === 'market' && (
+        <Suspense fallback={<WindowLoadingFallback />}>
+          <SupermarketWindow
+            isOpen={true}
+            onClose={() => setOpenBuilding(null)}
+            onPurchaseComplete={() => {
+              refreshBalance();
+              loadInventory();
+            }}
+          />
+        </Suspense>
+      )}
 
       <HouseWindow
         isOpen={openBuilding === 'home'}
@@ -643,57 +676,65 @@ export const PetGame2Screen: React.FC = () => {
         }}
       />
 
-      <VetGameWindow
-        isOpen={openBuilding === 'vet'}
-        onClose={() => setOpenBuilding(null)}
-        petName={petName}
-        petHealth={{
-          health: stats?.health ?? 75,
-          happiness: stats?.happiness ?? 80,
-          energy: stats?.energy ?? 60,
-          cleanliness: stats?.cleanliness ?? 70
-        }}
-        walletBalance={balance}
-        onHealthCheck={(healthBoost) => {
-          if (stats) {
-            setStats(prev => prev ? {
-              ...prev,
-              health: Math.min(100, (prev.health ?? 0) + healthBoost)
-            } : prev);
-          }
-          showTransactionToast('Vet visit', 25);
-          refreshBalance();
-        }}
-      />
+      {openBuilding === 'vet' && (
+        <Suspense fallback={<WindowLoadingFallback />}>
+          <VetGameWindow
+            isOpen={true}
+            onClose={() => setOpenBuilding(null)}
+            petName={petName}
+            petHealth={{
+              health: stats?.health ?? 75,
+              happiness: stats?.happiness ?? 80,
+              energy: stats?.energy ?? 60,
+              cleanliness: stats?.cleanliness ?? 70
+            }}
+            walletBalance={balance}
+            onHealthCheck={(healthBoost) => {
+              if (stats) {
+                setStats(prev => prev ? {
+                  ...prev,
+                  health: Math.min(100, (prev.health ?? 0) + healthBoost)
+                } : prev);
+              }
+              showTransactionToast('Vet visit', 25);
+              refreshBalance();
+            }}
+          />
+        </Suspense>
+      )}
 
-      <AgilityGameWindow
-        isOpen={openBuilding === 'agility'}
-        onClose={() => setOpenBuilding(null)}
-        onGameComplete={async (score, coinsEarned) => {
-          if (coinsEarned > 0 && currentUser?.uid) {
-            try {
-              await shopService.addCoins(
-                currentUser.uid,
-                coinsEarned,
-                `Agility Game Reward (Score: ${score})`
-              );
-              setBalanceChange({ amount: coinsEarned, isPositive: true });
-              setTimeout(() => setBalanceChange(null), 2000);
-              await refreshBalance();
-              // Show reward toast
-              if (rewardTimer.current) clearTimeout(rewardTimer.current);
-              setRewardToast({
-                id: Date.now().toString(),
-                message: 'Agility Training Complete!',
-                amount: coinsEarned,
-              });
-              rewardTimer.current = setTimeout(() => setRewardToast(null), 3000);
-            } catch (error) {
-              console.error('Failed to award coins:', error);
-            }
-          }
-        }}
-      />
+      {openBuilding === 'agility' && (
+        <Suspense fallback={<WindowLoadingFallback />}>
+          <AgilityGameWindow
+            isOpen={true}
+            onClose={() => setOpenBuilding(null)}
+            onGameComplete={async (score, coinsEarned) => {
+              if (coinsEarned > 0 && currentUser?.uid) {
+                try {
+                  await shopService.addCoins(
+                    currentUser.uid,
+                    coinsEarned,
+                    `Agility Game Reward (Score: ${score})`
+                  );
+                  setBalanceChange({ amount: coinsEarned, isPositive: true });
+                  setTimeout(() => setBalanceChange(null), 2000);
+                  await refreshBalance();
+                  // Show reward toast
+                  if (rewardTimer.current) clearTimeout(rewardTimer.current);
+                  setRewardToast({
+                    id: Date.now().toString(),
+                    message: 'Agility Training Complete!',
+                    amount: coinsEarned,
+                  });
+                  rewardTimer.current = setTimeout(() => setRewardToast(null), 3000);
+                } catch (error) {
+                  console.error('Failed to award coins:', error);
+                }
+              }
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

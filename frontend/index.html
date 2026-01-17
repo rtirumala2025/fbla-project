@@ -16,10 +16,8 @@
 
   <!-- Vite handles CSS imports dynamically, no need to preload here -->
 
-  <!-- Prefetch likely next routes for faster navigation -->
-  <link rel="prefetch" href="./dashboard" />
-  <link rel="prefetch" href="./shop" />
-  <link rel="prefetch" href="./budget" />
+  <!-- Note: Route prefetching is handled by React Router and dynamic imports -->
+  <!-- Static path prefetches removed as they don't work with Vite's hashed filenames -->
 
   <link rel="apple-touch-icon" href="./logo192.png" />
   <link rel="manifest" href="./manifest.json" />

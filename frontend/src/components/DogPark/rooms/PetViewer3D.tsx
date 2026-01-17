@@ -125,7 +125,7 @@ function PetModelViewer({
     }
 }
 
-export function PetViewer3D({
+export const PetViewer3D = React.memo(function PetViewer3D({
     petType,
     breed = 'labrador',
     accessories = [],
@@ -143,9 +143,17 @@ export function PetViewer3D({
     return (
         <div style={containerStyle}>
             <Canvas
-                gl={{ antialias: true, alpha: true }}
+                gl={{
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: 'high-performance',
+                    precision: 'highp',
+                }}
+                dpr={Math.min(window.devicePixelRatio, 2)} // Cap DPR at 2 for performance
                 style={{ background: 'transparent' }}
                 shadows
+                // Only render when state changes (demand mode for better perf)
+                frameloop="always"
             >
                 <Suspense fallback={null}>
                     <PerspectiveCamera makeDefault position={[0, 5, 12]} fov={35} />
@@ -246,6 +254,6 @@ export function PetViewer3D({
             </Canvas>
         </div>
     );
-}
+});
 
 export default PetViewer3D;

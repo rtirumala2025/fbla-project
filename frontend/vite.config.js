@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
+    base: './',
     plugins: [
         react({
             // Use automatic JSX runtime
@@ -120,7 +121,6 @@ export default defineConfig({
             'classnames',
             '@react-three/drei',
             'react-reconciler',
-            'react-reconciler/constants',
         ],
         // Exclude heavy dependencies that are lazy-loaded
         exclude: [
