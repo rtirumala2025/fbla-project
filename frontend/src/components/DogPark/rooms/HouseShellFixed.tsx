@@ -248,65 +248,29 @@ export function HouseShellFixed() {
             {/* === 4. THE BACK WALL COMPLEX === */}
             <group position={[0, 0, 0]}> {/* Group at origin, using absolute Z for components */}
 
-                {/* --- WALL SEGMENTATION --- */}
+                {/* --- SOLID WALL PANELS (Extended to overlap behind window/door frames) --- */}
 
-                {/* 1. Far Left Panel (x = -15, width 6) - Covers corner */}
-                <mesh position={[-15, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[6, 10, 0.8]} />
+                {/* 1. Far Left Panel - Extended right to overlap behind left window frame */}
+                <mesh position={[-13.5, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[9, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* GAP FILL: Left edge of left window (between far left panel and window frame) */}
-                <mesh position={[-11.75, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[0.5, 10, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
-
-                {/* GAP FILL: Right edge of left window (between window frame and mid left pillar) */}
-                <mesh position={[-7.25, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[0.5, 10, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
-
-                {/* 2. Mid Left Pillar (x = -5.5, width 3) - Between window and door */}
+                {/* 2. Mid Left Pillar - Extended both ways to overlap behind frames */}
                 <mesh position={[-5.5, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[3, 10, 0.8]} />
+                    <boxGeometry args={[5, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* GAP FILL: Left edge of door (between mid left pillar and door frame) */}
-                <mesh position={[-3.75, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[0.5, 10, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
-
-                {/* GAP FILL: Right edge of door (between door frame and mid right pillar) */}
-                <mesh position={[3.75, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[0.5, 10, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
-
-                {/* 3. Mid Right Pillar (x = 5.5, width 3) - Between door and window */}
+                {/* 3. Mid Right Pillar - Extended both ways to overlap behind frames */}
                 <mesh position={[5.5, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[3, 10, 0.8]} />
+                    <boxGeometry args={[5, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* GAP FILL: Left edge of right window (between mid right pillar and window frame) */}
-                <mesh position={[7.25, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[0.5, 10, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
-
-                {/* GAP FILL: Right edge of right window (between window frame and far right panel) */}
-                <mesh position={[11.75, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[0.5, 10, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
-
-                {/* 4. Far Right Panel (x = 15, width 6) */}
-                <mesh position={[15, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[6, 10, 0.8]} />
+                {/* 4. Far Right Panel - Extended left to overlap behind right window frame */}
+                <mesh position={[13.5, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[9, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
