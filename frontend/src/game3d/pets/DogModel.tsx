@@ -169,11 +169,8 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
   // GET DNA
   const dna = useMemo(() => {
     const resolved = BREED_DNA[state.breed] || BREED_DNA['labrador'];
-    console.log('🐶 DogModel: Rendering Dog', {
-      requestedBreed: state.breed,
-      resolvedDNA: resolved ? 'FOUND' : 'FALLBACK_TO_LABRADOR',
-      colors: resolved?.colors
-    });
+    const isFound = !!BREED_DNA[state.breed];
+    console.log(`🐶 DogModel: requestedBreed="${state.breed}" → DNA=${isFound ? 'FOUND' : 'FALLBACK_LABRADOR'} → colors=${JSON.stringify(resolved?.colors)}`);
     return resolved;
   }, [state.breed]);
 
