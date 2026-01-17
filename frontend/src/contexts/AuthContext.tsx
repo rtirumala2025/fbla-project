@@ -54,10 +54,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
-  const [hasPet, setHasPet] = useState(false);
+  // Initialize hasPet from localStorage cache if available (prevents redirect on refresh)
+  const [hasPet, setHasPet] = useState(() => {
+    try {
+      const cached = localStorage.getItem('hasPet');
+      return cached === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isTransitioning, setIsTransitioning] = useState(false);
   const initialSessionLoadedRef = useRef(false);
   const petSubscriptionRef = useRef<any>(null);
+  // Preserve last known hasPet value to prevent redirect on auth refresh failures
+  const hasPetCacheRef = useRef(hasPet);
+
+  // Helper to update hasPet with caching to localStorage
+  // This prevents redirect loops on page refresh by persisting the pet status
+  const updateHasPet = useCallback((value: boolean) => {
+    setHasPet(value);
+    hasPetCacheRef.current = value;
+    try {
+      localStorage.setItem('hasPet', value.toString());
+    } catch {
+      // Ignore localStorage errors (e.g., private browsing)
+    }
+  }, []);
 
   // Helper function to retry pet check with exponential backoff
   const checkPetWithRetry = async (userId: string, maxRetries = 3): Promise<boolean> => {
@@ -73,7 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (attempt === maxRetries) {
           onboardingLogger.error(`Pet check failed after ${maxRetries} attempts`, error, { userId, maxRetries });
-          return false; // Default to no pet on final failure
+          // CRITICAL: On failure, return the cached value instead of false
+          // This prevents redirect to pet-selection when the check temporarily fails
+          return hasPetCacheRef.current;
         }
 
         // Exponential backoff: 100ms, 200ms, 400ms
@@ -82,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    return false;
+    return hasPetCacheRef.current; // Return cached value on failure
   };
 
   // Helper function to check if user has a profile and pet
@@ -135,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         onboardingLogger.authInit('User state refreshed', { userId: session.user.id, isNew, hasPet: petExists, displayName: updatedUser.displayName });
         setIsNewUser(isNew);
-        setHasPet(petExists);
+        updateHasPet(petExists);
         setCurrentUser(updatedUser);
       }
     } catch (error) {
@@ -148,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('✅ AuthContext: Marking user as returning (profile exists)', { hasPetValue });
     setIsNewUser(false);
     if (hasPetValue !== undefined) {
-      setHasPet(hasPetValue);
+      updateHasPet(hasPetValue);
     }
     setIsTransitioning(true);
   };
@@ -229,7 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             onboardingLogger.authInit('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
             setIsNewUser(isNew);
-            setHasPet(petExists);
+            updateHasPet(petExists);
           } else {
             setIsNewUser(false);
             setHasPet(false);
@@ -349,7 +373,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // petExists keeps its fallback value from above
           }
           setIsNewUser(isNew);
-          setHasPet(petExists);
+          updateHasPet(petExists);
         } else {
           setIsNewUser(false);
           setHasPet(false);

@@ -8,7 +8,7 @@ import { useAIAssistant } from '@/contexts/AIAssistantContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFinancial } from '@/context/FinancialContext';
 import PetGame2Scene from '@/game3d/PetGame2Scene';
-import { usePetGame2State, type PetGame2Action, type PetGame2PetType } from '@/game3d/core/SceneManager';
+import { usePetGame2State, type PetGame2Action, type PetGame2PetType, type PetBreed } from '@/game3d/core/SceneManager';
 import { PetInventoryDock, type InventoryEntry } from '@/game3d/ui/PetInventoryDock';
 import { PetDiaryOverlay, type PetDiaryEntry } from '@/game3d/ui/PetDiaryOverlay';
 import { FloatingCost, type FloatingCostProps } from '@/game3d/ui/FloatingCost';
@@ -115,6 +115,34 @@ export const PetGame2Screen: React.FC = () => {
       setStats(pet.stats);
     }
   }, [pet]);
+
+  // Sync breed from database to 3D scene state
+  // Maps database breed names to valid PetBreed types for 3D models
+  useEffect(() => {
+    if (pet?.breed) {
+      // Map database breed names to valid PetBreed types
+      // The BreedSelector uses 'breed1', 'breed2', 'breed3' as IDs
+      const breedMap: Record<string, PetBreed> = {
+        // Dog breeds - map to 3D model types
+        'breed1': 'labrador',
+        'breed2': 'shepherd',
+        'breed3': 'pug',
+        // Direct mappings for any legacy/future breed names
+        'labrador': 'labrador',
+        'shepherd': 'shepherd',
+        'pug': 'pug',
+        'golden-retriever': 'labrador',
+        'german-shepherd': 'shepherd',
+        // Default case handled below
+      };
+      const mappedBreed = breedMap[pet.breed.toLowerCase()] || 'labrador';
+      console.log('PetGame2Screen: Syncing breed from database', {
+        databaseBreed: pet.breed,
+        mappedBreed
+      });
+      setBreed(mappedBreed);
+    }
+  }, [pet?.breed, setBreed]);
 
   // -- AI Assistant Integration --
   const { updateContext, toggleOpen, sendMessage } = useAIAssistant();
