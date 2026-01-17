@@ -248,7 +248,7 @@ export function HouseShellFixed() {
             {/* === 4. THE BACK WALL COMPLEX === */}
             <group position={[0, 0, 0]}> {/* Group at origin, using absolute Z for components */}
 
-                {/* --- WALL SEGMENTATION (Fixes Missing Windows) --- */}
+                {/* --- WALL SEGMENTATION --- */}
 
                 {/* 1. Far Left Panel (x = -15, width 6) - Covers corner */}
                 <mesh position={[-15, 5, WALL_Z]} receiveShadow>
@@ -256,7 +256,11 @@ export function HouseShellFixed() {
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* GAP 1: Left Window (x = -12 to -7) */}
+                {/* FILL 1: Left Window Wall (behind window glass) */}
+                <mesh position={[-9.5, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[5, 10, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
 
                 {/* 2. Mid Left Pillar (x = -5.5, width 3) - Between window and door */}
                 <mesh position={[-5.5, 5, WALL_Z]} receiveShadow>
@@ -264,7 +268,11 @@ export function HouseShellFixed() {
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* GAP 2: French Doors (x = -4 to 4) */}
+                {/* FILL 2: French Door Wall (behind door glass) */}
+                <mesh position={[0, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[8, 10, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
 
                 {/* 3. Mid Right Pillar (x = 5.5, width 3) - Between door and window */}
                 <mesh position={[5.5, 5, WALL_Z]} receiveShadow>
@@ -272,7 +280,11 @@ export function HouseShellFixed() {
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* GAP 3: Right Window (x = 7 to 12) */}
+                {/* FILL 3: Right Window Wall (behind window glass) */}
+                <mesh position={[9.5, 5, WALL_Z]} receiveShadow>
+                    <boxGeometry args={[5, 10, 0.8]} />
+                    <meshStandardMaterial color={wallColor} roughness={0.9} />
+                </mesh>
 
                 {/* 4. Far Right Panel (x = 15, width 6) */}
                 <mesh position={[15, 5, WALL_Z]} receiveShadow>
