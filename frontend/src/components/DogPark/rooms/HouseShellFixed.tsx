@@ -265,13 +265,9 @@ export function HouseShellFixed() {
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
                 </mesh>
 
-                {/* 3. Center Door Wall - Behind the french door glass */}
-                <mesh position={[0, 5, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[6.4, 10, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
+                {/* NO WALL BEHIND DOORS - French doors open to balcony/sky */}
 
-                {/* 4. Mid Right Pillar - From 3.2 (right edge of door) to 7.25 (left edge of right window) */}
+                {/* 3. Mid Right Pillar - From 3.2 (right edge of door) to 7.25 (left edge of right window) */}
                 <mesh position={[5.225, 5, WALL_Z]} receiveShadow>
                     <boxGeometry args={[4.05, 10, 0.8]} />
                     <meshStandardMaterial color={wallColor} roughness={0.9} />
