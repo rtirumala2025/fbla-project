@@ -167,9 +167,10 @@ export const PetGame2Screen: React.FC = () => {
       };
       const dbBreed = (pet.breed || '').toLowerCase().replace(/\s+/g, '');
       const mappedBreed = breedMap[dbBreed] || 'labrador';
-      console.log('PetGame2Screen: Syncing breed from database', {
-        databaseBreed: pet.breed,
-        mappedBreed
+      console.log('🐶 PetGame2Screen: Breed Sync Debug', {
+        rawBreed: pet.breed,
+        normalizedBreed: dbBreed,
+        mappedTo: mappedBreed
       });
       setBreed(mappedBreed);
     }
