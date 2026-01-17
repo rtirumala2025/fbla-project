@@ -281,15 +281,7 @@ export function HouseShellFixed() {
 
                 {/* --- STRUCTURAL FILLERS (Sealing the room) --- */}
 
-                {/* Window Aprons (Wall pieces below the windows) */}
-                <mesh position={[-9.5, 0.675, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[4.5, 1.35, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
-                <mesh position={[9.5, 0.675, WALL_Z]} receiveShadow>
-                    <boxGeometry args={[4.5, 1.35, 0.8]} />
-                    <meshStandardMaterial color={wallColor} roughness={0.9} />
-                </mesh>
+                {/* Window aprons removed - the extended window sill covers the bottom */}
 
                 {/* Door Header (Wall piece above the door glass) */}
                 <mesh position={[0, 8.25, WALL_Z]} receiveShadow>
