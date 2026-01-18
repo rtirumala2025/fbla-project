@@ -25,6 +25,9 @@ export function BathroomShell() {
             {/* === BACKGROUND COLOR (Sky/Atmosphere) === */}
             <color attach="background" args={[skyColor]} />
 
+            {/* === FOG (Softens distant edges into background) === */}
+            <fog attach="fog" args={[skyColor, 15, 35]} />
+
             {/* === INFINITE FOUNDATION (World Base) === */}
             <mesh position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[100, 100]} />
