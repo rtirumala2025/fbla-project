@@ -561,50 +561,45 @@ export function KitchenFurniture({ hasFood = false }: KitchenFurnitureProps) {
 
 
             {/* ============================================================ */}
-            {/* === SMART BOWL (Interactive Feeding) === */}
+            {/* === FOOD BOWL (Redesigned: Bigger, Open Top, No Handle) === */}
             {/* ============================================================ */}
             <group position={[0, 0, 2]}>
-                {/* White Ceramic Bowl - Large and visible */}
-                <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
-                    <cylinderGeometry args={[0.8, 0.65, 0.35, 32]} />
-                    <meshStandardMaterial color="#FFFFFF" roughness={0.3} />
+                {/* Bowl Outer Shell - Open cylinder (no top) */}
+                <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
+                    <cylinderGeometry args={[1.0, 0.8, 0.5, 32, 1, true]} />
+                    <meshStandardMaterial color="#E8E8E8" roughness={0.3} side={2} />
                 </mesh>
-                {/* Bowl Inner Surface */}
-                <mesh position={[0, 0.25, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <circleGeometry args={[0.7, 32]} />
-                    <meshStandardMaterial color="#F5F5F5" roughness={0.4} />
-                </mesh>
-                {/* Bowl Rim Highlight */}
-                <mesh position={[0, 0.37, 0]} castShadow>
-                    <torusGeometry args={[0.75, 0.05, 12, 32]} />
-                    <meshStandardMaterial color="#E0E0E0" roughness={0.2} />
+                {/* Bowl Bottom - Flat disc inside */}
+                <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                    <circleGeometry args={[0.78, 32]} />
+                    <meshStandardMaterial color="#F0F0F0" roughness={0.4} />
                 </mesh>
                 {/* Food Mound (conditionally rendered based on hasFood prop) */}
                 {hasFood && (
-                    <group position={[0, 0.28, 0]}>
-                        {/* Kibble Pile - Large Brown Spheres */}
-                        <mesh position={[0, 0.1, 0]} castShadow>
-                            <sphereGeometry args={[0.25, 16, 16]} />
+                    <group position={[0, 0.15, 0]}>
+                        {/* Kibble Pile - Brown spheres representing food */}
+                        <mesh position={[0, 0.12, 0]} castShadow>
+                            <sphereGeometry args={[0.3, 16, 16]} />
                             <meshStandardMaterial color="#8D6E63" roughness={0.9} />
                         </mesh>
-                        <mesh position={[0.18, 0.15, 0.12]} castShadow>
-                            <sphereGeometry args={[0.15, 12, 12]} />
+                        <mesh position={[0.22, 0.15, 0.15]} castShadow>
+                            <sphereGeometry args={[0.18, 12, 12]} />
                             <meshStandardMaterial color="#6D4C41" roughness={0.85} />
                         </mesh>
-                        <mesh position={[-0.15, 0.12, -0.12]} castShadow>
-                            <sphereGeometry args={[0.18, 12, 12]} />
+                        <mesh position={[-0.18, 0.13, -0.15]} castShadow>
+                            <sphereGeometry args={[0.22, 12, 12]} />
                             <meshStandardMaterial color="#795548" roughness={0.88} />
                         </mesh>
-                        <mesh position={[0.12, 0.08, -0.2]} castShadow>
-                            <sphereGeometry args={[0.12, 10, 10]} />
+                        <mesh position={[0.15, 0.1, -0.25]} castShadow>
+                            <sphereGeometry args={[0.15, 10, 10]} />
                             <meshStandardMaterial color="#A1887F" roughness={0.9} />
                         </mesh>
-                        <mesh position={[-0.22, 0.1, 0.1]} castShadow>
-                            <sphereGeometry args={[0.14, 10, 10]} />
+                        <mesh position={[-0.28, 0.11, 0.12]} castShadow>
+                            <sphereGeometry args={[0.17, 10, 10]} />
                             <meshStandardMaterial color="#8D6E63" roughness={0.92} />
                         </mesh>
-                        <mesh position={[0.25, 0.06, 0.05]} castShadow>
-                            <sphereGeometry args={[0.1, 8, 8]} />
+                        <mesh position={[0.3, 0.08, 0.06]} castShadow>
+                            <sphereGeometry args={[0.12, 8, 8]} />
                             <meshStandardMaterial color="#5D4037" roughness={0.9} />
                         </mesh>
                     </group>
