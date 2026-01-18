@@ -23,13 +23,13 @@ export function BathroomShell() {
             {/* === BACKGROUND COLOR (Infinity) === */}
             <color attach="background" args={[INFINITY_COLOR]} />
 
-            {/* === FOG (Hides the seam - tight range) === */}
-            <fog attach="fog" args={[INFINITY_COLOR, 5, 20]} />
+            {/* === FOG (Hides the seam - medium range) === */}
+            <fog attach="fog" args={[INFINITY_COLOR, 10, 30]} />
 
-            {/* === INFINITE FOUNDATION (Same color as sky) === */}
-            <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            {/* === INFINITE FOUNDATION (UNLIT - matches background exactly) === */}
+            <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                 <planeGeometry args={[200, 200]} />
-                <meshStandardMaterial color={INFINITY_COLOR} roughness={0.5} />
+                <meshBasicMaterial color={INFINITY_COLOR} />
             </mesh>
 
             {/* === ROOM FLOOR (Same color for seamless blend) === */}
@@ -62,9 +62,10 @@ export function BathroomShell() {
                 <meshStandardMaterial color={ceilingColor} roughness={0.9} />
             </mesh>
 
-            {/* === LIGHTING - Cool White Overhead === */}
-            <pointLight position={[0, roomHeight - 0.5, 0]} intensity={1.2} color="#F5FFFA" castShadow distance={20} />
-            <pointLight position={[0, roomHeight - 0.5, 2]} intensity={0.6} color="#E0FFFF" />
+            {/* === LIGHTING - Soft Ambient + Cool Overhead === */}
+            <ambientLight intensity={0.8} color="#FFFFFF" />
+            <pointLight position={[0, roomHeight - 0.5, 0]} intensity={1.0} color="#F5FFFA" castShadow distance={20} />
+            <pointLight position={[0, roomHeight - 0.5, 2]} intensity={0.5} color="#E0FFFF" />
 
             {/* === DECORATIVE TILE TRIM (Horizontal Accent Line) === */}
             <mesh position={[0, 2, -roomDepth / 2 + 0.1]} receiveShadow>
