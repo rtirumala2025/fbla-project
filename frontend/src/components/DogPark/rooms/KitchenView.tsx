@@ -21,13 +21,105 @@ interface KitchenViewProps {
     hasFood?: boolean;
 }
 
-const getFoodEmoji = (name: string): string => {
-    const n = name.toLowerCase();
-    if (n.includes('apple')) return '🍎';
-    if (n.includes('bone') || n.includes('treat')) return '🦴';
-    if (n.includes('fish')) return '🐟';
-    if (n.includes('meat')) return '🥩';
-    return '🍖';
+// Comprehensive Item Registry - includes ALL supermarket items
+const ITEM_REGISTRY: Record<string, { name: string; icon: string; color: string }> = {
+    // ============= FOOD ITEMS =============
+    'premium': { name: 'Premium Kibble', icon: '🍖', color: '#D7CCC8' },
+    'dog_food': { name: 'Premium Kibble', icon: '🍖', color: '#D7CCC8' },
+    'food': { name: 'Pet Food', icon: '🍖', color: '#D7CCC8' },
+    'treat': { name: 'Treat Bag', icon: '🍪', color: '#FFE0B2' },
+    'treats': { name: 'Treat Bag', icon: '🍪', color: '#FFE0B2' },
+    'bone': { name: 'Bone Pack', icon: '🦴', color: '#EFEBE9' },
+    'bones': { name: 'Bone Pack', icon: '🦴', color: '#EFEBE9' },
+    'gourmet': { name: 'Gourmet Meal', icon: '🥩', color: '#FFAB91' },
+    'wet': { name: 'Wet Food Can', icon: '🥫', color: '#FFCCBC' },
+    'puppy': { name: 'Puppy Formula', icon: '🍼', color: '#BBDEFB' },
+    'salmon': { name: 'Salmon Bites', icon: '🐟', color: '#B2EBF2' },
+    'fish': { name: 'Fresh Fish', icon: '🐟', color: '#B2EBF2' },
+    'veggie': { name: 'Veggie Mix', icon: '🥕', color: '#FFCC80' },
+    'carrot': { name: 'Crunchy Carrot', icon: '🥕', color: '#FFCC80' },
+    'apple': { name: 'Fresh Apple', icon: '🍎', color: '#FFCDD2' },
+    'sushi': { name: 'Sushi Roll', icon: '🍣', color: '#FFCC80' },
+    'water': { name: 'Fresh Water', icon: '💧', color: '#B3E5FC' },
+    'meat': { name: 'Prime Meat', icon: '🥩', color: '#FFCCBC' },
+    'steak': { name: 'Juicy Steak', icon: '🥩', color: '#FFAB91' },
+    'chicken': { name: 'Roasted Chicken', icon: '🍗', color: '#FFE082' },
+    'cheese': { name: 'Cheese Block', icon: '🧀', color: '#FFF59D' },
+    'pizza': { name: 'Pizza Slice', icon: '🍕', color: '#FFAB91' },
+    'cookie': { name: 'Doggy Cookie', icon: '🍪', color: '#D7CCC8' },
+    'bread': { name: 'Fresh Bread', icon: '🍞', color: '#FFE0B2' },
+    'banana': { name: 'Ripe Banana', icon: '🍌', color: '#FFF59D' },
+
+    // ============= TOYS =============
+    'squeaky': { name: 'Squeaky Toy', icon: '🧸', color: '#C8E6C9' },
+    'ball': { name: 'Ball Launcher', icon: '🎾', color: '#A5D6A7' },
+    'frisbee': { name: 'Flying Disc', icon: '🥏', color: '#81C784' },
+    'rope': { name: 'Tug Rope', icon: '🪢', color: '#AED581' },
+    'puzzle': { name: 'Puzzle Feeder', icon: '🧩', color: '#CE93D8' },
+    'plush': { name: 'Plush Friend', icon: '🐻', color: '#BCAAA4' },
+    'kong': { name: 'Chew Kong', icon: '🔴', color: '#EF9A9A' },
+    'laser': { name: 'Laser Pointer', icon: '🔦', color: '#FFF59D' },
+    'toy': { name: 'Pet Toy', icon: '🧸', color: '#C8E6C9' },
+
+    // ============= FURNITURE =============
+    'bed': { name: 'Cozy Bed', icon: '🛏️', color: '#D1C4E9' },
+    'fountain': { name: 'Water Fountain', icon: '💧', color: '#B3E5FC' },
+    'house': { name: 'Dog House', icon: '🏠', color: '#FFCC80' },
+    'scratching': { name: 'Scratching Post', icon: '🐱', color: '#FFAB91' },
+    'tree': { name: 'Cat Tree Deluxe', icon: '🌳', color: '#A5D6A7' },
+    'tunnel': { name: 'Play Tunnel', icon: '🕳️', color: '#B0BEC5' },
+    'feeder': { name: 'Auto Feeder', icon: '🤖', color: '#90CAF9' },
+    'window': { name: 'Window Perch', icon: '🪟', color: '#B3E5FC' },
+
+    // ============= ACCESSORIES =============
+    'collar': { name: 'Fancy Collar', icon: '📿', color: '#CE93D8' },
+    'bandana': { name: 'Cool Bandana', icon: '🧣', color: '#EF9A9A' },
+    'bowtie': { name: 'Dapper Bowtie', icon: '🎀', color: '#F48FB1' },
+    'sunglasses': { name: 'Pet Sunglasses', icon: '🕶️', color: '#90A4AE' },
+    'harness': { name: 'Adventure Harness', icon: '🎒', color: '#A1887F' },
+    'raincoat': { name: 'Rainy Day Coat', icon: '🧥', color: '#90CAF9' },
+    'boots': { name: 'Paw Booties', icon: '🥾', color: '#BCAAA4' },
+    'crown': { name: 'Royal Crown', icon: '👑', color: '#FFD54F' },
+
+    // ============= HEALTH & CARE =============
+    'grooming': { name: 'Grooming Kit', icon: '✨', color: '#B39DDB' },
+    'vitamins': { name: 'Pet Vitamins', icon: '💊', color: '#EF9A9A' },
+    'energy': { name: 'Energy Boost', icon: '⚡', color: '#FFF59D' },
+    'shampoo': { name: 'Premium Shampoo', icon: '🧴', color: '#80DEEA' },
+    'flea': { name: 'Flea Treatment', icon: '🛡️', color: '#A5D6A7' },
+    'dental': { name: 'Dental Chews', icon: '🦷', color: '#E0E0E0' },
+    'joint': { name: 'Joint Supplement', icon: '💪', color: '#FFAB91' },
+    'calm': { name: 'Calming Treats', icon: '🧘', color: '#CE93D8' },
+    'brush': { name: 'Deluxe Brush', icon: '🪮', color: '#BCAAA4' },
+    'nail': { name: 'Nail Clippers', icon: '✂️', color: '#B0BEC5' },
+    'dryer': { name: 'Pet Dryer', icon: '💨', color: '#B3E5FC' },
+    'perfume': { name: 'Pet Cologne', icon: '🌸', color: '#F8BBD9' },
+
+    // ============= DEALS & BUNDLES =============
+    'bundle': { name: 'Starter Bundle', icon: '🎁', color: '#FFAB91' },
+    'flash': { name: 'Flash Sale', icon: '⚡', color: '#FFF59D' },
+    'spa': { name: 'Spa Day Kit', icon: '🧖', color: '#B39DDB' },
+    'deal': { name: 'Special Deal', icon: '🔥', color: '#EF9A9A' },
+};
+
+// Get item details with smart fallback
+const getItemDetails = (item: { item_id: string; item_name: string }) => {
+    // Try exact match on item_id first
+    const idLower = item.item_id.toLowerCase();
+    if (ITEM_REGISTRY[idLower]) {
+        return ITEM_REGISTRY[idLower];
+    }
+
+    // Try to match by item_name keywords
+    const nameLower = item.item_name.toLowerCase();
+    for (const [key, value] of Object.entries(ITEM_REGISTRY)) {
+        if (nameLower.includes(key)) {
+            return value;
+        }
+    }
+
+    // Default fallback
+    return { name: item.item_name, icon: '🍖', color: '#D7CCC8' };
 };
 
 export function KitchenView({
@@ -103,16 +195,20 @@ export function KitchenView({
                             <Apple size={24} /> Kitchen is empty - visit the Supermarket!
                         </div>
                     ) : (
-                        foodItems.map(item => (
-                            <DockItemCard
-                                key={item.item_id}
-                                emoji={getFoodEmoji(item.item_name)}
-                                name={item.item_name}
-                                quantity={item.quantity}
-                                onClick={() => handleFeed(item)}
-                                disabled={isFeeding}
-                            />
-                        ))
+                        foodItems.map(item => {
+                            const details = getItemDetails(item);
+                            return (
+                                <DockItemCard
+                                    key={item.item_id}
+                                    emoji={details.icon}
+                                    name={details.name}
+                                    quantity={item.quantity}
+                                    onClick={() => handleFeed(item)}
+                                    disabled={isFeeding}
+                                    accentColor={details.color}
+                                />
+                            );
+                        })
                     )}
                 </div>
             </div>
