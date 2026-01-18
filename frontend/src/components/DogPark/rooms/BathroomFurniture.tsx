@@ -18,9 +18,9 @@ export function BathroomFurniture() {
     return (
         <group>
             {/* ============================================================ */}
-            {/* === HERO BATHTUB (Oval, Deep, Inviting) === */}
+            {/* === HERO BATHTUB (Pushed to Back Wall) === */}
             {/* ============================================================ */}
-            <group position={[0, 0, -3]}>
+            <group position={[0, 0, -4]}>
                 {/* === TUB PLINTH (Chrome Base touching floor) === */}
                 <mesh position={[0, 0.05, 0]} scale={[1, 1, 0.7]} castShadow receiveShadow>
                     <cylinderGeometry args={[2.2, 2.2, 0.1, 32]} />
@@ -104,9 +104,9 @@ export function BathroomFurniture() {
             </group>
 
             {/* ============================================================ */}
-            {/* === VANITY STATION (Left Wall) === */}
+            {/* === VANITY STATION (Snapped to Left Wall) === */}
             {/* ============================================================ */}
-            <group position={[-4, 0, -1]}>
+            <group position={[-5.2, 0, -2]}>
                 {/* === VANITY PEDESTAL (Floor-Standing Base) === */}
                 <mesh position={[0, 0.8, 0]} castShadow receiveShadow>
                     <boxGeometry args={[1.6, 1.6, 0.7]} />
@@ -157,8 +157,8 @@ export function BathroomFurniture() {
                     <meshStandardMaterial color={chromeColor} roughness={0.05} metalness={0.95} />
                 </mesh>
 
-                {/* Large Round Mirror */}
-                <group position={[0, 4.2, -0.35]}>
+                {/* Large Round Mirror (Mounted on Left Wall Surface) */}
+                <group position={[0.5, 4.2, -0.1]} rotation={[0, 0, 0]}>
                     {/* Mirror Frame */}
                     <mesh>
                         <torusGeometry args={[0.9, 0.05, 16, 32]} />
@@ -197,25 +197,34 @@ export function BathroomFurniture() {
             </mesh>
 
             {/* ============================================================ */}
-            {/* === TOWEL RACK (Right Wall) === */}
+            {/* === TOWEL RACK (Snapped to Right Wall) === */}
             {/* ============================================================ */}
-            <group position={[4.5, 1.5, 0]}>
+            <group position={[5.8, 2.5, -2]}>
+                {/* Wall Mount Brackets */}
+                <mesh position={[0, 0.4, 0]} castShadow>
+                    <boxGeometry args={[0.08, 0.15, 0.15]} />
+                    <meshStandardMaterial color={chromeColor} roughness={0.1} metalness={0.9} />
+                </mesh>
+                <mesh position={[0, -0.4, 0]} castShadow>
+                    <boxGeometry args={[0.08, 0.15, 0.15]} />
+                    <meshStandardMaterial color={chromeColor} roughness={0.1} metalness={0.9} />
+                </mesh>
                 {/* Rack Bar */}
-                <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
-                    <cylinderGeometry args={[0.03, 0.03, 1.5, 12]} />
+                <mesh position={[-0.15, 0, 0]} castShadow rotation={[0, 0, Math.PI / 2]}>
+                    <cylinderGeometry args={[0.03, 0.03, 1.2, 12]} />
                     <meshStandardMaterial color={chromeColor} roughness={0.05} metalness={0.9} />
                 </mesh>
                 {/* Towel (Blue) */}
-                <mesh position={[0, -0.3, 0.02]} castShadow>
-                    <boxGeometry args={[0.08, 0.8, 1]} />
+                <mesh position={[-0.3, 0, 0.02]} castShadow>
+                    <boxGeometry args={[0.08, 0.8, 0.8]} />
                     <meshStandardMaterial color="#29B6F6" roughness={0.85} />
                 </mesh>
             </group>
 
             {/* ============================================================ */}
-            {/* === RUBBER DUCK (Fun Detail) === */}
+            {/* === RUBBER DUCK (In Tub, adjusted for new tub position) === */}
             {/* ============================================================ */}
-            <group position={[0.8, 0.75, -2.8]}>
+            <group position={[0.8, 0.85, -3.8]}>
                 {/* Body */}
                 <mesh castShadow>
                     <sphereGeometry args={[0.12, 16, 16]} />

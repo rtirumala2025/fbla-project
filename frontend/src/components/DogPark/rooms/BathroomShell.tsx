@@ -58,9 +58,9 @@ export function BathroomShell() {
                 <meshStandardMaterial color={wallColor} roughness={0.1} />
             </mesh>
 
-            {/* === CEILING === */}
+            {/* === CEILING (Large to hide gaps) === */}
             <mesh position={[0, roomHeight, 0]} rotation={[Math.PI / 2, 0, 0]} receiveShadow>
-                <planeGeometry args={[roomWidth, roomDepth]} />
+                <planeGeometry args={[20, 20]} />
                 <meshStandardMaterial color={ceilingColor} roughness={0.9} />
             </mesh>
 
