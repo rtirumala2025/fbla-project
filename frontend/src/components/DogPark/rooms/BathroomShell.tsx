@@ -12,11 +12,11 @@ export function BathroomShell() {
     const wallColor = "#FFFFFF";      // Pure white tile
     const ceilingColor = "#FAFAFA";   // Off-white
 
-    // Room dimensions
-    const roomWidth = 12;
-    const roomDepth = 10;
+    // Room dimensions - EXPANDED TO HIDE VOID
+    const roomWidth = 16;   // Widened from 12 to fill screen
+    const roomDepth = 12;   // Deeper for better proportion
     const roomHeight = 7;
-    const wallThickness = 1;
+    const wallThickness = 1.5;  // Thicker walls
 
     return (
         <group>

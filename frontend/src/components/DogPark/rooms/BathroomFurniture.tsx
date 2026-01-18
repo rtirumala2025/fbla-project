@@ -104,9 +104,9 @@ export function BathroomFurniture() {
             </group>
 
             {/* ============================================================ */}
-            {/* === VANITY STATION (Snapped to Left Wall) === */}
+            {/* === VANITY STATION (Snapped to Left Wall - x=-8.75) === */}
             {/* ============================================================ */}
-            <group position={[-5.2, 0, -2]}>
+            <group position={[-7.2, 0, -3]}>
                 {/* === CHROME SUPPORT LEGS (Front corners to floor) === */}
                 <mesh position={[-0.7, 0.8, 0.3]} castShadow>
                     <cylinderGeometry args={[0.04, 0.04, 1.6, 12]} />
@@ -207,9 +207,9 @@ export function BathroomFurniture() {
             </mesh>
 
             {/* ============================================================ */}
-            {/* === TOWEL RACK (Snapped to Right Wall) === */}
+            {/* === TOWEL RACK (Snapped to Right Wall - x=8.75) === */}
             {/* ============================================================ */}
-            <group position={[5.8, 2.5, -2]}>
+            <group position={[7.5, 2.5, -3]}>
                 {/* Wall Mount Brackets */}
                 <mesh position={[0, 0.4, 0]} castShadow>
                     <boxGeometry args={[0.08, 0.15, 0.15]} />
