@@ -1,77 +1,181 @@
 /**
- * BathroomFurniture.tsx - Bathroom Props and Fixtures
+ * BathroomFurniture.tsx - Premium Bathroom Props
  * 
- * A simple bathtub with water for the pet bathroom scene.
+ * Features: Oval Soaking Tub, Vanity Station, Bath Mat, Towel Rack
  */
 
 import React from 'react';
 
 export function BathroomFurniture() {
     // Colors
-    const tubColor = "#FFFFFF";        // White porcelain
-    const waterColor = "#4FC3F7";       // Light blue water
-    const faucetColor = "#C0C0C0";      // Chrome
+    const tubColor = "#FFFFFF";
+    const waterColor = "#4FC3F7";
+    const chromeColor = "#C0C0C0";
+    const cabinetColor = "#FFFFFF";
+    const mirrorColor = "#E0F7FA";
+    const matColor = "#F8BBD0";  // Soft pink rug
 
     return (
         <group>
             {/* ============================================================ */}
-            {/* === BATHTUB (Center-Back of Room) === */}
+            {/* === HERO BATHTUB (Oval, Deep, Inviting) === */}
             {/* ============================================================ */}
             <group position={[0, 0, -3]}>
-                {/* Tub Outer Shell */}
-                <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
-                    <boxGeometry args={[2.5, 1, 1.5]} />
-                    <meshStandardMaterial color={tubColor} roughness={0.15} metalness={0.1} />
+                {/* Outer Tub Shell - Flattened cylinder for oval shape */}
+                <mesh position={[0, 0.6, 0]} scale={[1, 1, 0.7]} castShadow receiveShadow>
+                    <cylinderGeometry args={[2, 1.8, 1.2, 32]} />
+                    <meshStandardMaterial color={tubColor} roughness={0.15} metalness={0.05} />
                 </mesh>
 
-                {/* Tub Inner Cavity (darker indent) */}
-                <mesh position={[0, 0.6, 0]}>
-                    <boxGeometry args={[2.2, 0.7, 1.2]} />
+                {/* Inner Tub Cavity */}
+                <mesh position={[0, 0.7, 0]} scale={[1, 1, 0.7]}>
+                    <cylinderGeometry args={[1.7, 1.6, 0.9, 32]} />
                     <meshStandardMaterial color="#ECEFF1" roughness={0.2} />
                 </mesh>
 
-                {/* Water Surface (Blue Plane) */}
-                <mesh position={[0, 0.55, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <planeGeometry args={[2.1, 1.1]} />
+                {/* Water Surface */}
+                <mesh position={[0, 0.65, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 0.7, 1]}>
+                    <circleGeometry args={[1.6, 32]} />
                     <meshStandardMaterial
                         color={waterColor}
                         transparent
-                        opacity={0.8}
-                        roughness={0.1}
-                        metalness={0.2}
+                        opacity={0.85}
+                        roughness={0.05}
+                        metalness={0.3}
                     />
                 </mesh>
 
-                {/* Faucet Assembly */}
-                <group position={[0, 1.1, -0.6]}>
-                    {/* Main Faucet */}
+                {/* Tub Rim */}
+                <mesh position={[0, 1.2, 0]} scale={[1, 1, 0.7]}>
+                    <torusGeometry args={[1.85, 0.08, 16, 32]} />
+                    <meshStandardMaterial color={tubColor} roughness={0.1} />
+                </mesh>
+
+                {/* === Tall Faucet Assembly === */}
+                <group position={[0, 1.3, -1.2]}>
+                    {/* Faucet Stem */}
                     <mesh castShadow>
-                        <cylinderGeometry args={[0.08, 0.08, 0.4, 16]} />
-                        <meshStandardMaterial color={faucetColor} roughness={0.1} metalness={0.8} />
+                        <cylinderGeometry args={[0.06, 0.06, 0.8, 16]} />
+                        <meshStandardMaterial color={chromeColor} roughness={0.05} metalness={0.95} />
                     </mesh>
-                    {/* Spout */}
-                    <mesh position={[0, 0, 0.2]} rotation={[Math.PI / 4, 0, 0]} castShadow>
-                        <cylinderGeometry args={[0.04, 0.04, 0.25, 12]} />
-                        <meshStandardMaterial color={faucetColor} roughness={0.1} metalness={0.8} />
+                    {/* Curved Spout */}
+                    <mesh position={[0, 0.3, 0.15]} rotation={[Math.PI / 3, 0, 0]} castShadow>
+                        <cylinderGeometry args={[0.04, 0.04, 0.4, 12]} />
+                        <meshStandardMaterial color={chromeColor} roughness={0.05} metalness={0.95} />
                     </mesh>
-                    {/* Handles */}
+                    {/* Spout End */}
+                    <mesh position={[0, 0.15, 0.32]} castShadow>
+                        <sphereGeometry args={[0.05, 12, 12]} />
+                        <meshStandardMaterial color={chromeColor} roughness={0.05} metalness={0.95} />
+                    </mesh>
+                    {/* Hot/Cold Handles */}
                     <mesh position={[-0.2, 0, 0]} castShadow>
-                        <sphereGeometry args={[0.06, 12, 12]} />
-                        <meshStandardMaterial color={faucetColor} roughness={0.1} metalness={0.8} />
+                        <boxGeometry args={[0.1, 0.08, 0.08]} />
+                        <meshStandardMaterial color="#EF5350" roughness={0.3} />
                     </mesh>
                     <mesh position={[0.2, 0, 0]} castShadow>
-                        <sphereGeometry args={[0.06, 12, 12]} />
-                        <meshStandardMaterial color={faucetColor} roughness={0.1} metalness={0.8} />
+                        <boxGeometry args={[0.1, 0.08, 0.08]} />
+                        <meshStandardMaterial color="#2196F3" roughness={0.3} />
                     </mesh>
                 </group>
+
+                {/* Soap Bubbles (Decorative) */}
+                {[...Array(8)].map((_, i) => (
+                    <mesh key={i} position={[
+                        (Math.random() - 0.5) * 2.5,
+                        0.7 + Math.random() * 0.15,
+                        (Math.random() - 0.5) * 1.5
+                    ]}>
+                        <sphereGeometry args={[0.03 + Math.random() * 0.04, 8, 8]} />
+                        <meshStandardMaterial
+                            color="#FFFFFF"
+                            transparent
+                            opacity={0.5}
+                            roughness={0.02}
+                        />
+                    </mesh>
+                ))}
             </group>
 
             {/* ============================================================ */}
-            {/* === FLOOR MAT (in front of tub) === */}
+            {/* === VANITY STATION (Left Wall) === */}
             {/* ============================================================ */}
-            <mesh position={[0, 0.02, -1]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-                <planeGeometry args={[1.5, 1]} />
-                <meshStandardMaterial color="#81D4FA" roughness={0.9} />
+            <group position={[-4, 0, -1]}>
+                {/* Floating Cabinet */}
+                <mesh position={[0, 2, 0]} castShadow receiveShadow>
+                    <boxGeometry args={[1.8, 0.8, 0.8]} />
+                    <meshStandardMaterial color={cabinetColor} roughness={0.2} />
+                </mesh>
+
+                {/* Cabinet Drawer Lines */}
+                <mesh position={[0, 2.15, 0.41]}>
+                    <boxGeometry args={[1.6, 0.02, 0.01]} />
+                    <meshStandardMaterial color="#BDBDBD" />
+                </mesh>
+                <mesh position={[0, 1.85, 0.41]}>
+                    <boxGeometry args={[1.6, 0.02, 0.01]} />
+                    <meshStandardMaterial color="#BDBDBD" />
+                </mesh>
+
+                {/* Sink Basin */}
+                <mesh position={[0, 2.45, 0]} castShadow>
+                    <cylinderGeometry args={[0.5, 0.45, 0.15, 24]} />
+                    <meshStandardMaterial color="#FAFAFA" roughness={0.1} />
+                </mesh>
+
+                {/* Sink Water Spot */}
+                <mesh position={[0, 2.38, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                    <circleGeometry args={[0.35, 24]} />
+                    <meshStandardMaterial color="#B3E5FC" transparent opacity={0.6} />
+                </mesh>
+
+                {/* Sink Faucet */}
+                <mesh position={[0, 2.7, -0.25]} castShadow>
+                    <cylinderGeometry args={[0.03, 0.03, 0.3, 12]} />
+                    <meshStandardMaterial color={chromeColor} roughness={0.05} metalness={0.95} />
+                </mesh>
+                <mesh position={[0, 2.8, -0.1]} rotation={[Math.PI / 4, 0, 0]} castShadow>
+                    <cylinderGeometry args={[0.02, 0.02, 0.2, 8]} />
+                    <meshStandardMaterial color={chromeColor} roughness={0.05} metalness={0.95} />
+                </mesh>
+
+                {/* Large Round Mirror */}
+                <group position={[0, 4.2, -0.35]}>
+                    {/* Mirror Frame */}
+                    <mesh>
+                        <torusGeometry args={[0.9, 0.05, 16, 32]} />
+                        <meshStandardMaterial color={chromeColor} roughness={0.1} metalness={0.8} />
+                    </mesh>
+                    {/* Mirror Glass */}
+                    <mesh position={[0, 0, 0.02]}>
+                        <circleGeometry args={[0.85, 32]} />
+                        <meshStandardMaterial
+                            color={mirrorColor}
+                            roughness={0.02}
+                            metalness={0.9}
+                        />
+                    </mesh>
+                </group>
+
+                {/* Toothbrush Cup */}
+                <mesh position={[0.5, 2.55, 0.2]} castShadow>
+                    <cylinderGeometry args={[0.06, 0.05, 0.15, 12]} />
+                    <meshStandardMaterial color="#81D4FA" roughness={0.4} />
+                </mesh>
+
+                {/* Soap Dispenser */}
+                <mesh position={[-0.5, 2.55, 0.2]} castShadow>
+                    <boxGeometry args={[0.1, 0.15, 0.08]} />
+                    <meshStandardMaterial color="#FFECB3" roughness={0.5} />
+                </mesh>
+            </group>
+
+            {/* ============================================================ */}
+            {/* === CIRCULAR BATH MAT === */}
+            {/* ============================================================ */}
+            <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                <circleGeometry args={[1.5, 32]} />
+                <meshStandardMaterial color={matColor} roughness={0.95} />
             </mesh>
 
             {/* ============================================================ */}
@@ -81,34 +185,34 @@ export function BathroomFurniture() {
                 {/* Rack Bar */}
                 <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
                     <cylinderGeometry args={[0.03, 0.03, 1.5, 12]} />
-                    <meshStandardMaterial color={faucetColor} roughness={0.1} metalness={0.8} />
+                    <meshStandardMaterial color={chromeColor} roughness={0.05} metalness={0.9} />
                 </mesh>
                 {/* Towel (Blue) */}
-                <mesh position={[0, -0.2, 0.02]} castShadow>
-                    <boxGeometry args={[0.05, 0.6, 1]} />
-                    <meshStandardMaterial color="#29B6F6" roughness={0.8} />
+                <mesh position={[0, -0.3, 0.02]} castShadow>
+                    <boxGeometry args={[0.08, 0.8, 1]} />
+                    <meshStandardMaterial color="#29B6F6" roughness={0.85} />
                 </mesh>
             </group>
 
             {/* ============================================================ */}
-            {/* === SOAP BUBBLES (Decorative) === */}
+            {/* === RUBBER DUCK (Fun Detail) === */}
             {/* ============================================================ */}
-            <group position={[0.5, 0.7, -3]}>
-                {[...Array(5)].map((_, i) => (
-                    <mesh key={i} position={[
-                        Math.random() * 0.8 - 0.4,
-                        Math.random() * 0.2,
-                        Math.random() * 0.5 - 0.25
-                    ]}>
-                        <sphereGeometry args={[0.05 + Math.random() * 0.03, 8, 8]} />
-                        <meshStandardMaterial
-                            color="#FFFFFF"
-                            transparent
-                            opacity={0.6}
-                            roughness={0.05}
-                        />
-                    </mesh>
-                ))}
+            <group position={[0.8, 0.75, -2.8]}>
+                {/* Body */}
+                <mesh castShadow>
+                    <sphereGeometry args={[0.12, 16, 16]} />
+                    <meshStandardMaterial color="#FFEB3B" roughness={0.4} />
+                </mesh>
+                {/* Head */}
+                <mesh position={[0.08, 0.08, 0]} castShadow>
+                    <sphereGeometry args={[0.08, 12, 12]} />
+                    <meshStandardMaterial color="#FFEB3B" roughness={0.4} />
+                </mesh>
+                {/* Beak */}
+                <mesh position={[0.15, 0.06, 0]} rotation={[0, 0, -0.3]} castShadow>
+                    <coneGeometry args={[0.03, 0.06, 8]} />
+                    <meshStandardMaterial color="#FF9800" roughness={0.5} />
+                </mesh>
             </group>
         </group>
     );

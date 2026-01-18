@@ -9,8 +9,8 @@ import React from 'react';
 export function BathroomShell() {
     // Colors
     const wallColor = "#FFFFFF";      // Pure white tile
-    const floorColor = "#E0F7FA";      // Cyan/Aqua tile
-    const ceilingColor = "#FAFAFA";    // Off-white
+    const floorColor = "#B3E5FC";     // Distinct cyan tile (more visible)
+    const ceilingColor = "#FAFAFA";   // Off-white
 
     // Room dimensions
     const roomWidth = 10;
@@ -20,10 +20,10 @@ export function BathroomShell() {
 
     return (
         <group>
-            {/* === FLOOR - Cyan Tile === */}
+            {/* === FLOOR - Distinct Cyan Tile === */}
             <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[roomWidth, roomDepth]} />
-                <meshStandardMaterial color={floorColor} roughness={0.1} metalness={0.05} />
+                <meshStandardMaterial color={floorColor} roughness={0.15} metalness={0.05} />
             </mesh>
 
             {/* === BACK WALL - White Tile === */}
