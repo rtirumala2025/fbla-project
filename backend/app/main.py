@@ -42,7 +42,7 @@ def create_app() -> FastAPI:
     # Wildcards ["*"] are INVALID for credentialed requests
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:3005"],
+        allow_origins=["http://localhost:3000", "http://localhost:3003", "http://localhost:3005"],
         allow_credentials=True,  # Required for Supabase/Auth headers
         allow_methods=["*"],
         allow_headers=["*"],

@@ -82,6 +82,7 @@ export const PetGame2Screen: React.FC = () => {
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [diaryOpen, setDiaryOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [foodInBowl, setFoodInBowl] = useState(false);
 
   // Data
   const [inventory, setInventory] = useState<InventoryEntry[]>([]);
@@ -295,8 +296,12 @@ export const PetGame2Screen: React.FC = () => {
         showCost('-$5 Food');
         showTransactionToast('Fed', 5);
         playUiTone('feed');
+        // Fill the bowl with food
+        setFoodInBowl(true);
         response = await feedPetAction('standard');
         showSuccess('feed', 'Yum! 😋');
+        // Empty the bowl after eating duration (3 seconds)
+        setTimeout(() => setFoodInBowl(false), 3000);
       } else if (action === 'play') {
         showCost('-$10 Toy');
         showTransactionToast('Played with', 10);
@@ -660,6 +665,7 @@ export const PetGame2Screen: React.FC = () => {
         petType={petType}
         petBreed={state.breed}
         currentEnergy={stats?.energy ?? 50}
+        hasFood={foodInBowl}
         onSleepComplete={async (energyRestored: number) => {
           try {
             const currentEnergy = stats?.energy ?? 0;

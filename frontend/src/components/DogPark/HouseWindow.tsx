@@ -32,6 +32,7 @@ interface HouseWindowProps {
     petBreed?: string;
     currentEnergy?: number;
     currentHygiene?: number;
+    hasFood?: boolean;
     onSleepComplete?: (energyRestored: number) => void;
     onStatsUpdate?: () => void;
 }
@@ -59,6 +60,7 @@ export function HouseWindow({
     petBreed = 'labrador',
     currentEnergy = 50,
     currentHygiene = 50,
+    hasFood = false,
     onSleepComplete,
     onStatsUpdate,
 }: HouseWindowProps) {
@@ -281,8 +283,10 @@ export function HouseWindow({
                             petType={petType}
                             petBreed={petBreed}
                             foodItems={foodItems}
+                            allInventoryCount={inventory.length}
                             onFeedItem={useItem}
                             isFeeding={isProcessing}
+                            hasFood={hasFood}
                         />
                     )}
 

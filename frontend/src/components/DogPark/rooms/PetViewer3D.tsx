@@ -28,6 +28,7 @@ interface PetViewer3DProps {
     currentRoom?: RoomType;
     onSwitchRoom?: (room: any) => void;
     isSleeping?: boolean;
+    hasFood?: boolean;
 }
 
 // Create a static idle state for the viewer (no movement)
@@ -54,11 +55,15 @@ function PetModelViewer({
     breed,
     accessories,
     isSleeping = false,
+    hasFood = false,
+    currentRoom,
 }: {
     petType: PetGame2PetType;
     breed: PetBreed;
     accessories: EquippedAccessory[];
     isSleeping?: boolean;
+    hasFood?: boolean;
+    currentRoom?: string;
 }) {
     const state = useMemo(() => createIdleState(breed), [breed]);
     const noopFn = useMemo(() => () => { }, []);
@@ -66,12 +71,24 @@ function PetModelViewer({
     const isMovingRef = useRef(false);
     const rotationRef = useRef(new THREE.Quaternion());
 
-    // Sleep transforms: Snap to Bed Logic
-    // Bed Location: [0, 0, -2] (Centered)
-    // Height: 0.25 to stay on Cushion
-    const finalPos: [number, number, number] = isSleeping ? [0, 0.25, 0] : [0, -0.05, 0];
-    // Side Roll for Sleep
+    // Position Logic
+    let finalPos: [number, number, number] = [0, -0.05, 0];
+
+    if (isSleeping) {
+        // Bed Location: [0, 0, -2] (Centered), Height: 0.25 to stay on Cushion
+        finalPos = [0, 0.25, 0];
+    } else if (hasFood) {
+        // Feed Location: [0, -0.05, 2] (In front of bowl at [0,0,0])
+        finalPos = [0, -0.05, 2];
+    } else if (currentRoom === 'kitchen') {
+        // Default Kitchen Positioning: Away from bowl [0,0,0]
+        finalPos = [0, -0.05, 2.5];
+    }
+
+    // Rotations
     const sleepRot: [number, number, number] = [0, 0, Math.PI / 2];
+    const feedRot: [number, number, number] = [0, 0, 0]; // Face the bowl (back to camera)
+    const idleRot: [number, number, number] = [0, -Math.PI / 6, 0]; // Slight angle for charm
 
     // Zzz Text Component (Billboarded)
     const ZzzOverlay = () => (
@@ -92,24 +109,30 @@ function PetModelViewer({
     );
 
     // Pick the right model based on pet type
+    const getRotation = (): [number, number, number] => {
+        if (isSleeping) return sleepRot;
+        if (hasFood) return feedRot;
+        return idleRot;
+    };
+
     switch (petType) {
         case 'cat':
             return (
-                <group scale={1.1} position={finalPos} rotation={isSleeping ? sleepRot : [0, Math.PI, 0]}>
+                <group scale={1.1} position={finalPos} rotation={getRotation()}>
                     <CatModel state={state} onPetTap={noopFn} accessories={accessories} />
                     <ZzzOverlay />
                 </group>
             );
         case 'panda':
             return (
-                <group scale={1.1} position={finalPos} rotation={isSleeping ? sleepRot : [0, Math.PI, 0]}>
+                <group scale={1.1} position={finalPos} rotation={getRotation()}>
                     <PandaModel state={state} onPetTap={noopFn} accessories={accessories} />
                     <ZzzOverlay />
                 </group>
             );
         default:
             return ( // Dog
-                <group scale={1.2} position={finalPos} rotation={isSleeping ? sleepRot : [0, -Math.PI / 6, 0]}>
+                <group scale={1.2} position={finalPos} rotation={getRotation()}>
                     <DogModel
                         state={state}
                         onPetTap={noopFn}
@@ -117,6 +140,7 @@ function PetModelViewer({
                         isMovingRef={isMovingRef}
                         rotationRef={rotationRef}
                         accessories={accessories}
+                        disableSnapping={true}
                     />
                     <ZzzOverlay />
                 </group>
@@ -133,6 +157,7 @@ export const PetViewer3D = React.memo(function PetViewer3D({
     currentRoom = 'living',
     onSwitchRoom,
     isSleeping = false,
+    hasFood = false,
 }: PetViewer3DProps) {
     // If size is provided, use fixed dimensions; otherwise fill parent
     const containerStyle: React.CSSProperties = size
@@ -205,7 +230,7 @@ export const PetViewer3D = React.memo(function PetViewer3D({
                     />
 
                     {/* Room Stage (Shell + Foreground Props) */}
-                    <RoomStage currentActivity={currentRoom} isSleeping={isSleeping} />
+                    <RoomStage currentActivity={currentRoom} isSleeping={isSleeping} hasFood={hasFood} />
 
                     {/* The actual pet model from main game */}
                     <PetModelViewer
@@ -213,6 +238,8 @@ export const PetViewer3D = React.memo(function PetViewer3D({
                         breed={breed}
                         accessories={accessories}
                         isSleeping={isSleeping}
+                        hasFood={hasFood}
+                        currentRoom={currentRoom}
                     />
 
                     {/* Controls - Strictly Locked Viewport */}

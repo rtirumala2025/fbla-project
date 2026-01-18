@@ -7,7 +7,7 @@
 import { supabase, isSupabaseMock } from '../lib/supabase';
 import { getEnv } from '../utils/env';
 
-const API_BASE_URL = getEnv('API_URL', 'http://localhost:8000');
+const API_BASE_URL = getEnv('API_URL', 'http://localhost:3008');
 
 export type AuthTokens = {
   accessToken: string;
@@ -115,7 +115,7 @@ const pendingRequests = new Map<string, Promise<unknown>>();
 export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   // Create a unique key for this request
   const requestKey = `${options.method || 'GET'}:${path}:${JSON.stringify(options.body || {})}`;
-  
+
   // If the same request is already pending, return that promise
   const pendingRequest = pendingRequests.get(requestKey);
   if (pendingRequest) {
@@ -146,10 +146,10 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
       });
     } catch (error: any) {
       // Handle network errors (connection refused, timeout, etc.)
-      if (error.message === 'Failed to fetch' || 
-          error.code === 'ECONNREFUSED' || 
-          error.message?.includes('ERR_CONNECTION_REFUSED') ||
-          error.message?.includes('NetworkError')) {
+      if (error.message === 'Failed to fetch' ||
+        error.code === 'ECONNREFUSED' ||
+        error.message?.includes('ERR_CONNECTION_REFUSED') ||
+        error.message?.includes('NetworkError')) {
         throw new ApiError(0, 'Network error: Backend server is not available', { networkError: true });
       }
       // Re-throw other errors

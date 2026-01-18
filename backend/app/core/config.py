@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     openai_chat_model: str = Field(default="gpt-4o-mini", alias="OPENAI_CHAT_MODEL")
     art_cache_ttl_hours: int = Field(default=12, alias="ART_CACHE_TTL_HOURS")
     weather_api_key: str = Field(default="", alias="WEATHER_API_KEY")
-    allowed_origins: List[str] = Field(default_factory=lambda: ["*"])
+    allowed_origins: str = Field(default="http://localhost:3000,http://localhost:3003,http://localhost:5173")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -38,9 +38,7 @@ class Settings(BaseSettings):
 
     def get_allowed_origins(self) -> List[str]:
         """Allow providing origins as comma-separated string."""
-        if len(self.allowed_origins) == 1 and "," in self.allowed_origins[0]:
-            return [origin.strip() for origin in self.allowed_origins[0].split(",") if origin.strip()]
-        return self.allowed_origins
+        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
 
 
 @lru_cache

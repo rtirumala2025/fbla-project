@@ -18,36 +18,36 @@ export function getEnv(key: string, defaultValue: string = ''): string {
     // @ts-ignore - import.meta.env is available in Vite
     const viteValue = import.meta.env[viteKey];
     if (viteValue !== undefined) return viteValue;
-    
+
     // Try REACT_APP_ prefix for backwards compatibility
     const reactKey = `REACT_APP_${key}`;
     // @ts-ignore - import.meta.env is available in Vite
     const reactValue = import.meta.env[reactKey];
     if (reactValue !== undefined) return reactValue;
-    
+
     // Try without prefix
     // @ts-ignore
     const directValue = import.meta.env[key];
     if (directValue !== undefined) return directValue;
   }
-  
+
   // For CRA environment (process.env)
   if (typeof process !== 'undefined' && process.env) {
     // Try REACT_APP_ prefix
     const reactKey = `REACT_APP_${key}`;
     const reactValue = process.env[reactKey];
     if (reactValue !== undefined) return reactValue;
-    
+
     // Try VITE_ prefix for compatibility
     const viteKey = `VITE_${key}`;
     const viteValue = process.env[viteKey];
     if (viteValue !== undefined) return viteValue;
-    
+
     // Try without prefix
     const directValue = process.env[key];
     if (directValue !== undefined) return directValue;
   }
-  
+
   return defaultValue;
 }
 
@@ -81,13 +81,13 @@ export const env = {
   // Supabase configuration
   SUPABASE_URL: getEnv('SUPABASE_URL'),
   SUPABASE_ANON_KEY: getEnv('SUPABASE_ANON_KEY'),
-  
+
   // API configuration
-  API_URL: getEnv('API_URL', 'http://localhost:8000'),
-  
+  API_URL: getEnv('API_URL', 'http://localhost:3008'),
+
   // Feature flags
   USE_MOCK: getEnv('USE_MOCK', 'false') === 'true',
-  
+
   // Mode
   isDev: isDev(),
   isProd: isProd(),

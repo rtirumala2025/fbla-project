@@ -117,7 +117,7 @@ interface EarTwitchState {
   right: { nextTime: number; amplitude: number; duration: number; progress: number };
 }
 
-export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, isMovingRef, rotationRef, accessories = [] }: {
+export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, isMovingRef, rotationRef, accessories = [], disableSnapping }: {
   state: PetGame2State;
   onPetTap: () => void;
   setPetPosition?: (pos: [number, number, number]) => void;
@@ -126,6 +126,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
   isMovingRef?: React.MutableRefObject<boolean>;
   rotationRef?: React.MutableRefObject<THREE.Quaternion>;
   accessories?: EquippedAccessory[];
+  disableSnapping?: boolean;
 }) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
@@ -401,8 +402,8 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
       root.current.position.y = y + Math.abs(walkCycle);
 
       setPetPosition?.([x, y, z]);
-    } else if (root.current && state.currentPosition) {
-      // Snap to latest usually - BUT SKIP if user is manually moving
+    } else if (root.current && state.currentPosition && !disableSnapping) {
+      // Snap to latest usually - BUT SKIP if user is manually moving or snapping is disabled
       const isMovingManually = keys.forward || keys.backward || keys.left || keys.right;
       if (state.interaction.kind !== 'navigating' && !isMovingManually) {
         const [cx, cy, cz] = state.currentPosition;

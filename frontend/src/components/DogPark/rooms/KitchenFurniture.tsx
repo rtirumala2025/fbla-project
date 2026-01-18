@@ -26,18 +26,18 @@
 
 import React from 'react';
 
-export function KitchenFurniture() {
+interface KitchenFurnitureProps {
+    hasFood?: boolean;
+}
+
+export function KitchenFurniture({ hasFood = false }: KitchenFurnitureProps) {
     // Colors
     const applianceColor = "#E0E0E0";
     const cabinetColor = "#ECEFF1";
     const countertopColor = "#1A1A1A"; // Black marble
     const accentColor = "#CFD8DC"; // Chrome
     const handleColor = "#212121"; // Black handles
-    const bowlColor = "#1565C0";
-    const waterColor = "#64B5F6";
-    const foodColor = "#8D6E63";
     const woodColor = "#D7CCC8";
-    const rugColor = "#E64A19"; // Terracotta
 
     return (
         <group>
@@ -559,22 +559,57 @@ export function KitchenFurniture() {
                 </mesh>
             </group>
 
-            {/* ============================================================ */}
-            {/* === RUNNER RUG (Terracotta) === */}
-            {/* ============================================================ */}
-            <mesh position={[1, 0.02, -1.5]} receiveShadow>
-                <boxGeometry args={[6, 0.05, 1.5]} />
-                <meshStandardMaterial color={rugColor} roughness={0.9} />
-            </mesh>
-            <mesh position={[1, 0.025, -0.7]}>
-                <boxGeometry args={[6.1, 0.03, 0.08]} />
-                <meshStandardMaterial color="#BF360C" roughness={0.95} />
-            </mesh>
-            <mesh position={[1, 0.025, -2.3]}>
-                <boxGeometry args={[6.1, 0.03, 0.08]} />
-                <meshStandardMaterial color="#BF360C" roughness={0.95} />
-            </mesh>
 
+            {/* ============================================================ */}
+            {/* === SMART BOWL (Interactive Feeding) === */}
+            {/* ============================================================ */}
+            <group position={[0, 0, 0]}>
+                {/* White Ceramic Bowl - Large and visible */}
+                <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
+                    <cylinderGeometry args={[0.8, 0.65, 0.35, 32]} />
+                    <meshStandardMaterial color="#FFFFFF" roughness={0.3} />
+                </mesh>
+                {/* Bowl Inner Surface */}
+                <mesh position={[0, 0.25, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                    <circleGeometry args={[0.7, 32]} />
+                    <meshStandardMaterial color="#F5F5F5" roughness={0.4} />
+                </mesh>
+                {/* Bowl Rim Highlight */}
+                <mesh position={[0, 0.37, 0]} castShadow>
+                    <torusGeometry args={[0.75, 0.05, 12, 32]} />
+                    <meshStandardMaterial color="#E0E0E0" roughness={0.2} />
+                </mesh>
+                {/* Food Mound (conditionally rendered based on hasFood prop) */}
+                {hasFood && (
+                    <group position={[0, 0.28, 0]}>
+                        {/* Kibble Pile - Large Brown Spheres */}
+                        <mesh position={[0, 0.1, 0]} castShadow>
+                            <sphereGeometry args={[0.25, 16, 16]} />
+                            <meshStandardMaterial color="#8D6E63" roughness={0.9} />
+                        </mesh>
+                        <mesh position={[0.18, 0.15, 0.12]} castShadow>
+                            <sphereGeometry args={[0.15, 12, 12]} />
+                            <meshStandardMaterial color="#6D4C41" roughness={0.85} />
+                        </mesh>
+                        <mesh position={[-0.15, 0.12, -0.12]} castShadow>
+                            <sphereGeometry args={[0.18, 12, 12]} />
+                            <meshStandardMaterial color="#795548" roughness={0.88} />
+                        </mesh>
+                        <mesh position={[0.12, 0.08, -0.2]} castShadow>
+                            <sphereGeometry args={[0.12, 10, 10]} />
+                            <meshStandardMaterial color="#A1887F" roughness={0.9} />
+                        </mesh>
+                        <mesh position={[-0.22, 0.1, 0.1]} castShadow>
+                            <sphereGeometry args={[0.14, 10, 10]} />
+                            <meshStandardMaterial color="#8D6E63" roughness={0.92} />
+                        </mesh>
+                        <mesh position={[0.25, 0.06, 0.05]} castShadow>
+                            <sphereGeometry args={[0.1, 8, 8]} />
+                            <meshStandardMaterial color="#5D4037" roughness={0.9} />
+                        </mesh>
+                    </group>
+                )}
+            </group>
 
             {/* ============================================================ */}
             {/* === COUNTER CLUTTER === */}
@@ -632,42 +667,6 @@ export function KitchenFurniture() {
                     <sphereGeometry args={[0.07, 12, 12]} />
                     <meshStandardMaterial color="#FF9800" roughness={0.7} />
                 </mesh>
-            </group>
-
-
-            {/* ============================================================ */}
-            {/* === PET FOOD BOWLS === */}
-            {/* ============================================================ */}
-            <group position={[-2, 0, 2]}>
-                {/* Feeding Mat */}
-                <mesh position={[0, 0.01, 0]} receiveShadow>
-                    <boxGeometry args={[1.8, 0.02, 1]} />
-                    <meshStandardMaterial color="#455A64" roughness={0.9} />
-                </mesh>
-
-                {/* Food Bowl */}
-                <group position={[-0.45, 0, 0]}>
-                    <mesh position={[0, 0.1, 0]} castShadow>
-                        <cylinderGeometry args={[0.25, 0.2, 0.14, 20]} />
-                        <meshStandardMaterial color={bowlColor} roughness={0.4} />
-                    </mesh>
-                    <mesh position={[0, 0.14, 0]}>
-                        <sphereGeometry args={[0.15, 8, 8]} />
-                        <meshStandardMaterial color={foodColor} roughness={0.9} />
-                    </mesh>
-                </group>
-
-                {/* Water Bowl */}
-                <group position={[0.45, 0, 0]}>
-                    <mesh position={[0, 0.1, 0]} castShadow>
-                        <cylinderGeometry args={[0.25, 0.2, 0.14, 20]} />
-                        <meshStandardMaterial color={bowlColor} roughness={0.4} />
-                    </mesh>
-                    <mesh position={[0, 0.14, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                        <circleGeometry args={[0.18, 20]} />
-                        <meshStandardMaterial color={waterColor} transparent opacity={0.9} />
-                    </mesh>
-                </group>
             </group>
 
 

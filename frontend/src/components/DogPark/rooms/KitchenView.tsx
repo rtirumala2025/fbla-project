@@ -15,8 +15,10 @@ interface KitchenViewProps {
     petType?: PetGame2PetType;
     petBreed?: string;
     foodItems: InventoryEntry[];
+    allInventoryCount?: number;
     onFeedItem: (item: InventoryEntry) => void;
     isFeeding?: boolean;
+    hasFood?: boolean;
 }
 
 const getFoodEmoji = (name: string): string => {
@@ -29,7 +31,7 @@ const getFoodEmoji = (name: string): string => {
 };
 
 export function KitchenView({
-    petName, petType = 'dog', petBreed = 'labrador', foodItems, onFeedItem, isFeeding = false,
+    petName, petType = 'dog', petBreed = 'labrador', foodItems, allInventoryCount = 0, onFeedItem, isFeeding = false, hasFood = false,
 }: KitchenViewProps) {
     const [feedingItem, setFeedingItem] = useState<string | null>(null);
 
@@ -50,7 +52,7 @@ export function KitchenView({
             {/* Stage */}
             <div className="flex-1 relative min-h-0">
                 {/* 3D Canvas - fills entire stage */}
-                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="kitchen" />
+                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="kitchen" hasFood={hasFood} />
 
                 {/* Floating UI overlays */}
                 <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-end pb-8">
