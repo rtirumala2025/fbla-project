@@ -74,17 +74,17 @@ export function BathroomShell() {
                 <meshStandardMaterial color="#80DEEA" roughness={0.2} />
             </mesh>
 
-            {/* === BASEBOARD (Floor-Wall Transition) === */}
-            <mesh position={[0, 0.1, -roomDepth / 2 + 0.1]} receiveShadow>
-                <boxGeometry args={[roomWidth, 0.2, 0.1]} />
+            {/* === BASEBOARD (Floor-Wall Transition) - Thick & Visible === */}
+            <mesh position={[0, 0.2, -roomDepth / 2 + 0.15]} receiveShadow castShadow>
+                <boxGeometry args={[roomWidth, 0.4, 0.15]} />
                 <meshStandardMaterial color="#ECEFF1" roughness={0.3} />
             </mesh>
-            <mesh position={[-roomWidth / 2 + 0.1, 0.1, 0]} receiveShadow>
-                <boxGeometry args={[0.1, 0.2, roomDepth]} />
+            <mesh position={[-roomWidth / 2 + 0.15, 0.2, 0]} receiveShadow castShadow>
+                <boxGeometry args={[0.15, 0.4, roomDepth]} />
                 <meshStandardMaterial color="#ECEFF1" roughness={0.3} />
             </mesh>
-            <mesh position={[roomWidth / 2 - 0.1, 0.1, 0]} receiveShadow>
-                <boxGeometry args={[0.1, 0.2, roomDepth]} />
+            <mesh position={[roomWidth / 2 - 0.15, 0.2, 0]} receiveShadow castShadow>
+                <boxGeometry args={[0.15, 0.4, roomDepth]} />
                 <meshStandardMaterial color="#ECEFF1" roughness={0.3} />
             </mesh>
         </group>

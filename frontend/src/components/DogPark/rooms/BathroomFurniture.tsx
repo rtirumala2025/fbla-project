@@ -21,20 +21,26 @@ export function BathroomFurniture() {
             {/* === HERO BATHTUB (Oval, Deep, Inviting) === */}
             {/* ============================================================ */}
             <group position={[0, 0, -3]}>
+                {/* === TUB PLINTH (Chrome Base touching floor) === */}
+                <mesh position={[0, 0.05, 0]} scale={[1, 1, 0.7]} castShadow receiveShadow>
+                    <cylinderGeometry args={[2.2, 2.2, 0.1, 32]} />
+                    <meshStandardMaterial color="#757575" roughness={0.3} metalness={0.6} />
+                </mesh>
+
                 {/* Outer Tub Shell - Flattened cylinder for oval shape */}
-                <mesh position={[0, 0.6, 0]} scale={[1, 1, 0.7]} castShadow receiveShadow>
+                <mesh position={[0, 0.7, 0]} scale={[1, 1, 0.7]} castShadow receiveShadow>
                     <cylinderGeometry args={[2, 1.8, 1.2, 32]} />
                     <meshStandardMaterial color={tubColor} roughness={0.15} metalness={0.05} />
                 </mesh>
 
                 {/* Inner Tub Cavity */}
-                <mesh position={[0, 0.7, 0]} scale={[1, 1, 0.7]}>
+                <mesh position={[0, 0.8, 0]} scale={[1, 1, 0.7]}>
                     <cylinderGeometry args={[1.7, 1.6, 0.9, 32]} />
                     <meshStandardMaterial color="#ECEFF1" roughness={0.2} />
                 </mesh>
 
                 {/* Water Surface */}
-                <mesh position={[0, 0.65, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 0.7, 1]}>
+                <mesh position={[0, 0.75, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 0.7, 1]}>
                     <circleGeometry args={[1.6, 32]} />
                     <meshStandardMaterial
                         color={waterColor}
@@ -46,7 +52,7 @@ export function BathroomFurniture() {
                 </mesh>
 
                 {/* Tub Rim */}
-                <mesh position={[0, 1.2, 0]} scale={[1, 1, 0.7]}>
+                <mesh position={[0, 1.3, 0]} scale={[1, 1, 0.7]}>
                     <torusGeometry args={[1.85, 0.08, 16, 32]} />
                     <meshStandardMaterial color={tubColor} roughness={0.1} />
                 </mesh>
@@ -101,7 +107,19 @@ export function BathroomFurniture() {
             {/* === VANITY STATION (Left Wall) === */}
             {/* ============================================================ */}
             <group position={[-4, 0, -1]}>
-                {/* Floating Cabinet */}
+                {/* === VANITY PEDESTAL (Floor-Standing Base) === */}
+                <mesh position={[0, 0.8, 0]} castShadow receiveShadow>
+                    <boxGeometry args={[1.6, 1.6, 0.7]} />
+                    <meshStandardMaterial color={cabinetColor} roughness={0.25} />
+                </mesh>
+
+                {/* Pedestal Kick Plate (Recessed) */}
+                <mesh position={[0, 0.05, 0.05]} castShadow receiveShadow>
+                    <boxGeometry args={[1.4, 0.1, 0.6]} />
+                    <meshStandardMaterial color="#9E9E9E" roughness={0.4} />
+                </mesh>
+
+                {/* Counter Top Cabinet */}
                 <mesh position={[0, 2, 0]} castShadow receiveShadow>
                     <boxGeometry args={[1.8, 0.8, 0.8]} />
                     <meshStandardMaterial color={cabinetColor} roughness={0.2} />
