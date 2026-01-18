@@ -4,7 +4,8 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Apple, Heart, Utensils } from 'lucide-react';
+import { Apple, Heart, Utensils, ClipboardList } from 'lucide-react';
+import { ChoreMenu } from './ChoreMenu';
 import type { InventoryEntry } from '../../../types/finance';
 import type { PetGame2PetType } from '../../../game3d/core/SceneManager';
 import { PetViewer3D } from './PetViewer3D';
@@ -128,6 +129,7 @@ export function KitchenView({
     petName, petType = 'dog', petBreed = 'labrador', foodItems, allInventoryCount = 0, onFeedItem, isFeeding = false, hasFood = false, foodType = 'kibble',
 }: KitchenViewProps) {
     const [feedingItem, setFeedingItem] = useState<string | null>(null);
+    const [showChores, setShowChores] = useState(false);
 
     const handleFeed = (item: InventoryEntry) => {
         if (isFeeding) return;
@@ -150,6 +152,17 @@ export function KitchenView({
 
                 {/* HUD: Context-Aware Stats Display - Top Right */}
                 <PetStatsHUD currentRoom="kitchen" className="absolute top-4 right-4" />
+
+                {/* Chore Button - Top Left */}
+                <button
+                    onClick={() => setShowChores(true)}
+                    className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full text-white hover:bg-black/60 transition-colors"
+                >
+                    <ClipboardList size={20} className="text-yellow-400" />
+                    <span className="font-bold">Earn Coins</span>
+                </button>
+
+                <ChoreMenu isOpen={showChores} onClose={() => setShowChores(false)} />
 
                 {/* Floating UI overlays */}
                 <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-end pb-8">
