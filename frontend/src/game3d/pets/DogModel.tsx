@@ -267,8 +267,8 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
       root.current.scale.y = SCALE * (1.0 + breathPrimary);
       root.current.scale.z = SCALE * (1.0 + breathBody * 0.6);
 
-      // Subtle shoulder lift (via position adjustment)
-      root.current.position.y = (root.current.position.y || 0) * 0.9 + breathShoulders * 0.02;
+      // Subtle shoulder lift - DISABLED (was causing Y drift)
+      // root.current.position.y = (root.current.position.y || 0) * 0.9 + breathShoulders * 0.02;
 
       // Spine curve from emotional state
       root.current.rotation.z = emotionalPose.spine_curve;
@@ -292,49 +292,12 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
       head.current.rotation.x += breathNeck;
     }
 
-    // AAA Stochastic Weight Shifts (6-12s intervals)
+    // WEIGHT SHIFT ANIMATION - DISABLED
+    // This was causing the pet to randomly move every 6-12 seconds
+    // Code removed to fix unwanted auto-movement
+
+    // AAA Async Ear Twitches (rotation only, no position changes)
     const now = performance.now();
-    const ws = weightShiftState.current;
-
-    if (now >= ws.nextShiftTime && !ws.isShifting) {
-      // Trigger new weight shift
-      ws.isShifting = true;
-      ws.shiftStartTime = now;
-      ws.shiftDuration = 1200; // ms
-      ws.targetX = (Math.random() - 0.5) * 0.036; // ±0.018 (lateral shift)
-      ws.targetZ = (Math.random() - 0.5) * 0.04;  // ±0.02 (fore/aft)
-      ws.nextShiftTime = now + 6000 + Math.random() * 6000; // 6-12s
-    }
-
-    if (ws.isShifting) {
-      const elapsed = now - ws.shiftStartTime;
-      const progress = Math.min(1, elapsed / ws.shiftDuration);
-
-      // Ease-in-out cubic
-      const eased = progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-
-      ws.currentX = ws.currentX * (1 - eased) + ws.targetX * eased;
-      ws.currentZ = ws.currentZ * (1 - eased) + ws.targetZ * eased;
-
-      if (progress >= 1) {
-        ws.isShifting = false;
-      }
-
-      // Apply weight shift to root
-      if (root.current) {
-        root.current.position.x += ws.currentX;
-        root.current.position.z += ws.currentZ;
-      }
-
-      // Compensatory head turn toward weight
-      if (head.current) {
-        head.current.rotation.y += -ws.currentX * 0.3;
-      }
-    }
-
-    // AAA Async Ear Twitches
     const et = earTwitchState.current;
 
     // Left ear
@@ -386,30 +349,9 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
       }
     }
 
-    // Navigation logic (same as before)
-    if (state.interaction.kind === 'navigating' && state.navigationState.target && root.current) {
-      const { startPosition, endPosition, progress } = state.navigationState;
-      const x = startPosition[0] + (endPosition[0] - startPosition[0]) * progress;
-      const y = startPosition[1] + (endPosition[1] - startPosition[1]) * progress;
-      const z = startPosition[2] + (endPosition[2] - startPosition[2]) * progress;
-
-      root.current.position.set(x, y, z);
-      const dx = endPosition[0] - startPosition[0];
-      const dz = endPosition[2] - startPosition[2];
-      root.current.rotation.y = Math.atan2(dx, dz);
-
-      const walkCycle = Math.sin(progress * Math.PI * 16) * 0.1; // faster feet
-      root.current.position.y = y + Math.abs(walkCycle);
-
-      setPetPosition?.([x, y, z]);
-    } else if (root.current && state.currentPosition && !disableSnapping) {
-      // Snap to latest usually - BUT SKIP if user is manually moving or snapping is disabled
-      const isMovingManually = keys.forward || keys.backward || keys.left || keys.right;
-      if (state.interaction.kind !== 'navigating' && !isMovingManually) {
-        const [cx, cy, cz] = state.currentPosition;
-        root.current.position.set(cx, cy, cz);
-      }
-    }
+    // NAVIGATION DISABLED - Pet stays in place
+    // The navigation system was causing unwanted auto-movement.
+    // Pet position is now controlled solely by the parent component.
 
     // Interaction Pop
     if (state.interaction.kind !== 'idle' && root.current) {

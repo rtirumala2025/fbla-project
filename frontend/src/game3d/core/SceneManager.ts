@@ -154,23 +154,9 @@ export function usePetGame2State() {
   );
 
   const triggerNavigation = useCallback((zone: ActivityZone, targetPosition?: [number, number, number]) => {
-    setCameraMode(m => {
-      if (m === 'drone') return 'drone';
-
-      const startedAt = nowMs();
-      // Use provided position or fallback to default (backward compat)
-      const endPosition = targetPosition || ACTIVITY_POSITIONS[zone];
-
-      setNavigationState({
-        target: zone,
-        progress: 0,
-        startPosition: petPositionRef.current,
-        endPosition,
-      });
-
-      setInteraction({ kind: 'navigating', zone, startedAt });
-      return 'follow';
-    });
+    // NAVIGATION DISABLED: Immediately enter building instead of walking animation
+    setIndoorLocation(zone);
+    setInteraction({ kind: 'atActivity', zone, startedAt: nowMs() });
   }, []);
 
   const enterBuilding = useCallback((zone: ActivityZone) => {
@@ -183,39 +169,10 @@ export function usePetGame2State() {
     setInteraction({ kind: 'idle' });
   }, []);
 
-  // Navigation animation loop
-  useEffect(() => {
-    if (interaction.kind !== 'navigating' || !navigationState.target) return;
-
-    const startTime = interaction.startedAt;
-    const duration = 2000; // 2 seconds to walk to destination
-
-    const animate = () => {
-      const elapsed = nowMs() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      setNavigationState((prev) => ({
-        ...prev,
-        progress,
-      }));
-
-      if (progress >= 1) {
-        // Enter building automatically when reaching target
-        enterBuilding(navigationState.target!);
-      } else {
-        navAnimRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    navAnimRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (navAnimRef.current) {
-        cancelAnimationFrame(navAnimRef.current);
-        navAnimRef.current = null;
-      }
-    };
-  }, [interaction, navigationState.target]);
+  // NAVIGATION ANIMATION DISABLED
+  // This useEffect drove the walking animation and auto-entered buildings.
+  // Now buildings are entered directly without the walking animation.
+  // The triggerNavigation function is now a no-op for movement purposes.
 
   const state: PetGame2State = useMemo(
     () => ({

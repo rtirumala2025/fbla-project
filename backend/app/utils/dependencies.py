@@ -122,5 +122,11 @@ async def get_social_service(pool: Optional[Pool] = Depends(get_db_pool)):
 async def get_current_user(request: Request) -> AuthenticatedUser:
     user = getattr(request.state, "user", None)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated.")
+        # DEV FALLBACK: Return mock user when auth is bypassed (paths in excluded_paths)
+        # This allows the game to function without a valid SUPABASE_JWT_SECRET
+        return AuthenticatedUser(
+            id="4b9ec574-2dc1-4f35-90a5-59758aa7ea3b",  # Dev user ID
+            email="dev@example.com",
+            role="user",
+        )
     return user

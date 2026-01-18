@@ -77,17 +77,14 @@ function PetModelViewer({
     if (isSleeping) {
         // Bed Location: [0, 0, -2] (Centered), Height: 0.25 to stay on Cushion
         finalPos = [0, 0.25, 0];
-    } else if (hasFood) {
-        // Feed Location: [0, -0.05, 2] (In front of bowl at [0,0,0])
-        finalPos = [0, -0.05, 2];
     } else if (currentRoom === 'kitchen') {
-        // Default Kitchen Positioning: Away from bowl [0,0,0]
-        finalPos = [0, -0.05, 2.5];
+        // Kitchen: Behind the bowl (bowl is at z=2), facing camera
+        finalPos = [0, -0.05, 0.5];
     }
 
     // Rotations
     const sleepRot: [number, number, number] = [0, 0, Math.PI / 2];
-    const feedRot: [number, number, number] = [0, 0, 0]; // Face the bowl (back to camera)
+    const feedRot: [number, number, number] = [0, Math.PI, 0]; // Face camera (behind bowl)
     const idleRot: [number, number, number] = [0, -Math.PI / 6, 0]; // Slight angle for charm
 
     // Zzz Text Component (Billboarded)

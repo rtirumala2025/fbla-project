@@ -563,7 +563,7 @@ export function KitchenFurniture({ hasFood = false }: KitchenFurnitureProps) {
             {/* ============================================================ */}
             {/* === SMART BOWL (Interactive Feeding) === */}
             {/* ============================================================ */}
-            <group position={[0, 0, 0]}>
+            <group position={[0, 0, 2]}>
                 {/* White Ceramic Bowl - Large and visible */}
                 <mesh position={[0, 0.2, 0]} castShadow receiveShadow>
                     <cylinderGeometry args={[0.8, 0.65, 0.35, 32]} />

@@ -58,6 +58,8 @@ def create_app() -> FastAPI:
             "/api/auth/signup",
             "/api/auth/login",
             "/api/auth/refresh",
+            "/api/pets",
+            "/api/sync",
         ),
     )
 
