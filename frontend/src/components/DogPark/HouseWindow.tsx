@@ -71,6 +71,7 @@ export function HouseWindow({
     const [isProcessing, setIsProcessing] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [foodInBowl, setFoodInBowl] = useState(false);
+    const [foodType, setFoodType] = useState<string>('kibble'); // Track what food is in the bowl
 
     // Filter inventory by usage type
     const foodItems = inventory.filter(item =>
@@ -137,7 +138,8 @@ export function HouseWindow({
 
             showToast(`Fed ${item.item_name} to your pet! 🍖`, 'success');
 
-            // Show food in the bowl
+            // Show food in the bowl with correct type
+            setFoodType(item.item_name.toLowerCase());
             setFoodInBowl(true);
             // Auto-clear after 5 seconds
             setTimeout(() => setFoodInBowl(false), 5000);
@@ -296,6 +298,7 @@ export function HouseWindow({
                             onFeedItem={useItem}
                             isFeeding={isProcessing}
                             hasFood={foodInBowl}
+                            foodType={foodType}
                         />
                     )}
 

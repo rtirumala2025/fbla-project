@@ -17,9 +17,10 @@ interface RoomStageProps {
     currentActivity: string;
     isSleeping: boolean;
     hasFood?: boolean;
+    foodType?: string; // Type of food in bowl for dynamic colors
 }
 
-export function RoomStage({ currentActivity, isSleeping, hasFood = false }: RoomStageProps) {
+export function RoomStage({ currentActivity, isSleeping, hasFood = false, foodType = 'kibble' }: RoomStageProps) {
     const dogRef = useRef<THREE.Group>(null);
 
     // Animation Loop for dog/pet positioning (sleep behavior)
@@ -47,7 +48,7 @@ export function RoomStage({ currentActivity, isSleeping, hasFood = false }: Room
             {currentActivity === 'kitchen' ? (
                 <group>
                     <KitchenShell />
-                    <KitchenFurniture hasFood={hasFood} />
+                    <KitchenFurniture hasFood={hasFood} foodType={foodType} />
                 </group>
             ) : (
                 /* Default/Bedroom/Living Environment */

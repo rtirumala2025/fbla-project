@@ -34,8 +34,10 @@ BEGIN
 END $$;
 
 -- ========== SEED TEST FOOD ITEMS ==========
+-- NOTE: Commented out to prevent phantom inventory items
+-- Users should purchase items from the supermarket instead
 -- These are consumable food items that can be used via the inventory API
-
+/*
 INSERT INTO public.finance_shop_items (sku, name, description, category, price, stock, is_active, emoji, usage_type, stat_effects)
 VALUES
     ('food-apple', 'Apple', 'A fresh, juicy apple. Restores hunger.', 'Food', 5, 999, TRUE, '🍎', 'food', '{"hunger": 15, "health": 5}'::jsonb),
@@ -44,6 +46,7 @@ VALUES
 ON CONFLICT (sku) DO UPDATE SET
     usage_type = EXCLUDED.usage_type,
     stat_effects = EXCLUDED.stat_effects;
+*/
 
 -- ========== ENSURE WALLET AND INVENTORY HELPERS ==========
 -- Grant demo user some inventory items for testing

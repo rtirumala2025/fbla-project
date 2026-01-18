@@ -24,13 +24,43 @@
  * CORNER UNION: Overlap at x=4.25, z=-4.0
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface KitchenFurnitureProps {
     hasFood?: boolean;
+    foodType?: string; // Type of food for dynamic colors
 }
 
-export function KitchenFurniture({ hasFood = false }: KitchenFurnitureProps) {
+// Food color mapping for dynamic bowl appearance
+const FOOD_COLORS: Record<string, string[]> = {
+    // Fruits
+    apple: ['#E53935', '#C62828', '#F44336', '#D32F2F', '#EF5350', '#B71C1C'],
+    banana: ['#FDD835', '#FBC02D', '#F9A825', '#FFD600', '#FFEB3B', '#F57F17'],
+    // Protein
+    kibble: ['#8D6E63', '#6D4C41', '#795548', '#5D4037', '#A1887F', '#4E342E'],
+    dog_food: ['#8D6E63', '#6D4C41', '#795548', '#5D4037', '#A1887F', '#4E342E'],
+    meat: ['#D32F2F', '#C62828', '#B71C1C', '#8D6E63', '#E53935', '#5D4037'],
+    steak: ['#C62828', '#8D6E63', '#D32F2F', '#6D4C41', '#B71C1C', '#795548'],
+    chicken: ['#FFCC80', '#FFB74D', '#FFA726', '#FFE0B2', '#FB8C00', '#F57C00'],
+    fish: ['#4DB6AC', '#26A69A', '#00897B', '#80CBC4', '#009688', '#00796B'],
+    salmon: ['#FF8A65', '#FF7043', '#F4511E', '#FF5722', '#E64A19', '#FFAB91'],
+    sushi: ['#FF7043', '#FFCC80', '#E0E0E0', '#26A69A', '#F4511E', '#4DB6AC'],
+    // Treats
+    bone: ['#EFEBE9', '#D7CCC8', '#BCAAA4', '#E0E0E0', '#BDBDBD', '#A1887F'],
+    treat: ['#D7CCC8', '#BCAAA4', '#8D6E63', '#EFEBE9', '#A1887F', '#6D4C41'],
+    cookie: ['#D7CCC8', '#A1887F', '#8D6E63', '#BCAAA4', '#6D4C41', '#5D4037'],
+    // Vegetables
+    carrot: ['#FF9800', '#F57C00', '#EF6C00', '#FFB74D', '#E65100', '#FFE0B2'],
+    veggie: ['#66BB6A', '#43A047', '#2E7D32', '#81C784', '#388E3C', '#A5D6A7'],
+    // Other
+    water: ['#64B5F6', '#42A5F5', '#2196F3', '#90CAF9', '#1E88E5', '#BBDEFB'],
+    pizza: ['#FFAB91', '#FF8A65', '#FDD835', '#D32F2F', '#FFB74D', '#8D6E63'],
+    cheese: ['#FDD835', '#FBC02D', '#FFD54F', '#FFEB3B', '#F9A825', '#FFE082'],
+    gourmet: ['#8D6E63', '#D32F2F', '#FFB74D', '#43A047', '#6D4C41', '#C62828'],
+    wet: ['#8D6E63', '#A1887F', '#795548', '#6D4C41', '#BCAAA4', '#5D4037'],
+};
+
+export function KitchenFurniture({ hasFood = false, foodType = 'kibble' }: KitchenFurnitureProps) {
     // Colors
     const applianceColor = "#E0E0E0";
     const cabinetColor = "#ECEFF1";
@@ -38,6 +68,19 @@ export function KitchenFurniture({ hasFood = false }: KitchenFurnitureProps) {
     const accentColor = "#CFD8DC"; // Chrome
     const handleColor = "#212121"; // Black handles
     const woodColor = "#D7CCC8";
+
+    // Get food colors based on type (with smart keyword matching)
+    const foodColors = useMemo(() => {
+        const typeLower = foodType.toLowerCase();
+        // Direct match
+        if (FOOD_COLORS[typeLower]) return FOOD_COLORS[typeLower];
+        // Keyword matching
+        for (const [key, colors] of Object.entries(FOOD_COLORS)) {
+            if (typeLower.includes(key)) return colors;
+        }
+        // Default to kibble
+        return FOOD_COLORS.kibble;
+    }, [foodType]);
 
     return (
         <group>
@@ -577,7 +620,7 @@ export function KitchenFurniture({ hasFood = false }: KitchenFurnitureProps) {
                 {/* Food Mound (conditionally rendered based on hasFood prop) */}
                 {hasFood && (
                     <group position={[0, 0.1, 0]}>
-                        {/* Realistic Kibble Cluster - 20 small spheres with varied colors */}
+                        {/* Dynamic Food Cluster - colors based on foodType */}
                         {[...Array(20)].map((_, i) => {
                             const angle = (i / 20) * Math.PI * 2 + Math.random() * 0.5;
                             const radius = Math.random() * 0.5 + 0.1;
@@ -585,8 +628,7 @@ export function KitchenFurniture({ hasFood = false }: KitchenFurnitureProps) {
                             const z = Math.sin(angle) * radius;
                             const y = Math.random() * 0.15 + 0.05;
                             const size = 0.06 + Math.random() * 0.04;
-                            const colors = ['#8D6E63', '#6D4C41', '#795548', '#5D4037', '#A1887F', '#4E342E'];
-                            const color = colors[i % colors.length];
+                            const color = foodColors[i % foodColors.length];
                             return (
                                 <mesh key={i} position={[x, y, z]} castShadow>
                                     <sphereGeometry args={[size, 8, 8]} />

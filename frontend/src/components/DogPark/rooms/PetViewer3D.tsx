@@ -30,6 +30,7 @@ interface PetViewer3DProps {
     isSleeping?: boolean;
     hasFood?: boolean;
     isEating?: boolean; // Triggers head bob munching animation
+    foodType?: string; // Type of food in bowl (e.g. 'apple', 'kibble')
 }
 
 // Create a static idle state for the viewer (no movement)
@@ -181,6 +182,7 @@ export const PetViewer3D = React.memo(function PetViewer3D({
     isSleeping = false,
     hasFood = false,
     isEating = false,
+    foodType = 'kibble',
 }: PetViewer3DProps) {
     // If size is provided, use fixed dimensions; otherwise fill parent
     const containerStyle: React.CSSProperties = size
@@ -253,7 +255,7 @@ export const PetViewer3D = React.memo(function PetViewer3D({
                     />
 
                     {/* Room Stage (Shell + Foreground Props) */}
-                    <RoomStage currentActivity={currentRoom} isSleeping={isSleeping} hasFood={hasFood} />
+                    <RoomStage currentActivity={currentRoom} isSleeping={isSleeping} hasFood={hasFood} foodType={foodType} />
 
                     {/* The actual pet model from main game */}
                     <PetModelViewer

@@ -19,6 +19,7 @@ interface KitchenViewProps {
     onFeedItem: (item: InventoryEntry) => void;
     isFeeding?: boolean;
     hasFood?: boolean;
+    foodType?: string; // Type of food currently in the bowl
 }
 
 // Comprehensive Item Registry - includes ALL supermarket items
@@ -123,7 +124,7 @@ const getItemDetails = (item: { item_id: string; item_name: string }) => {
 };
 
 export function KitchenView({
-    petName, petType = 'dog', petBreed = 'labrador', foodItems, allInventoryCount = 0, onFeedItem, isFeeding = false, hasFood = false,
+    petName, petType = 'dog', petBreed = 'labrador', foodItems, allInventoryCount = 0, onFeedItem, isFeeding = false, hasFood = false, foodType = 'kibble',
 }: KitchenViewProps) {
     const [feedingItem, setFeedingItem] = useState<string | null>(null);
 
@@ -144,7 +145,7 @@ export function KitchenView({
             {/* Stage */}
             <div className="flex-1 relative min-h-0">
                 {/* 3D Canvas - fills entire stage */}
-                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="kitchen" hasFood={hasFood} isEating={hasFood} />
+                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="kitchen" hasFood={hasFood} isEating={hasFood} foodType={foodType} />
 
                 {/* HUD: Hunger Bar - Top Right */}
                 <div className="absolute top-4 right-4 pointer-events-none">
