@@ -139,6 +139,19 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
   const legBR = useRef<THREE.Group>(null);
   const [isHovered, setIsHovered] = useState(false);
 
+  // --- VISUAL REACTION STATE ---
+  const validStats = stats || { health: 100, happiness: 100, cleanliness: 100 };
+  const isSick = validStats.health < 30 || validStats.happiness < 30;
+  const isDirty = validStats.cleanliness < 40;
+  const isHappy = validStats.happiness > 80;
+
+  // Helper for dynamic colors
+  const getMoodColor = (baseColor: string) => {
+    const c = new THREE.Color(baseColor);
+    if (isSick) c.lerp(new THREE.Color('#5fab2f'), 0.4); // Sickly green/grey
+    return c;
+  };
+
   // Keyboard Controls
   const keys = useKeyboardControls();
 
@@ -186,31 +199,31 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
 
   // Chest/Belly - Fluffy, diffuse
   const matChest = useMemo(() => new THREE.MeshStandardMaterial({
-    color: dna.colors.primary,
+    color: getMoodColor(dna.colors.primary),
     roughness: 0.72,
     metalness: 0.02,
-  }), [dna]);
+  }), [dna, isSick]);
 
   // Back/Guard hairs - Sleeker, slight sheen
   const matBack = useMemo(() => new THREE.MeshStandardMaterial({
-    color: dna.colors.primary,
+    color: getMoodColor(dna.colors.primary),
     roughness: 0.58,
     metalness: 0.04,
-  }), [dna]);
+  }), [dna, isSick]);
 
   // Face/Head - Short fur, more reflective
   const matFace = useMemo(() => new THREE.MeshStandardMaterial({
-    color: dna.colors.secondary,
+    color: getMoodColor(dna.colors.secondary),
     roughness: 0.48,
     metalness: 0.05,
-  }), [dna]);
+  }), [dna, isSick]);
 
   // Legs - Medium fur
   const matLegs = useMemo(() => new THREE.MeshStandardMaterial({
-    color: dna.colors.accent,
+    color: getMoodColor(dna.colors.accent),
     roughness: 0.62,
     metalness: 0.03,
-  }), [dna]);
+  }), [dna, isSick]);
 
   // Paw pads - Leather-like, slight wetness
   const matPaws = useMemo(() => new THREE.MeshStandardMaterial({
@@ -221,10 +234,10 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
 
   // Ears (inner) - Thin skin, light transmission
   const matEarsInner = useMemo(() => new THREE.MeshStandardMaterial({
-    color: dna.colors.accent,
+    color: getMoodColor(dna.colors.accent),
     roughness: 0.28,
     metalness: 0.06,
-  }), [dna]);
+  }), [dna, isSick]);
 
   // Nose leather - Most reflective, wet appearance
   const matNose = useMemo(() => new THREE.MeshStandardMaterial({
@@ -250,7 +263,9 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
     const t = clock.getElapsedTime();
 
     // AAA Multi-Layer Breathing System (Emotion-Modulated)
-    const breathRate = 1.6 * emotionalPose.breathing_rate;
+    // Speed boost if happy
+    const speedMult = isHappy ? 1.5 : 1.0;
+    const breathRate = 1.6 * emotionalPose.breathing_rate * speedMult;
 
     if (root.current) {
       // Primary breathing (chest) - Most pronounced
@@ -792,6 +807,42 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
           far={0.2}
         />
       ))}
-    </group>
+
+      {/* DIRTY PARTICLES (Flies/Stink) */}
+      {
+        isDirty && (
+          <group position={[0, 0.5, 0]}>
+            {[...Array(5)].map((_, i) => (
+              <mesh key={i} position={[
+                Math.sin(Date.now() / 500 + i) * 0.4,
+                Math.cos(Date.now() / 400 + i) * 0.3,
+                Math.sin(Date.now() / 600 + i) * 0.4
+              ]}>
+                <sphereGeometry args={[0.02, 4, 4]} />
+                <meshBasicMaterial color="#4a7c20" transparent opacity={0.6} />
+              </mesh>
+            ))}
+          </group>
+        )
+      }
+
+      {/* HAPPY PARTICLES (Sparkles) */}
+      {
+        isHappy && (
+          <group position={[0, 0.6, 0]}>
+            {[...Array(4)].map((_, i) => (
+              <mesh key={i} position={[
+                Math.sin(Date.now() / 300 + i * 2) * 0.5,
+                Math.abs(Math.sin(Date.now() / 400 + i)) * 0.5,
+                Math.cos(Date.now() / 300 + i * 2) * 0.5
+              ]}>
+                <octahedronGeometry args={[0.03, 0]} />
+                <meshBasicMaterial color="#fbbf24" />
+              </mesh>
+            ))}
+          </group>
+        )
+      }
+    </group >
   );
 }
