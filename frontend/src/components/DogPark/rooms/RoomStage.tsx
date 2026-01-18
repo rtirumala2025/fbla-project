@@ -2,7 +2,7 @@
  * RoomStage.tsx
  * 
  * Scene Swapper: Renders the appropriate furniture based on currentActivity.
- * The HouseShellFixed (walls, windows, ceiling) is rendered separately in PetViewer3D.
+ * Uses STRICT CONDITIONAL RENDERING - each room gets its own distinct environment.
  */
 
 import React, { useRef } from 'react';
@@ -12,6 +12,8 @@ import { BedroomFurniture } from './BedroomFurniture';
 import { KitchenFurniture } from './KitchenFurniture';
 import { KitchenShell } from './KitchenShell';
 import { HouseShellFixed } from './HouseShellFixed';
+import { BathroomShell } from './BathroomShell';
+import { BathroomFurniture } from './BathroomFurniture';
 
 interface RoomStageProps {
     currentActivity: string;
@@ -42,37 +44,41 @@ export function RoomStage({ currentActivity, isSleeping, hasFood = false, foodTy
 
     return (
         <group>
-            {/* === ENVIRONMENT SWAPPER: Shell + Furniture === */}
+            {/* === STRICT CONDITIONAL RENDERING: Each room gets its own environment === */}
 
             {/* Kitchen Environment */}
-            {currentActivity === 'kitchen' ? (
+            {currentActivity === 'kitchen' && (
                 <group>
                     <KitchenShell />
                     <KitchenFurniture hasFood={hasFood} foodType={foodType} />
                 </group>
-            ) : (
-                /* Default/Bedroom/Living Environment */
+            )}
+
+            {/* Bedroom/Living Environment */}
+            {(currentActivity === 'bedroom' || currentActivity === 'living') && (
                 <group>
                     <HouseShellFixed />
                     <BedroomFurniture isSleeping={isSleeping} />
                 </group>
             )}
 
-            {/* Extra Layers (Bathroom/Closet) - Show mats over persistent shell logic */}
-            {(currentActivity === 'bathroom' || currentActivity === 'closet') && (
+            {/* Bathroom Environment - Distinct White/Blue Scene */}
+            {currentActivity === 'bathroom' && (
                 <group>
-                    {currentActivity === 'bathroom' && (
-                        <mesh position={[0, 0.015, 0]} receiveShadow>
-                            <boxGeometry args={[5, 0.02, 4]} />
-                            <meshStandardMaterial color="#B3E5FC" roughness={1.0} />
-                        </mesh>
-                    )}
-                    {currentActivity === 'closet' && (
-                        <mesh position={[0, 0.015, 0]} receiveShadow>
-                            <boxGeometry args={[5, 0.02, 4]} />
-                            <meshStandardMaterial color="#F8BBD9" roughness={1.0} />
-                        </mesh>
-                    )}
+                    <BathroomShell />
+                    <BathroomFurniture />
+                </group>
+            )}
+
+            {/* Closet Environment - Uses Bedroom Shell with Pink Mat */}
+            {currentActivity === 'closet' && (
+                <group>
+                    <HouseShellFixed />
+                    <BedroomFurniture isSleeping={false} />
+                    <mesh position={[0, 0.015, 0]} receiveShadow>
+                        <boxGeometry args={[5, 0.02, 4]} />
+                        <meshStandardMaterial color="#F8BBD9" roughness={1.0} />
+                    </mesh>
                 </group>
             )}
         </group>
