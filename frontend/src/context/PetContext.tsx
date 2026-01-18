@@ -4,6 +4,7 @@ import { supabase, isSupabaseMock, withTimeout, withRetry } from '../lib/supabas
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/networkUtils';
+import { DECAY_RATES, ACTIONS, clampStat, applyAction, ActionType } from '../config/gameConfig';
 
 interface PetContextType {
   pet: Pet | null;
@@ -12,6 +13,7 @@ interface PetContextType {
   play: () => Promise<void>;
   bathe: () => Promise<void>;
   rest: () => Promise<void>;
+  performAction: (actionType: ActionType) => Promise<void>; // NEW: Universal action dispatcher
   increaseStat: (stat: keyof PetStats, amount: number) => Promise<void>;
   decreaseStat: (stat: keyof PetStats, amount: number) => Promise<void>;
   updateHighScore: (gameType: string, score: number, coins?: number) => Promise<void>;
@@ -87,13 +89,13 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         lastUpdated: now,
       };
 
-      // Ensure bounds
+      // Ensure bounds using gameConfig
       const bounded = {
-        health: Math.max(0, Math.min(100, updatedStats.health)),
-        hunger: Math.max(0, Math.min(100, updatedStats.hunger)),
-        happiness: Math.max(0, Math.min(100, updatedStats.happiness)),
-        cleanliness: Math.max(0, Math.min(100, updatedStats.cleanliness)),
-        energy: Math.max(0, Math.min(100, updatedStats.energy)),
+        health: clampStat(updatedStats.health),
+        hunger: clampStat(updatedStats.hunger),
+        happiness: clampStat(updatedStats.happiness),
+        cleanliness: clampStat(updatedStats.cleanliness),
+        energy: clampStat(updatedStats.energy),
       };
 
       const { data, error } = await supabase.from('pets').update({
@@ -148,23 +150,36 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   }, [pet, userId, updatePetStats, logTransaction]);
 
   const feed = () => statAction('feed', {
-    hunger: Math.max(0, (pet?.stats.hunger || 0) - 30), // Hunger decreases when fed
-    energy: Math.min(100, (pet?.stats.energy || 0) + 10)
+    hunger: clampStat((pet?.stats.hunger || 0) - 30),
+    energy: clampStat((pet?.stats.energy || 0) + 10)
   }, 5);
 
   const play = () => statAction('play', {
-    happiness: Math.min(100, (pet?.stats.happiness || 0) + 30),
-    energy: Math.max(0, (pet?.stats.energy || 0) - 20)
+    happiness: clampStat((pet?.stats.happiness || 0) + 30),
+    energy: clampStat((pet?.stats.energy || 0) - 20)
   }, 0);
 
   const bathe = () => statAction('bathe', {
-    cleanliness: Math.min(100, (pet?.stats.cleanliness || 0) + 50)
+    cleanliness: clampStat((pet?.stats.cleanliness || 0) + 50)
   }, 3);
 
   const rest = () => statAction('rest', {
     energy: 100,
-    hunger: Math.min(100, (pet?.stats.hunger || 0) + 10) // Hunger increases when resting
+    hunger: clampStat((pet?.stats.hunger || 0) + 10)
   }, 0);
+
+  // NEW: Universal action dispatcher using gameConfig
+  const performAction = useCallback(async (actionType: ActionType) => {
+    if (!pet || !userId) return;
+    const action = ACTIONS[actionType];
+    if (!action) {
+      console.warn(`Unknown action type: ${actionType}`);
+      return;
+    }
+
+    const newStats = applyAction(pet.stats, actionType);
+    await statAction(action.name, newStats, action.cost);
+  }, [pet, userId, statAction]);
 
   const increaseStat = useCallback(async (stat: keyof PetStats, amount: number) => {
     if (!pet) return;
@@ -277,16 +292,17 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     if (elapsedMinutes < 1) return;
 
     logger.debug('Decaying stats', { elapsedMinutes });
-    // Hunger: +1% / 5m (0.2), Energy: -1% / 5m (0.2), Happiness: -1% / 10m (0.1), Cleanliness: -1% / 15m (0.06)
+    // Use DECAY_RATES from gameConfig
     const updates: Partial<PetStats> = {
-      hunger: Math.min(100, (pet.stats.hunger || 0) + Math.floor(elapsedMinutes * 0.2)),
-      energy: Math.max(0, (pet.stats.energy || 0) - Math.floor(elapsedMinutes * 0.2)),
-      happiness: Math.max(0, (pet.stats.happiness || 0) - Math.floor(elapsedMinutes * 0.1)),
-      cleanliness: Math.max(0, (pet.stats.cleanliness || 0) - Math.floor(elapsedMinutes * 0.06)),
+      hunger: clampStat((pet.stats.hunger || 0) + Math.floor(elapsedMinutes * DECAY_RATES.hunger)),
+      energy: clampStat((pet.stats.energy || 0) - Math.floor(elapsedMinutes * DECAY_RATES.energy)),
+      happiness: clampStat((pet.stats.happiness || 0) - Math.floor(elapsedMinutes * DECAY_RATES.happiness)),
+      cleanliness: clampStat((pet.stats.cleanliness || 0) - Math.floor(elapsedMinutes * DECAY_RATES.cleanliness)),
     };
 
+    // Health penalty when hunger >= 95 or energy <= 5
     if (pet.stats.hunger >= 95 || pet.stats.energy <= 5) {
-      updates.health = Math.max(0, (pet.stats.health || 0) - Math.floor(elapsedMinutes * 0.033));
+      updates.health = clampStat((pet.stats.health || 0) - Math.floor(elapsedMinutes * DECAY_RATES.healthPenalty));
     }
 
     // Only update if there are actual changes
@@ -348,13 +364,14 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
   const value = useMemo(() => ({
     pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest,
+    performAction, // NEW
     increaseStat,
     decreaseStat,
     updateHighScore,
     getHighScore,
     createPet,
     refreshPet: loadPet,
-  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet]);
+  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet]);
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 };
