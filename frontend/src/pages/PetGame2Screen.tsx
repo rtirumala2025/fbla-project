@@ -590,46 +590,7 @@ export const PetGame2Screen: React.FC = () => {
           }}
         />
       )}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-2">
-        <button
-          onClick={async () => {
-            if (!stats) return;
-            try {
-              await updatePetStats({
-                health: 100,
-                hunger: 100,
-                happiness: 100,
-                energy: 100,
-                cleanliness: 100,
-              });
-              await refreshPet();
-              showSuccess('debug', 'Stats Maximized! 🚀');
-            } catch (err) {
-              console.error('Failed to max stats', err);
-            }
-          }}
-          className="px-3 py-1 bg-rose-500/80 hover:bg-rose-600 text-white text-xs rounded-full border border-white/20 backdrop-blur-sm transition-colors flex items-center gap-1"
-        >
-          ✨ Max Stats
-        </button>
-        <button
-          onClick={() => {
-            const types: PetGame2PetType[] = ['dog', 'cat', 'panda'];
-            const currentIdx = types.indexOf(petType);
-            const nextType = types[(currentIdx + 1) % types.length];
-            setDevPetOverride(nextType);
-          }}
-          className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded-full border border-white/20 backdrop-blur-sm transition-colors"
-        >
-          🔄 Change Pet ({petType})
-        </button>
-        <button
-          onClick={askAIHelp}
-          className="px-3 py-1 bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs rounded-full border border-indigo-400/30 backdrop-blur-sm transition-colors flex items-center gap-1"
-        >
-          🤖 Ask AI
-        </button>
-      </div>
+
 
       {/* Building Windows - Lazy loaded with Suspense */}
       {openBuilding === 'shop' && (
