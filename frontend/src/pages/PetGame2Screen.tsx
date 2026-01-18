@@ -15,7 +15,7 @@ import { FloatingCost, type FloatingCostProps } from '@/game3d/ui/FloatingCost';
 import { SuccessToast } from '@/game3d/ui/SuccessToast';
 import { inventoryService } from '@/services/inventoryService';
 import { shopService } from '@/services/shopService';
-import { getPetDiary, bathePetAction, restPetAction, feedPetAction, playWithPet } from '@/api/pets';
+import { getPetDiary, bathePetAction, restPetAction, feedPetAction, playWithPet, interactWithPet } from '@/api/pets';
 import { EvolutionAnimation } from '@/components/pets/EvolutionAnimation';
 import type { PetStats, PetActionResponse } from '@/types/pet';
 import type { ActivityZone } from '@/game3d/core/SceneManager';
@@ -48,7 +48,7 @@ const WindowLoadingFallback = () => (
 
 
 export const PetGame2Screen: React.FC = () => {
-  const { pet, loading, error, refreshPet, updatePetStats } = usePet();
+  const { pet, loading, error, refreshPet, updatePetStats, performAction } = usePet();
   const { currentUser } = useAuth();
   const { balance, transactions, refreshBalance } = useFinancial();
 
@@ -77,6 +77,7 @@ export const PetGame2Screen: React.FC = () => {
   const [actionBusy, setActionBusy] = useState(false);
   const [stats, setStats] = useState<PetStats | null>(null);
   const [devPetOverride, setDevPetOverride] = useState<PetGame2PetType | null>(null);
+  const [isBathing, setIsBathing] = useState(false);
 
   // UI Toggles
   const [inventoryOpen, setInventoryOpen] = useState(false);
@@ -293,7 +294,7 @@ export const PetGame2Screen: React.FC = () => {
       let response: PetActionResponse | null = null;
 
       if (action === 'feed') {
-        showCost('-$5 Food');
+        showCost(' -$5 Food');
         showTransactionToast('Fed', 5);
         playUiTone('feed');
         // Fill the bowl with food
@@ -303,7 +304,7 @@ export const PetGame2Screen: React.FC = () => {
         // Empty the bowl after eating duration (3 seconds)
         setTimeout(() => setFoodInBowl(false), 3000);
       } else if (action === 'play') {
-        showCost('-$10 Toy');
+        showCost(' -$10 Toy');
         showTransactionToast('Played with', 10);
         playUiTone('play');
         response = await playWithPet('fetch');
@@ -315,11 +316,26 @@ export const PetGame2Screen: React.FC = () => {
         response = await restPetAction(1);
         showSuccess('rest', 'Zzz... 💤');
       } else if (action === 'bathe') {
-        showCost('-$3 Bath');
-        showTransactionToast('Bathed', 3);
+        if (isBathing) return; // Prevent double click
+
+        // 1. Start Visuals
+        showCost('FREE Shower'); // SHOWER in config is cost 0
         playUiTone('bathe');
-        response = await bathePetAction();
-        showSuccess('bathe', 'Squeaky Clean! ✨');
+        setIsBathing(true);
+
+        // 2. Wait for Bubbles (3s)
+        await new Promise(r => setTimeout(r, 3000));
+
+        // 3. Call Action (SHOWER) - DATA DRIVEN via PetContext
+        try {
+          await performAction('SHOWER');
+          showSuccess('bathe', 'Squeaky Clean! ✨');
+        } catch (err) {
+          console.error('Bath failed:', err);
+          showCost('Failed to bathe');
+        } finally {
+          setIsBathing(false);
+        }
       }
 
       if (response) updateStats(response);
@@ -332,7 +348,8 @@ export const PetGame2Screen: React.FC = () => {
       const duration = action === 'rest' ? 1400 : 1200;
       setTimeout(() => setActionBusy(false), duration);
     }
-  }, [actionBusy, playUiTone, triggerAction]);
+  }, [actionBusy, playUiTone, triggerAction, isBathing, pet]);
+
 
   const handlePurchase = useCallback(async (item: any) => {
     if (balance < item.price) {
@@ -626,7 +643,10 @@ export const PetGame2Screen: React.FC = () => {
         petType={petType}
         petBreed={state.breed}
         currentEnergy={stats?.energy ?? 50}
+        currentHygiene={stats?.cleanliness ?? 50}
         hasFood={foodInBowl}
+        isBathing={isBathing}
+        onBathe={() => handleAction('bathe')}
         onSleepComplete={async (energyRestored: number) => {
           try {
             const currentEnergy = stats?.energy ?? 0;
@@ -669,11 +689,11 @@ export const PetGame2Screen: React.FC = () => {
                 } : prev);
               }
               showTransactionToast('Vet visit', 25);
-              refreshBalance();
             }}
           />
         </Suspense>
       )}
+
 
       {openBuilding === 'agility' && (
         <Suspense fallback={<WindowLoadingFallback />}>

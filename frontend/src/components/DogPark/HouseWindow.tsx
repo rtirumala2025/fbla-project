@@ -35,6 +35,8 @@ interface HouseWindowProps {
     hasFood?: boolean;
     onSleepComplete?: (energyRestored: number) => void;
     onStatsUpdate?: () => void;
+    isBathing?: boolean;
+    onBathe?: () => void;
 }
 
 interface UseItemResponse {
@@ -63,6 +65,8 @@ export function HouseWindow({
     hasFood = false,
     onSleepComplete,
     onStatsUpdate,
+    isBathing = false,
+    onBathe,
 }: HouseWindowProps) {
     const [activeRoom, setActiveRoom] = useState<RoomType>('living');
     const [inventory, setInventory] = useState<InventoryEntry[]>([]);
@@ -198,10 +202,15 @@ export function HouseWindow({
 
     const handleQuickWash = useCallback(async () => {
         if (isProcessing) return;
-        setIsProcessing(true);
 
+        if (onBathe) {
+            onBathe();
+            return;
+        }
+
+        setIsProcessing(true);
         try {
-            // Call the bathe action
+            // Fallback to local call if no handler provided
             await apiRequest('/api/pets/actions/bathe', {
                 method: 'POST',
                 body: JSON.stringify({}),
@@ -214,7 +223,7 @@ export function HouseWindow({
         } finally {
             setIsProcessing(false);
         }
-    }, [isProcessing, onStatsUpdate]);
+    }, [isProcessing, onBathe, onStatsUpdate]);
 
     return (
         <BuildingInteractionWindow
@@ -312,7 +321,7 @@ export function HouseWindow({
                             currentHygiene={currentHygiene}
                             onUseItem={useItem}
                             onQuickWash={handleQuickWash}
-                            isWashing={isProcessing}
+                            isWashing={isProcessing || isBathing}
                         />
                     )}
 

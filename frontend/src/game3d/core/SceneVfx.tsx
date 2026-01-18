@@ -2,12 +2,12 @@ import React from 'react';
 import type { PetGame2Vfx } from './SceneManager';
 import { ParticleSystem } from './ParticleSystem';
 
-export function SceneVfx({ vfx }: { vfx: PetGame2Vfx[] }) {
+export function SceneVfx({ vfx, petPosition = [0, 0, 0] }: { vfx: PetGame2Vfx[]; petPosition?: [number, number, number] }) {
   // Only show the most recent effects to avoid clutter
   const active = vfx.slice(-5);
 
   return (
-    <group>
+    <group position={petPosition}>
       {active.map((fx) => {
         // Stagger positions slightly so they don't perfectly overlap
         // Lifted higher (y=1.5) to account for Pro Scale (1.2)

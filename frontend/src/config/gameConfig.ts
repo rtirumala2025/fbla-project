@@ -141,7 +141,7 @@ export const ACTIONS = {
     SHOWER: {
         name: 'Quick Shower',
         cost: 0,
-        effects: { cleanliness: +50 },  // Buffed from +30
+        effects: { cleanliness: +50, happiness: +10, energy: -5 },
         room: 'bathroom',
     },
     GROOM: {

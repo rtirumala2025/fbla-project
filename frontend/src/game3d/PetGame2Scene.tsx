@@ -237,7 +237,7 @@ export function PetGame2Scene({
             />
           </group>
 
-          <SceneVfx vfx={state.vfx} />
+          <SceneVfx vfx={state.vfx} petPosition={state.currentPosition} />
           <CameraController
             mode={state.cameraMode}
             interaction={state.interaction}

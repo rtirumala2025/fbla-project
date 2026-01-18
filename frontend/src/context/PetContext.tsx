@@ -178,6 +178,8 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     }
 
     const newStats = applyAction(pet.stats, actionType);
+    console.log(`Executing: ${actionType}`, action.effects, "New Stats:", newStats);
+
     await statAction(action.name, newStats, action.cost);
   }, [pet, userId, statAction]);
 
