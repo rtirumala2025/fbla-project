@@ -289,87 +289,87 @@ export function KitchenFurniture() {
 
             {/* ============================================================ */}
             {/* === UPPER CABINETS (L-Shaped System) === */}
-            {/* Height: y=6.0 (bottom at y=5.5), Depth: 1.0 units */}
+            {/* Height: y=5.25 (bottom at y=5.5), Depth: 1.0 units */}
             {/* ============================================================ */}
 
             {/* --- UPPER BACK RUN: Spans from Fridge (-3) to Corner (+5) --- */}
             <group>
                 {/* Main Cabinet Body */}
-                <mesh position={[1, 6.0, -3.8]} castShadow receiveShadow>
+                <mesh position={[1, 5.25, -3.8]} castShadow receiveShadow>
                     <boxGeometry args={[8, 2.5, 1]} />
                     <meshStandardMaterial color={cabinetColor} roughness={0.4} />
                 </mesh>
 
                 {/* Door Fronts (6 doors across 8 units) */}
-                <mesh position={[-2.5, 6.0, -3.28]}>
+                <mesh position={[-2.5, 5.25, -3.28]}>
                     <boxGeometry args={[1.2, 2.2, 0.03]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[-1.2, 6.0, -3.28]}>
+                <mesh position={[-1.2, 5.25, -3.28]}>
                     <boxGeometry args={[1.2, 2.2, 0.03]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[0.1, 6.0, -3.28]}>
+                <mesh position={[0.1, 5.25, -3.28]}>
                     <boxGeometry args={[1.2, 2.2, 0.03]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[1.4, 6.0, -3.28]}>
+                <mesh position={[1.4, 5.25, -3.28]}>
                     <boxGeometry args={[1.2, 2.2, 0.03]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[2.7, 6.0, -3.28]}>
+                <mesh position={[2.7, 5.25, -3.28]}>
                     <boxGeometry args={[1.2, 2.2, 0.03]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[4.0, 6.0, -3.28]}>
+                <mesh position={[4.0, 5.25, -3.28]}>
                     <boxGeometry args={[1.2, 2.2, 0.03]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
 
                 {/* Segmentation Gaps (vertical dark lines between doors) */}
-                <mesh position={[-1.85, 6.0, -3.27]}>
+                <mesh position={[-1.85, 5.25, -3.27]}>
                     <boxGeometry args={[0.04, 2.3, 0.02]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
-                <mesh position={[-0.55, 6.0, -3.27]}>
+                <mesh position={[-0.55, 5.25, -3.27]}>
                     <boxGeometry args={[0.04, 2.3, 0.02]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
-                <mesh position={[0.75, 6.0, -3.27]}>
+                <mesh position={[0.75, 5.25, -3.27]}>
                     <boxGeometry args={[0.04, 2.3, 0.02]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
-                <mesh position={[2.05, 6.0, -3.27]}>
+                <mesh position={[2.05, 5.25, -3.27]}>
                     <boxGeometry args={[0.04, 2.3, 0.02]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
-                <mesh position={[3.35, 6.0, -3.27]}>
+                <mesh position={[3.35, 5.25, -3.27]}>
                     <boxGeometry args={[0.04, 2.3, 0.02]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
 
                 {/* Vertical Handles (Black) */}
-                <mesh position={[-2.5, 6.0, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+                <mesh position={[-2.5, 5.25, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[-1.2, 6.0, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+                <mesh position={[-1.2, 5.25, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[0.1, 6.0, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+                <mesh position={[0.1, 5.25, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[1.4, 6.0, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+                <mesh position={[1.4, 5.25, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[2.7, 6.0, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+                <mesh position={[2.7, 5.25, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[4.0, 6.0, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+                <mesh position={[4.0, 5.25, -3.24]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
@@ -378,88 +378,88 @@ export function KitchenFurniture() {
             {/* --- UPPER RIGHT RUN: Spans from Corner (-4.5) to Front (+3.5) --- */}
             <group>
                 {/* Main Cabinet Body */}
-                <mesh position={[4.5, 6.0, -0.5]} castShadow receiveShadow>
+                <mesh position={[4.5, 5.25, -0.5]} castShadow receiveShadow>
                     <boxGeometry args={[1, 2.5, 8]} />
                     <meshStandardMaterial color={cabinetColor} roughness={0.4} />
                 </mesh>
 
                 {/* Door Fronts (6 doors across 8 units) */}
-                <mesh position={[3.98, 6.0, -3.5]}>
+                <mesh position={[3.98, 5.25, -3.5]}>
                     <boxGeometry args={[0.03, 2.2, 1.2]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[3.98, 6.0, -2.2]}>
+                <mesh position={[3.98, 5.25, -2.2]}>
                     <boxGeometry args={[0.03, 2.2, 1.2]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[3.98, 6.0, -0.9]}>
+                <mesh position={[3.98, 5.25, -0.9]}>
                     <boxGeometry args={[0.03, 2.2, 1.2]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[3.98, 6.0, 0.4]}>
+                <mesh position={[3.98, 5.25, 0.4]}>
                     <boxGeometry args={[0.03, 2.2, 1.2]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[3.98, 6.0, 1.7]}>
+                <mesh position={[3.98, 5.25, 1.7]}>
                     <boxGeometry args={[0.03, 2.2, 1.2]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
-                <mesh position={[3.98, 6.0, 3.0]}>
+                <mesh position={[3.98, 5.25, 3.0]}>
                     <boxGeometry args={[0.03, 2.2, 1.2]} />
                     <meshStandardMaterial color="#FAFAFA" roughness={0.3} />
                 </mesh>
 
                 {/* Segmentation Gaps (horizontal dark lines between doors) */}
-                <mesh position={[3.97, 6.0, -2.85]}>
+                <mesh position={[3.97, 5.25, -2.85]}>
                     <boxGeometry args={[0.02, 2.3, 0.04]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
-                <mesh position={[3.97, 6.0, -1.55]}>
+                <mesh position={[3.97, 5.25, -1.55]}>
                     <boxGeometry args={[0.02, 2.3, 0.04]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
-                <mesh position={[3.97, 6.0, -0.25]}>
+                <mesh position={[3.97, 5.25, -0.25]}>
                     <boxGeometry args={[0.02, 2.3, 0.04]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
-                <mesh position={[3.97, 6.0, 1.05]}>
+                <mesh position={[3.97, 5.25, 1.05]}>
                     <boxGeometry args={[0.02, 2.3, 0.04]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
-                <mesh position={[3.97, 6.0, 2.35]}>
+                <mesh position={[3.97, 5.25, 2.35]}>
                     <boxGeometry args={[0.02, 2.3, 0.04]} />
                     <meshStandardMaterial color="#212121" />
                 </mesh>
 
                 {/* Vertical Handles (Black) */}
-                <mesh position={[3.94, 6.0, -3.5]} castShadow>
+                <mesh position={[3.94, 5.25, -3.5]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[3.94, 6.0, -2.2]} castShadow>
+                <mesh position={[3.94, 5.25, -2.2]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[3.94, 6.0, -0.9]} castShadow>
+                <mesh position={[3.94, 5.25, -0.9]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[3.94, 6.0, 0.4]} castShadow>
+                <mesh position={[3.94, 5.25, 0.4]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[3.94, 6.0, 1.7]} castShadow>
+                <mesh position={[3.94, 5.25, 1.7]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
-                <mesh position={[3.94, 6.0, 3.0]} castShadow>
+                <mesh position={[3.94, 5.25, 3.0]} castShadow>
                     <cylinderGeometry args={[0.025, 0.025, 0.4, 12]} />
                     <meshStandardMaterial color={handleColor} />
                 </mesh>
             </group>
 
             {/* --- UPPER CORNER POST: Covers the seam where Back Run and Right Run meet --- */}
-            <mesh position={[4.5, 6.0, -3.8]} castShadow receiveShadow>
+            <mesh position={[4.5, 5.25, -3.8]} castShadow receiveShadow>
                 <boxGeometry args={[1.6, 2.5, 1.6]} />
                 <meshStandardMaterial color="#FFFFFF" roughness={0.4} />
             </mesh>
