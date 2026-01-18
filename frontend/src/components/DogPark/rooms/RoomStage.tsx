@@ -19,11 +19,12 @@ import { BathroomFurniture } from './BathroomFurniture';
 interface RoomStageProps {
     currentActivity: string;
     isSleeping: boolean;
+    isBathing?: boolean;  // Bath animation trigger
     hasFood?: boolean;
     foodType?: string; // Type of food in bowl for dynamic colors
 }
 
-export function RoomStage({ currentActivity, isSleeping, hasFood = false, foodType = 'kibble' }: RoomStageProps) {
+export function RoomStage({ currentActivity, isSleeping, isBathing = false, hasFood = false, foodType = 'kibble' }: RoomStageProps) {
     const dogRef = useRef<THREE.Group>(null);
 
     // Animation Loop for dog/pet positioning (sleep behavior)
@@ -67,7 +68,7 @@ export function RoomStage({ currentActivity, isSleeping, hasFood = false, foodTy
             {currentActivity === 'bathroom' && (
                 <group>
                     <BathroomShell />
-                    <BathroomFurniture />
+                    <BathroomFurniture isBathing={isBathing} />
                     {/* Contact Shadows for realistic grounding */}
                     <ContactShadows
                         position={[0, 0.01, 0]}

@@ -28,6 +28,7 @@ interface PetViewer3DProps {
     currentRoom?: RoomType;
     onSwitchRoom?: (room: any) => void;
     isSleeping?: boolean;
+    isBathing?: boolean;  // Bath animation trigger
     hasFood?: boolean;
     isEating?: boolean; // Triggers head bob munching animation
     foodType?: string; // Type of food in bowl (e.g. 'apple', 'kibble')
@@ -180,6 +181,7 @@ export const PetViewer3D = React.memo(function PetViewer3D({
     currentRoom = 'living',
     onSwitchRoom,
     isSleeping = false,
+    isBathing = false,
     hasFood = false,
     isEating = false,
     foodType = 'kibble',
@@ -255,7 +257,7 @@ export const PetViewer3D = React.memo(function PetViewer3D({
                     />
 
                     {/* Room Stage (Shell + Foreground Props) */}
-                    <RoomStage currentActivity={currentRoom} isSleeping={isSleeping} hasFood={hasFood} foodType={foodType} />
+                    <RoomStage currentActivity={currentRoom} isSleeping={isSleeping} isBathing={isBathing} hasFood={hasFood} foodType={foodType} />
 
                     {/* The actual pet model from main game */}
                     <PetModelViewer

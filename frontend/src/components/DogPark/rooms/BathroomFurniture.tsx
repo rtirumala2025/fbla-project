@@ -2,11 +2,71 @@
  * BathroomFurniture.tsx - Premium Bathroom Props
  * 
  * Features: Oval Soaking Tub, Vanity Station, Bath Mat, Towel Rack
+ * Interactive: Animated bubbles when bathing
  */
 
-import React from 'react';
+import React, { useRef, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 
-export function BathroomFurniture() {
+interface BathroomFurnitureProps {
+    isBathing?: boolean;
+}
+
+// Animated Bubbles Component - Floats upward when active
+function AnimatedBubbles({ count = 15 }: { count?: number }) {
+    const bubblesRef = useRef<THREE.Group>(null);
+
+    // Create random bubble positions
+    const bubbleData = useMemo(() => {
+        return Array.from({ length: count }, () => ({
+            x: (Math.random() - 0.5) * 2.5,
+            y: 0.7 + Math.random() * 0.3,
+            z: (Math.random() - 0.5) * 1.5,
+            size: 0.04 + Math.random() * 0.08,
+            speed: 0.3 + Math.random() * 0.4,
+            phase: Math.random() * Math.PI * 2,
+        }));
+    }, [count]);
+
+    // Animate bubbles floating upward
+    useFrame((state, delta) => {
+        if (!bubblesRef.current) return;
+
+        bubblesRef.current.children.forEach((bubble, i) => {
+            const data = bubbleData[i];
+            // Float upward
+            bubble.position.y += delta * data.speed;
+            // Wobble side to side
+            bubble.position.x = data.x + Math.sin(state.clock.elapsedTime * 2 + data.phase) * 0.1;
+
+            // Reset when too high
+            if (bubble.position.y > 1.5) {
+                bubble.position.y = 0.7;
+                bubble.position.x = data.x;
+            }
+        });
+    });
+
+    return (
+        <group ref={bubblesRef}>
+            {bubbleData.map((data, i) => (
+                <mesh key={i} position={[data.x, data.y, data.z]}>
+                    <sphereGeometry args={[data.size, 8, 8]} />
+                    <meshStandardMaterial
+                        color="#FFFFFF"
+                        transparent
+                        opacity={0.7}
+                        roughness={0.02}
+                        metalness={0.1}
+                    />
+                </mesh>
+            ))}
+        </group>
+    );
+}
+
+export function BathroomFurniture({ isBathing = false }: BathroomFurnitureProps) {
     // Colors
     const tubColor = "#FFFFFF";
     const waterColor = "#4FC3F7";
@@ -43,13 +103,16 @@ export function BathroomFurniture() {
                 <mesh position={[0, 0.75, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 0.7, 1]}>
                     <circleGeometry args={[1.6, 32]} />
                     <meshStandardMaterial
-                        color={waterColor}
+                        color={isBathing ? "#81D4FA" : waterColor}
                         transparent
-                        opacity={0.85}
+                        opacity={isBathing ? 0.95 : 0.85}
                         roughness={0.05}
                         metalness={0.3}
                     />
                 </mesh>
+
+                {/* === ANIMATED BUBBLES (Only when bathing) === */}
+                {isBathing && <AnimatedBubbles count={20} />}
 
                 {/* Tub Rim */}
                 <mesh position={[0, 1.3, 0]} scale={[1, 1, 0.7]}>

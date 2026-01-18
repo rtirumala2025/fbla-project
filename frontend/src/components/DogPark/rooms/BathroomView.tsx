@@ -50,7 +50,13 @@ export function BathroomView({
             {/* Stage */}
             <div className="flex-1 relative min-h-0">
                 {/* 3D Canvas - fills entire stage */}
-                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="bathroom" />
+                <PetViewer3D
+                    petType={petType}
+                    breed={petBreed as any}
+                    interactive={true}
+                    currentRoom="bathroom"
+                    isBathing={showBubbles || isWashing}
+                />
 
                 {/* Floating UI overlays */}
                 <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-end pb-8">
