@@ -143,8 +143,30 @@ export function KitchenShell() {
             <mesh position={[-5, 0.15, 0]} rotation={[0, Math.PI / 2, 0]}> <boxGeometry args={[15, 0.3, 0.1]} /> <meshStandardMaterial color={trimColor} /> </mesh>
             <mesh position={[5, 0.15, 0]} rotation={[0, Math.PI / 2, 0]}> <boxGeometry args={[15, 0.3, 0.1]} /> <meshStandardMaterial color={trimColor} /> </mesh>
 
-            {/* Light */}
-            <pointLight position={[0, 8, -2]} intensity={0.8} />
+            {/* === 7. CEILING === */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 10, 0]} receiveShadow>
+                <planeGeometry args={[20, 20]} />
+                <meshStandardMaterial color="#FFFFFF" roughness={1} side={THREE.DoubleSide} />
+            </mesh>
+
+            {/* === 8. CEILING LIGHT FIXTURE === */}
+            <group position={[0, 9.8, -2]}>
+                {/* Light Fixture Base (Dome) */}
+                <mesh castShadow>
+                    <sphereGeometry args={[0.4, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+                    <meshStandardMaterial color="#FFFFFF" roughness={0.3} />
+                </mesh>
+                {/* Light Fixture Rim */}
+                <mesh position={[0, 0, 0]}>
+                    <cylinderGeometry args={[0.4, 0.4, 0.05, 24]} />
+                    <meshStandardMaterial color="#CFD8DC" metalness={0.8} roughness={0.2} />
+                </mesh>
+                {/* Warm Kitchen Dome Light */}
+                <pointLight position={[0, -0.3, 0]} intensity={0.8} color="#FFF9C4" />
+            </group>
+
+            {/* Additional Ambient Lights */}
+            <pointLight position={[0, 8, -2]} intensity={0.5} />
             <pointLight position={[-3, 6, 0]} intensity={0.3} />
         </group>
     );
