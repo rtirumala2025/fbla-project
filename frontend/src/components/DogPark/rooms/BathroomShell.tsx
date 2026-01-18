@@ -7,12 +7,10 @@
 import React from 'react';
 
 export function BathroomShell() {
-    // Colors - ALL UNIFIED FOR SEAMLESS HORIZON
+    // Colors - INFINITY CYCLORAMA (All cyan = #E0F7FA)
+    const INFINITY_COLOR = "#E0F7FA"; // ONE color for everything
     const wallColor = "#FFFFFF";      // Pure white tile
-    const floorColor = "#B3E5FC";     // Distinct cyan tile
     const ceilingColor = "#FAFAFA";   // Off-white
-    const horizonColor = "#B3E5FC";   // SAME as floor - no visible edge
-    const skyColor = "#B3E5FC";       // SAME as floor - seamless blend
 
     // Room dimensions
     const roomWidth = 12;
@@ -22,22 +20,22 @@ export function BathroomShell() {
 
     return (
         <group>
-            {/* === BACKGROUND COLOR (Sky/Atmosphere) - Matches Floor === */}
-            <color attach="background" args={[skyColor]} />
+            {/* === BACKGROUND COLOR (Infinity) === */}
+            <color attach="background" args={[INFINITY_COLOR]} />
 
-            {/* === FOG (Softens distant edges into background) === */}
-            <fog attach="fog" args={[skyColor, 15, 35]} />
+            {/* === FOG (Hides the seam - tight range) === */}
+            <fog attach="fog" args={[INFINITY_COLOR, 5, 20]} />
 
-            {/* === INFINITE FOUNDATION (SAME color as floor) === */}
-            <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-                <planeGeometry args={[100, 100]} />
-                <meshStandardMaterial color={horizonColor} roughness={0.3} />
+            {/* === INFINITE FOUNDATION (Same color as sky) === */}
+            <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                <planeGeometry args={[200, 200]} />
+                <meshStandardMaterial color={INFINITY_COLOR} roughness={0.5} />
             </mesh>
 
-            {/* === FLOOR - Distinct Cyan Tile === */}
+            {/* === ROOM FLOOR (Same color for seamless blend) === */}
             <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[roomWidth, roomDepth]} />
-                <meshStandardMaterial color={floorColor} roughness={0.15} metalness={0.05} />
+                <meshStandardMaterial color={INFINITY_COLOR} roughness={0.15} metalness={0.05} />
             </mesh>
 
             {/* === BACK WALL - THICK SOLID === */}
