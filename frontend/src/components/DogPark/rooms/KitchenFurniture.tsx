@@ -576,32 +576,24 @@ export function KitchenFurniture({ hasFood = false }: KitchenFurnitureProps) {
                 </mesh>
                 {/* Food Mound (conditionally rendered based on hasFood prop) */}
                 {hasFood && (
-                    <group position={[0, 0.15, 0]}>
-                        {/* Kibble Pile - Brown spheres representing food */}
-                        <mesh position={[0, 0.12, 0]} castShadow>
-                            <sphereGeometry args={[0.3, 16, 16]} />
-                            <meshStandardMaterial color="#8D6E63" roughness={0.9} />
-                        </mesh>
-                        <mesh position={[0.22, 0.15, 0.15]} castShadow>
-                            <sphereGeometry args={[0.18, 12, 12]} />
-                            <meshStandardMaterial color="#6D4C41" roughness={0.85} />
-                        </mesh>
-                        <mesh position={[-0.18, 0.13, -0.15]} castShadow>
-                            <sphereGeometry args={[0.22, 12, 12]} />
-                            <meshStandardMaterial color="#795548" roughness={0.88} />
-                        </mesh>
-                        <mesh position={[0.15, 0.1, -0.25]} castShadow>
-                            <sphereGeometry args={[0.15, 10, 10]} />
-                            <meshStandardMaterial color="#A1887F" roughness={0.9} />
-                        </mesh>
-                        <mesh position={[-0.28, 0.11, 0.12]} castShadow>
-                            <sphereGeometry args={[0.17, 10, 10]} />
-                            <meshStandardMaterial color="#8D6E63" roughness={0.92} />
-                        </mesh>
-                        <mesh position={[0.3, 0.08, 0.06]} castShadow>
-                            <sphereGeometry args={[0.12, 8, 8]} />
-                            <meshStandardMaterial color="#5D4037" roughness={0.9} />
-                        </mesh>
+                    <group position={[0, 0.1, 0]}>
+                        {/* Realistic Kibble Cluster - 20 small spheres with varied colors */}
+                        {[...Array(20)].map((_, i) => {
+                            const angle = (i / 20) * Math.PI * 2 + Math.random() * 0.5;
+                            const radius = Math.random() * 0.5 + 0.1;
+                            const x = Math.cos(angle) * radius;
+                            const z = Math.sin(angle) * radius;
+                            const y = Math.random() * 0.15 + 0.05;
+                            const size = 0.06 + Math.random() * 0.04;
+                            const colors = ['#8D6E63', '#6D4C41', '#795548', '#5D4037', '#A1887F', '#4E342E'];
+                            const color = colors[i % colors.length];
+                            return (
+                                <mesh key={i} position={[x, y, z]} castShadow>
+                                    <sphereGeometry args={[size, 8, 8]} />
+                                    <meshStandardMaterial color={color} roughness={0.9} />
+                                </mesh>
+                            );
+                        })}
                     </group>
                 )}
             </group>

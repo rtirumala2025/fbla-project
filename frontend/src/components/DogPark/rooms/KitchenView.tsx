@@ -52,7 +52,25 @@ export function KitchenView({
             {/* Stage */}
             <div className="flex-1 relative min-h-0">
                 {/* 3D Canvas - fills entire stage */}
-                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="kitchen" hasFood={hasFood} />
+                <PetViewer3D petType={petType} breed={petBreed as any} interactive={true} currentRoom="kitchen" hasFood={hasFood} isEating={hasFood} />
+
+                {/* HUD: Hunger Bar - Top Right */}
+                <div className="absolute top-4 right-4 pointer-events-none">
+                    <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 min-w-[120px]">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Apple size={14} className="text-orange-400" />
+                            <span className="text-xs font-medium text-white/80">Hunger</span>
+                        </div>
+                        <div className="h-2 bg-black/40 rounded-full overflow-hidden">
+                            <motion.div
+                                className="h-full bg-gradient-to-r from-orange-500 to-yellow-400 rounded-full"
+                                initial={{ width: '40%' }}
+                                animate={{ width: hasFood ? '100%' : '40%' }}
+                                transition={{ duration: 0.5 }}
+                            />
+                        </div>
+                    </div>
+                </div>
 
                 {/* Floating UI overlays */}
                 <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-end pb-8">

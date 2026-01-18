@@ -6,7 +6,7 @@
  */
 
 import React, { Suspense, useMemo, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, SpotLight, PerspectiveCamera, Text } from '@react-three/drei';
 // import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -29,6 +29,7 @@ interface PetViewer3DProps {
     onSwitchRoom?: (room: any) => void;
     isSleeping?: boolean;
     hasFood?: boolean;
+    isEating?: boolean; // Triggers head bob munching animation
 }
 
 // Create a static idle state for the viewer (no movement)
@@ -49,6 +50,26 @@ function createIdleState(breed: PetBreed): PetGame2State {
     };
 }
 
+// Eating Animation Wrapper - applies head bob when eating
+function EatingAnimationWrapper({ isEating, children }: { isEating: boolean; children: React.ReactNode }) {
+    const groupRef = useRef<THREE.Group>(null);
+
+    useFrame(() => {
+        if (groupRef.current && isEating) {
+            // Procedural head bob: tilt down and bob
+            const t = Date.now() / 200;
+            groupRef.current.rotation.x = Math.sin(t) * 0.15 + 0.2; // Tilt head down + bob
+            groupRef.current.position.y = Math.sin(t * 1.5) * 0.05; // Small vertical bob
+        } else if (groupRef.current) {
+            // Reset when not eating
+            groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.1);
+            groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, 0, 0.1);
+        }
+    });
+
+    return <group ref={groupRef}>{children}</group>;
+}
+
 // Wrapper that renders the pet model in viewer mode
 function PetModelViewer({
     petType,
@@ -56,6 +77,7 @@ function PetModelViewer({
     accessories,
     isSleeping = false,
     hasFood = false,
+    isEating = false,
     currentRoom,
 }: {
     petType: PetGame2PetType;
@@ -63,6 +85,7 @@ function PetModelViewer({
     accessories: EquippedAccessory[];
     isSleeping?: boolean;
     hasFood?: boolean;
+    isEating?: boolean;
     currentRoom?: string;
 }) {
     const state = useMemo(() => createIdleState(breed), [breed]);
@@ -78,13 +101,13 @@ function PetModelViewer({
         // Bed Location: [0, 0, -2] (Centered), Height: 0.25 to stay on Cushion
         finalPos = [0, 0.25, 0];
     } else if (currentRoom === 'kitchen') {
-        // Kitchen: Behind the bowl (bowl is at z=2), facing camera
-        finalPos = [0, -0.05, 0.5];
+        // Kitchen: Close to bowl (bowl at z=2), dog at z=1.2 facing bowl
+        finalPos = hasFood ? [0, -0.05, 1.2] : [0, -0.05, 0.5];
     }
 
     // Rotations
     const sleepRot: [number, number, number] = [0, 0, Math.PI / 2];
-    const feedRot: [number, number, number] = [0, Math.PI, 0]; // Face camera (behind bowl)
+    const feedRot: [number, number, number] = [0, 0, 0]; // Face bowl (rotation 0 = +Z direction)
     const idleRot: [number, number, number] = [0, -Math.PI / 6, 0]; // Slight angle for charm
 
     // Zzz Text Component (Billboarded)
@@ -130,15 +153,17 @@ function PetModelViewer({
         default:
             return ( // Dog
                 <group scale={1.2} position={finalPos} rotation={getRotation()}>
-                    <DogModel
-                        state={state}
-                        onPetTap={noopFn}
-                        targetRef={targetRef}
-                        isMovingRef={isMovingRef}
-                        rotationRef={rotationRef}
-                        accessories={accessories}
-                        disableSnapping={true}
-                    />
+                    <EatingAnimationWrapper isEating={isEating}>
+                        <DogModel
+                            state={state}
+                            onPetTap={noopFn}
+                            targetRef={targetRef}
+                            isMovingRef={isMovingRef}
+                            rotationRef={rotationRef}
+                            accessories={accessories}
+                            disableSnapping={true}
+                        />
+                    </EatingAnimationWrapper>
                     <ZzzOverlay />
                 </group>
             );
@@ -155,6 +180,7 @@ export const PetViewer3D = React.memo(function PetViewer3D({
     onSwitchRoom,
     isSleeping = false,
     hasFood = false,
+    isEating = false,
 }: PetViewer3DProps) {
     // If size is provided, use fixed dimensions; otherwise fill parent
     const containerStyle: React.CSSProperties = size
@@ -236,6 +262,7 @@ export const PetViewer3D = React.memo(function PetViewer3D({
                         accessories={accessories}
                         isSleeping={isSleeping}
                         hasFood={hasFood}
+                        isEating={isEating}
                         currentRoom={currentRoom}
                     />
 
