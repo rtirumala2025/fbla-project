@@ -158,12 +158,39 @@ export const ACTIONS = {
     },
 
     // === SPECIAL (Premium Recovery) ===
-    VET_VISIT: {
-        name: 'Visit the Vet',
+    VET_CHECKUP: {
+        name: 'General Checkup',
         cost: 50,
-        effects: { health: +50 },  // Buffed from +30
+        effects: { health: +15 },
         room: 'clinic',
     },
+    VET_MEDICINE: {
+        name: 'Medicine',
+        cost: 120,
+        effects: { health: +50 },
+        room: 'clinic',
+    },
+    VET_SURGERY: {
+        name: 'Emergency Surgery',
+        cost: 500,
+        effects: { health: +100 },
+        room: 'clinic',
+    },
+
+    // === INCOME (Chores) ===
+    CHORE_DISHES: {
+        name: 'Wash Dishes',
+        cost: -15, // Income: +15 coins
+        effects: { energy: -10 },
+        room: 'kitchen',
+    },
+    CHORE_YARD: {
+        name: 'Clean Yard',
+        cost: -25, // Income: +25 coins
+        effects: { energy: -20 },
+        room: 'kitchen',
+    },
+
     SPA_DAY: {
         name: 'Spa Day',
         cost: 20,
