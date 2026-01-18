@@ -4,7 +4,7 @@ import { supabase, isSupabaseMock, withTimeout, withRetry } from '../lib/supabas
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/networkUtils';
-import { DECAY_RATES, ACTIONS, clampStat, applyAction, ActionType } from '../config/gameConfig';
+import { DECAY_RATES, ACTIONS, clampStat, applyAction, ActionType, OFFLINE_CONFIG } from '../config/gameConfig';
 
 interface PetContextType {
   pet: Pet | null;
@@ -288,21 +288,32 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const processStatDecay = useCallback(async () => {
     if (!pet || !userId || !supabase) return;
     const lastUpdate = pet.lastStatUpdate || pet.updatedAt || new Date();
-    const elapsedMinutes = (new Date().getTime() - lastUpdate.getTime()) / 60000;
-    if (elapsedMinutes < 1) return;
+    const actualMinutesPassed = (new Date().getTime() - lastUpdate.getTime()) / 60000;
+    if (actualMinutesPassed < 1) return;
 
-    logger.debug('Decaying stats', { elapsedMinutes });
-    // Use DECAY_RATES from gameConfig
+    // CASUAL-FRIENDLY: Cap offline decay at 12 hours max
+    const effectiveMinutes = Math.min(actualMinutesPassed, OFFLINE_CONFIG.maxDecayMinutes);
+    const hoursAway = actualMinutesPassed / 60;
+
+    logger.debug('Decaying stats (casual mode)', { actualMinutesPassed, effectiveMinutes, hoursAway });
+
+    // Use DECAY_RATES from gameConfig (reduced for casual play)
     const updates: Partial<PetStats> = {
-      hunger: clampStat((pet.stats.hunger || 0) + Math.floor(elapsedMinutes * DECAY_RATES.hunger)),
-      energy: clampStat((pet.stats.energy || 0) - Math.floor(elapsedMinutes * DECAY_RATES.energy)),
-      happiness: clampStat((pet.stats.happiness || 0) - Math.floor(elapsedMinutes * DECAY_RATES.happiness)),
-      cleanliness: clampStat((pet.stats.cleanliness || 0) - Math.floor(elapsedMinutes * DECAY_RATES.cleanliness)),
+      hunger: clampStat((pet.stats.hunger || 0) + Math.floor(effectiveMinutes * DECAY_RATES.hunger)),
+      energy: clampStat((pet.stats.energy || 0) - Math.floor(effectiveMinutes * DECAY_RATES.energy)),
+      happiness: clampStat((pet.stats.happiness || 0) - Math.floor(effectiveMinutes * DECAY_RATES.happiness)),
+      cleanliness: clampStat((pet.stats.cleanliness || 0) - Math.floor(effectiveMinutes * DECAY_RATES.cleanliness)),
     };
+
+    // DAILY BONUS: "Well Rested" happiness boost for returning after 8+ hours
+    if (hoursAway >= OFFLINE_CONFIG.wellRestedThresholdHours) {
+      updates.happiness = clampStat((updates.happiness || pet.stats.happiness || 0) + OFFLINE_CONFIG.wellRestedBonus);
+      console.log(`🐕 ${OFFLINE_CONFIG.welcomeMessage} (+${OFFLINE_CONFIG.wellRestedBonus} happiness)`);
+    }
 
     // Health penalty when hunger >= 95 or energy <= 5
     if (pet.stats.hunger >= 95 || pet.stats.energy <= 5) {
-      updates.health = clampStat((pet.stats.health || 0) - Math.floor(elapsedMinutes * DECAY_RATES.healthPenalty));
+      updates.health = clampStat((pet.stats.health || 0) - Math.floor(effectiveMinutes * DECAY_RATES.healthPenalty));
     }
 
     // Only update if there are actual changes

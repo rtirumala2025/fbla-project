@@ -1,24 +1,41 @@
 /**
  * gameConfig.ts - Pet Simulation Engine Rulebook
  * 
- * This file centralizes all game balance numbers.
- * No "magic numbers" should exist in components - everything comes from here.
+ * REBALANCED FOR CASUAL PLAY (30 min/day target)
+ * - Offline decay capped at 12 hours max
+ * - Reduced passive decay rates
+ * - Buffed action rewards for quick recovery
+ * - Daily login bonus for returning players
  */
 
 // ============================================================
-// STAT DECAY RATES (per minute)
+// OFFLINE DECAY SETTINGS (The Safety Net)
+// ============================================================
+export const OFFLINE_CONFIG = {
+    /** Maximum minutes of decay to apply (12 hours = 720 min) */
+    maxDecayMinutes: 720,
+    /** Minimum hours away to trigger "Well Rested" bonus */
+    wellRestedThresholdHours: 8,
+    /** Happiness bonus for returning after 8+ hours */
+    wellRestedBonus: 20,
+    /** Welcome back message */
+    welcomeMessage: "Welcome back! Your pet missed you. 🐕",
+} as const;
+
+// ============================================================
+// STAT DECAY RATES (per minute) - CASUAL FRIENDLY
 // ============================================================
 export const DECAY_RATES = {
     /** Hunger increases by this amount per minute (pet gets hungrier) */
-    hunger: 0.2,
+    hunger: 0.08,  // ~58 points in 12 hours (was 0.2)
     /** Energy decreases by this amount per minute */
-    energy: 0.2,
+    energy: 0.08,  // ~58 points in 12 hours (was 0.2)
     /** Happiness decreases by this amount per minute */
-    happiness: 0.1,
+    happiness: 0.05, // ~36 points in 12 hours (was 0.1)
     /** Cleanliness decreases by this amount per minute */
-    cleanliness: 0.06,
+    cleanliness: 0.05, // ~36 points in 12 hours (was 0.06)
     /** Health decay rate when hunger >= 95 or energy <= 5 */
-    healthPenalty: 0.033,
+    healthPenalty: 0.02, // Slower health drain (was 0.033)
 } as const;
 
 // ============================================================
@@ -30,127 +47,127 @@ export const STAT_BOUNDS = {
 } as const;
 
 // ============================================================
-// ACTION EFFECTS
+// ACTION EFFECTS - BUFFED FOR QUICK RECOVERY
 // Each action can affect multiple stats (positive = increase, negative = decrease)
 // ============================================================
 export type ActionType = keyof typeof ACTIONS;
 
 export const ACTIONS = {
-    // === FEEDING ===
+    // === FEEDING (Buffed: 3 meals = full recovery) ===
     EAT_APPLE: {
         name: 'Eat Apple',
         cost: 0,
-        effects: { hunger: -15, health: +5 },
+        effects: { hunger: -20, health: +5, happiness: +5 },
         room: 'kitchen',
     },
     EAT_KIBBLE: {
         name: 'Eat Kibble',
         cost: 0,
-        effects: { hunger: -25, health: +10 },
+        effects: { hunger: -35, health: +10 },
         room: 'kitchen',
     },
     EAT_TREAT: {
         name: 'Eat Treat',
         cost: 0,
-        effects: { hunger: -10, happiness: +15 },
+        effects: { hunger: -15, happiness: +20 },
         room: 'kitchen',
     },
     EAT_GOURMET: {
         name: 'Eat Gourmet Meal',
         cost: 0,
-        effects: { hunger: -50, happiness: +20, health: +10 },
+        effects: { hunger: -60, happiness: +25, health: +15 },
         room: 'kitchen',
     },
     DRINK_WATER: {
         name: 'Drink Water',
         cost: 0,
-        effects: { hunger: -5, health: +5 },
+        effects: { hunger: -10, health: +10 },
         room: 'kitchen',
     },
 
-    // === RESTING ===
+    // === RESTING (Buffed: Power Naps for busy players) ===
     SLEEP: {
-        name: 'Sleep',
+        name: 'Full Sleep',
         cost: 0,
-        effects: { energy: +100, hunger: +10 },
+        effects: { energy: +100, hunger: +15 },
         room: 'bedroom',
     },
     NAP: {
-        name: 'Take a Nap',
+        name: 'Power Nap',
         cost: 0,
-        effects: { energy: +30, hunger: +5 },
+        effects: { energy: +40, hunger: +5 },  // Buffed from +30
         room: 'bedroom',
     },
     REST: {
         name: 'Rest',
         cost: 0,
-        effects: { energy: +50, hunger: +5 },
+        effects: { energy: +60, hunger: +5 },  // Buffed from +50
         room: 'bedroom',
     },
 
-    // === PLAY & EXERCISE ===
+    // === PLAY & EXERCISE (High Risk/Reward) ===
     PLAY: {
         name: 'Play',
         cost: 0,
-        effects: { happiness: +30, energy: -20 },
+        effects: { happiness: +35, energy: -15 },  // Buffed happiness, reduced energy cost
         room: 'living',
     },
     WALK: {
         name: 'Go for a Walk',
         cost: 0,
-        effects: { happiness: +25, energy: -15, hunger: +10 },
+        effects: { happiness: +30, energy: -20, hunger: +10 },
         room: 'outdoors',
     },
     GYM_WORKOUT: {
         name: 'Gym Workout',
         cost: 0,
-        effects: { happiness: +20, energy: -30, cleanliness: -15 },
+        effects: { happiness: +35, energy: -40, cleanliness: -20 },  // High risk/reward
         room: 'gym',
     },
     FETCH: {
         name: 'Play Fetch',
         cost: 0,
-        effects: { happiness: +35, energy: -25 },
+        effects: { happiness: +40, energy: -25 },
         room: 'outdoors',
     },
 
-    // === HYGIENE ===
+    // === HYGIENE (Buffed: 2 showers = full) ===
     BATHE: {
         name: 'Take a Bath',
         cost: 3,
-        effects: { cleanliness: +50 },
+        effects: { cleanliness: +60, happiness: +10 },  // Buffed from +50
         room: 'bathroom',
     },
     SHOWER: {
         name: 'Quick Shower',
         cost: 0,
-        effects: { cleanliness: +30 },
+        effects: { cleanliness: +50 },  // Buffed from +30
         room: 'bathroom',
     },
     GROOM: {
         name: 'Grooming Session',
         cost: 5,
-        effects: { cleanliness: +40, happiness: +10 },
+        effects: { cleanliness: +45, happiness: +15 },  // Buffed
         room: 'bathroom',
     },
     BRUSH_TEETH: {
         name: 'Brush Teeth',
         cost: 0,
-        effects: { cleanliness: +10, health: +5 },
+        effects: { cleanliness: +15, health: +5 },
         room: 'bathroom',
     },
 
-    // === SPECIAL ===
+    // === SPECIAL (Premium Recovery) ===
     VET_VISIT: {
         name: 'Visit the Vet',
         cost: 50,
-        effects: { health: +30 },
+        effects: { health: +50 },  // Buffed from +30
         room: 'clinic',
     },
     SPA_DAY: {
         name: 'Spa Day',
         cost: 20,
-        effects: { cleanliness: +50, happiness: +30, energy: +20 },
+        effects: { cleanliness: +60, happiness: +40, energy: +30 },  // Buffed
         room: 'spa',
     },
 } as const;
