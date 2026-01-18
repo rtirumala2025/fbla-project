@@ -18,9 +18,9 @@ export function BathroomFurniture() {
     return (
         <group>
             {/* ============================================================ */}
-            {/* === HERO BATHTUB (Pushed to Back Wall) === */}
+            {/* === HERO BATHTUB (Center of Back Wall) === */}
             {/* ============================================================ */}
-            <group position={[0, 0, -4]}>
+            <group position={[2, 0, -4.5]}>
                 {/* === TUB PLINTH (White Ceramic Base touching floor) === */}
                 <mesh position={[0, 0.05, 0]} scale={[1, 1, 0.7]} castShadow receiveShadow>
                     <cylinderGeometry args={[2.2, 2.2, 0.1, 32]} />
@@ -104,9 +104,9 @@ export function BathroomFurniture() {
             </group>
 
             {/* ============================================================ */}
-            {/* === VANITY STATION (Snapped to Left Wall - x=-8.75) === */}
+            {/* === VANITY STATION (Back Wall - Left of Tub) === */}
             {/* ============================================================ */}
-            <group position={[-7.2, 0, -3]}>
+            <group position={[-4.0, 0, -5]}>
                 {/* === CHROME SUPPORT LEGS (Front corners to floor) === */}
                 <mesh position={[-0.7, 0.8, 0.3]} castShadow>
                     <cylinderGeometry args={[0.04, 0.04, 1.6, 12]} />
@@ -167,8 +167,8 @@ export function BathroomFurniture() {
                     <meshStandardMaterial color={chromeColor} roughness={0.05} metalness={0.95} />
                 </mesh>
 
-                {/* Large Round Mirror (Mounted on Left Wall Surface) */}
-                <group position={[0.5, 4.2, -0.1]} rotation={[0, 0, 0]}>
+                {/* Large Round Mirror (Mounted on Back Wall) */}
+                <group position={[0, 4.2, -0.4]}>
                     {/* Mirror Frame */}
                     <mesh>
                         <torusGeometry args={[0.9, 0.05, 16, 32]} />
