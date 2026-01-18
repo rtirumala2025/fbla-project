@@ -7,6 +7,7 @@
 
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { BedroomFurniture } from './BedroomFurniture';
 import { KitchenFurniture } from './KitchenFurniture';
@@ -67,6 +68,15 @@ export function RoomStage({ currentActivity, isSleeping, hasFood = false, foodTy
                 <group>
                     <BathroomShell />
                     <BathroomFurniture />
+                    {/* Contact Shadows for realistic grounding */}
+                    <ContactShadows
+                        position={[0, 0.01, 0]}
+                        opacity={0.4}
+                        scale={25}
+                        blur={2.5}
+                        far={10}
+                        color="#4A90A4"
+                    />
                 </group>
             )}
 

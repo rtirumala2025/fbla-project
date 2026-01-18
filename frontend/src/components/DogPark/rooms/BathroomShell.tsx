@@ -7,12 +7,12 @@
 import React from 'react';
 
 export function BathroomShell() {
-    // Colors
+    // Colors - ALL UNIFIED FOR SEAMLESS HORIZON
     const wallColor = "#FFFFFF";      // Pure white tile
     const floorColor = "#B3E5FC";     // Distinct cyan tile
     const ceilingColor = "#FAFAFA";   // Off-white
-    const worldBaseColor = "#E8E8E8"; // Soft grey ground beneath
-    const skyColor = "#E0F7FA";       // Matches floor for seamless horizon
+    const horizonColor = "#B3E5FC";   // SAME as floor - no visible edge
+    const skyColor = "#B3E5FC";       // SAME as floor - seamless blend
 
     // Room dimensions
     const roomWidth = 12;
@@ -22,16 +22,16 @@ export function BathroomShell() {
 
     return (
         <group>
-            {/* === BACKGROUND COLOR (Sky/Atmosphere) === */}
+            {/* === BACKGROUND COLOR (Sky/Atmosphere) - Matches Floor === */}
             <color attach="background" args={[skyColor]} />
 
             {/* === FOG (Softens distant edges into background) === */}
             <fog attach="fog" args={[skyColor, 15, 35]} />
 
-            {/* === INFINITE FOUNDATION (World Base) === */}
-            <mesh position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            {/* === INFINITE FOUNDATION (SAME color as floor) === */}
+            <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[100, 100]} />
-                <meshStandardMaterial color={worldBaseColor} roughness={1} />
+                <meshStandardMaterial color={horizonColor} roughness={0.3} />
             </mesh>
 
             {/* === FLOOR - Distinct Cyan Tile === */}

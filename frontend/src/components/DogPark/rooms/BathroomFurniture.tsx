@@ -21,10 +21,10 @@ export function BathroomFurniture() {
             {/* === HERO BATHTUB (Pushed to Back Wall) === */}
             {/* ============================================================ */}
             <group position={[0, 0, -4]}>
-                {/* === TUB PLINTH (Chrome Base touching floor) === */}
+                {/* === TUB PLINTH (White Ceramic Base touching floor) === */}
                 <mesh position={[0, 0.05, 0]} scale={[1, 1, 0.7]} castShadow receiveShadow>
                     <cylinderGeometry args={[2.2, 2.2, 0.1, 32]} />
-                    <meshStandardMaterial color="#757575" roughness={0.3} metalness={0.6} />
+                    <meshStandardMaterial color="#FAFAFA" roughness={0.15} metalness={0.05} />
                 </mesh>
 
                 {/* Outer Tub Shell - Flattened cylinder for oval shape */}
@@ -107,6 +107,16 @@ export function BathroomFurniture() {
             {/* === VANITY STATION (Snapped to Left Wall) === */}
             {/* ============================================================ */}
             <group position={[-5.2, 0, -2]}>
+                {/* === CHROME SUPPORT LEGS (Front corners to floor) === */}
+                <mesh position={[-0.7, 0.8, 0.3]} castShadow>
+                    <cylinderGeometry args={[0.04, 0.04, 1.6, 12]} />
+                    <meshStandardMaterial color={chromeColor} roughness={0.1} metalness={0.9} />
+                </mesh>
+                <mesh position={[0.7, 0.8, 0.3]} castShadow>
+                    <cylinderGeometry args={[0.04, 0.04, 1.6, 12]} />
+                    <meshStandardMaterial color={chromeColor} roughness={0.1} metalness={0.9} />
+                </mesh>
+
                 {/* === VANITY PEDESTAL (Floor-Standing Base) === */}
                 <mesh position={[0, 0.8, 0]} castShadow receiveShadow>
                     <boxGeometry args={[1.6, 1.6, 0.7]} />
