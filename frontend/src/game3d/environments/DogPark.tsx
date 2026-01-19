@@ -17,6 +17,7 @@ import { NavigationGuide } from '../ui/NavigationGuide';
 import type { PetGame2State, ActivityZone } from '../core/SceneManager';
 import { ACTIVITY_POSITIONS } from '../core/SceneManager';
 import { InstancedNature } from './InstancedNature';
+import { setTreeColliders } from '../core/CollisionSystem';
 
 // --- DATA & TYPES ---
 
@@ -205,6 +206,14 @@ const DogParkStatic = React.memo(({ onSignClick }: DogParkStaticProps) => {
 
     return { trees, bushes, groundScatter };
   }, []);
+
+  // CRITICAL: Wire up tree collision system
+  useEffect(() => {
+    if (scenery.trees.length > 0) {
+      console.log('🌲 TREE COLLISION: Registering', scenery.trees.length, 'trees for collision detection');
+      setTreeColliders(scenery.trees);
+    }
+  }, [scenery.trees]);
 
   const { scene } = useThree();
 
