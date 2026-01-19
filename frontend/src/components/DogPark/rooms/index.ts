@@ -6,6 +6,7 @@ export { LivingRoom } from './LivingRoom';
 export { KitchenView } from './KitchenView';
 export { BathroomView } from './BathroomView';
 export { ClosetView } from './ClosetView';
+export { AwardsRoom } from './AwardsRoom';
 export { PetViewer3D } from './PetViewer3D';
 export { RoomStage } from './RoomStage';
 export { BedroomFurniture } from './BedroomFurniture';

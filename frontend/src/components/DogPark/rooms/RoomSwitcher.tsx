@@ -4,9 +4,9 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bed, UtensilsCrossed, Bath, Shirt } from 'lucide-react';
+import { Bed, UtensilsCrossed, Bath, Shirt, Trophy } from 'lucide-react';
 
-export type RoomType = 'living' | 'kitchen' | 'bathroom' | 'closet';
+export type RoomType = 'living' | 'kitchen' | 'bathroom' | 'closet' | 'awards';
 
 interface RoomConfig {
     id: RoomType;
@@ -20,6 +20,7 @@ const ROOMS: RoomConfig[] = [
     { id: 'kitchen', label: 'Kitchen', icon: <UtensilsCrossed size={20} />, emoji: '🍽️' },
     { id: 'bathroom', label: 'Bathroom', icon: <Bath size={20} />, emoji: '🛁' },
     { id: 'closet', label: 'Closet', icon: <Shirt size={20} />, emoji: '👕' },
+    { id: 'awards', label: 'Awards', icon: <Trophy size={20} />, emoji: '🏆' },
 ];
 
 interface RoomSwitcherProps {

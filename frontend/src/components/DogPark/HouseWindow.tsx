@@ -21,7 +21,8 @@ import {
     LivingRoom,
     KitchenView,
     BathroomView,
-    ClosetView
+    ClosetView,
+    AwardsRoom
 } from './rooms';
 
 interface HouseWindowProps {
@@ -335,6 +336,10 @@ export function HouseWindow({
                             equippedLoadout={equippedLoadout}
                             onToggleEquip={toggleEquip}
                         />
+                    )}
+
+                    {activeRoom === 'awards' && (
+                        <AwardsRoom key="awards" />
                     )}
                 </AnimatePresence>
             </div>
