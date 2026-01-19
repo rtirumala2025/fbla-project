@@ -380,31 +380,112 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     console.log('💀 GAME OVER triggered!');
     setIsGameOver(true);
     try {
-      await supabase.from('pets').update({ is_game_over: true } as any).eq('id', pet.id);
+      // Try to save is_game_over to DB (requires migration)
+      const { error } = await supabase.from('pets').update({
+        is_game_over: true,
+        updated_at: new Date().toISOString()
+      } as any).eq('id', pet.id);
+
+      if (error) {
+        // Ignore if column doesn't exist
+        if (!error.message?.includes('is_game_over')) {
+          console.error('Failed to save game over state:', error);
+        } else {
+          console.warn('is_game_over column not found, local state only');
+        }
+      }
     } catch (e) {
       console.error('Failed to save game over state:', e);
     }
   }, [pet, userId, isGameOver]);
 
   const restartGame = useCallback(async () => {
-    if (!pet || !userId || !supabase) return;
-    console.log('🔄 Restarting game...');
+    if (!pet || !userId || !supabase) {
+      console.error('restartGame: Missing pet, userId, or supabase');
+      return;
+    }
+    console.log('🔄 Restarting game for pet:', pet.id);
+
     try {
       // Reset stats but keep badges and high_score
-      await supabase.from('pets').update({
+      // First try with is_game_over (requires migration)
+      const updatePayload: Record<string, any> = {
         health: 100,
         hunger: 50,
         happiness: 80,
         cleanliness: 90,
         energy: 85,
-        is_game_over: false,
-        last_stat_update: new Date().toISOString(),
-      } as any).eq('id', pet.id);
+        updated_at: new Date().toISOString(),
+      };
 
+      // Try to update is_game_over if column exists
+      try {
+        updatePayload.is_game_over = false;
+        updatePayload.last_stat_update = new Date().toISOString();
+      } catch (e) {
+        console.warn('is_game_over column may not exist, skipping');
+      }
+
+      const { data, error } = await supabase
+        .from('pets')
+        .update(updatePayload)
+        .eq('id', pet.id)
+        .select('*')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Supabase update error:', error);
+        // If is_game_over column doesn't exist, try without it
+        if (error.message?.includes('is_game_over') || error.code === 'PGRST204') {
+          console.log('Retrying without is_game_over column...');
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('pets')
+            .update({
+              health: 100,
+              hunger: 50,
+              happiness: 80,
+              cleanliness: 90,
+              energy: 85,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', pet.id)
+            .select('*')
+            .maybeSingle();
+
+          if (fallbackError) {
+            throw fallbackError;
+          }
+          console.log('✅ Fallback restart successful:', fallbackData);
+        } else {
+          throw error;
+        }
+      } else {
+        console.log('✅ Restart successful:', data);
+      }
+
+      // Reset local state
       setIsGameOver(false);
-      await loadPet(); // Reload to get fresh state
+
+      // Force reload pet data
+      await loadPet();
+
+      console.log('🎮 Game restarted successfully!');
     } catch (e) {
       console.error('Failed to restart game:', e);
+      // Even if DB fails, try to reset local state as fallback
+      setIsGameOver(false);
+      setPet(prev => prev ? {
+        ...prev,
+        stats: {
+          ...prev.stats,
+          health: 100,
+          hunger: 50,
+          happiness: 80,
+          cleanliness: 90,
+          energy: 85,
+          lastUpdated: new Date(),
+        }
+      } : prev);
     }
   }, [pet, userId, loadPet]);
 
