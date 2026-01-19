@@ -46,8 +46,8 @@ export function AwardsRoom() {
                 </p>
             </div>
 
-            {/* Badge Grid */}
-            <div className="flex-1 overflow-y-auto p-10 space-y-12">
+            {/* Badge Grid - Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-10 pb-48 space-y-12 [&::-webkit-scrollbar]:hidden scrollbar-hide">
                 {categories.map(category => {
                     const categoryBadges = BADGES.filter(b => b.category === category);
                     return (
@@ -113,9 +113,9 @@ function BadgeCard({ badge, isUnlocked }: BadgeCardProps) {
         <motion.div
             whileHover={{ scale: 1.05, y: -5 }}
             transition={{ type: "spring", stiffness: 300 }}
-            className={`relative p-8 rounded-3xl border backdrop-blur-xl transition-all duration-300 overflow-hidden group ${isUnlocked
-                    ? 'bg-white/10 border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(34,211,238,0.2)]'
-                    : 'bg-black/40 border-white/5 opacity-60'
+            className={`relative p-8 rounded-3xl border backdrop-blur-xl transition-all duration-300 overflow-hidden group min-h-[200px] ${isUnlocked
+                ? 'bg-white/10 border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(34,211,238,0.2)]'
+                : 'bg-black/40 border-white/5 opacity-70'
                 }`}
         >
             {/* Background Glow for Unlocked */}
@@ -126,8 +126,8 @@ function BadgeCard({ badge, isUnlocked }: BadgeCardProps) {
             {/* Badge Icon Container */}
             <div className="relative text-center mb-6">
                 <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center transition-all duration-700 ${isUnlocked
-                        ? 'bg-gradient-to-br from-white/10 to-white/5 shadow-[inset_0_2px_10px_rgba(255,255,255,0.1)]'
-                        : 'bg-black/60 shadow-inner'
+                    ? 'bg-gradient-to-br from-white/10 to-white/5 shadow-[inset_0_2px_10px_rgba(255,255,255,0.1)]'
+                    : 'bg-black/60 shadow-inner'
                     }`}>
                     <span className={`text-5xl drop-shadow-2xl transition-all duration-500 ${isUnlocked ? 'scale-110' : 'grayscale opacity-20'
                         }`}>
@@ -144,7 +144,7 @@ function BadgeCard({ badge, isUnlocked }: BadgeCardProps) {
                 <div className="flex justify-center mb-3">
                     <div className={`h-1 w-8 rounded-full transition-colors ${isUnlocked ? 'bg-cyan-400' : 'bg-slate-800'}`} />
                 </div>
-                <p className={`text-sm font-medium leading-relaxed ${isUnlocked ? 'text-slate-300' : 'text-slate-600'}`}>
+                <p className={`text-sm font-medium leading-relaxed ${isUnlocked ? 'text-slate-300' : 'text-slate-400'}`}>
                     {isUnlocked ? badge.description : 'Unlock this milestone to reveal its secret.'}
                 </p>
             </div>
