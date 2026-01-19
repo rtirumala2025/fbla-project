@@ -28,30 +28,37 @@ export function AwardsRoom() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-amber-900/20 to-slate-900"
+            className="flex-1 flex flex-col overflow-hidden bg-[radial-gradient(circle_at_center,_#2E1065_0%,_#111827_100%)]"
         >
             {/* Header */}
-            <div className="p-6 text-center border-b border-amber-500/20">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                    <Trophy size={32} className="text-amber-400" />
-                    <h1 className="text-3xl font-bold text-white">Hall of Fame</h1>
-                    <Trophy size={32} className="text-amber-400" />
-                </div>
-                <p className="text-amber-200/70">
-                    {unlockedBadges.length} of {BADGES.length} badges unlocked
+            <div className="p-8 text-center border-b border-white/10 bg-black/20 backdrop-blur-sm">
+                <motion.div
+                    initial={{ y: -20 }}
+                    animate={{ y: 0 }}
+                    className="flex items-center justify-center gap-4 mb-3"
+                >
+                    <Trophy size={40} className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]" />
+                    <h1 className="text-5xl font-black text-white tracking-tight uppercase">Hall of Fame</h1>
+                    <Trophy size={40} className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]" />
+                </motion.div>
+                <p className="text-slate-400 text-lg font-medium">
+                    Track your milestones and legacy. <span className="text-yellow-400/80 ml-2">{unlockedBadges.length}/{BADGES.length} Unlocked</span>
                 </p>
             </div>
 
             {/* Badge Grid */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            <div className="flex-1 overflow-y-auto p-10 space-y-12">
                 {categories.map(category => {
                     const categoryBadges = BADGES.filter(b => b.category === category);
                     return (
                         <div key={category}>
-                            <h2 className="text-xl font-bold text-amber-300 mb-4 flex items-center gap-2">
-                                {categoryLabels[category]}
-                            </h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div className="flex items-center gap-4 mb-8">
+                                <h2 className="text-2xl font-black text-white uppercase tracking-widest whitespace-nowrap">
+                                    {categoryLabels[category]}
+                                </h2>
+                                <div className="h-px flex-1 bg-gradient-to-r from-white/20 to-transparent" />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                                 {categoryBadges.map(badge => {
                                     const isUnlocked = unlockedBadges.includes(badge.id);
                                     return (
@@ -69,19 +76,25 @@ export function AwardsRoom() {
             </div>
 
             {/* Decorative Trophy Case at bottom */}
-            <div className="h-32 bg-gradient-to-t from-amber-900/40 to-transparent border-t border-amber-500/20 flex items-center justify-center gap-8">
+            <div className="h-40 bg-black/40 backdrop-blur-md border-t border-white/10 flex items-center justify-center gap-10 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
                 {[...Array(5)].map((_, i) => (
                     <motion.div
                         key={i}
-                        initial={{ y: 10, opacity: 0 }}
+                        initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: i * 0.1 }}
-                        className="w-16 h-16 bg-amber-500/20 rounded-lg border border-amber-400/30 flex items-center justify-center"
+                        className="w-20 h-20 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center shadow-inner group overflow-hidden relative"
                     >
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         {unlockedBadges[i] ? (
-                            <span className="text-3xl">{getBadgeById(unlockedBadges[i])?.icon || '🏆'}</span>
+                            <motion.span
+                                whileHover={{ rotate: [0, -10, 10, 0], scale: 1.2 }}
+                                className="text-4xl drop-shadow-lg cursor-default"
+                            >
+                                {getBadgeById(unlockedBadges[i])?.icon || '🏆'}
+                            </motion.span>
                         ) : (
-                            <Lock size={24} className="text-amber-400/40" />
+                            <Lock size={30} className="text-white/10" />
                         )}
                     </motion.div>
                 ))}
@@ -98,45 +111,56 @@ interface BadgeCardProps {
 function BadgeCard({ badge, isUnlocked }: BadgeCardProps) {
     return (
         <motion.div
-            whileHover={{ scale: 1.02 }}
-            className={`relative p-4 rounded-xl border transition-all ${isUnlocked
-                    ? 'bg-amber-500/20 border-amber-400/50 shadow-lg shadow-amber-500/10'
-                    : 'bg-slate-800/50 border-slate-700/50 opacity-60'
+            whileHover={{ scale: 1.05, y: -5 }}
+            transition={{ type: "spring", stiffness: 300 }}
+            className={`relative p-8 rounded-3xl border backdrop-blur-xl transition-all duration-300 overflow-hidden group ${isUnlocked
+                    ? 'bg-white/10 border-white/20 shadow-[0_20px_40px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(34,211,238,0.2)]'
+                    : 'bg-black/40 border-white/5 opacity-60'
                 }`}
         >
-            {/* Badge Icon */}
-            <div className="text-center mb-3">
-                <span className={`text-4xl ${!isUnlocked && 'grayscale opacity-50'}`}>
-                    {isUnlocked ? badge.icon : '❓'}
-                </span>
+            {/* Background Glow for Unlocked */}
+            {isUnlocked && (
+                <div className="absolute -inset-1 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
+
+            {/* Badge Icon Container */}
+            <div className="relative text-center mb-6">
+                <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center transition-all duration-700 ${isUnlocked
+                        ? 'bg-gradient-to-br from-white/10 to-white/5 shadow-[inset_0_2px_10px_rgba(255,255,255,0.1)]'
+                        : 'bg-black/60 shadow-inner'
+                    }`}>
+                    <span className={`text-5xl drop-shadow-2xl transition-all duration-500 ${isUnlocked ? 'scale-110' : 'grayscale opacity-20'
+                        }`}>
+                        {isUnlocked ? badge.icon : <Lock size={32} className="text-white/20" />}
+                    </span>
+                </div>
             </div>
 
             {/* Badge Info */}
-            <div className="text-center">
-                <h3 className={`font-bold ${isUnlocked ? 'text-white' : 'text-slate-500'}`}>
-                    {isUnlocked ? badge.name : '???'}
+            <div className="relative text-center">
+                <h3 className={`text-xl font-black tracking-tight mb-2 ${isUnlocked ? 'text-white' : 'text-slate-500'}`}>
+                    {isUnlocked ? badge.name : 'Secret Achievement'}
                 </h3>
-                <p className={`text-xs mt-1 ${isUnlocked ? 'text-amber-200/70' : 'text-slate-600'}`}>
-                    {isUnlocked ? badge.description : 'Keep playing to unlock!'}
+                <div className="flex justify-center mb-3">
+                    <div className={`h-1 w-8 rounded-full transition-colors ${isUnlocked ? 'bg-cyan-400' : 'bg-slate-800'}`} />
+                </div>
+                <p className={`text-sm font-medium leading-relaxed ${isUnlocked ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {isUnlocked ? badge.description : 'Unlock this milestone to reveal its secret.'}
                 </p>
             </div>
 
-            {/* Lock overlay for locked badges */}
+            {/* Locked Visual Decoration */}
             {!isUnlocked && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <Lock size={20} className="text-slate-500" />
+                <div className="absolute top-4 right-4 opacity-5">
+                    <Lock size={60} />
                 </div>
             )}
 
-            {/* Unlocked indicator */}
+            {/* Unlocked Glow Effect */}
             {isUnlocked && (
-                <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
-                >
-                    <Star size={14} className="text-white" />
-                </motion.div>
+                <div className="absolute top-0 right-0 p-4">
+                    <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_15px_#22d3ee]" />
+                </div>
             )}
         </motion.div>
     );
