@@ -58,6 +58,15 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const [badges, setBadges] = useState<string[]>([]);
   const [lastLogin, setLastLogin] = useState<Date | null>(null);
   const [badgeToast, setBadgeToast] = useState<string | null>(null);
+  // Lifetime stats for persistent achievement tracking
+  const [lifetimeStats, setLifetimeStats] = useState<{
+    total_washes: number;
+    total_earnings: number;
+    total_spent: number;
+    days_survived: number;
+    food_eaten: number;
+    play_sessions: number;
+  }>({ total_washes: 0, total_earnings: 0, total_spent: 0, days_survived: 0, food_eaten: 0, play_sessions: 0 });
   // Action counters for achievements (tracked locally, can extend to DB)
   const actionCountsRef = useRef({ baths: 0, meals: 0, plays: 0, coinsEarned: 0, coinsSpent: 0 });
   const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -197,24 +206,39 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
     await statAction(action.name, newStats, action.cost);
 
-    // Track action counts for achievements
+    // Update lifetime stats and persist to Supabase
+    const updatedLifetime = { ...lifetimeStats };
     if (actionType.includes('SHOWER') || actionType.includes('BATHE') || actionType.includes('GROOM')) {
+      updatedLifetime.total_washes++;
       actionCountsRef.current.baths++;
     }
     if (actionType.includes('EAT') || actionType.includes('DRINK') || actionType.includes('FEED')) {
+      updatedLifetime.food_eaten++;
       actionCountsRef.current.meals++;
     }
     if (actionType.includes('PLAY') || actionType.includes('FETCH') || actionType.includes('WALK')) {
+      updatedLifetime.play_sessions++;
       actionCountsRef.current.plays++;
     }
     if (action.cost < 0) {
+      updatedLifetime.total_earnings += Math.abs(action.cost);
       actionCountsRef.current.coinsEarned += Math.abs(action.cost);
     } else if (action.cost > 0) {
+      updatedLifetime.total_spent += action.cost;
       actionCountsRef.current.coinsSpent += action.cost;
     }
 
-    // Check for new achievements
-    await checkAchievements();
+    // Persist lifetime stats to Supabase
+    setLifetimeStats(updatedLifetime);
+    try {
+      await supabase.from('pets').update({ lifetime_stats: updatedLifetime } as any).eq('id', pet.id);
+      console.log('📊 Lifetime stats updated:', updatedLifetime);
+    } catch (e) {
+      console.warn('Failed to persist lifetime stats:', e);
+    }
+
+    // Check for new achievements with updated lifetime stats
+    await checkAchievementsWithLifetime(updatedLifetime);
   }, [pet, userId, statAction]);
 
   const increaseStat = useCallback(async (stat: keyof PetStats, amount: number) => {
@@ -314,6 +338,9 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         setIsGameOver(data.is_game_over ?? false);
         setBadges(data.badges ?? []);
         setLastLogin(data.last_login ? new Date(data.last_login) : null);
+        // Load lifetime stats
+        const defaultLifetime = { total_washes: 0, total_earnings: 0, total_spent: 0, days_survived: 0, food_eaten: 0, play_sessions: 0 };
+        setLifetimeStats(data.lifetime_stats ? { ...defaultLifetime, ...data.lifetime_stats } : defaultLifetime);
       } else {
         setPet(null);
       }
@@ -531,6 +558,30 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       await unlockBadge(badge.id);
     }
   }, [pet, badges, unlockBadge]);
+
+  // Check achievements using persistent lifetime stats from Supabase
+  const checkAchievementsWithLifetime = useCallback(async (lifetime: typeof lifetimeStats) => {
+    if (!pet) return;
+
+    const stats: BadgeCheckStats = {
+      totalDaysAlive: lifetime.days_survived || pet.age || 0,
+      totalBaths: lifetime.total_washes,
+      totalMeals: lifetime.food_eaten,
+      totalPlaySessions: lifetime.play_sessions,
+      totalCoinsEarned: lifetime.total_earnings,
+      totalCoinsSpent: lifetime.total_spent,
+      currentHealth: pet.stats.health,
+      currentHappiness: pet.stats.happiness,
+      currentCleanliness: pet.stats.cleanliness,
+    };
+
+    console.log('🔍 Checking badges with lifetime stats:', stats);
+    const newlyUnlocked = checkNewBadges(badges, stats);
+    for (const badge of newlyUnlocked) {
+      console.log(`🏆 Unlocking badge: ${badge.name}`);
+      await unlockBadge(badge.id);
+    }
+  }, [pet, badges, unlockBadge, lifetimeStats]);
 
   useEffect(() => { loadPet(); }, [userId, loadPet]);
   useEffect(() => {
