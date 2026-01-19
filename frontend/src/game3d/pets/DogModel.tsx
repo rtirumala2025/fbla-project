@@ -140,10 +140,12 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
   const [isHovered, setIsHovered] = useState(false);
 
   // --- VISUAL REACTION STATE ---
-  const validStats = stats || { health: 100, happiness: 100, cleanliness: 100 };
+  const validStats = stats || { health: 100, happiness: 100, cleanliness: 100, energy: 100 };
   const isSick = validStats.health < 30 || validStats.happiness < 30;
   const isDirty = validStats.cleanliness < 40;
-  const isHappy = validStats.happiness > 80;
+  const isHappy = validStats.happiness > 80 && validStats.health > 50; // Only happy if also healthy
+  const isTired = (validStats.energy || 100) < 30; // NEW: Track tired state
+  const isSad = validStats.happiness < 30; // NEW: Track sad state
 
   // Helper for dynamic colors
   const getMoodColor = (baseColor: string) => {
@@ -808,41 +810,91 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
         />
       ))}
 
-      {/* DIRTY PARTICLES (Flies/Stink) */}
-      {
-        isDirty && (
-          <group position={[0, 0.5, 0]}>
-            {[...Array(5)].map((_, i) => (
-              <mesh key={i} position={[
-                Math.sin(Date.now() / 500 + i) * 0.4,
-                Math.cos(Date.now() / 400 + i) * 0.3,
-                Math.sin(Date.now() / 600 + i) * 0.4
-              ]}>
-                <sphereGeometry args={[0.02, 4, 4]} />
-                <meshBasicMaterial color="#4a7c20" transparent opacity={0.6} />
-              </mesh>
-            ))}
-          </group>
-        )
-      }
+      {/* === DYNAMIC EMOTION PARTICLES (Priority-based) === */}
 
-      {/* HAPPY PARTICLES (Sparkles) */}
-      {
-        isHappy && (
-          <group position={[0, 0.6, 0]}>
-            {[...Array(4)].map((_, i) => (
-              <mesh key={i} position={[
-                Math.sin(Date.now() / 300 + i * 2) * 0.5,
-                Math.abs(Math.sin(Date.now() / 400 + i)) * 0.5,
-                Math.cos(Date.now() / 300 + i * 2) * 0.5
-              ]}>
-                <octahedronGeometry args={[0.03, 0]} />
-                <meshBasicMaterial color="#fbbf24" />
-              </mesh>
-            ))}
-          </group>
-        )
-      }
+      {/* TIRED PARTICLES (Zzz) - Highest priority */}
+      {isTired && !isDirty && (
+        <group position={[0.3, 0.7, 0]}>
+          {[...Array(3)].map((_, i) => (
+            <mesh
+              key={`zzz-${i}`}
+              position={[
+                0.1 + i * 0.15,
+                0.2 + i * 0.2 + Math.sin(Date.now() / 800 + i) * 0.1,
+                0
+              ]}
+            >
+              <planeGeometry args={[0.12 + i * 0.05, 0.12 + i * 0.05]} />
+              <meshBasicMaterial color="#6366f1" transparent opacity={0.8 - i * 0.15} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* DIRTY PARTICLES (Stink Cloud) */}
+      {isDirty && (
+        <group position={[0, 0.5, 0]}>
+          {[...Array(6)].map((_, i) => (
+            <mesh key={`stink-${i}`} position={[
+              Math.sin(Date.now() / 500 + i) * 0.4,
+              Math.cos(Date.now() / 400 + i) * 0.3,
+              Math.sin(Date.now() / 600 + i) * 0.4
+            ]}>
+              <sphereGeometry args={[0.025, 6, 6]} />
+              <meshBasicMaterial color="#4ade80" transparent opacity={0.5} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* SAD PARTICLES (Rain Cloud) - Only if not tired or dirty */}
+      {isSad && !isTired && !isDirty && (
+        <group position={[0, 0.8, 0]}>
+          {/* Cloud */}
+          <mesh position={[0, 0.2, 0]}>
+            <sphereGeometry args={[0.15, 8, 8]} />
+            <meshBasicMaterial color="#64748b" transparent opacity={0.7} />
+          </mesh>
+          <mesh position={[0.12, 0.15, 0]}>
+            <sphereGeometry args={[0.1, 8, 8]} />
+            <meshBasicMaterial color="#64748b" transparent opacity={0.7} />
+          </mesh>
+          <mesh position={[-0.12, 0.15, 0]}>
+            <sphereGeometry args={[0.1, 8, 8]} />
+            <meshBasicMaterial color="#64748b" transparent opacity={0.7} />
+          </mesh>
+          {/* Rain drops */}
+          {[...Array(5)].map((_, i) => (
+            <mesh
+              key={`rain-${i}`}
+              position={[
+                -0.15 + i * 0.08,
+                -0.1 - (Date.now() / 200 + i * 0.5) % 0.5,
+                0
+              ]}
+            >
+              <capsuleGeometry args={[0.008, 0.04, 2, 4]} />
+              <meshBasicMaterial color="#60a5fa" transparent opacity={0.6} />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* HAPPY PARTICLES (Stars) - ONLY when happiness > 80 AND healthy */}
+      {isHappy && !isTired && !isDirty && !isSad && (
+        <group position={[0, 0.6, 0]}>
+          {[...Array(4)].map((_, i) => (
+            <mesh key={`star-${i}`} position={[
+              Math.sin(Date.now() / 300 + i * 2) * 0.5,
+              Math.abs(Math.sin(Date.now() / 400 + i)) * 0.5,
+              Math.cos(Date.now() / 300 + i * 2) * 0.5
+            ]}>
+              <octahedronGeometry args={[0.03, 0]} />
+              <meshBasicMaterial color="#fbbf24" />
+            </mesh>
+          ))}
+        </group>
+      )}
     </group >
   );
 }

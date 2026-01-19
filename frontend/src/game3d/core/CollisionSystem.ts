@@ -22,7 +22,7 @@ export const BUILDING_COLLIDERS: BuildingCollider[] = Object.entries(ACTIVITY_PO
         id: id as ActivityZone,
         centerX: pos[0],
         centerZ: pos[2],
-        radius: 7, // Building radius - buildings are roughly 10-14 units wide, using 7 for collision
+        radius: 9, // Increased from 7 for more reliable collision blocking
     })
 );
 
