@@ -1,13 +1,13 @@
 /**
  * AwardsRoom.tsx
  * 
- * Hall of Fame room displaying earned badges and achievements.
- * Soft App aesthetic with proper contrast (slate bg, white cards).
+ * Collector's Album / Sticker Book design for earned badges.
+ * Dark slate backdrop with white album, dashed borders for locked stickers.
  */
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Lock, Star } from 'lucide-react';
+import { Trophy, Lock, Sparkles } from 'lucide-react';
 import { BADGES, getBadgeById } from '@/config/Achievements';
 import { usePet } from '@/context/PetContext';
 
@@ -18,7 +18,7 @@ export function AwardsRoom() {
     const categories = ['care', 'wealth', 'survival', 'special'] as const;
     const categoryLabels = {
         survival: '🏕️ Survival',
-        care: '🧼 Care',
+        care: '🧼 Hygiene & Care',
         wealth: '💰 Wealth',
         special: '⭐ Special'
     };
@@ -28,134 +28,117 @@ export function AwardsRoom() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col overflow-hidden bg-slate-100"
+            className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900"
         >
             {/* Header */}
-            <div className="p-6 text-center border-b border-slate-200 bg-white shadow-sm">
+            <div className="p-5 text-center">
                 <motion.div
-                    initial={{ y: -20 }}
-                    animate={{ y: 0 }}
-                    className="flex items-center justify-center gap-3 mb-2"
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="flex items-center justify-center gap-3 mb-1"
                 >
-                    <Trophy size={32} className="text-yellow-500" />
-                    <h1 className="text-3xl font-bold text-slate-800">Hall of Fame</h1>
-                    <Trophy size={32} className="text-yellow-500" />
+                    <Sparkles size={28} className="text-yellow-400" />
+                    <h1 className="text-2xl font-bold text-white">Sticker Collection</h1>
+                    <Sparkles size={28} className="text-yellow-400" />
                 </motion.div>
-                <p className="text-slate-500 text-sm">
-                    Track your achievements and milestones.{' '}
-                    <span className="text-yellow-600 font-bold">
-                        {unlockedBadges.length}/{BADGES.length} Unlocked
+                <p className="text-slate-400 text-sm">
+                    Complete challenges to earn stickers!{' '}
+                    <span className="text-yellow-400 font-semibold">
+                        {unlockedBadges.length}/{BADGES.length}
                     </span>
                 </p>
             </div>
 
-            {/* Badge Grid - Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6 pb-32 space-y-8 [&::-webkit-scrollbar]:hidden scrollbar-hide">
-                {categories.map(category => {
-                    const categoryBadges = BADGES.filter(b => b.category === category);
-                    if (categoryBadges.length === 0) return null;
-                    return (
-                        <div key={category}>
-                            <div className="flex items-center gap-3 mb-4">
-                                <h2 className="text-lg font-bold text-slate-800 whitespace-nowrap">
-                                    {categoryLabels[category]}
-                                </h2>
-                                <div className="h-px flex-1 bg-slate-300" />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {categoryBadges.map(badge => {
-                                    const isUnlocked = unlockedBadges.includes(badge.id);
-                                    return (
-                                        <BadgeCard
-                                            key={badge.id}
-                                            badge={badge}
-                                            isUnlocked={isUnlocked}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Decorative Trophy Case at bottom */}
-            <div className="h-24 bg-white border-t border-slate-200 flex items-center justify-center gap-6 shadow-inner">
-                {[...Array(5)].map((_, i) => (
-                    <motion.div
-                        key={i}
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: i * 0.1 }}
-                        className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all ${unlockedBadges[i]
-                                ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md'
-                                : 'bg-slate-100 border border-slate-200'
-                            }`}
-                    >
-                        {unlockedBadges[i] ? (
-                            <motion.span
-                                whileHover={{ scale: 1.1 }}
-                                className="text-2xl cursor-default"
-                            >
-                                {getBadgeById(unlockedBadges[i])?.icon || '🏆'}
-                            </motion.span>
-                        ) : (
-                            <Lock size={18} className="text-slate-300" />
-                        )}
-                    </motion.div>
-                ))}
+            {/* The Album (White Card) */}
+            <div className="flex-1 mx-4 mb-4 overflow-hidden">
+                <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="h-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                >
+                    {/* Album Content - Scrollable */}
+                    <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-8 [&::-webkit-scrollbar]:hidden scrollbar-hide">
+                        {categories.map(category => {
+                            const categoryBadges = BADGES.filter(b => b.category === category);
+                            if (categoryBadges.length === 0) return null;
+                            return (
+                                <div key={category}>
+                                    <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">
+                                        {categoryLabels[category]}
+                                    </h2>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                        {categoryBadges.map(badge => {
+                                            const isUnlocked = unlockedBadges.includes(badge.id);
+                                            return (
+                                                <StickerSlot
+                                                    key={badge.id}
+                                                    badge={badge}
+                                                    isUnlocked={isUnlocked}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </motion.div>
             </div>
         </motion.div>
     );
 }
 
-interface BadgeCardProps {
+interface StickerSlotProps {
     badge: typeof BADGES[0];
     isUnlocked: boolean;
 }
 
-function BadgeCard({ badge, isUnlocked }: BadgeCardProps) {
+function StickerSlot({ badge, isUnlocked }: StickerSlotProps) {
     return (
         <motion.div
-            whileHover={{ scale: 1.02, y: -2 }}
+            whileHover={{ scale: isUnlocked ? 1.05 : 1.02 }}
             transition={{ type: "spring", stiffness: 400 }}
-            className={`relative p-5 rounded-xl transition-all duration-200 min-h-[140px] ${isUnlocked
-                    ? 'bg-white border-2 border-yellow-400 shadow-md'
-                    : 'bg-white border border-slate-200 shadow-sm opacity-70'
+            className={`relative aspect-square rounded-xl transition-all duration-200 flex flex-col items-center justify-center p-3 ${isUnlocked
+                    ? 'bg-gradient-to-br from-yellow-100 to-amber-50 border-4 border-yellow-400 shadow-lg'
+                    : 'bg-gray-100 border-4 border-dashed border-gray-300'
                 }`}
         >
-            {/* Badge Icon Container */}
-            <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isUnlocked
-                        ? 'bg-yellow-100'
-                        : 'bg-slate-100'
-                    }`}>
-                    {isUnlocked ? (
-                        <span className="text-2xl">{badge.icon}</span>
-                    ) : (
-                        <Lock size={20} className="text-slate-400" />
-                    )}
-                </div>
-
-                {/* Badge Info */}
-                <div className="flex-1 min-w-0">
-                    <h3 className={`text-base font-bold mb-1 ${isUnlocked ? 'text-slate-800' : 'text-slate-400'}`}>
-                        {badge.name}
-                    </h3>
-                    <p className={`text-sm leading-snug ${isUnlocked ? 'text-gray-500' : 'text-slate-300'}`}>
-                        {isUnlocked ? badge.description : '???'}
-                    </p>
-                </div>
+            {/* Icon */}
+            <div className={`text-5xl mb-2 transition-all ${isUnlocked ? '' : 'grayscale opacity-0'}`}>
+                {isUnlocked ? badge.icon : null}
             </div>
 
-            {/* Unlocked Star Indicator */}
+            {/* Lock icon for locked stickers */}
+            {!isUnlocked && (
+                <Lock size={36} className="text-gray-400 mb-2" />
+            )}
+
+            {/* Title */}
+            <p className={`text-xs font-bold text-center leading-tight ${isUnlocked ? 'text-slate-800' : 'text-gray-400'
+                }`}>
+                {isUnlocked ? badge.name : '???'}
+            </p>
+
+            {/* Description tooltip on hover for unlocked */}
             {isUnlocked && (
                 <motion.div
-                    initial={{ scale: 0, rotate: -30 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center shadow"
+                    initial={{ opacity: 0, y: 5 }}
+                    whileHover={{ opacity: 1, y: 0 }}
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-full bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg z-10 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100"
                 >
-                    <Star size={12} className="text-white fill-white" />
+                    {badge.description}
+                </motion.div>
+            )}
+
+            {/* Sparkle effect for unlocked */}
+            {isUnlocked && (
+                <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow"
+                >
+                    <Sparkles size={10} className="text-white" />
                 </motion.div>
             )}
         </motion.div>
