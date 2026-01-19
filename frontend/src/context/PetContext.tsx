@@ -13,7 +13,7 @@ interface PetContextType {
   play: () => Promise<void>;
   bathe: () => Promise<void>;
   rest: () => Promise<void>;
-  performAction: (actionType: ActionType) => Promise<void>; // NEW: Universal action dispatcher
+  performAction: (actionType: ActionType) => Promise<void>;
   increaseStat: (stat: keyof PetStats, amount: number) => Promise<void>;
   decreaseStat: (stat: keyof PetStats, amount: number) => Promise<void>;
   updateHighScore: (gameType: string, score: number, coins?: number) => Promise<void>;
@@ -24,6 +24,12 @@ interface PetContextType {
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
   createPet: (name: string, type: string, breed?: string) => Promise<void>;
   refreshPet: () => Promise<void>;
+  // Game Loop additions
+  isGameOver: boolean;
+  badges: string[];
+  lastLogin: Date | null;
+  triggerGameOver: () => Promise<void>;
+  restartGame: () => Promise<void>;
 }
 
 const PetContext = createContext<PetContextType | null>(null);
@@ -45,6 +51,9 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [badges, setBadges] = useState<string[]>([]);
+  const [lastLogin, setLastLogin] = useState<Date | null>(null);
   const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { refreshUserState } = useAuth();
 
@@ -276,6 +285,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
           },
         };
         setPet(loaded);
+        // Load game loop state
+        setIsGameOver(data.is_game_over ?? false);
+        setBadges(data.badges ?? []);
+        setLastLogin(data.last_login ? new Date(data.last_login) : null);
       } else {
         setPet(null);
       }
@@ -326,7 +339,49 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       await supabase.from('pets').update({ last_stat_update: new Date().toISOString() } as any).eq('id', pet.id);
       setPet(prev => prev ? { ...prev, lastStatUpdate: new Date() } : prev);
     }
+
+    // GAME OVER CHECK: If any critical stat hits 0
+    const currentHealth = updates.health ?? pet.stats.health;
+    const currentEnergy = updates.energy ?? pet.stats.energy;
+    if (currentHealth <= 0 || currentEnergy <= 0) {
+      await triggerGameOver();
+    }
   }, [pet, userId, updatePetStats]);
+
+  // -- 5. Game Over & Restart --
+
+  const triggerGameOver = useCallback(async () => {
+    if (!pet || !userId || !supabase || isGameOver) return;
+    console.log('💀 GAME OVER triggered!');
+    setIsGameOver(true);
+    try {
+      await supabase.from('pets').update({ is_game_over: true } as any).eq('id', pet.id);
+    } catch (e) {
+      console.error('Failed to save game over state:', e);
+    }
+  }, [pet, userId, isGameOver]);
+
+  const restartGame = useCallback(async () => {
+    if (!pet || !userId || !supabase) return;
+    console.log('🔄 Restarting game...');
+    try {
+      // Reset stats but keep badges and high_score
+      await supabase.from('pets').update({
+        health: 100,
+        hunger: 50,
+        happiness: 80,
+        cleanliness: 90,
+        energy: 85,
+        is_game_over: false,
+        last_stat_update: new Date().toISOString(),
+      } as any).eq('id', pet.id);
+
+      setIsGameOver(false);
+      await loadPet(); // Reload to get fresh state
+    } catch (e) {
+      console.error('Failed to restart game:', e);
+    }
+  }, [pet, userId, loadPet]);
 
   useEffect(() => { loadPet(); }, [userId, loadPet]);
   useEffect(() => {
@@ -377,14 +432,20 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
   const value = useMemo(() => ({
     pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest,
-    performAction, // NEW
+    performAction,
     increaseStat,
     decreaseStat,
     updateHighScore,
     getHighScore,
     createPet,
     refreshPet: loadPet,
-  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet]);
+    // Game Loop
+    isGameOver,
+    badges,
+    lastLogin,
+    triggerGameOver,
+    restartGame,
+  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame]);
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 };

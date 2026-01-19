@@ -21,6 +21,7 @@ import type { PetStats, PetActionResponse } from '@/types/pet';
 import type { ActivityZone } from '@/game3d/core/SceneManager';
 // HouseWindow is small, keep direct import. Lazy load heavy components (40KB+)
 import { HouseWindow } from '@/components/DogPark';
+import { GameOverModal } from '@/components/GameOverModal';
 
 // Lazy load heavy game window components for better initial load time
 const GiftShopWindow = React.lazy(() =>
@@ -48,7 +49,7 @@ const WindowLoadingFallback = () => (
 
 
 export const PetGame2Screen: React.FC = () => {
-  const { pet, loading, error, refreshPet, updatePetStats, performAction } = usePet();
+  const { pet, loading, error, refreshPet, updatePetStats, performAction, isGameOver, restartGame } = usePet();
   const { currentUser } = useAuth();
   const { balance, transactions, refreshBalance } = useFinancial();
 
@@ -727,6 +728,13 @@ export const PetGame2Screen: React.FC = () => {
           />
         </Suspense>
       )}
+
+      {/* GAME OVER MODAL - Blocks all interaction */}
+      <GameOverModal
+        isOpen={isGameOver}
+        petName={pet?.name || 'Your pet'}
+        onRestart={restartGame}
+      />
     </div>
   );
 };
