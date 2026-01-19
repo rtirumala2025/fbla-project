@@ -37,6 +37,15 @@ const VetGameWindow = React.lazy(() =>
 const AgilityGameWindow = React.lazy(() =>
   import('@/components/DogPark/AgilityGameWindow').then(m => ({ default: m.AgilityGameWindow }))
 );
+const PetRunGameWindow = React.lazy(() =>
+  import('@/components/DogPark/PetRunGameWindow').then(m => ({ default: m.PetRunGameWindow }))
+);
+const QuestBoardModal = React.lazy(() =>
+  import('@/components/DogPark/QuestBoardModal').then(m => ({ default: m.QuestBoardModal }))
+);
+const PowerNapModal = React.lazy(() =>
+  import('@/components/DogPark/PowerNapModal').then(m => ({ default: m.PowerNapModal }))
+);
 
 // Loading fallback for lazy loaded components
 const WindowLoadingFallback = () => (
@@ -765,6 +774,64 @@ export const PetGame2Screen: React.FC = () => {
                 }
               }
             }}
+          />
+        </Suspense>
+      )}
+
+      {/* Pet Run Mini-Game - Play Zone */}
+      {openBuilding === 'play' && (
+        <Suspense fallback={<WindowLoadingFallback />}>
+          <PetRunGameWindow
+            isOpen={true}
+            onClose={() => setOpenBuilding(null)}
+            onGameComplete={async (score, coinsEarned) => {
+              if (coinsEarned > 0 && currentUser?.uid) {
+                try {
+                  await shopService.addCoins(
+                    currentUser.uid,
+                    coinsEarned,
+                    `Pet Run Reward (Score: ${score})`
+                  );
+                  setBalanceChange({ amount: coinsEarned, isPositive: true });
+                  setTimeout(() => setBalanceChange(null), 2000);
+                  await refreshBalance();
+                  if (rewardTimer.current) clearTimeout(rewardTimer.current);
+                  setRewardToast({
+                    id: Date.now().toString(),
+                    message: 'Pet Run Complete!',
+                    amount: coinsEarned,
+                  });
+                  rewardTimer.current = setTimeout(() => setRewardToast(null), 3000);
+                } catch (error) {
+                  console.error('Failed to award coins:', error);
+                }
+              }
+              // Also boost happiness
+              if (stats) {
+                const newHappiness = Math.min(100, (stats.happiness ?? 0) + 10);
+                setStats(prev => prev ? { ...prev, happiness: newHappiness } : prev);
+              }
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Quest Board - Center Zone */}
+      {openBuilding === 'center' && (
+        <Suspense fallback={<WindowLoadingFallback />}>
+          <QuestBoardModal
+            isOpen={true}
+            onClose={() => setOpenBuilding(null)}
+          />
+        </Suspense>
+      )}
+
+      {/* Power Nap - Rest Zone */}
+      {openBuilding === 'rest' && (
+        <Suspense fallback={<WindowLoadingFallback />}>
+          <PowerNapModal
+            isOpen={true}
+            onClose={() => setOpenBuilding(null)}
           />
         </Suspense>
       )}
