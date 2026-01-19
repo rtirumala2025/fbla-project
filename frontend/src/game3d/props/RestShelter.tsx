@@ -23,6 +23,17 @@ export function RestShelter(props: any & { onSignClick?: () => void }) {
 
     return (
         <group {...props}>
+            {/* ========== INVISIBLE CLICKABLE HITBOX (ENTIRE BUILDING) ========== */}
+            <mesh
+                position={[0, 2.5, 0]}
+                onClick={(e) => { e.stopPropagation(); props.onSignClick?.(); }}
+                onPointerEnter={() => { setIsHovered(true); document.body.style.cursor = 'pointer'; }}
+                onPointerLeave={() => { setIsHovered(false); document.body.style.cursor = 'auto'; }}
+            >
+                <boxGeometry args={[12, 6, 9]} />
+                <meshBasicMaterial visible={false} />
+            </mesh>
+
             {/* ========== STONE PLINTH FOUNDATION ========== */}
             <Box args={[11, 0.6, 8]} position={[0, 0.3, 0]} castShadow receiveShadow>
                 <meshStandardMaterial map={stoneTex} color="#a1887f" />

@@ -28,6 +28,17 @@ export function ParkHubBuilding(props: any & { onSignClick?: () => void }) {
 
     return (
         <group {...props}>
+            {/* ========== INVISIBLE CLICKABLE HITBOX (ENTIRE BUILDING) ========== */}
+            <mesh
+                position={[0, 3, 0]}
+                onClick={(e) => { e.stopPropagation(); props.onSignClick?.(); }}
+                onPointerEnter={() => { setIsHovered(true); document.body.style.cursor = 'pointer'; }}
+                onPointerLeave={() => { setIsHovered(false); document.body.style.cursor = 'auto'; }}
+            >
+                <boxGeometry args={[14, 7, 14]} />
+                <meshBasicMaterial visible={false} />
+            </mesh>
+
             {/* ========== FOUNDATION PLAZA DECK ========== */}
             {/* Elevated stone platform to ground the building */}
             <Box args={[12, 0.5, 12]} position={[0, 0.25, 0.5]} castShadow receiveShadow>

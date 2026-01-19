@@ -75,6 +75,16 @@ export const PetGame2Screen: React.FC = () => {
       .reduce((sum, t) => sum + t.amount, 0);
   }, [lifetimeStats?.total_spent, transactions]);
 
+  // DEBUG: Log lifetime stats to diagnose $0 issue
+  useEffect(() => {
+    console.log('💰 LIFETIME STATS DEBUG:', {
+      lifetimeStats,
+      total_spent_from_context: lifetimeStats?.total_spent,
+      calculated_totalSpent: totalSpent,
+      transactions_count: transactions.length,
+    });
+  }, [lifetimeStats, totalSpent, transactions]);
+
   // Balance change tracking for visual feedback
   const [balanceChange, setBalanceChange] = useState<{ amount: number; isPositive: boolean } | null>(null);
   const {

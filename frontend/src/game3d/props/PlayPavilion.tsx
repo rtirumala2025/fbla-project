@@ -10,6 +10,17 @@ export function PlayPavilion(props: any & { onSignClick?: () => void }) {
 
     return (
         <group {...props}>
+            {/* ========== INVISIBLE CLICKABLE HITBOX (ENTIRE BUILDING) ========== */}
+            <mesh
+                position={[0, 3, 0]}
+                onClick={(e) => { e.stopPropagation(); props.onSignClick?.(); }}
+                onPointerEnter={() => { setIsHovered(true); document.body.style.cursor = 'pointer'; }}
+                onPointerLeave={() => { setIsHovered(false); document.body.style.cursor = 'auto'; }}
+            >
+                <cylinderGeometry args={[7, 7, 7, 16]} />
+                <meshBasicMaterial visible={false} />
+            </mesh>
+
             {/* ========== SOFT RUBBER FLOOR ========== */}
             <Cylinder args={[6, 6, 0.4, 32]} position={[0, 0.2, 0]} receiveShadow>
                 <meshStandardMaterial color={floorColor} roughness={0.9} />
