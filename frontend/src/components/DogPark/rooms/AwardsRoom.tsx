@@ -2,12 +2,12 @@
  * AwardsRoom.tsx
  * 
  * Collector's Album / Sticker Book design for earned badges.
- * Dark slate backdrop with white album, dashed borders for locked stickers.
+ * Square slots with revealed titles, dashed borders for locked.
  */
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Lock, Sparkles } from 'lucide-react';
+import { Sparkles, Lock } from 'lucide-react';
 import { BADGES, getBadgeById } from '@/config/Achievements';
 import { usePet } from '@/context/PetContext';
 
@@ -67,7 +67,7 @@ export function AwardsRoom() {
                                     <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">
                                         {categoryLabels[category]}
                                     </h2>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                         {categoryBadges.map(badge => {
                                             const isUnlocked = unlockedBadges.includes(badge.id);
                                             return (
@@ -97,41 +97,42 @@ interface StickerSlotProps {
 function StickerSlot({ badge, isUnlocked }: StickerSlotProps) {
     return (
         <motion.div
+            initial={isUnlocked ? { scale: 0.5, opacity: 0 } : {}}
+            animate={isUnlocked ? { scale: 1, opacity: 1 } : {}}
             whileHover={{ scale: isUnlocked ? 1.05 : 1.02 }}
-            transition={{ type: "spring", stiffness: 400 }}
-            className={`relative aspect-square rounded-xl transition-all duration-200 flex flex-col items-center justify-center p-3 ${isUnlocked
-                    ? 'bg-gradient-to-br from-yellow-100 to-amber-50 border-4 border-yellow-400 shadow-lg'
-                    : 'bg-gray-100 border-4 border-dashed border-gray-300'
+            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            className={`relative aspect-square rounded-xl flex flex-col items-center justify-center p-2 transition-all ${isUnlocked
+                    ? 'bg-gradient-to-br from-yellow-50 to-amber-100 border-4 border-yellow-400 shadow-lg'
+                    : 'bg-slate-100 border-4 border-dashed border-slate-300 shadow-inner'
                 }`}
         >
             {/* Icon */}
-            <div className={`text-5xl mb-2 transition-all ${isUnlocked ? '' : 'grayscale opacity-0'}`}>
-                {isUnlocked ? badge.icon : null}
-            </div>
-
-            {/* Lock icon for locked stickers */}
-            {!isUnlocked && (
-                <Lock size={36} className="text-gray-400 mb-2" />
+            {isUnlocked ? (
+                <motion.span
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", delay: 0.1 }}
+                    className="text-5xl mb-1"
+                >
+                    {badge.icon}
+                </motion.span>
+            ) : (
+                <span className="text-3xl mb-1 opacity-50">🔒</span>
             )}
 
-            {/* Title */}
-            <p className={`text-xs font-bold text-center leading-tight ${isUnlocked ? 'text-slate-800' : 'text-gray-400'
+            {/* Title - ALWAYS VISIBLE */}
+            <p className={`text-xs font-bold text-center leading-tight ${isUnlocked ? 'text-slate-800' : 'text-slate-400'
                 }`}>
-                {isUnlocked ? badge.name : '???'}
+                {badge.name}
             </p>
 
-            {/* Description tooltip on hover for unlocked */}
-            {isUnlocked && (
-                <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    whileHover={{ opacity: 1, y: 0 }}
-                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-full bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg z-10 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100"
-                >
-                    {badge.description}
-                </motion.div>
-            )}
+            {/* Description / Hint */}
+            <p className={`text-[10px] text-center leading-tight mt-0.5 ${isUnlocked ? 'text-slate-500' : 'text-slate-300'
+                }`}>
+                {isUnlocked ? badge.description : '???'}
+            </p>
 
-            {/* Sparkle effect for unlocked */}
+            {/* Sparkle indicator for unlocked */}
             {isUnlocked && (
                 <motion.div
                     initial={{ scale: 0 }}

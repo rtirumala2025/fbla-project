@@ -206,8 +206,13 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
     await statAction(action.name, newStats, action.cost);
 
-    // Update lifetime stats and persist to Supabase
-    const updatedLifetime = { ...lifetimeStats };
+    // Update lifetime stats and persist to Supabase (null-safe)
+    const defaultLifetime = { total_washes: 0, total_earnings: 0, total_spent: 0, days_survived: 0, food_eaten: 0, play_sessions: 0 };
+    const safeLifetime = { ...defaultLifetime, ...lifetimeStats };
+    const updatedLifetime = { ...safeLifetime };
+
+    console.log('🎮 Action:', actionType, '| Before:', safeLifetime);
+
     if (actionType.includes('SHOWER') || actionType.includes('BATHE') || actionType.includes('GROOM')) {
       updatedLifetime.total_washes++;
       actionCountsRef.current.baths++;
