@@ -24,100 +24,117 @@ export interface BadgeCheckStats {
     currentHealth: number;
     currentHappiness: number;
     currentCleanliness: number;
+    currentBalance?: number; // Wallet balance for wealth checks
 }
 
 export const BADGES: Badge[] = [
-    // === SURVIVAL BADGES ===
-    {
-        id: 'SURVIVOR_1',
-        name: 'First Day Survivor',
-        description: 'Survived your first day!',
-        icon: '🥉',
-        category: 'survival',
-        condition: (s) => s.totalDaysAlive >= 1,
-    },
-    {
-        id: 'SURVIVOR_7',
-        name: 'Week Warrior',
-        description: 'Survived 7 days!',
-        icon: '🥈',
-        category: 'survival',
-        condition: (s) => s.totalDaysAlive >= 7,
-    },
-    {
-        id: 'SURVIVOR_30',
-        name: 'Monthly Master',
-        description: 'Survived 30 days!',
-        icon: '🥇',
-        category: 'survival',
-        condition: (s) => s.totalDaysAlive >= 30,
-    },
-
     // === CARE BADGES ===
     {
-        id: 'CLEAN_FREAK',
-        name: 'Clean Freak',
-        description: 'Washed your pet 10 times!',
+        id: 'clean_1',
+        name: 'Squeaky Clean',
+        description: 'Wash Duke 1 time',
         icon: '🧼',
+        category: 'care',
+        condition: (s) => s.totalBaths >= 1,
+    },
+    {
+        id: 'clean_10',
+        name: 'Spa Manager',
+        description: 'Wash Duke 10 times',
+        icon: '🛁',
         category: 'care',
         condition: (s) => s.totalBaths >= 10,
     },
     {
-        id: 'FOODIE',
-        name: 'Foodie',
-        description: 'Fed your pet 25 times!',
+        id: 'feeder_5',
+        name: 'Chef',
+        description: 'Feed Duke 5 times',
         icon: '🍖',
+        category: 'care',
+        condition: (s) => s.totalMeals >= 5,
+    },
+    {
+        id: 'feeder_25',
+        name: 'Master Chef',
+        description: 'Feed Duke 25 times',
+        icon: '👨‍🍳',
         category: 'care',
         condition: (s) => s.totalMeals >= 25,
     },
     {
-        id: 'PLAYFUL',
+        id: 'playful_10',
         name: 'Playful Spirit',
-        description: 'Played with your pet 20 times!',
+        description: 'Play with Duke 10 times',
         icon: '🎾',
         category: 'care',
-        condition: (s) => s.totalPlaySessions >= 20,
-    },
-    {
-        id: 'HAPPY_PET',
-        name: 'Happy Pet',
-        description: 'Keep happiness above 90%!',
-        icon: '😊',
-        category: 'care',
-        condition: (s) => s.currentHappiness >= 90,
+        condition: (s) => s.totalPlaySessions >= 10,
     },
 
     // === WEALTH BADGES ===
     {
-        id: 'FIRST_HUNDRED',
-        name: 'First Hundred',
-        description: 'Earned $100 coins!',
+        id: 'rich_500',
+        name: 'Pocket Change',
+        description: 'Have $500 in wallet',
         icon: '💰',
         category: 'wealth',
-        condition: (s) => s.totalCoinsEarned >= 100,
+        condition: (s) => (s.currentBalance ?? 0) >= 500,
     },
     {
-        id: 'MILLIONAIRE',
+        id: 'rich_1000',
         name: 'Millionaire',
-        description: 'Earned $1,000 coins!',
+        description: 'Have $1,000 in wallet',
         icon: '💎',
         category: 'wealth',
-        condition: (s) => s.totalCoinsEarned >= 1000,
+        condition: (s) => (s.currentBalance ?? 0) >= 1000,
     },
     {
-        id: 'BIG_SPENDER',
+        id: 'spender_500',
         name: 'Big Spender',
-        description: 'Spent $500 on your pet!',
+        description: 'Spend $500 on your pet',
         icon: '🛍️',
         category: 'wealth',
         condition: (s) => s.totalCoinsSpent >= 500,
     },
 
+    // === SURVIVAL BADGES ===
+    {
+        id: 'survivor_1',
+        name: 'Survivor',
+        description: 'Keep stats > 0 for 24 hours',
+        icon: '🏕️',
+        category: 'survival',
+        condition: (s) => s.totalDaysAlive >= 1,
+    },
+    {
+        id: 'survivor_7',
+        name: 'Week Warrior',
+        description: 'Keep Duke alive for 7 days',
+        icon: '🥈',
+        category: 'survival',
+        condition: (s) => s.totalDaysAlive >= 7,
+    },
+    {
+        id: 'survivor_30',
+        name: 'Monthly Master',
+        description: 'Keep Duke alive for 30 days',
+        icon: '🥇',
+        category: 'survival',
+        condition: (s) => s.totalDaysAlive >= 30,
+    },
+
     // === SPECIAL BADGES ===
     {
-        id: 'PERFECT_DAY',
+        id: 'happy_pet',
+        name: 'Happy Pet',
+        description: 'Keep happiness above 90%',
+        icon: '😊',
+        category: 'special',
+        condition: (s) => s.currentHappiness >= 90,
+    },
+    {
+        id: 'perfect_day',
         name: 'Perfect Day',
-        description: 'All stats above 80% at once!',
+        description: 'All stats above 80% at once',
         icon: '⭐',
         category: 'special',
         condition: (s) => s.currentHealth >= 80 && s.currentHappiness >= 80 && s.currentCleanliness >= 80,
