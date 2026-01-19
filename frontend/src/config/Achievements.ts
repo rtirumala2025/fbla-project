@@ -1,8 +1,7 @@
 /**
  * Achievements.ts
  * 
- * Badge Registry for the Sticker Collection.
- * Each badge has an ID, name, description, icon, and unlock condition.
+ * Badge Registry with progress tracking, lore, and guides.
  */
 
 export interface Badge {
@@ -11,6 +10,10 @@ export interface Badge {
     description: string;
     icon: string;
     category: 'survival' | 'care' | 'wealth' | 'special';
+    target: number;
+    statKey: keyof BadgeCheckStats;
+    lore: string;
+    guide: string;
     condition: (stats: BadgeCheckStats) => boolean;
 }
 
@@ -35,6 +38,10 @@ export const BADGES: Badge[] = [
         description: 'Wash Duke 1 time',
         icon: '🧼',
         category: 'care',
+        target: 1,
+        statKey: 'totalBaths',
+        lore: 'Every bubble warrior starts somewhere. Duke\'s first bath is a milestone!',
+        guide: 'Go to the Bathroom and use the Bubble Bath button once.',
         condition: (s) => s.totalBaths >= 1,
     },
     {
@@ -43,6 +50,10 @@ export const BADGES: Badge[] = [
         description: 'Wash Duke 10 times',
         icon: '🛁',
         category: 'care',
+        target: 10,
+        statKey: 'totalBaths',
+        lore: 'Duke\'s fur glistens like a celebrity on the red carpet. Pure spa royalty!',
+        guide: 'Keep visiting the Bathroom and scrubbing Duke 10 times total.',
         condition: (s) => s.totalBaths >= 10,
     },
     {
@@ -51,6 +62,10 @@ export const BADGES: Badge[] = [
         description: 'Wash Duke 50 times',
         icon: '✨',
         category: 'care',
+        target: 50,
+        statKey: 'totalBaths',
+        lore: 'Duke sparkles so bright, satellites can see him from space!',
+        guide: 'Commit to 50 bath sessions. Duke will be legendary.',
         condition: (s) => s.totalBaths >= 50,
     },
 
@@ -61,6 +76,10 @@ export const BADGES: Badge[] = [
         description: 'Feed Duke 5 times',
         icon: '🥪',
         category: 'care',
+        target: 5,
+        statKey: 'totalMeals',
+        lore: 'A full belly means a happy pup. Duke appreciates the snacks!',
+        guide: 'Feed Duke any food 5 times from the Kitchen.',
         condition: (s) => s.totalMeals >= 5,
     },
     {
@@ -69,6 +88,10 @@ export const BADGES: Badge[] = [
         description: 'Feed Duke 10 times',
         icon: '🍗',
         category: 'care',
+        target: 10,
+        statKey: 'totalMeals',
+        lore: 'Duke\'s palate is refined. Only the finest kibble for this connoisseur!',
+        guide: 'Keep feeding Duke until you hit 10 meals.',
         condition: (s) => s.totalMeals >= 10,
     },
     {
@@ -77,6 +100,10 @@ export const BADGES: Badge[] = [
         description: 'Feed Duke 50 times',
         icon: '👨‍🍳',
         category: 'care',
+        target: 50,
+        statKey: 'totalMeals',
+        lore: 'Duke trusts you completely. You are the ultimate provider!',
+        guide: 'A journey of 50 meals. Dedication at its finest.',
         condition: (s) => s.totalMeals >= 50,
     },
 
@@ -87,6 +114,10 @@ export const BADGES: Badge[] = [
         description: 'Earn $100 total',
         icon: '🐖',
         category: 'wealth',
+        target: 100,
+        statKey: 'totalCoinsEarned',
+        lore: 'Your piggy bank is getting heavy. Smart saving!',
+        guide: 'Earn coins by completing chores or playing minigames.',
         condition: (s) => s.totalCoinsEarned >= 100,
     },
     {
@@ -95,6 +126,10 @@ export const BADGES: Badge[] = [
         description: 'Earn $500 total',
         icon: '💰',
         category: 'wealth',
+        target: 500,
+        statKey: 'totalCoinsEarned',
+        lore: 'Cha-ching! You\'re becoming a financial whiz!',
+        guide: 'Keep grinding those coins. $500 is within reach!',
         condition: (s) => s.totalCoinsEarned >= 500,
     },
     {
@@ -103,6 +138,10 @@ export const BADGES: Badge[] = [
         description: 'Earn $1,000 total',
         icon: '💎',
         category: 'wealth',
+        target: 1000,
+        statKey: 'totalCoinsEarned',
+        lore: 'You\'ve built an empire. Duke lives like royalty!',
+        guide: 'Accumulate $1,000 in total earnings. True wealth!',
         condition: (s) => s.totalCoinsEarned >= 1000,
     },
     {
@@ -111,6 +150,10 @@ export const BADGES: Badge[] = [
         description: 'Spend $500 on Duke',
         icon: '🛍️',
         category: 'wealth',
+        target: 500,
+        statKey: 'totalCoinsSpent',
+        lore: 'Duke is spoiled rotten - and he loves it!',
+        guide: 'Spend $500 total on food, items, or services.',
         condition: (s) => s.totalCoinsSpent >= 500,
     },
 
@@ -121,6 +164,10 @@ export const BADGES: Badge[] = [
         description: 'Survive 1 day',
         icon: '🌅',
         category: 'survival',
+        target: 1,
+        statKey: 'totalDaysAlive',
+        lore: 'The journey of a thousand days begins with the first sunrise.',
+        guide: 'Keep Duke\'s stats above zero for 24 hours.',
         condition: (s) => s.totalDaysAlive >= 1,
     },
     {
@@ -129,6 +176,10 @@ export const BADGES: Badge[] = [
         description: 'Survive 7 days',
         icon: '🏕️',
         category: 'survival',
+        target: 7,
+        statKey: 'totalDaysAlive',
+        lore: 'A full week of pet parenting! You\'re getting the hang of this.',
+        guide: 'Log in daily and care for Duke for one full week.',
         condition: (s) => s.totalDaysAlive >= 7,
     },
     {
@@ -137,6 +188,10 @@ export const BADGES: Badge[] = [
         description: 'Survive 30 days',
         icon: '🏆',
         category: 'survival',
+        target: 30,
+        statKey: 'totalDaysAlive',
+        lore: 'A month of love and care. Duke is family now.',
+        guide: 'Commit to 30 days of consistent care.',
         condition: (s) => s.totalDaysAlive >= 30,
     },
 
@@ -147,6 +202,10 @@ export const BADGES: Badge[] = [
         description: 'Reach 90% happiness',
         icon: '😊',
         category: 'special',
+        target: 90,
+        statKey: 'currentHappiness',
+        lore: 'Duke is radiating pure happiness! Look at that tail wag!',
+        guide: 'Boost happiness by playing and giving treats.',
         condition: (s) => s.currentHappiness >= 90,
     },
     {
@@ -155,6 +214,10 @@ export const BADGES: Badge[] = [
         description: 'All stats above 80%',
         icon: '⭐',
         category: 'special',
+        target: 80,
+        statKey: 'currentHealth',
+        lore: 'A day where everything clicked. Duke is thriving!',
+        guide: 'Get Health, Happiness, and Cleanliness all above 80% at once.',
         condition: (s) => s.currentHealth >= 80 && s.currentHappiness >= 80 && s.currentCleanliness >= 80,
     },
     {
@@ -163,6 +226,10 @@ export const BADGES: Badge[] = [
         description: 'Play 10 times',
         icon: '🎾',
         category: 'special',
+        target: 10,
+        statKey: 'totalPlaySessions',
+        lore: 'Duke\'s energy is boundless when you\'re around!',
+        guide: 'Visit the living room and play with Duke 10 times.',
         condition: (s) => s.totalPlaySessions >= 10,
     },
 ];
@@ -180,4 +247,10 @@ export function checkNewBadges(
     return BADGES.filter(badge =>
         !currentBadges.includes(badge.id) && badge.condition(stats)
     );
+}
+
+// Helper to get current progress for a badge
+export function getBadgeProgress(badge: Badge, stats: BadgeCheckStats): number {
+    const current = stats[badge.statKey] ?? 0;
+    return typeof current === 'number' ? current : 0;
 }

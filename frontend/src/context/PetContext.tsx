@@ -33,6 +33,15 @@ interface PetContextType {
   restartGame: () => Promise<void>;
   unlockBadge: (badgeId: string) => Promise<void>;
   badgeToast: string | null;
+  lifetimeStats: {
+    total_washes: number;
+    total_earnings: number;
+    total_spent: number;
+    days_survived: number;
+    food_eaten: number;
+    play_sessions: number;
+  };
+  showConfetti: boolean;
 }
 
 const PetContext = createContext<PetContextType | null>(null);
@@ -652,7 +661,9 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     restartGame,
     unlockBadge,
     badgeToast,
-  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame, unlockBadge, badgeToast]);
+    lifetimeStats,
+    showConfetti: !!badgeToast, // Show confetti when badge toast is active
+  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame, unlockBadge, badgeToast, lifetimeStats]);
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 };

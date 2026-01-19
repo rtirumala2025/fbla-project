@@ -1,18 +1,32 @@
 /**
  * AwardsRoom.tsx
  * 
- * Collector's Album / Sticker Book design for earned badges.
- * Square slots with revealed titles, dashed borders for locked.
+ * Collector's Album / Sticker Book with interactive modals and progress bars.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Lock } from 'lucide-react';
-import { BADGES, getBadgeById } from '@/config/Achievements';
+import { BADGES, Badge, getBadgeProgress, BadgeCheckStats } from '@/config/Achievements';
 import { usePet } from '@/context/PetContext';
+import { BadgeDetailsModal } from './BadgeDetailsModal';
 
 export function AwardsRoom() {
-    const { badges: unlockedBadges } = usePet();
+    const { badges: unlockedBadges, pet, lifetimeStats } = usePet();
+    const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+
+    // Build stats object using lifetimeStats from context
+    const stats: BadgeCheckStats = {
+        totalDaysAlive: lifetimeStats?.days_survived ?? pet?.age ?? 0,
+        totalBaths: lifetimeStats?.total_washes ?? 0,
+        totalMeals: lifetimeStats?.food_eaten ?? 0,
+        totalPlaySessions: lifetimeStats?.play_sessions ?? 0,
+        totalCoinsEarned: lifetimeStats?.total_earnings ?? 0,
+        totalCoinsSpent: lifetimeStats?.total_spent ?? 0,
+        currentHealth: pet?.stats.health ?? 0,
+        currentHappiness: pet?.stats.happiness ?? 0,
+        currentCleanliness: pet?.stats.cleanliness ?? 0,
+    };
 
     // Group badges by category
     const categories = ['care', 'wealth', 'survival', 'special'] as const;
@@ -42,7 +56,7 @@ export function AwardsRoom() {
                     <Sparkles size={28} className="text-yellow-400" />
                 </motion.div>
                 <p className="text-slate-400 text-sm">
-                    Complete challenges to earn stickers!{' '}
+                    Tap any sticker to learn more!{' '}
                     <span className="text-yellow-400 font-semibold">
                         {unlockedBadges.length}/{BADGES.length}
                     </span>
@@ -75,6 +89,8 @@ export function AwardsRoom() {
                                                     key={badge.id}
                                                     badge={badge}
                                                     isUnlocked={isUnlocked}
+                                                    stats={stats}
+                                                    onClick={() => setSelectedBadge(badge)}
                                                 />
                                             );
                                         })}
@@ -85,25 +101,42 @@ export function AwardsRoom() {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Badge Details Modal */}
+            {selectedBadge && (
+                <BadgeDetailsModal
+                    badge={selectedBadge}
+                    isUnlocked={unlockedBadges.includes(selectedBadge.id)}
+                    stats={stats}
+                    onClose={() => setSelectedBadge(null)}
+                />
+            )}
         </motion.div>
     );
 }
 
 interface StickerSlotProps {
-    badge: typeof BADGES[0];
+    badge: Badge;
     isUnlocked: boolean;
+    stats: BadgeCheckStats;
+    onClick: () => void;
 }
 
-function StickerSlot({ badge, isUnlocked }: StickerSlotProps) {
+function StickerSlot({ badge, isUnlocked, stats, onClick }: StickerSlotProps) {
+    const current = getBadgeProgress(badge, stats);
+    const progressPercent = Math.min(100, (current / badge.target) * 100);
+
     return (
         <motion.div
+            onClick={onClick}
             initial={isUnlocked ? { scale: 0.5, opacity: 0 } : {}}
             animate={isUnlocked ? { scale: 1, opacity: 1 } : {}}
-            whileHover={{ scale: isUnlocked ? 1.05 : 1.02 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            className={`relative aspect-square rounded-xl flex flex-col items-center justify-center p-2 transition-all ${isUnlocked
+            className={`relative aspect-square rounded-xl flex flex-col items-center justify-center p-2 cursor-pointer transition-all ${isUnlocked
                     ? 'bg-gradient-to-br from-yellow-50 to-amber-100 border-4 border-yellow-400 shadow-lg'
-                    : 'bg-slate-100 border-4 border-dashed border-slate-300 shadow-inner'
+                    : 'bg-slate-100 border-4 border-dashed border-slate-300 shadow-inner hover:border-slate-400'
                 }`}
         >
             {/* Icon */}
@@ -112,12 +145,12 @@ function StickerSlot({ badge, isUnlocked }: StickerSlotProps) {
                     initial={{ scale: 0, rotate: -20 }}
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: "spring", delay: 0.1 }}
-                    className="text-5xl mb-1"
+                    className="text-4xl mb-1"
                 >
                     {badge.icon}
                 </motion.span>
             ) : (
-                <span className="text-3xl mb-1 opacity-50">🔒</span>
+                <Lock size={28} className="text-slate-400 mb-1" />
             )}
 
             {/* Title - ALWAYS VISIBLE */}
@@ -126,11 +159,20 @@ function StickerSlot({ badge, isUnlocked }: StickerSlotProps) {
                 {badge.name}
             </p>
 
-            {/* Description / Hint */}
-            <p className={`text-[10px] text-center leading-tight mt-0.5 ${isUnlocked ? 'text-slate-500' : 'text-slate-300'
-                }`}>
-                {isUnlocked ? badge.description : '???'}
-            </p>
+            {/* Progress Bar (for locked badges) */}
+            {!isUnlocked && (
+                <div className="w-full mt-1.5 px-1">
+                    <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full transition-all duration-300"
+                            style={{ width: `${progressPercent}%` }}
+                        />
+                    </div>
+                    <p className="text-[10px] text-center text-slate-400 mt-0.5 font-medium">
+                        {current}/{badge.target}
+                    </p>
+                </div>
+            )}
 
             {/* Sparkle indicator for unlocked */}
             {isUnlocked && (
