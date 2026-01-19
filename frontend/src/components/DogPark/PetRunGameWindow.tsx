@@ -5,7 +5,7 @@
  * Features: Your pet as the character, obstacle dodging, coin rewards
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, Trophy, Coins, Heart, Zap } from 'lucide-react';
 import { usePet } from '@/context/PetContext';
@@ -17,6 +17,7 @@ interface PetRunGameWindowProps {
     onClose: () => void;
     onGameComplete?: (score: number, coinsEarned: number) => void;
     petEmoji?: string;
+    petBreed?: string; // NEW: Pass the breed for specific emoji
 }
 
 // Game state
@@ -41,12 +42,13 @@ interface Coin {
 
 const GROUND_Y = 300;
 const PET_SIZE = 60;
-const JUMP_VELOCITY = -18;
-const GRAVITY = 0.8;
-const GAME_SPEED_INITIAL = 6;
-const GAME_SPEED_INCREMENT = 0.002; // Speed increases over time
-const OBSTACLE_SPAWN_RATE = 0.015; // Probability per frame
+const JUMP_VELOCITY = -16; // Slightly gentler jump
+const GRAVITY = 0.7; // Slower fall
+const GAME_SPEED_INITIAL = 4; // Slowed down from 6
+const GAME_SPEED_INCREMENT = 0.0015; // Speed increases slower
+const OBSTACLE_SPAWN_RATE = 0.012; // Slightly less frequent obstacles
 const COIN_SPAWN_RATE = 0.008;
+const MAX_COINS_PER_RUN = 200; // Cap maximum reward
 
 const OBSTACLE_EMOJIS: Record<string, string> = {
     rock: '🪨',
@@ -60,11 +62,28 @@ const PET_EMOJIS: Record<string, string> = {
     panda: '🐼',
 };
 
+// Breed-specific emojis for dogs
+const DOG_BREED_EMOJIS: Record<string, string> = {
+    labrador: '🦮',
+    shepherd: '🐕‍🦺',
+    'german shepherd': '🐕‍🦺',
+    pug: '🐶',
+    beagle: '🐕',
+    golden: '🦮',
+    'golden retriever': '🦮',
+    husky: '🐺',
+    corgi: '🐕',
+    bulldog: '🐶',
+    poodle: '🐩',
+    default: '🐕',
+};
+
 export function PetRunGameWindow({
     isOpen,
     onClose,
     onGameComplete,
     petEmoji,
+    petBreed,
 }: PetRunGameWindowProps) {
     const { pet, updateHighScore, getHighScore } = usePet();
     const { refreshBalance } = useFinancial();
@@ -89,8 +108,15 @@ export function PetRunGameWindow({
     const gameLoopRef = useRef<number>();
     const lastTimeRef = useRef<number>(0);
 
-    // Get the pet emoji
-    const activePetEmoji = petEmoji || PET_EMOJIS[pet?.species || 'dog'] || '🐕';
+    // Get the pet emoji - use breed-specific if available
+    const activePetEmoji = useMemo(() => {
+        if (petEmoji) return petEmoji;
+        if (petBreed) {
+            const breedLower = petBreed.toLowerCase();
+            if (DOG_BREED_EMOJIS[breedLower]) return DOG_BREED_EMOJIS[breedLower];
+        }
+        return PET_EMOJIS[pet?.species || 'dog'] || '🐕';
+    }, [petEmoji, petBreed, pet?.species]);
 
     // Load high score
     useEffect(() => {
@@ -217,11 +243,12 @@ export function PetRunGameWindow({
             const petTop = newY - PET_SIZE + 10;
             const petBottom = newY;
 
-            // Check obstacle collision
+            // Check obstacle collision (20% smaller hitbox for forgiveness)
             for (const obs of obstacles) {
-                const obsLeft = obs.x;
-                const obsRight = obs.x + 40;
-                const obsTop = GROUND_Y - obs.height;
+                const hitboxPadding = 8; // Shrink hitbox by 8px each side (≈20%)
+                const obsLeft = obs.x + hitboxPadding;
+                const obsRight = obs.x + 40 - hitboxPadding;
+                const obsTop = GROUND_Y - obs.height + 5; // More forgiving top
                 const obsBottom = GROUND_Y;
 
                 if (
@@ -275,7 +302,9 @@ export function PetRunGameWindow({
     // Handle game over
     useEffect(() => {
         if (gameState === 'gameover') {
-            const finalCoins = coinsCollected + Math.floor(score / 50);
+            // Nerfed economy: divide by 10, cap at MAX_COINS_PER_RUN
+            const rawCoins = coinsCollected + Math.floor(score / 100); // 1000 score = 10 coins
+            const finalCoins = Math.min(rawCoins, MAX_COINS_PER_RUN);
 
             // Save high score
             if (score > highScore) {
@@ -489,7 +518,7 @@ export function PetRunGameWindow({
                                     <div className="text-center">
                                         <p className="text-white/60 text-sm">Coins</p>
                                         <p className="text-3xl font-black text-yellow-400">
-                                            +{coinsCollected + Math.floor(score / 50)}
+                                            +{Math.min(coinsCollected + Math.floor(score / 100), MAX_COINS_PER_RUN)}
                                         </p>
                                     </div>
                                 </div>

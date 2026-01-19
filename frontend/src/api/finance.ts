@@ -489,6 +489,38 @@ export async function purchaseItems(data: PurchaseRequestPayload): Promise<void>
 
   if (updateError) throw new Error("Failed to deduct funds: " + updateError.message);
 
+  // 2.5 CRITICAL: Also update pet's lifetime_stats.total_spent for badge tracking
+  try {
+    // Get user's pet
+    const { data: petData } = await supabase
+      .from('pets')
+      .select('id, lifetime_stats')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (petData) {
+      const currentLifetimeStats = petData.lifetime_stats || {};
+      const currentSpent = (currentLifetimeStats as any)?.total_spent || 0;
+      const updatedLifetimeStats = {
+        ...currentLifetimeStats,
+        total_spent: currentSpent + totalCost
+      };
+
+      const { error: petUpdateError } = await supabase
+        .from('pets')
+        .update({ lifetime_stats: updatedLifetimeStats })
+        .eq('id', petData.id);
+
+      if (petUpdateError) {
+        console.warn('Failed to update pet lifetime_stats.total_spent:', petUpdateError);
+      } else {
+        console.log('📊 Updated pet lifetime_stats.total_spent:', updatedLifetimeStats.total_spent);
+      }
+    }
+  } catch (e) {
+    console.warn('Non-critical: Failed to update pet spending stats:', e);
+  }
+
   // 3. Insert Transactions (Logs)
   // We do them one by one or batch? Batch is better but let's simple loop to be safe with types
   for (const tx of transactionInserts) {
