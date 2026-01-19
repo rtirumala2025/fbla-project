@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 import { getErrorMessage } from '../utils/networkUtils';
 import { DECAY_RATES, ACTIONS, clampStat, applyAction, ActionType, OFFLINE_CONFIG } from '../config/gameConfig';
+import { checkNewBadges, type BadgeCheckStats } from '../config/Achievements';
 
 interface PetContextType {
   pet: Pet | null;
@@ -30,6 +31,8 @@ interface PetContextType {
   lastLogin: Date | null;
   triggerGameOver: () => Promise<void>;
   restartGame: () => Promise<void>;
+  unlockBadge: (badgeId: string) => Promise<void>;
+  badgeToast: string | null;
 }
 
 const PetContext = createContext<PetContextType | null>(null);
@@ -54,6 +57,9 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const [isGameOver, setIsGameOver] = useState(false);
   const [badges, setBadges] = useState<string[]>([]);
   const [lastLogin, setLastLogin] = useState<Date | null>(null);
+  const [badgeToast, setBadgeToast] = useState<string | null>(null);
+  // Action counters for achievements (tracked locally, can extend to DB)
+  const actionCountsRef = useRef({ baths: 0, meals: 0, plays: 0, coinsEarned: 0, coinsSpent: 0 });
   const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { refreshUserState } = useAuth();
 
@@ -190,6 +196,25 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     console.log(`Executing: ${actionType}`, action.effects, "New Stats:", newStats);
 
     await statAction(action.name, newStats, action.cost);
+
+    // Track action counts for achievements
+    if (actionType.includes('SHOWER') || actionType.includes('BATHE') || actionType.includes('GROOM')) {
+      actionCountsRef.current.baths++;
+    }
+    if (actionType.includes('EAT') || actionType.includes('DRINK') || actionType.includes('FEED')) {
+      actionCountsRef.current.meals++;
+    }
+    if (actionType.includes('PLAY') || actionType.includes('FETCH') || actionType.includes('WALK')) {
+      actionCountsRef.current.plays++;
+    }
+    if (action.cost < 0) {
+      actionCountsRef.current.coinsEarned += Math.abs(action.cost);
+    } else if (action.cost > 0) {
+      actionCountsRef.current.coinsSpent += action.cost;
+    }
+
+    // Check for new achievements
+    await checkAchievements();
   }, [pet, userId, statAction]);
 
   const increaseStat = useCallback(async (stat: keyof PetStats, amount: number) => {
@@ -383,6 +408,49 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     }
   }, [pet, userId, loadPet]);
 
+  // -- 6. Achievements --
+
+  const unlockBadge = useCallback(async (badgeId: string) => {
+    if (!pet || !userId || !supabase) return;
+    if (badges.includes(badgeId)) return; // Already unlocked
+
+    const newBadges = [...badges, badgeId];
+    setBadges(newBadges);
+
+    // Show toast
+    setBadgeToast(badgeId);
+    setTimeout(() => setBadgeToast(null), 4000);
+
+    // Save to Supabase
+    try {
+      await supabase.from('pets').update({ badges: newBadges } as any).eq('id', pet.id);
+      console.log(`🏆 Badge unlocked: ${badgeId}`);
+    } catch (e) {
+      console.error('Failed to save badge:', e);
+    }
+  }, [pet, userId, badges]);
+
+  const checkAchievements = useCallback(async () => {
+    if (!pet) return;
+
+    const stats: BadgeCheckStats = {
+      totalDaysAlive: pet.age || 0,
+      totalBaths: actionCountsRef.current.baths,
+      totalMeals: actionCountsRef.current.meals,
+      totalPlaySessions: actionCountsRef.current.plays,
+      totalCoinsEarned: actionCountsRef.current.coinsEarned,
+      totalCoinsSpent: actionCountsRef.current.coinsSpent,
+      currentHealth: pet.stats.health,
+      currentHappiness: pet.stats.happiness,
+      currentCleanliness: pet.stats.cleanliness,
+    };
+
+    const newlyUnlocked = checkNewBadges(badges, stats);
+    for (const badge of newlyUnlocked) {
+      await unlockBadge(badge.id);
+    }
+  }, [pet, badges, unlockBadge]);
+
   useEffect(() => { loadPet(); }, [userId, loadPet]);
   useEffect(() => {
     if (!pet || !userId || isSupabaseMock()) return;
@@ -445,7 +513,9 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     lastLogin,
     triggerGameOver,
     restartGame,
-  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame]);
+    unlockBadge,
+    badgeToast,
+  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame, unlockBadge, badgeToast]);
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 };
