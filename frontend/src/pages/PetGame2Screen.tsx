@@ -59,16 +59,21 @@ const WindowLoadingFallback = () => (
 
 
 export const PetGame2Screen: React.FC = () => {
-  const { pet, loading, error, refreshPet, updatePetStats, performAction, isGameOver, restartGame, lastLogin, badges } = usePet();
+  const { pet, loading, error, refreshPet, updatePetStats, performAction, isGameOver, restartGame, lastLogin, badges, lifetimeStats } = usePet();
   const { currentUser } = useAuth();
   const { balance, transactions, refreshBalance } = useFinancial();
 
-  // Calculate total spent from transactions
+  // Use lifetime stats for total spent (persisted in DB), fallback to transactions
   const totalSpent = useMemo(() => {
+    // Primary source: lifetimeStats from PetContext (persisted via DB)
+    if (lifetimeStats?.total_spent !== undefined && lifetimeStats.total_spent > 0) {
+      return lifetimeStats.total_spent;
+    }
+    // Fallback: calculate from financial transactions
     return transactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
-  }, [transactions]);
+  }, [lifetimeStats?.total_spent, transactions]);
 
   // Balance change tracking for visual feedback
   const [balanceChange, setBalanceChange] = useState<{ amount: number; isPositive: boolean } | null>(null);
