@@ -22,6 +22,7 @@ import type { ActivityZone } from '@/game3d/core/SceneManager';
 // HouseWindow is small, keep direct import. Lazy load heavy components (40KB+)
 import { HouseWindow } from '@/components/DogPark';
 import { GameOverModal } from '@/components/GameOverModal';
+import { DailyRewardModal, generateDailyReward } from '@/components/DailyRewardModal';
 
 // Lazy load heavy game window components for better initial load time
 const GiftShopWindow = React.lazy(() =>
@@ -49,7 +50,7 @@ const WindowLoadingFallback = () => (
 
 
 export const PetGame2Screen: React.FC = () => {
-  const { pet, loading, error, refreshPet, updatePetStats, performAction, isGameOver, restartGame } = usePet();
+  const { pet, loading, error, refreshPet, updatePetStats, performAction, isGameOver, restartGame, lastLogin, badges } = usePet();
   const { currentUser } = useAuth();
   const { balance, transactions, refreshBalance } = useFinancial();
 
@@ -78,6 +79,9 @@ export const PetGame2Screen: React.FC = () => {
   const [actionBusy, setActionBusy] = useState(false);
   const [stats, setStats] = useState<PetStats | null>(null);
   const [devPetOverride, setDevPetOverride] = useState<PetGame2PetType | null>(null);
+  // Daily Reward state
+  const [showDailyReward, setShowDailyReward] = useState(false);
+  const [dailyReward, setDailyReward] = useState<ReturnType<typeof generateDailyReward> | null>(null);
   const [isBathing, setIsBathing] = useState(false);
 
   // UI Toggles
@@ -190,6 +194,42 @@ export const PetGame2Screen: React.FC = () => {
     sendMessage("What should I do next with my pet?");
     if (!open) toggleOpen();
   };
+
+  // -- Daily Login Reward Check --
+  useEffect(() => {
+    if (!pet || !lastLogin) return;
+
+    const now = new Date();
+    const last = new Date(lastLogin);
+    const hoursSinceLogin = (now.getTime() - last.getTime()) / (1000 * 60 * 60);
+
+    // Show reward if > 24 hours since last login
+    if (hoursSinceLogin >= 24) {
+      setDailyReward(generateDailyReward());
+      setShowDailyReward(true);
+    }
+  }, [pet, lastLogin]);
+
+  const handleClaimDailyReward = useCallback(async () => {
+    if (!pet || !dailyReward) return;
+
+    try {
+      // Apply reward based on type
+      if (dailyReward.type === 'coins') {
+        // Coins are handled by backend wallet
+        console.log(`💰 Claimed ${dailyReward.amount} coins!`);
+      } else if (dailyReward.type === 'energy') {
+        await updatePetStats({ energy: Math.min(100, (stats?.energy || 0) + dailyReward.amount) });
+      }
+      // Update last_login in database
+      // This is handled by PetContext or we simulate it locally
+
+      setShowDailyReward(false);
+      setDailyReward(null);
+    } catch (error) {
+      console.error('Failed to claim daily reward:', error);
+    }
+  }, [pet, dailyReward, updatePetStats, stats]);
 
   const petType = useMemo<PetGame2PetType>(() => {
     if (devPetOverride) return devPetOverride;
@@ -734,6 +774,13 @@ export const PetGame2Screen: React.FC = () => {
         isOpen={isGameOver}
         petName={pet?.name || 'Your pet'}
         onRestart={restartGame}
+      />
+
+      {/* DAILY REWARD MODAL */}
+      <DailyRewardModal
+        isOpen={showDailyReward && !isGameOver}
+        onClaim={handleClaimDailyReward}
+        reward={dailyReward}
       />
     </div>
   );
