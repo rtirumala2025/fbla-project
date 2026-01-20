@@ -376,6 +376,7 @@ async function getFinanceSummaryFromSupabase(): Promise<FinanceResponse> {
     notifications: dailyAllowanceAvailable ? ['Daily allowance available!'] : [],
     daily_allowance_available: dailyAllowanceAvailable,
     allowance_amount: 50, // Default allowance amount
+    monthly_budget_limit: userWallet!.monthly_budget_limit ?? 1000,
     goals: goalSummaries,
     transactions: transactionRecords,
     inventory: inventoryEntries,
@@ -741,3 +742,17 @@ export async function analyzeBudget(request: BudgetAdvisorRequest): Promise<Budg
   });
 }
 
+export async function updateBudgetLimit(amount: number): Promise<FinanceResponse> {
+  const { data, error } = await supabase.rpc('update_budget_limit', { new_limit: amount });
+
+  if (error) {
+    console.error('Failed to update budget limit:', error);
+    throw error;
+  }
+
+  // Invalidate cache
+  requestCache.invalidate('finance-summary');
+
+  // Return updated summary or trigger refetch
+  return getFinanceSummary({ force: true });
+}

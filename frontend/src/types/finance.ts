@@ -61,6 +61,7 @@ export interface FinanceSummary {
   income_today: number;
   expenses_today: number;
   budget_warning?: string | null;
+  monthly_budget_limit?: number; // Added
   recommendations: string[];
   notifications: string[];
   daily_allowance_available: boolean;

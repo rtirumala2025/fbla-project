@@ -721,22 +721,9 @@ export const PetGame2Screen: React.FC = () => {
             isOpen={true}
             onClose={() => setOpenBuilding(null)}
             petName={petName}
-            petHealth={{
-              health: stats?.health ?? 75,
-              happiness: stats?.happiness ?? 80,
-              energy: stats?.energy ?? 60,
-              cleanliness: stats?.cleanliness ?? 70
-            }}
+
             walletBalance={balance}
-            onHealthCheck={(healthBoost) => {
-              if (stats) {
-                setStats(prev => prev ? {
-                  ...prev,
-                  health: Math.min(100, (prev.health ?? 0) + healthBoost)
-                } : prev);
-              }
-              showTransactionToast('Vet visit', 25);
-            }}
+
           />
         </Suspense>
       )}

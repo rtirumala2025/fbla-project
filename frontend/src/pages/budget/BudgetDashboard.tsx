@@ -55,8 +55,11 @@ export const BudgetDashboard: React.FC = () => {
   const [financeLoading, setFinanceLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [goalForm, setGoalForm] = useState({ name: '', target: '' });
-  const [donationForm, setDonationForm] = useState({ recipientId: '', amount: '', message: '' });
+
   const [contributionInputs, setContributionInputs] = useState<Record<string, string>>({});
+  const [isEditingBudget, setIsEditingBudget] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('');
+
 
   // Fetch finance summary
   const fetchSummary = useCallback(
@@ -152,31 +155,22 @@ export const BudgetDashboard: React.FC = () => {
     return Object.entries(byDay).map(([name, v]) => ({ name, ...v }));
   }, [filtered]);
 
-  // Finance handlers with logging
-  const handleClaimAllowance = async () => {
-    if (!summary?.daily_allowance_available) {
-      toast.info('Daily allowance already claimed.');
-      return;
-    }
-    try {
-      setSubmitting(true);
-      console.log('💰 BudgetDashboard: Claiming daily allowance...');
-      const response = await claimDailyAllowance();
-      setSummary(response.summary);
-      console.log('✅ BudgetDashboard: Allowance claimed successfully', {
-        amount: response.summary.allowance_amount,
-        currency: response.summary.currency,
-        newBalance: response.summary.balance,
-      });
-      toast.success(`Allowance claimed! +${response.summary.allowance_amount} ${response.summary.currency}`);
-      await refreshBalance();
-    } catch (error: any) {
-      console.error('❌ BudgetDashboard: allowance claim failed', error);
-      toast.error(error.message || 'Unable to claim allowance right now.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+
+
+  const currentMonthSpending = useMemo(() => {
+    if (!txns.length) return 0;
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return txns
+      .filter(t => new Date(t.created_at) >= startOfMonth && t.amount < 0 && t.transaction_type !== 'transfer')
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  }, [txns]);
+
+  const budgetLimit = summary?.monthly_budget_limit || 1000;
+  const budgetProgress = Math.min((currentMonthSpending / budgetLimit) * 100, 100);
+  const isOverBudget = currentMonthSpending > budgetLimit;
+
+
 
   const handleCreateGoal = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -237,45 +231,30 @@ export const BudgetDashboard: React.FC = () => {
     }
   };
 
-  const handleDonation = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const { recipientId, amount, message } = donationForm;
-    const parsedAmount = Number(amount);
-    if (!recipientId.trim() || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-      toast.error('Provide a valid recipient and donation amount.');
+  const handleUpdateBudget = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseInt(budgetInput);
+    if (isNaN(amount) || amount < 0) {
+      toast.error('Please enter a valid positive amount');
       return;
     }
+
     try {
       setSubmitting(true);
-      console.log('🎁 BudgetDashboard: Sending donation...', {
-        recipientId: recipientId.trim(),
-        amount: parsedAmount,
-        message: message.trim() || undefined,
-      });
-      const beforeBalance = summary?.balance || 0;
-      const response = await donateCoins({
-        recipient_id: recipientId.trim(),
-        amount: parsedAmount,
-        message: message.trim() || undefined,
-      });
+      const { updateBudgetLimit } = await import('../../api/finance');
+      const response = await updateBudgetLimit(amount);
       setSummary(response.summary);
-      setDonationForm({ recipientId: '', amount: '', message: '' });
-      console.log('✅ BudgetDashboard: Donation sent successfully', {
-        recipientId: recipientId.trim(),
-        amount: parsedAmount,
-        balanceBefore: beforeBalance,
-        balanceAfter: response.summary.balance,
-        totalDonated: response.summary.donation_total,
-      });
-      toast.success('Donation sent!');
-      await refreshBalance();
-    } catch (error: any) {
-      console.error('❌ BudgetDashboard: donation failed', error);
-      toast.error(error.message || 'Unable to send donation.');
+      setIsEditingBudget(false);
+      toast.success('Budget limit updated!');
+    } catch (error) {
+      console.error('Failed to update budget:', error);
+      toast.error('Failed to update budget limit');
     } finally {
       setSubmitting(false);
     }
   };
+
+
 
   // Convert transactions to BudgetAdvisorAI format
   const budgetAdvisorTransactions: TransactionInput[] = useMemo(() => {
@@ -416,102 +395,72 @@ export const BudgetDashboard: React.FC = () => {
               </div>
             </div>
 
-            {notifications.length > 0 && (
-              <div className="mb-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-6">
-                <div className="flex items-center gap-3 text-indigo-700">
-                  <Bell className="h-5 w-5" />
-                  <h3 className="text-lg font-semibold">Notifications</h3>
-                </div>
-                <ul className="mt-3 space-y-2 text-sm text-indigo-700">
-                  {notifications.map((note, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Daily Allowance */}
-              <div className="rounded-3xl bg-white border border-gray-200 p-6 shadow-soft">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="flex items-center gap-2 text-lg font-semibold text-charcoal">
-                    <PiggyBank className="h-5 w-5 text-emerald-500" />
-                    Daily Allowance
-                  </h3>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    +{summary.allowance_amount} {summary.currency}
-                  </span>
+
+
+            {/* Monthly Budget Control */}
+            <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${isOverBudget ? 'bg-red-100 text-red-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                    <TrendingUp className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Monthly Budget</h3>
+                    <p className="text-sm text-gray-500">
+                      Spent {currencyFormat(currentMonthSpending, summary.currency)} of {currencyFormat(budgetLimit, summary.currency)} limit
+                    </p>
+                  </div>
                 </div>
-                <p className="mb-4 text-sm text-gray-600">
-                  Claim your daily allowance reward to keep your pet pampered. Allowance resets every 24 hours.
-                </p>
                 <button
-                  onClick={handleClaimAllowance}
-                  disabled={!summary.daily_allowance_available || submitting}
-                  className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-emerald-600 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => {
+                    setBudgetInput(budgetLimit.toString());
+                    setIsEditingBudget(true);
+                  }}
+                  className="px-4 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                 >
-                  {summary.daily_allowance_available ? 'Claim Allowance' : 'Allowance Already Claimed'}
+                  Edit Limit
                 </button>
               </div>
 
-              {/* Share Coins */}
-              <div className="rounded-3xl bg-white border border-gray-200 p-6 shadow-soft">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="flex items-center gap-2 text-lg font-semibold text-charcoal">
-                    <Gift className="h-5 w-5 text-rose-500" />
-                    Share Coins
-                  </h3>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Donations sent {summary.donation_total}
-                  </span>
-                </div>
-                <p className="mb-4 text-sm text-gray-600">
-                  Send coins to friends so their pets stay happy too. Share kindness responsibly!
-                </p>
-                <form onSubmit={handleDonation} className="space-y-3">
+              {/* Progress Bar */}
+              <div className="relative h-4 w-full bg-gray-100 rounded-full overflow-hidden mb-4">
+                <div
+                  className={`absolute top-0 left-0 h-full transition-all duration-500 ${isOverBudget ? 'bg-red-500' : budgetProgress > 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}
+                  style={{ width: `${budgetProgress}%` }}
+                />
+              </div>
+
+              {isEditingBudget && (
+                <form onSubmit={handleUpdateBudget} className="flex gap-3 items-center mt-4 bg-gray-50 p-4 rounded-xl">
                   <input
-                    type="text"
-                    value={donationForm.recipientId}
-                    onChange={(event) =>
-                      setDonationForm((prev) => ({ ...prev, recipientId: event.target.value }))
-                    }
-                    placeholder="Recipient user ID"
-                    className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    type="number"
+                    value={budgetInput}
+                    onChange={(e) => setBudgetInput(e.target.value)}
+                    className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Set new limit..."
+                    min="0"
                   />
-                  <div className="flex gap-3">
-                    <input
-                      type="number"
-                      min={1}
-                      value={donationForm.amount}
-                      onChange={(event) =>
-                        setDonationForm((prev) => ({ ...prev, amount: event.target.value }))
-                      }
-                      placeholder="Amount"
-                      className="w-1/2 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                    />
-                    <input
-                      type="text"
-                      value={donationForm.message}
-                      onChange={(event) =>
-                        setDonationForm((prev) => ({ ...prev, message: event.target.value }))
-                      }
-                      placeholder="Optional message"
-                      className="w-1/2 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                    />
-                  </div>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-rose-600 hover:to-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                   >
-                    Send Donation
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingBudget(false)}
+                    className="px-4 py-2 text-gray-600 font-semibold hover:bg-gray-200 rounded-lg"
+                  >
+                    Cancel
                   </button>
                 </form>
-              </div>
+              )}
             </div>
+
+
           </section>
         )}
 
@@ -723,7 +672,7 @@ export const BudgetDashboard: React.FC = () => {
           </>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 
