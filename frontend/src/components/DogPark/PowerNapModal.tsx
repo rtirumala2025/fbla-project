@@ -19,7 +19,7 @@ const ENERGY_REGEN_RATE = 5; // Energy gained per second
 const NAP_DURATION = 10; // Seconds for full nap
 
 export function PowerNapModal({ isOpen, onClose, petEmoji = '🐕' }: PowerNapModalProps) {
-    const { pet, updatePetStats } = usePet();
+    const { pet, updatePetStats, lastNapTimestamp, recordNap } = usePet();
     const [isNapping, setIsNapping] = useState(false);
     const [napProgress, setNapProgress] = useState(0);
     const [energyGained, setEnergyGained] = useState(0);
@@ -27,6 +27,28 @@ export function PowerNapModal({ isOpen, onClose, petEmoji = '🐕' }: PowerNapMo
 
     const intervalRef = useRef<NodeJS.Timeout>();
     const startEnergyRef = useRef(0);
+
+    // Calculate Cooldown
+    const getCooldownStatus = () => {
+        if (!lastNapTimestamp) return { canNap: true, timeLeft: '' };
+
+        const now = new Date();
+        const lastNap = new Date(lastNapTimestamp);
+        const diffMs = now.getTime() - lastNap.getTime();
+        const fourHoursMs = 4 * 60 * 60 * 1000;
+
+        if (diffMs >= fourHoursMs) return { canNap: true, timeLeft: '' };
+
+        const remainingMs = fourHoursMs - diffMs;
+        const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+        const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+        return {
+            canNap: false,
+            timeLeft: `${hours}h ${minutes}m`
+        };
+    };
+
+    const { canNap, timeLeft } = getCooldownStatus();
 
     // Start nap
     const startNap = useCallback(() => {
@@ -77,7 +99,12 @@ export function PowerNapModal({ isOpen, onClose, petEmoji = '🐕' }: PowerNapMo
 
         const newEnergy = Math.min(100, pet.stats.energy + energyGained);
         await updatePetStats({ energy: newEnergy });
-    }, [pet, energyGained, updatePetStats]);
+
+        // Record nap timestamp and trigger achievements for "Sleep"
+        if (napProgress >= 100) {
+            await recordNap();
+        }
+    }, [pet, energyGained, updatePetStats, napProgress, recordNap]);
 
     // Handle close
     const handleClose = async () => {
@@ -308,12 +335,17 @@ export function PowerNapModal({ isOpen, onClose, petEmoji = '🐕' }: PowerNapMo
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.97 }}
                                 onClick={startNap}
-                                disabled={pet?.stats.energy === 100}
+                                disabled={pet?.stats.energy === 100 || !canNap}
                                 className="w-full py-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Moon size={22} />
-                                    {pet?.stats.energy === 100 ? 'Fully Rested!' : 'Take a Power Nap'}
+                                    {pet?.stats.energy === 100
+                                        ? 'Fully Rested!'
+                                        : !canNap
+                                            ? `Nap Cool: ${timeLeft}`
+                                            : 'Take a Power Nap'
+                                    }
                                 </div>
                             </motion.button>
                         ) : (

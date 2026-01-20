@@ -129,8 +129,8 @@ export function DailyRewardModal({ isOpen, onClaim, reward }: DailyRewardModalPr
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className={`w-full py-4 px-8 text-white font-bold text-lg rounded-xl flex items-center justify-center gap-3 shadow-lg transition-all ${claimed
-                                ? 'bg-green-500 shadow-green-500/30'
-                                : 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 shadow-purple-500/30'
+                            ? 'bg-green-500 shadow-green-500/30'
+                            : 'bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 shadow-purple-500/30'
                             }`}
                     >
                         {claimed ? (
@@ -159,14 +159,8 @@ export function DailyRewardModal({ isOpen, onClaim, reward }: DailyRewardModalPr
 
 // Helper to generate random daily reward
 export function generateDailyReward(): { type: 'coins' | 'energy' | 'food'; amount: number; label: string } {
-    const rewards = [
-        { type: 'coins' as const, amount: 50, label: 'Coins' },
-        { type: 'coins' as const, amount: 75, label: 'Coins' },
-        { type: 'energy' as const, amount: 20, label: 'Energy' },
-        { type: 'energy' as const, amount: 30, label: 'Energy' },
-        { type: 'food' as const, amount: 1, label: 'Food Item' },
-    ];
-    return rewards[Math.floor(Math.random() * rewards.length)];
+    return { type: 'coins' as const, amount: 50, label: 'Coins' };
 }
+
 
 export default DailyRewardModal;

@@ -40,12 +40,15 @@ interface PetContextType {
     days_survived: number;
     food_eaten: number;
     play_sessions: number;
+    total_naps: number;
   };
   showConfetti: boolean;
   // Game State (Migrated from localStorage)
   checkDailyReward: () => Promise<{ type: 'coins' | 'energy' | 'food', amount: number, label: string } | null>;
   oneTimeEvents: string[];
   completeOneTimeEvent: (eventName: string) => Promise<void>;
+  lastNapTimestamp: Date | null;
+  recordNap: () => Promise<void>;
 }
 
 const PetContext = createContext<PetContextType | null>(null);
@@ -79,14 +82,16 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     days_survived: number;
     food_eaten: number;
     play_sessions: number;
-  }>({ total_washes: 0, total_earnings: 0, total_spent: 0, days_survived: 0, food_eaten: 0, play_sessions: 0 });
+    total_naps: number;
+  }>({ total_washes: 0, total_earnings: 0, total_spent: 0, days_survived: 0, food_eaten: 0, play_sessions: 0, total_naps: 0 });
 
   // Game State (DB Persisted)
   const [oneTimeEvents, setOneTimeEvents] = useState<string[]>([]);
   const [lastDailyClaim, setLastDailyClaim] = useState<Date | null>(null);
+  const [lastNapTimestamp, setLastNapTimestamp] = useState<Date | null>(null);
 
   // Action counters for achievements (tracked locally, can extend to DB)
-  const actionCountsRef = useRef({ baths: 0, meals: 0, plays: 0, coinsEarned: 0, coinsSpent: 0 });
+  const actionCountsRef = useRef({ baths: 0, meals: 0, plays: 0, coinsEarned: 0, coinsSpent: 0, naps: 0 });
   const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { refreshUserState } = useAuth();
 
@@ -225,7 +230,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     await statAction(action.name, newStats, action.cost);
 
     // Update lifetime stats and persist to Supabase (null-safe)
-    const defaultLifetime = { total_washes: 0, total_earnings: 0, total_spent: 0, days_survived: 0, food_eaten: 0, play_sessions: 0 };
+    const defaultLifetime = { total_washes: 0, total_earnings: 0, total_spent: 0, days_survived: 0, food_eaten: 0, play_sessions: 0, total_naps: 0 };
     const safeLifetime = { ...defaultLifetime, ...lifetimeStats };
     const updatedLifetime = { ...safeLifetime };
 
@@ -242,6 +247,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     if (actionType.includes('PLAY') || actionType.includes('FETCH') || actionType.includes('WALK')) {
       updatedLifetime.play_sessions++;
       actionCountsRef.current.plays++;
+    }
+    if (actionType.includes('REST') || actionType.includes('NAP') || actionType.includes('SLEEP')) {
+      updatedLifetime.total_naps++;
+      actionCountsRef.current.naps++;
     }
     if (action.cost < 0) {
       updatedLifetime.total_earnings += Math.abs(action.cost);
@@ -379,10 +388,12 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       if (gamestate) {
         setOneTimeEvents(Array.isArray(gamestate.one_time_events) ? gamestate.one_time_events : []);
         setLastDailyClaim(gamestate.last_daily_claim ? new Date(gamestate.last_daily_claim) : null);
+        setLastNapTimestamp(gamestate.last_nap_timestamp ? new Date(gamestate.last_nap_timestamp) : null);
       } else {
         // Initialize if missing
         setOneTimeEvents([]);
         setLastDailyClaim(null);
+        setLastNapTimestamp(null);
         // Create initial record
         const { error: initError } = await supabase.from('pet_gamestate').insert({
           user_id: userId,
@@ -420,44 +431,58 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     }
   }, [userId, oneTimeEvents]);
 
+  const recordNap = useCallback(async () => {
+    if (!userId || !supabase) return;
+    const now = new Date();
+    setLastNapTimestamp(now);
+
+    // Trigger REST action for achievements (counts as "Sleep")
+    // This will check achievements internally
+    await performAction('REST' as ActionType);
+
+    try {
+      await supabase.from('pet_gamestate').upsert({
+        user_id: userId,
+        last_nap_timestamp: now.toISOString()
+      }, { onConflict: 'user_id' });
+    } catch (e) {
+      console.warn('Failed to record nap:', e);
+    }
+  }, [userId, performAction]);
+
   const checkDailyReward = useCallback(async () => {
     if (!userId || !supabase) return null;
 
-    // Default last claim to year 2000 if null
-    const lastClaim = lastDailyClaim || new Date('2000-01-01');
-    const now = new Date();
+    // Call Server Function
+    const { data: success, error } = await supabase.rpc('claim_daily_reward', { user_id_input: userId });
 
-    // Compare Day/Month/Year
-    const isSameDay = lastClaim.getDate() === now.getDate() &&
-      lastClaim.getMonth() === now.getMonth() &&
-      lastClaim.getFullYear() === now.getFullYear();
+    if (error) {
+      console.warn('Daily reward check failed:', error);
+      return null;
+    }
 
-    if (!isSameDay) {
-      console.log("🌞 New Day Detected! Granting Reward...");
+    if (success) {
+      console.log('🌞 Daily Reward Claimed via Server!');
 
-      // Generate Reward
-      const reward = { type: 'coins' as const, amount: 100, label: 'Daily Coins' };
-
-      // Grant Reward
-      try {
-        await performAction('EARN_COINS_100' as ActionType);
-      } catch (err) {
-        // Fallback if action type missing
-        updateHighScore('daily_login', 0, 100);
-      }
-
-      // Save Timestamp
-      const newClaimTime = now.toISOString();
+      // Update local state to reflect the claim
+      const now = new Date();
       setLastDailyClaim(now);
 
-      await supabase.from('pet_gamestate').upsert({
-        user_id: userId,
-        last_daily_claim: newClaimTime
-      }, { onConflict: 'user_id' });
-      return reward;
+      // Update stats locally for immediate feedback
+      actionCountsRef.current.coinsEarned += 50;
+      setLifetimeStats(prev => ({
+        ...prev,
+        total_earnings: prev.total_earnings + 50
+      }));
+
+      // Refresh User State to get new wallet balance
+      await refreshUserState();
+
+      return { type: 'coins' as const, amount: 50, label: 'Daily Coins' };
     }
+
     return null;
-  }, [userId, lastDailyClaim, performAction, updateHighScore]);
+  }, [userId, refreshUserState]);
 
   const processStatDecay = useCallback(async () => {
     if (!pet || !userId || !supabase) return;
@@ -655,6 +680,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       totalPlaySessions: actionCountsRef.current.plays,
       totalCoinsEarned: actionCountsRef.current.coinsEarned,
       totalCoinsSpent: actionCountsRef.current.coinsSpent,
+      totalNaps: actionCountsRef.current.naps,
       currentHealth: pet.stats.health,
       currentHappiness: pet.stats.happiness,
       currentCleanliness: pet.stats.cleanliness,
@@ -677,6 +703,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       totalPlaySessions: lifetime.play_sessions,
       totalCoinsEarned: lifetime.total_earnings,
       totalCoinsSpent: lifetime.total_spent,
+      totalNaps: lifetime.total_naps || 0,
       currentHealth: pet.stats.health,
       currentHappiness: pet.stats.happiness,
       currentCleanliness: pet.stats.cleanliness,
@@ -759,7 +786,9 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     checkDailyReward,
     oneTimeEvents,
     completeOneTimeEvent,
-  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame, unlockBadge, badgeToast, lifetimeStats, checkDailyReward, oneTimeEvents, completeOneTimeEvent]);
+    lastNapTimestamp,
+    recordNap,
+  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame, unlockBadge, badgeToast, lifetimeStats, checkDailyReward, oneTimeEvents, completeOneTimeEvent, lastNapTimestamp, recordNap]);
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 };

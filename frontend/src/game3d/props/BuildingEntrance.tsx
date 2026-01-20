@@ -264,7 +264,7 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     vet: {
         // Vet: Glass double doors
         doorLocalPosition: [0, 1.6, 4.26],
-        triggerLocalPosition: [0, 1.0, 12.0], // Moved out to lamps
+        triggerLocalPosition: [0, 1.0, 15.0], // Moved out to lamps (Consistent with others)
         requireStairs: false,
         stairCount: 0,
         doorWidth: 2.2,
@@ -293,7 +293,7 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     center: {
         // Park Hub: Modern Glass
         doorLocalPosition: [0, 1.8, 2],
-        triggerLocalPosition: [0, 1.0, 12.0], // Moved out to lamps
+        triggerLocalPosition: [0, 1.0, 15.0], // Moved out to lamps (Consistent with others)
         requireStairs: false, // Deck handles this
         stairCount: 0,
         doorWidth: 2.4,
@@ -304,7 +304,7 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     market: {
         // Supermarket: Sliding glass doors
         doorLocalPosition: [0, 2.5, 6.9],
-        triggerLocalPosition: [0, 1.0, 14.0], // Moved out to lamps
+        triggerLocalPosition: [0, 1.0, 16.0], // Moved out to lamps (Further back for market)
         requireStairs: true,
         stairCount: 2,
         doorWidth: 3,

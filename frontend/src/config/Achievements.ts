@@ -58,6 +58,7 @@ export interface BadgeCheckStats {
     photosaken?: number;           // Screenshots/photos
     friendsMade?: number;           // Social features
     questsCompleted?: number;       // Story/quest progress
+    totalNaps?: number;             // Total naps taken
 }
 
 // ============================================================================
@@ -157,6 +158,15 @@ const SURVIVAL_TIERS: TierDef[] = [
     { tier: 'platinum', target: 180, suffix: 'Half Year' },
     { tier: 'diamond', target: 365, suffix: 'Annual' },
     { tier: 'diamond', target: 1000, suffix: 'Eternal' },
+];
+
+const NAP_TIERS: TierDef[] = [
+    { tier: 'bronze', target: 1, suffix: 'Napper' },
+    { tier: 'bronze', target: 5, suffix: 'Snoozer' },
+    { tier: 'silver', target: 20, suffix: 'Dreamer' },
+    { tier: 'silver', target: 50, suffix: 'Sleepyhead' },
+    { tier: 'gold', target: 100, suffix: 'Hibernator' },
+    { tier: 'diamond', target: 500, suffix: 'Coma' },
 ];
 
 function generateTieredBadges(
@@ -511,6 +521,17 @@ export const BADGES: Badge[] = [
         guide: 'Purchase 100 items from the shop.',
         condition: (s) => (s.itemsBought ?? 0) >= 100,
     },
+
+    // ========================================================================
+    // 💤 SLEEP CATEGORY (6 badges)
+    // ========================================================================
+
+    // Sleep Progression
+    ...generateTieredBadges(
+        'sleep', 'Sleep', '💤', 'care', 'totalNaps', NAP_TIERS,
+        (t) => `Complete ${t.toLocaleString()} naps. Sweet dreams!`,
+        (t) => `Let Duke sleep ${t.toLocaleString()} times.`
+    ),
 
     // ========================================================================
     // 🏕️ SURVIVAL CATEGORY (30 badges)
