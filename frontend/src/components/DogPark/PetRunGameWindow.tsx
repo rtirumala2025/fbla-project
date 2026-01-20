@@ -2,7 +2,13 @@
  * PetRunGameWindow.tsx
  * 
  * "Chrome Dino" style endless runner mini-game.
- * Features: Your pet as the character, obstacle dodging, coin rewards
+ * Features: Your pet as the character, obstacle dodging, coin rewards.
+ * 
+ * Game Mechanics:
+ * - Uses requestAnimationFrame for a decoupled game loop (independent of React renders).
+ * - Physics-based jumping with simple gravity.
+ * - Progressive difficulty: Game speed increases linearly over time.
+ * - Procedural generation: Obstacles and coins spawn based on probability.
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -78,6 +84,13 @@ const DOG_BREED_EMOJIS: Record<string, string> = {
     default: '🐕',
 };
 
+/**
+ * The main game component.
+ * 
+ * @param isOpen - Controls modal visibility
+ * @param onGameComplete - Callback when game ends, returns score and coins
+ * @param petEmoji - Override for pet appearance (defaults to breed logic)
+ */
 export function PetRunGameWindow({
     isOpen,
     onClose,
@@ -161,6 +174,7 @@ export function PetRunGameWindow({
     }, [isOpen, handleJump]);
 
     // Game loop
+    // Critical: Uses requestAnimationFrame instead of setInterval for 60fps smoothness
     useEffect(() => {
         if (!isOpen || gameState !== 'playing') {
             if (gameLoopRef.current) {
@@ -190,6 +204,7 @@ export function PetRunGameWindow({
             setGameSpeed(prev => prev + GAME_SPEED_INCREMENT);
 
             // Spawn obstacles
+            // Random chance per frame (0.012 ≈ 1 obstacle every 1.5s at 60fps)
             if (Math.random() < OBSTACLE_SPAWN_RATE) {
                 const types: Obstacle['type'][] = ['rock', 'tree', 'hurdle'];
                 const type = types[Math.floor(Math.random() * types.length)];
@@ -245,6 +260,8 @@ export function PetRunGameWindow({
             const petBottom = newY;
 
             // Check obstacle collision (20% smaller hitbox for forgiveness)
+            // "Coyote Time" / Forgiveness: We shrink the kill-zone slightly so
+            // near-misses feel like epic dodges instead of unfair deaths.
             for (const obs of obstacles) {
                 const hitboxPadding = 8; // Shrink hitbox by 8px each side (≈20%)
                 const obsLeft = obs.x + hitboxPadding;
@@ -307,6 +324,7 @@ export function PetRunGameWindow({
     useEffect(() => {
         if (gameState === 'gameover') {
             // Nerfed economy: divide by 10, cap at MAX_COINS_PER_RUN
+            // This prevents hyper-inflation where a good run could buy everything in the shop immediately.
             const rawCoins = coinsCollected + Math.floor(score / 100); // 1000 score = 10 coins
             const finalCoins = Math.min(rawCoins, MAX_COINS_PER_RUN);
 

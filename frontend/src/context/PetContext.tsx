@@ -7,32 +7,87 @@ import { getErrorMessage } from '../utils/networkUtils';
 import { DECAY_RATES, ACTIONS, clampStat, applyAction, ActionType, OFFLINE_CONFIG } from '../config/gameConfig';
 import { checkNewBadges, type BadgeCheckStats } from '../config/Achievements';
 
+/**
+ * PetContext.tsx
+ * 
+ * The central "Brain" of the application. This context manages the entire lifecycle
+ * of the digital pet, including:
+ * 1. State Management: Persistence of pet stats (health, hunger, etc.) effectively.
+ * 2. Game Loop: Handling stat decay over time, even when offline (simulation).
+ * 3. Economy: Integration with the financial system for purchasing items and earning rewards.
+ * 4. Achievements: Tracking lifetime stats to unlock badges.
+ * 
+ * Architecture Note:
+ * This component acts as the "source of truth" and syncs aggressively with 
+ * Supabase to prevent cheating, but maintains optimistic local updates for 
+ * a snappy user experience.
+ */
+
+/**
+ * Interface defining the shape of the PetContext.
+ * @interface PetContextType
+ */
 interface PetContextType {
+  /** The current active pet object, or null if loading/none exists */
   pet: Pet | null;
+  /** Optimistic update for pet stats, syncs to DB in background */
   updatePetStats: (updates: Partial<PetStats>) => Promise<void>;
+
+  // -- Care Actions --
+  /** Feeds the pet, costing coins and restoring hunger/energy */
   feed: () => Promise<void>;
+  /** Plays with the pet, boosting happiness but draining energy */
   play: () => Promise<void>;
+  /** Bathes the pet, restoring cleanliness */
   bathe: () => Promise<void>;
+  /** Puts the pet to sleep, restoring energy fully */
   rest: () => Promise<void>;
+
+  /** 
+   * Universal action dispatcher for handling complex events like "Drinking" or "Grooming".
+   * This ties into the `gameConfig` system for centralized balancing.
+   */
   performAction: (actionType: ActionType) => Promise<void>;
+
+  // -- Debug/Dev Tools --
   increaseStat: (stat: keyof PetStats, amount: number) => Promise<void>;
   decreaseStat: (stat: keyof PetStats, amount: number) => Promise<void>;
+
+  // -- Leaderboards --
   updateHighScore: (gameType: string, score: number, coins?: number) => Promise<void>;
   getHighScore: (gameType: string) => Promise<number>;
+
+  // -- State Flags --
+  /** strictly for UI loading spinners */
   loading: boolean;
+  /** User-facing error message */
   error: string | null;
+  /** True when a background save is in progress */
   updating: boolean;
+  /** Granular save status for UI feedback (e.g. "Saving...", "Saved") */
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+
+  // -- Lifecycle --
   createPet: (name: string, type: string, breed?: string) => Promise<void>;
+  /** Forces a re-fetch of pet data from the server */
   refreshPet: () => Promise<void>;
-  // Game Loop additions
+
+  // -- Game Loop State --
   isGameOver: boolean;
   badges: string[];
   lastLogin: Date | null;
+  /** Manually triggers the "Game Over" state (e.g. health <= 0) */
   triggerGameOver: () => Promise<void>;
+  /** Resets the pet to initial state (costs everything) */
   restartGame: () => Promise<void>;
   unlockBadge: (badgeId: string) => Promise<void>;
+  /** ID of the badge currently being celebrated (triggers toast) */
   badgeToast: string | null;
+
+  /** 
+   * Persistent lifetime statistics.
+   * critical for achievements like "Master Caretaker" (100 days survived)
+   */
   lifetimeStats: {
     total_washes: number;
     total_earnings: number;
@@ -42,17 +97,29 @@ interface PetContextType {
     play_sessions: number;
     total_naps: number;
   };
+  /** Triggers visual confetti effect */
   showConfetti: boolean;
-  // Game State (Migrated from localStorage)
+
+  // -- Daily Rewards & Events --
+  /** 
+   * Server-authoritative check for daily rewards.
+   * Returns the reward payload if eligible, or null.
+   */
   checkDailyReward: () => Promise<{ type: 'coins' | 'energy' | 'food', amount: number, label: string } | null>;
   oneTimeEvents: string[];
   completeOneTimeEvent: (eventName: string) => Promise<void>;
+
+  // -- Nap Tracking --
   lastNapTimestamp: Date | null;
   recordNap: () => Promise<void>;
 }
 
 const PetContext = createContext<PetContextType | null>(null);
 
+/**
+ * Hook to access the PetContext.
+ * @throws {Error} if used outside of a PetProvider
+ */
 export const usePet = () => {
   const context = useContext(PetContext);
   if (!context) {
@@ -61,10 +128,17 @@ export const usePet = () => {
   return context;
 };
 
+/**
+ * Provider component that wraps the application to provide pet state.
+ * 
+ * @param {React.ReactNode} children - The child components
+ * @param {string} userId - The current authenticated user's ID
+ */
 export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string | null }> = ({
   children,
   userId
 }) => {
+  // Core state for the pet object (name, stats, etc.)
   const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,8 +164,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
   const [lastDailyClaim, setLastDailyClaim] = useState<Date | null>(null);
   const [lastNapTimestamp, setLastNapTimestamp] = useState<Date | null>(null);
 
-  // Action counters for achievements (tracked locally, can extend to DB)
+  // Action counters strictly for the current session (used to optimize DB writes)
   const actionCountsRef = useRef({ baths: 0, meals: 0, plays: 0, coinsEarned: 0, coinsSpent: 0, naps: 0 });
+
+  // Timeout ref for debouncing the "Saved" status indicator so user sees it for at least 1.5s
   const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { refreshUserState } = useAuth();
 
@@ -124,9 +200,16 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     }
   }, [userId]);
 
+  /**
+   * Core function to update pet statistics.
+   * Handles clamping, timestamp updates, and optimistic UI rendering.
+   * 
+   * @param updates Partial<PetStats> - specific stats to modify
+   */
   const updatePetStats = useCallback(async (updates: Partial<PetStats>) => {
     if (!pet || !userId || !supabase) return;
     setUpdating(true);
+    // Show "Saving..." immediately for feedback
     setSaveStatus('saving');
     try {
       const now = new Date();
@@ -136,7 +219,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         lastUpdated: now,
       };
 
-      // Ensure bounds using gameConfig
+      // Ensure stats stay within 0-100 bounds using gameConfig clamp
       const bounded = {
         health: clampStat(updatedStats.health),
         hunger: clampStat(updatedStats.hunger),
@@ -215,7 +298,14 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     hunger: clampStat((pet?.stats.hunger || 0) + 10)
   }, 0);
 
-  // NEW: Universal action dispatcher using gameConfig
+  /**
+   * Universal action handler.
+   * This is the preferred way to interact with the pet. It:
+   * 1. Looks up the action config (cost, stats)
+   * 2. Checks wallet balance
+   * 3. Applies stats
+   * 4. Updates lifetime stats for achievements
+   */
   const performAction = useCallback(async (actionType: ActionType) => {
     if (!pet || !userId) return;
     const action = ACTIONS[actionType];
@@ -322,6 +412,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
   // -- 4. Lifecycle & Background --
 
+  /**
+   * Loads the pet data from Supabase.
+   * Also hydrates derived state like age, level, and achievements.
+   */
   const loadPet = useCallback(async () => {
     if (!userId || !supabase) {
       setPet(null);
@@ -340,6 +434,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows found
 
       if (data) {
+        // Calculate age dynamically from birthday/creation date
         const birthday = data.birthday ? new Date(data.birthday) : new Date(data.created_at);
         const age = Math.floor((new Date().getTime() - birthday.getTime()) / (1000 * 60 * 60 * 24));
         const species = (data.pet_type || data.species || 'dog').toLowerCase() as Pet['species'];
@@ -450,6 +545,11 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     }
   }, [userId, performAction]);
 
+  /**
+   * Checks if the user is eligible for a daily reward.
+   * This calls a Postgres RPC function `claim_daily_reward` which handles 
+   * the date logic server-side to prevent client clock manipulation.
+   */
   const checkDailyReward = useCallback(async () => {
     if (!userId || !supabase) return null;
 
@@ -484,6 +584,13 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     return null;
   }, [userId, refreshUserState]);
 
+  /**
+   * The Heartbeat of the pet. 
+   * Calculates stat decay based on time passed since last update.
+   * Runs intelligently:
+   * - Only if >1 minute has passed
+   * - Capped at 12 hours (Casual Mode) to prevent punishing users who sleep/work.
+   */
   const processStatDecay = useCallback(async () => {
     if (!pet || !userId || !supabase) return;
     const lastUpdate = pet.lastStatUpdate || pet.updatedAt || new Date();
@@ -491,6 +598,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     if (actualMinutesPassed < 1) return;
 
     // CASUAL-FRIENDLY: Cap offline decay at 12 hours max
+    // even if they leave for a week, their pet effectively paused after 12h
     const effectiveMinutes = Math.min(actualMinutesPassed, OFFLINE_CONFIG.maxDecayMinutes);
     const hoursAway = actualMinutesPassed / 60;
 
@@ -498,9 +606,13 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
 
     // Use DECAY_RATES from gameConfig (reduced for casual play)
     const updates: Partial<PetStats> = {
+      // Hunger grows
       hunger: clampStat((pet.stats.hunger || 0) + Math.floor(effectiveMinutes * DECAY_RATES.hunger)),
+      // Energy drains
       energy: clampStat((pet.stats.energy || 0) - Math.floor(effectiveMinutes * DECAY_RATES.energy)),
+      // Happiness drops
       happiness: clampStat((pet.stats.happiness || 0) - Math.floor(effectiveMinutes * DECAY_RATES.happiness)),
+      // Cleanliness reduces
       cleanliness: clampStat((pet.stats.cleanliness || 0) - Math.floor(effectiveMinutes * DECAY_RATES.cleanliness)),
     };
 
@@ -725,9 +837,16 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     return () => { supabase.removeChannel(sub); clearInterval(inv); };
   }, [pet?.id, userId, processStatDecay, loadPet]);
 
+  /**
+   * Initializes a new pet for the user.
+   * Handles "Species mapping" for cases where we support more visual avatars than
+   * distinct backend pet types (e.g. Dragon -> Panda type stats).
+   */
   const createPet = useCallback(async (name: string, type: string, breed: string = 'Mixed') => {
     if (!userId || !supabase) throw new Error('User not authenticated or Supabase not initialized');
     try {
+      // Normalizer: Maps diverse UI options to core backend types (dog/cat/panda)
+      // This allows us to add new visual species without breaking database constraints
       const normalizePetType = (type: string): 'dog' | 'cat' | 'panda' => {
         const normalized = type.toLowerCase().trim();
         const validPetTypes: ('dog' | 'cat' | 'panda')[] = ['dog', 'cat', 'panda'];
@@ -737,7 +856,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         };
         const mappedType = speciesToPetType[normalized];
         if (mappedType) return mappedType;
-        return 'dog';
+        return 'dog'; // Fallback safe default
       };
       const petType = normalizePetType(type);
 

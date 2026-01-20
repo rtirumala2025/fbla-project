@@ -7,6 +7,13 @@ import { pop } from '../animations/interact';
 import { ContactShadow } from '../core/ContactShadow';
 
 // --- AAA PARAMETRIC SYSTEM ---
+/**
+ * DogDNA: The genetic blueprint for generating unique dogs.
+ * This parametric system allows us to create infinite variations from a single model
+ * by adjusting bone scales, morph targets, and material properties.
+ * 
+ * @interface DogDNA
+ */
 export interface DogDNA {
   headScale: [number, number, number];
   snout: {
@@ -117,6 +124,14 @@ interface EarTwitchState {
   right: { nextTime: number; amplitude: number; duration: number; progress: number };
 }
 
+/**
+ * The main 3D Dog component.
+ * Features:
+ * - Procedural Animation: Breathing, blinking, ear twitches, and tail wags.
+ * - Emotional State Machine: Posture changes based on health/happiness (hunched vs proud).
+ * - Physics-based Movement: Inertia, banking into turns, and collision detection.
+ * - Dynamic DNA: Renders differently based on the `breed` prop.
+ */
 export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, isMovingRef, rotationRef, accessories = [], disableSnapping }: {
   state: PetGame2State;
   onPetTap: () => void;
@@ -271,12 +286,15 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
 
     if (root.current) {
       // Primary breathing (chest) - Most pronounced
+      // This is the physiological "heave" of the ribcage
       const breathPrimary = Math.sin(t * breathRate) * 0.022 * emotionalPose.chest_expansion;
 
       // Secondary (shoulders lag 0.3s) - Subtle
+      // Simulates the diaphragm pulling down, causing a slight delay in upper body movement
       const breathShoulders = Math.sin((t - 0.3) * breathRate) * 0.015;
 
       // Tertiary (overall body expansion) - Minimal
+      // The entire volume of the dog expands slightly with air intake
       const breathBody = Math.sin((t - 0.1) * breathRate) * 0.008;
 
       // Apply layered breathing with emotion
@@ -293,6 +311,8 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
 
     if (head.current) {
       // AAA Perlin Noise Head Drift (replaces mechanical sin/cos)
+      // Standard sine waves look too robotic. Perlin noise creates detailed, organic
+      // randomness that mimics true biological muscle tremors and attention shifts.
       const driftPitch = (perlinNoise1D(t * 0.5, 1) * 2 - 1) * 0.04 * emotionalPose.micro_movement_scale;
       const driftYaw = (perlinNoise1D(t * 0.3, 2) * 2 - 1) * 0.06 * emotionalPose.micro_movement_scale;
       const driftRoll = (perlinNoise1D(t * 0.8, 3) * 2 - 1) * 0.015 * emotionalPose.micro_movement_scale;
@@ -304,7 +324,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
       head.current.rotation.y = driftYaw;
       head.current.rotation.z = emotionalPose.head_roll + driftRoll;
 
-      // Breathing affects neck angle slightly
+      // Breathing affects neck angle slightly (everything is connected)
       const breathNeck = Math.sin((t - 0.5) * breathRate) * 0.006;
       head.current.rotation.x += breathNeck;
     }
@@ -412,6 +432,8 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
       root.current.position.y = (root.current.position.y || 0) * 0.9 + Math.abs(walkCycle) * 0.1;
 
       // COLLISION CHECK: Get valid position (slides along walls if collision detected)
+      // Instead of stopping dead, we project the movement vector against the wall normal
+      // to allow "sliding" - this feels much smoother for the player.
       const [validX, validZ] = getValidPosition(
         prevX,
         prevZ,
@@ -424,6 +446,7 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
       root.current.position.z = validZ;
 
       // Boundary Check (Clamp to +/- 58 units)
+      // Keeps the pet within the safe renderable area of the room
       const [clampedX, clampedZ] = clampToBounds(root.current.position.x, root.current.position.z, 58);
       root.current.position.x = clampedX;
       root.current.position.z = clampedZ;
@@ -811,6 +834,13 @@ export function DogModel({ state, onPetTap, setPetPosition, stats, targetRef, is
       ))}
 
       {/* === DYNAMIC EMOTION PARTICLES (Priority-based) === */}
+      {/* 
+        To prevent visual clutter, we strictly enforce a hierarchy of needs:
+        1. SLEEP (Zzz) - Overrides everything
+        2. DIRTY (Stink) - Overrides sadness
+        3. SAD (Rain) - Only if awake and clean
+        4. HAPPY (Stars) - Functionally mutually exclusive with all above
+      */}
 
       {/* TIRED PARTICLES (Zzz) - Highest priority */}
       {isTired && !isDirty && (
