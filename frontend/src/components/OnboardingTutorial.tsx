@@ -6,7 +6,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import Joyride, { CallBackProps, STATUS, Step, EVENTS, ACTIONS } from 'react-joyride';
 // Removed unused imports: useNavigate, useLocation
 import { RotateCcw } from 'lucide-react';
-import { indexedDBStorage, IndexedDBStorage } from '../utils/indexedDBStorage';
+import { usePet } from '../context/PetContext';
 
 const TUTORIAL_ID = 'main-onboarding-tutorial';
 
@@ -141,32 +141,18 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const { oneTimeEvents, completeOneTimeEvent } = usePet();
 
-  // Load saved progress from IndexedDB
+  // Load saved progress from PetContext
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        if (!IndexedDBStorage.isSupported()) {
-          console.warn('IndexedDB not supported, tutorial progress will not persist');
-          setIsLoading(false);
-          if (autoStart) {
-            setRun(true);
-          }
-          return;
-        }
-
-        const savedStep = await indexedDBStorage.getTutorialProgress(TUTORIAL_ID);
-        const isCompleted = await indexedDBStorage.isTutorialCompleted(TUTORIAL_ID, TUTORIAL_STEPS.length);
+        const isCompleted = oneTimeEvents.includes('tutorial_complete');
 
         if (isCompleted) {
           // Tutorial already completed, don't auto-start
           setIsLoading(false);
           return;
-        }
-
-        if (savedStep !== null && savedStep >= 0) {
-          // Resume from saved step
-          setStepIndex(Math.min(savedStep, TUTORIAL_STEPS.length - 1));
         }
 
         setIsLoading(false);
@@ -181,24 +167,16 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
       } catch (error) {
         console.error('Failed to load tutorial progress:', error);
         setIsLoading(false);
-        if (autoStart) {
-          setRun(true);
-        }
       }
     };
 
     loadProgress();
-  }, [autoStart]);
+  }, [autoStart, oneTimeEvents]);
 
-  // Save progress to IndexedDB whenever step changes
+  // Save progress (Reference to handleJoyrideCallback)
+  // We only persist COMPLETION now. Step progress is session-only.
   const saveProgress = useCallback(async (currentStep: number) => {
-    try {
-      if (IndexedDBStorage.isSupported()) {
-        await indexedDBStorage.saveTutorialProgress(TUTORIAL_ID, currentStep);
-      }
-    } catch (error) {
-      console.error('Failed to save tutorial progress:', error);
-    }
+    // No-op for step persistence (managed in memory by setStepIndex)
   }, []);
 
   // Handle tutorial callbacks
@@ -221,7 +199,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
 
         if (status === STATUS.FINISHED) {
           // Mark as completed
-          indexedDBStorage.saveTutorialProgress(TUTORIAL_ID, TUTORIAL_STEPS.length - 1).catch(console.error);
+          completeOneTimeEvent('tutorial_complete');
           onComplete?.();
         } else if (status === STATUS.SKIPPED) {
           // Save current step even if skipped
@@ -253,9 +231,10 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   // Restart tutorial (reset progress)
   const restartTutorial = useCallback(async () => {
     try {
-      await indexedDBStorage.clearTutorialProgress(TUTORIAL_ID);
+      // Just restart
       setStepIndex(0);
       setRun(true);
+      // Note: We don't verify if it was "completed" in DB to allow re-runs.
     } catch (error) {
       console.error('Failed to reset tutorial:', error);
       // Still start tutorial even if reset fails

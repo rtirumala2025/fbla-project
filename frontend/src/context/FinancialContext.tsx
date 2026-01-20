@@ -36,11 +36,8 @@ export const useFinancial = () => {
 };
 
 export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User | null }> = ({ children, user }) => {
-  // Initialize from localStorage if available to prevent 0 flash
-  const [balance, setBalance] = useState(() => {
-    const saved = localStorage.getItem('finance_balance');
-    return saved ? Number(saved) : 0;
-  });
+  // Initialize with 0
+  const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +60,6 @@ export const FinancialProvider: React.FC<{ children: React.ReactNode; user: User
         const summary = response.summary;
         const newBalance = summary.balance || 0;
         setBalance(newBalance);
-        localStorage.setItem('finance_balance', newBalance.toString());
 
         // Map backend transactions to our Transaction format
         const mappedTransactions: Transaction[] = (summary.transactions || []).map((t) => ({

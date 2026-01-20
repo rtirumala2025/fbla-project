@@ -42,6 +42,10 @@ interface PetContextType {
     play_sessions: number;
   };
   showConfetti: boolean;
+  // Game State (Migrated from localStorage)
+  checkDailyReward: () => Promise<{ type: 'coins' | 'energy' | 'food', amount: number, label: string } | null>;
+  oneTimeEvents: string[];
+  completeOneTimeEvent: (eventName: string) => Promise<void>;
 }
 
 const PetContext = createContext<PetContextType | null>(null);
@@ -76,6 +80,11 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     food_eaten: number;
     play_sessions: number;
   }>({ total_washes: 0, total_earnings: 0, total_spent: 0, days_survived: 0, food_eaten: 0, play_sessions: 0 });
+
+  // Game State (DB Persisted)
+  const [oneTimeEvents, setOneTimeEvents] = useState<string[]>([]);
+  const [lastDailyClaim, setLastDailyClaim] = useState<Date | null>(null);
+
   // Action counters for achievements (tracked locally, can extend to DB)
   const actionCountsRef = useRef({ baths: 0, meals: 0, plays: 0, coinsEarned: 0, coinsSpent: 0 });
   const saveStatusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -358,6 +367,31 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       } else {
         setPet(null);
       }
+
+
+      // Load Game State (pet_gamestate)
+      const { data: gamestate } = await supabase
+        .from('pet_gamestate')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (gamestate) {
+        setOneTimeEvents(Array.isArray(gamestate.one_time_events) ? gamestate.one_time_events : []);
+        setLastDailyClaim(gamestate.last_daily_claim ? new Date(gamestate.last_daily_claim) : null);
+      } else {
+        // Initialize if missing
+        setOneTimeEvents([]);
+        setLastDailyClaim(null);
+        // Create initial record
+        const { error: initError } = await supabase.from('pet_gamestate').insert({
+          user_id: userId,
+          one_time_events: [],
+          last_daily_claim: '2000-01-01 00:00:00Z'
+        });
+        if (initError) console.warn('Failed to init gamestate:', initError);
+      }
+
     } catch (e) {
       console.error('Load pet failed:', e);
       setError(getErrorMessage(e, 'Failed to load pet data'));
@@ -365,6 +399,65 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       setLoading(false);
     }
   }, [userId]);
+
+  const completeOneTimeEvent = useCallback(async (eventName: string) => {
+    if (!userId || !supabase) return;
+    if (oneTimeEvents.includes(eventName)) return;
+
+    const newEvents = [...oneTimeEvents, eventName];
+    setOneTimeEvents(newEvents);
+
+    // Persist
+    try {
+      await supabase.from('pet_gamestate').upsert({
+        user_id: userId,
+        one_time_events: newEvents,
+        settings: { music: true, sfx: true } // Default if missing
+      }, { onConflict: 'user_id' });
+      console.log(`✅ Completed event: ${eventName}`);
+    } catch (e) {
+      console.warn('Failed to save one-time event:', e);
+    }
+  }, [userId, oneTimeEvents]);
+
+  const checkDailyReward = useCallback(async () => {
+    if (!userId || !supabase) return null;
+
+    // Default last claim to year 2000 if null
+    const lastClaim = lastDailyClaim || new Date('2000-01-01');
+    const now = new Date();
+
+    // Compare Day/Month/Year
+    const isSameDay = lastClaim.getDate() === now.getDate() &&
+      lastClaim.getMonth() === now.getMonth() &&
+      lastClaim.getFullYear() === now.getFullYear();
+
+    if (!isSameDay) {
+      console.log("🌞 New Day Detected! Granting Reward...");
+
+      // Generate Reward
+      const reward = { type: 'coins' as const, amount: 100, label: 'Daily Coins' };
+
+      // Grant Reward
+      try {
+        await performAction('EARN_COINS_100' as ActionType);
+      } catch (err) {
+        // Fallback if action type missing
+        updateHighScore('daily_login', 0, 100);
+      }
+
+      // Save Timestamp
+      const newClaimTime = now.toISOString();
+      setLastDailyClaim(now);
+
+      await supabase.from('pet_gamestate').upsert({
+        user_id: userId,
+        last_daily_claim: newClaimTime
+      }, { onConflict: 'user_id' });
+      return reward;
+    }
+    return null;
+  }, [userId, lastDailyClaim, performAction, updateHighScore]);
 
   const processStatDecay = useCallback(async () => {
     if (!pet || !userId || !supabase) return;
@@ -663,7 +756,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     badgeToast,
     lifetimeStats,
     showConfetti: !!badgeToast, // Show confetti when badge toast is active
-  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame, unlockBadge, badgeToast, lifetimeStats]);
+    checkDailyReward,
+    oneTimeEvents,
+    completeOneTimeEvent,
+  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame, unlockBadge, badgeToast, lifetimeStats, checkDailyReward, oneTimeEvents, completeOneTimeEvent]);
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 };

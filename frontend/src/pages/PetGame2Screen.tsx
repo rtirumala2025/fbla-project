@@ -59,7 +59,7 @@ const WindowLoadingFallback = () => (
 
 
 export const PetGame2Screen: React.FC = () => {
-  const { pet, loading, error, refreshPet, updatePetStats, performAction, isGameOver, restartGame, lastLogin, badges, lifetimeStats } = usePet();
+  const { pet, loading, error, refreshPet, updatePetStats, performAction, isGameOver, restartGame, lastLogin, badges, lifetimeStats, checkDailyReward } = usePet();
   const { currentUser } = useAuth();
   const { balance, transactions, refreshBalance } = useFinancial();
 
@@ -220,40 +220,22 @@ export const PetGame2Screen: React.FC = () => {
   };
 
   // -- Daily Login Reward Check --
+  // -- Daily Login Reward Check --
   useEffect(() => {
-    if (!pet || !lastLogin) return;
-
-    const now = new Date();
-    const last = new Date(lastLogin);
-    const hoursSinceLogin = (now.getTime() - last.getTime()) / (1000 * 60 * 60);
-
-    // Show reward if > 24 hours since last login
-    if (hoursSinceLogin >= 24) {
-      setDailyReward(generateDailyReward());
-      setShowDailyReward(true);
-    }
-  }, [pet, lastLogin]);
+    // Check server for daily reward eligibility
+    checkDailyReward().then(reward => {
+      if (reward) {
+        setDailyReward(reward);
+        setShowDailyReward(true);
+      }
+    });
+  }, [checkDailyReward]);
 
   const handleClaimDailyReward = useCallback(async () => {
-    if (!pet || !dailyReward) return;
-
-    try {
-      // Apply reward based on type
-      if (dailyReward.type === 'coins') {
-        // Coins are handled by backend wallet
-        console.log(`💰 Claimed ${dailyReward.amount} coins!`);
-      } else if (dailyReward.type === 'energy') {
-        await updatePetStats({ energy: Math.min(100, (stats?.energy || 0) + dailyReward.amount) });
-      }
-      // Update last_login in database
-      // This is handled by PetContext or we simulate it locally
-
-      setShowDailyReward(false);
-      setDailyReward(null);
-    } catch (error) {
-      console.error('Failed to claim daily reward:', error);
-    }
-  }, [pet, dailyReward, updatePetStats, stats]);
+    // Reward is already granted by checkDailyReward(). This just closes the UI.
+    setShowDailyReward(false);
+    setDailyReward(null);
+  }, []);
 
   const petType = useMemo<PetGame2PetType>(() => {
     if (devPetOverride) return devPetOverride;
