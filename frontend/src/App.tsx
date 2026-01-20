@@ -309,8 +309,7 @@ function AppContent() {
                   }
                 />
 
-                <Route path="/shop" element={<ProtectedRoute><PageTransition><Pages.Shop /></PageTransition></ProtectedRoute>} />
-                <Route path="/inventory" element={<ProtectedRoute><PageTransition><Pages.Inventory /></PageTransition></ProtectedRoute>} />
+
                 <Route path="/profile" element={<ProtectedRoute><PageTransition><Pages.ProfilePage /></PageTransition></ProtectedRoute>} />
                 <Route path="/budget" element={<ProtectedRoute><PageTransition><Pages.BudgetDashboard /></PageTransition></ProtectedRoute>} />
                 <Route path="/clean" element={<ProtectedRoute><PageTransition><Pages.CleanScreen /></PageTransition></ProtectedRoute>} />

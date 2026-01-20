@@ -53,13 +53,7 @@ export const primaryNav: AppNavLink[] = [
 ];
 
 export const secondaryNav: AppNavLink[] = [
-  {
-    to: '/shop',
-    label: 'Shop',
-    icon: ShoppingBag,
-    ariaLabel: 'Open shop',
-    category: 'extras',
-  },
+
   {
     to: '/customize/avatar',
     label: 'Avatar Studio',
