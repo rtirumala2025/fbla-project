@@ -107,6 +107,7 @@ export function PetRunGameWindow({
     // Animation frame
     const gameLoopRef = useRef<number>();
     const lastTimeRef = useRef<number>(0);
+    const lastScoreTimeRef = useRef<number>(0); // For throttled score increment
 
     // Get the pet emoji - use breed-specific if available
     const activePetEmoji = useMemo(() => {
@@ -284,8 +285,11 @@ export function PetRunGameWindow({
                 return coin;
             }));
 
-            // Increment score over time
-            setScore(s => s + 1);
+            // Increment score over time (throttled to ~10 per second, not per frame)
+            if (timestamp - lastScoreTimeRef.current > 100) {
+                setScore(s => s + 1);
+                lastScoreTimeRef.current = timestamp;
+            }
 
             gameLoopRef.current = requestAnimationFrame(gameLoop);
         };
@@ -330,6 +334,7 @@ export function PetRunGameWindow({
         velocityRef.current = 0;
         setGameSpeed(GAME_SPEED_INITIAL);
         lastTimeRef.current = 0;
+        lastScoreTimeRef.current = 0; // Reset score throttle timer
     };
 
     // Cleanup on close
