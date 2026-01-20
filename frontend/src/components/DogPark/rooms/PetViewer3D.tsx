@@ -101,7 +101,7 @@ function PetModelViewer({
 
     if (isSleeping) {
         // Bed Location: [0, 0, -2] (Centered), Height: 0.25 to stay on Cushion
-        finalPos = [0, 0.25, 0];
+        finalPos = [0, 0.40, 0];
     } else if (currentRoom === 'kitchen') {
         // Kitchen: Close to bowl (bowl at z=2), dog at z=1.2 facing bowl
         finalPos = hasFood ? [0, -0.05, 1.2] : [0, -0.05, 0.5];

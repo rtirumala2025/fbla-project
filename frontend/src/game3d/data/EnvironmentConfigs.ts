@@ -7,14 +7,22 @@ import type { EnvironmentConfig, InteractiveZone } from '../core/InteractionSyst
 export const DOG_PARK_CONFIG: EnvironmentConfig = {
     bounds: { x: 50, z: 50 },
     zones: [
-        { id: 'agility', position: ACTIVITY_POSITIONS.agility, label: 'Enter Training Center', icon: 'agility', interactionType: 'building', minDistance: 12 },
-        { id: 'vet', position: ACTIVITY_POSITIONS.vet, label: 'Enter Vet Clinic', icon: 'vet', interactionType: 'building', minDistance: 12 },
-        { id: 'play', position: ACTIVITY_POSITIONS.play, label: 'Enter Play Pavilion', icon: 'play', interactionType: 'building', minDistance: 12 },
-        { id: 'rest', position: ACTIVITY_POSITIONS.rest, label: 'Enter Rest Shelter', icon: 'rest', interactionType: 'building', minDistance: 12 },
-        { id: 'center', position: ACTIVITY_POSITIONS.center, label: 'Enter Park Hub', icon: 'center', interactionType: 'building', minDistance: 12 },
-        { id: 'shop', position: ACTIVITY_POSITIONS.shop, label: 'Enter Gift Shop', icon: 'shop', interactionType: 'building', minDistance: 12 },
-        { id: 'market', position: ACTIVITY_POSITIONS.market, label: 'Enter Supermarket', icon: 'market', interactionType: 'building', minDistance: 12 },
-        { id: 'home', position: ACTIVITY_POSITIONS.home, label: 'Enter House', icon: 'home', interactionType: 'building', minDistance: 12 },
+        // Agility: [-25, 0, -25] + offset => [-14, 0, -14] approx
+        { id: 'agility', position: [-14, 0, -14], label: 'Enter Training Center', icon: 'agility', interactionType: 'building', minDistance: 8 },
+        // Vet: [-35, 0, 0] + offset => [-23, 0, 0]
+        { id: 'vet', position: [-23, 0, 0], label: 'Enter Vet Clinic', icon: 'vet', interactionType: 'building', minDistance: 8 },
+        // Play: [25, 0, -25] - Already valid
+        { id: 'play', position: [25, 0, -25], label: 'Enter Play Pavilion', icon: 'play', interactionType: 'building', minDistance: 12 },
+        // Rest: [35, 0, 0] - Already valid
+        { id: 'rest', position: [35, 0, 0], label: 'Enter Rest Shelter', icon: 'rest', interactionType: 'building', minDistance: 12 },
+        // Center: [-25, 0, 25] + offset => [-17, 0, 17]
+        { id: 'center', position: [-17, 0, 17], label: 'Enter Park Hub', icon: 'center', interactionType: 'building', minDistance: 8 },
+        // Shop: [25, 0, 25] + offset => [15, 0, 15]
+        { id: 'shop', position: [15, 0, 15], label: 'Enter Gift Shop', icon: 'shop', interactionType: 'building', minDistance: 8 },
+        // Market: [0, 0, 35] + offset => [0, 0, 21]
+        { id: 'market', position: [0, 0, 21], label: 'Enter Supermarket', icon: 'market', interactionType: 'building', minDistance: 8 },
+        // Home: [0, 0, -35] + offset => [0, 0, -22]
+        { id: 'home', position: [0, 0, -22], label: 'Enter House', icon: 'home', interactionType: 'building', minDistance: 8 },
     ]
 };
 

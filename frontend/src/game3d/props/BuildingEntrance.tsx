@@ -19,6 +19,7 @@ interface BuildingEntranceProps {
     buildingId: ActivityZone;
     buildingPosition: [number, number, number]; // World position of the building
     doorLocalPosition: [number, number, number]; // Door position relative to building
+    triggerLocalPosition?: [number, number, number]; // Interaction detection position (defaults to door position)
     doorRotation?: number; // Building rotation (Y axis)
     onEnter: (buildingId: ActivityZone) => void;
     petPosition: [number, number, number];
@@ -36,6 +37,7 @@ export function BuildingEntrance({
     buildingId,
     buildingPosition,
     doorLocalPosition,
+    triggerLocalPosition,
     doorRotation = 0,
     onEnter,
     petPosition,
@@ -60,6 +62,8 @@ export function BuildingEntrance({
 
     // Ref for the specific door group
     const doorRef = useRef<THREE.Group>(null);
+    // Ref for the interaction trigger zone
+    const triggerRef = useRef<THREE.Group>(null);
 
     // Track world position for proximity check
     const [worldPos] = useState(() => new THREE.Vector3());
@@ -68,14 +72,16 @@ export function BuildingEntrance({
     const frameCount = useRef(0);
 
     useFrame(() => {
-        if (!doorRef.current) return;
+        // Use triggerRef for proximity if available, otherwise doorRef
+        const targetRef = triggerRef.current || doorRef.current;
+        if (!targetRef) return;
 
         // Throttle: Run only every 10 frames (~6 times/sec at 60fps)
         frameCount.current++;
         if (frameCount.current % 10 !== 0) return;
 
         // Get actual world position from scene graph
-        doorRef.current.getWorldPosition(worldPos);
+        targetRef.getWorldPosition(worldPos);
 
         const dx = petPosition[0] - worldPos.x;
         const dz = petPosition[2] - worldPos.z;
@@ -141,70 +147,71 @@ export function BuildingEntrance({
     const stairDepth = 0.6;
     const stairHeight = 0.15;
 
-    // Group ref for world position access
-    // Note: We use doorRef for the pivoting part, but we need a ref for the ROOT of this component to get position
-    // BUT, we can just use doorRef's parent or similar. 
-    // Simplest: Wrap content in a group referenced by `doorRef`? 
-    // Wait, the proximity logic uses `doorRef`.
-    // Currently `doorRef` is on the pivoting door part. That moves!
-    // We should use a stable ref for position.
-
     return (
-        <group
-            ref={doorRef}
-            position={doorLocalPosition}
-            rotation={[0, 0, 0]} // Rotation handled by parent
-        >
-            {/* Entrance Stairs (if needed) */}
-            {requireStairs && (
-                <group position={[0, -doorLocalPosition[1], doorWidth / 2 + 0.5]}>
-                    {Array.from({ length: stairCount }).map((_, i) => (
-                        <Box
-                            key={i}
-                            args={[stairWidth + i * 0.3, stairHeight, stairDepth]}
-                            position={[0, -stairHeight * (i + 0.5), stairDepth * i]}
-                            castShadow
-                            receiveShadow
-                        >
-                            <meshStandardMaterial color="#9e9e9e" roughness={0.8} />
-                        </Box>
-                    ))}
-                </group>
-            )}
-
-            {/* Animated Door */}
+        <group>
+            {/* Invisible Trigger Zone Helper - Positioned at triggerLocalPosition */}
             <group
-                ref={doorPivotRef}
-                position={[-doorWidth / 2, 0, 0]} // Pivot point at left edge (hinge)
+                ref={triggerRef}
+                position={triggerLocalPosition || doorLocalPosition}
+                visible={false}
             >
-                <Box
-                    args={[doorWidth, doorHeight, 0.1]}
-                    position={[doorWidth / 2, 0, 0]} // Center relative to pivot
-                    castShadow
-                >
-                    <meshStandardMaterial color={doorColor} />
-                </Box>
-
-                {/* Door Handle */}
-                <mesh position={[doorWidth - 0.3, 0, 0.1]}>
-                    <sphereGeometry args={[0.08, 8, 8]} />
-                    <meshStandardMaterial color="#ffd700" metalness={0.8} />
-                </mesh>
+                {/* Debug Helper in Dev Mode */}
+                {process.env.NODE_ENV === 'development' && <mesh><sphereGeometry args={[0.5]} /><meshBasicMaterial color="lime" wireframe /></mesh>}
             </group>
 
-            {/* 3D ENTER button removed - now using 2D BuildingProximityUI instead */}
+            {/* Visual Door Group - Positioned at doorLocalPosition */}
+            <group
+                ref={doorRef}
+                position={doorLocalPosition}
+                rotation={[0, 0, 0]} // Rotation handled by parent
+            >
+                {/* Entrance Stairs (if needed) */}
+                {requireStairs && (
+                    <group position={[0, -doorLocalPosition[1], doorWidth / 2 + 0.5]}>
+                        {Array.from({ length: stairCount }).map((_, i) => (
+                            <Box
+                                key={i}
+                                args={[stairWidth + i * 0.3, stairHeight, stairDepth]}
+                                position={[0, -stairHeight * (i + 0.5), stairDepth * i]}
+                                castShadow
+                                receiveShadow
+                            >
+                                <meshStandardMaterial color="#9e9e9e" roughness={0.8} />
+                            </Box>
+                        ))}
+                    </group>
+                )}
 
+                {/* Animated Door */}
+                <group
+                    ref={doorPivotRef}
+                    position={[-doorWidth / 2, 0, 0]} // Pivot point at left edge (hinge)
+                >
+                    <Box
+                        args={[doorWidth, doorHeight, 0.1]}
+                        position={[doorWidth / 2, 0, 0]} // Center relative to pivot
+                        castShadow
+                    >
+                        <meshStandardMaterial color={doorColor} />
+                    </Box>
 
+                    {/* Door Handle */}
+                    <mesh position={[doorWidth - 0.3, 0, 0.1]}>
+                        <sphereGeometry args={[0.08, 8, 8]} />
+                        <meshStandardMaterial color="#ffd700" metalness={0.8} />
+                    </mesh>
+                </group>
 
-            {/* Visual indicator when door is open */}
-            {doorOpen && variant !== 'hidden' && (
-                <pointLight
-                    position={[0, doorHeight / 2, -1]}
-                    intensity={1}
-                    color="#fff8e1"
-                    distance={5}
-                />
-            )}
+                {/* Visual indicator when door is open */}
+                {doorOpen && variant !== 'hidden' && (
+                    <pointLight
+                        position={[0, doorHeight / 2, -1]}
+                        intensity={1}
+                        color="#fff8e1"
+                        distance={5}
+                    />
+                )}
+            </group>
         </group>
     );
 }
@@ -212,6 +219,7 @@ export function BuildingEntrance({
 // Helper to get entrance configuration for each building type
 export const BUILDING_ENTRANCES: Record<ActivityZone, {
     doorLocalPosition: [number, number, number];
+    triggerLocalPosition?: [number, number, number]; // Optional override for interaction zone
     requireStairs: boolean;
     stairCount: number;
     doorWidth: number;
@@ -223,6 +231,7 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     shop: {
         // Gift Shop: Solid wood door with stairs
         doorLocalPosition: [0, 2.2, 5.9],
+        triggerLocalPosition: [0, 1.0, 14.0], // Moved out to lamps
         requireStairs: true,
         stairCount: 2,
         doorWidth: 2.4,
@@ -233,6 +242,7 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     home: {
         // Pet House: Solid door, built-in stairs handled by model
         doorLocalPosition: [0, 2.2, 4.9],
+        triggerLocalPosition: [0, 1.0, 13.0], // Moved out to lamps
         requireStairs: false,
         stairCount: 0,
         doorWidth: 1.8,
@@ -243,6 +253,7 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     agility: {
         // Agility: Rustic Gate
         doorLocalPosition: [0, 0.5, 11],
+        triggerLocalPosition: [0, 0.5, 16.0], // Moved out to lamps
         requireStairs: false,
         stairCount: 0,
         doorWidth: 3,
@@ -253,6 +264,7 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     vet: {
         // Vet: Glass double doors
         doorLocalPosition: [0, 1.6, 4.26],
+        triggerLocalPosition: [0, 1.0, 12.0], // Moved out to lamps
         requireStairs: false,
         stairCount: 0,
         doorWidth: 2.2,
@@ -281,6 +293,7 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     center: {
         // Park Hub: Modern Glass
         doorLocalPosition: [0, 1.8, 2],
+        triggerLocalPosition: [0, 1.0, 12.0], // Moved out to lamps
         requireStairs: false, // Deck handles this
         stairCount: 0,
         doorWidth: 2.4,
@@ -291,6 +304,7 @@ export const BUILDING_ENTRANCES: Record<ActivityZone, {
     market: {
         // Supermarket: Sliding glass doors
         doorLocalPosition: [0, 2.5, 6.9],
+        triggerLocalPosition: [0, 1.0, 14.0], // Moved out to lamps
         requireStairs: true,
         stairCount: 2,
         doorWidth: 3,

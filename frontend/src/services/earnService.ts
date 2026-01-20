@@ -32,9 +32,9 @@ async function getCooldowns(userId: string | undefined): Promise<Record<string, 
       .from('user_cooldowns')
       .select('cooldowns')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       return {};
     }
 
@@ -43,13 +43,13 @@ async function getCooldowns(userId: string | undefined): Promise<Record<string, 
       const cooldowns = data.cooldowns as Record<string, number>;
       const now = Date.now();
       const validCooldowns: Record<string, number> = {};
-      
+
       for (const [key, value] of Object.entries(cooldowns)) {
         if (typeof value === 'number' && value > now) {
           validCooldowns[key] = value;
         }
       }
-      
+
       return validCooldowns;
     }
 
@@ -93,11 +93,11 @@ export const earnService = {
   // Optimized: Get all cooldowns at once (fixes N+1 query pattern)
   async getAllChoreCooldowns(userId: string | undefined): Promise<Record<string, number>> {
     if (!userId) return {};
-    
+
     const cooldowns = await getCooldowns(userId);
     const now = Date.now();
     const result: Record<string, number> = {};
-    
+
     for (const [choreId, until] of Object.entries(cooldowns)) {
       if (typeof until === 'number' && until > now) {
         result[choreId] = Math.ceil((until - now) / 1000);
@@ -105,7 +105,7 @@ export const earnService = {
         result[choreId] = 0;
       }
     }
-    
+
     return result;
   },
 

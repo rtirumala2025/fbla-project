@@ -83,7 +83,7 @@ export const env = {
   SUPABASE_ANON_KEY: getEnv('SUPABASE_ANON_KEY'),
 
   // API configuration
-  API_URL: getEnv('API_URL', 'http://localhost:3008'),
+  API_URL: getEnv('API_URL', 'http://localhost:8000'),
 
   // Feature flags
   USE_MOCK: getEnv('USE_MOCK', 'false') === 'true',

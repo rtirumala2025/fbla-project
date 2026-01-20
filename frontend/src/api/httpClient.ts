@@ -7,7 +7,7 @@
 import { supabase, isSupabaseMock } from '../lib/supabase';
 import { getEnv } from '../utils/env';
 
-const API_BASE_URL = getEnv('API_URL', 'http://localhost:3008');
+const API_BASE_URL = getEnv('API_URL', 'http://localhost:8000');
 
 export type AuthTokens = {
   accessToken: string;

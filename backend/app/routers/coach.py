@@ -41,6 +41,22 @@ async def get_advice(
     difficulty_hint = "normal"
     summary = "Your pet is doing great! Keep up the excellent care."
     
+    
+    if pool is None:
+        # Fallback if database is not available
+        suggestions.append(CoachSuggestion(
+            category="system",
+            recommendation="Database connection unavailable. Showing default advice."
+        ))
+        return CoachAdviceResponse(
+            mood="happy",
+            difficulty_hint="normal",
+            summary="Welcome! We're having trouble connecting to the database, but you can still play.",
+            suggestions=suggestions,
+            generated_at=datetime.now(timezone.utc).isoformat(),
+            source="fallback",
+        )
+
     async with pool.acquire() as conn:
         # Get pet stats
         pet = await conn.fetchrow(

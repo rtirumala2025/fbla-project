@@ -30,7 +30,7 @@ export async function askAIAssistant(request: AIRequest): Promise<AIResponse> {
             return { message: "Please log in to chat with me!" };
         }
 
-        const API_URL = getEnv('VITE_API_URL', 'http://localhost:3008');
+        const API_URL = getEnv('VITE_API_URL', 'http://localhost:8000');
 
         // Enrich the message with context since backend request schema is simple
         // The backend knows pet stats/balance, but not "Current Page" or frontend state

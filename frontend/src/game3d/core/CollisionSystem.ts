@@ -26,6 +26,18 @@ export const BUILDING_COLLIDERS: BuildingCollider[] = Object.entries(ACTIVITY_PO
     })
 );
 
+// Lamp positions (copied from DogPark.tsx to ensure consistency)
+const LAMP_POSITIONS: [number, number][] = [
+    [-2.5, -12], [2.5, -12], [-2.5, -22], [2.5, -22],
+    [-2.5, 12], [2.5, 12], [-2.5, 22], [2.5, 22],
+    [-12, -2.5], [-12, 2.5], [-22, -2.5], [-22, 2.5],
+    [12, -2.5], [12, 2.5], [22, -2.5], [22, 2.5],
+    [-9, -7], [-7, -9], [9, -7], [7, -9],
+    [-9, 7], [-7, 9], [9, 7], [7, 9],
+];
+
+const LAMP_RADIUS = 0.5; // Collision radius for lamp posts
+
 // Tree colliders - stored separately and can be populated from DogPark scenery
 interface TreeCollider {
     x: number;
@@ -70,7 +82,9 @@ export function checkBuildingCollision(x: number, z: number): ActivityZone | nul
         const dz = z - building.centerZ;
         const distSq = dx * dx + dz * dz;
 
-        if (distSq < building.radius * building.radius) {
+        // Use a larger radius (12) for collision checks to prevent clipping corners
+        // The original radius (9) was too small for rectangular buildings
+        if (distSq < 12 * 12) {
             return building.id;
         }
     }
@@ -94,10 +108,26 @@ export function checkTreeCollision(x: number, z: number): boolean {
 }
 
 /**
- * Check if a position collides with any obstacle (building or tree)
+ * Check if a position collides with any lamp post
+ */
+export function checkLampCollision(x: number, z: number): boolean {
+    for (const [lx, lz] of LAMP_POSITIONS) {
+        const dx = x - lx;
+        const dz = z - lz;
+        const distSq = dx * dx + dz * dz;
+
+        if (distSq < LAMP_RADIUS * LAMP_RADIUS) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Check if a position collides with any obstacle (building, tree, or lamp)
  */
 export function checkCollision(x: number, z: number): boolean {
-    return checkBuildingCollision(x, z) !== null || checkTreeCollision(x, z);
+    return checkBuildingCollision(x, z) !== null || checkTreeCollision(x, z) || checkLampCollision(x, z);
 }
 
 /**
