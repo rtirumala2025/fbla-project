@@ -14,37 +14,37 @@ interface PetStatsDisplayProps {
 }
 
 const statConfig = {
-  health: { 
-    icon: Heart, 
-    color: 'bg-red-500', 
+  health: {
+    icon: Heart,
+    color: 'bg-red-500',
     bgColor: 'bg-red-100',
     label: 'Health',
     description: 'Overall pet health'
   },
-  energy: { 
-    icon: Zap, 
-    color: 'bg-yellow-500', 
+  energy: {
+    icon: Zap,
+    color: 'bg-yellow-500',
     bgColor: 'bg-yellow-100',
     label: 'Energy',
     description: 'Activity level'
   },
-  happiness: { 
-    icon: Smile, 
-    color: 'bg-blue-500', 
+  happiness: {
+    icon: Smile,
+    color: 'bg-blue-500',
     bgColor: 'bg-blue-100',
     label: 'Happiness',
     description: 'Mood and contentment'
   },
-  cleanliness: { 
-    icon: Droplet, 
-    color: 'bg-green-500', 
+  cleanliness: {
+    icon: Droplet,
+    color: 'bg-green-500',
     bgColor: 'bg-green-100',
     label: 'Cleanliness',
     description: 'Hygiene level'
   },
-  hunger: { 
-    icon: Activity, 
-    color: 'bg-orange-500', 
+  hunger: {
+    icon: Activity,
+    color: 'bg-orange-500',
     bgColor: 'bg-orange-100',
     label: 'Hunger',
     description: 'Food level'
@@ -104,6 +104,7 @@ export const PetStatsDisplay: React.FC<PetStatsDisplayProps> = memo(({ stats, le
           return (
             <motion.div
               key={key}
+              id={key === 'hunger' ? 'stat-hunger' : undefined}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: statsArray.indexOf({ key, value }) * 0.1 }}
@@ -115,12 +116,11 @@ export const PetStatsDisplay: React.FC<PetStatsDisplayProps> = memo(({ stats, le
                   <span className="font-medium text-gray-700">{config.label}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs font-semibold ${
-                    status === 'excellent' ? 'text-green-600' :
-                    status === 'good' ? 'text-blue-600' :
-                    status === 'fair' ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
+                  <span className={`text-xs font-semibold ${status === 'excellent' ? 'text-green-600' :
+                      status === 'good' ? 'text-blue-600' :
+                        status === 'fair' ? 'text-yellow-600' :
+                          'text-red-600'
+                    }`}>
                     {Math.round(clampedValue)}%
                   </span>
                 </div>
@@ -145,15 +145,14 @@ export const PetStatsDisplay: React.FC<PetStatsDisplayProps> = memo(({ stats, le
       <div className="mt-4 rounded-lg border-2 border-gray-200 bg-gray-50 p-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-700">Overall Status</span>
-          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-            stats.health >= 80 && stats.happiness >= 70
+          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${stats.health >= 80 && stats.happiness >= 70
               ? 'bg-green-100 text-green-700'
               : stats.health >= 60 && stats.happiness >= 50
-              ? 'bg-yellow-100 text-yellow-700'
-              : 'bg-red-100 text-red-700'
-          }`}>
+                ? 'bg-yellow-100 text-yellow-700'
+                : 'bg-red-100 text-red-700'
+            }`}>
             {stats.health >= 80 && stats.happiness >= 70 ? 'Excellent' :
-             stats.health >= 60 && stats.happiness >= 50 ? 'Good' : 'Needs Care'}
+              stats.health >= 60 && stats.happiness >= 50 ? 'Good' : 'Needs Care'}
           </span>
         </div>
       </div>

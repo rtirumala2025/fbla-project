@@ -32,6 +32,7 @@ import { useCoachRealtime } from '../hooks/useCoachRealtime';
 import { shopService } from '../services/shopService';
 import { earnService, type Chore } from '../services/earnService';
 import HowToPlayModal from '../components/modals/HowToPlayModal';
+import { useTour } from '../context/TourContext';
 
 // Lazy load heavy components
 
@@ -96,6 +97,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
 
   // Tutorial state
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const { isActive: tourActive, currentStep: tourStep, startTour, completeStep } = useTour();
 
   // Feed state
   const [selectedFood, setSelectedFood] = useState<FoodOption | null>(null);
@@ -342,10 +344,12 @@ export const DashboardPage = React.memo(function DashboardPage() {
     setShowHowToPlay(false);
     try {
       await markEventAsComplete('how_to_play_seen');
+      // Trigger the interactive tour immediately after the basic tutorial modal closes
+      startTour();
     } catch (err) {
       console.error('Failed to save tutorial progress:', err);
     }
-  }, [markEventAsComplete]);
+  }, [markEventAsComplete, startTour]);
 
   // Subscribe to real-time accessory updates
   useAccessoriesRealtime(pet?.id || null, (updatedAccessories) => {
@@ -616,11 +620,26 @@ export const DashboardPage = React.memo(function DashboardPage() {
               <span>Pet Game</span>
             </button>
             <button
-              onClick={() => navigate('/shop')}
+              id="nav-kitchen"
+              onClick={() => {
+                handleFeed();
+                if (tourStep?.id === 'step-navigation') completeStep('step-navigation');
+              }}
+              className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-md transition hover:shadow-lg"
+            >
+              <span className="text-lg">🥣</span>
+              <span>Kitchen</span>
+            </button>
+            <button
+              id="nav-town"
+              onClick={() => {
+                navigate('/shop');
+                if (tourStep?.id === 'step-economy') completeStep('step-economy');
+              }}
               className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-md transition hover:shadow-lg"
             >
               <ShoppingBag className="h-4 w-4" />
-              <span>Shop</span>
+              <span>Town</span>
             </button>
 
 
@@ -736,7 +755,13 @@ export const DashboardPage = React.memo(function DashboardPage() {
                   {FOODS.map(food => (
                     <button
                       key={food.id}
-                      onClick={() => setSelectedFood(food)}
+                      id={food.id === 'basic-kibble' ? 'inventory-item-apple' : undefined}
+                      onClick={() => {
+                        setSelectedFood(food);
+                        if (tourStep?.id === 'step-select-food' && food.id === 'basic-kibble') {
+                          completeStep('step-select-food');
+                        }
+                      }}
                       className={`text-left p-3 rounded-lg border transition ${selectedFood?.id === food.id
                         ? 'border-primary bg-primary/10'
                         : canAffordFood(food.cost)
@@ -767,7 +792,11 @@ export const DashboardPage = React.memo(function DashboardPage() {
                     </div>
                   </div>
                   <button
-                    onClick={handleFeedWithFood}
+                    id="feed-confirm-button"
+                    onClick={() => {
+                      handleFeedWithFood();
+                      if (tourStep?.id === 'step-feed-confirm') completeStep('step-feed-confirm');
+                    }}
                     disabled={!selectedFood || (selectedFood && !canAffordFood(selectedFood.cost)) || feedLoading}
                     className="btn-primary disabled:opacity-50 text-sm px-4 py-2"
                   >
