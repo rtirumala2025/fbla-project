@@ -7,11 +7,13 @@ import { useSoundPreferences } from '../../contexts/SoundContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { indexedDBStorage } from '../../utils/indexedDBStorage';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
+import { usePet } from '../../context/PetContext';
 
 export const SettingsScreen: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { currentUser } = useAuth();
+  const { resetOneTimeEvent } = usePet();
   const { effectsEnabled, ambientEnabled, setEffectsEnabled, setAmbientEnabled } = useSoundPreferences();
   const { theme, toggleTheme, colorBlindMode, toggleColorBlindMode } = useTheme();
   const [sound, setSound] = useState(true);
@@ -291,13 +293,23 @@ export const SettingsScreen: React.FC = () => {
                 </button>
                 <button
                   className="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-400 transition-colors"
-                  onClick={() => {
-                    // Clear tutorial progress to restart
-                    indexedDBStorage.clearTutorialProgress('main-onboarding-tutorial').then(() => {
-                      toast.success('Tutorial will restart on your next visit to the Dashboard!');
-                    }).catch(() => {
-                      toast.info('Navigate to the Pet Game to see the tutorial restart button.');
-                    });
+                  onClick={async () => {
+                    // 1. Clear IndexedDB (legacy Joyride)
+                    await indexedDBStorage.clearTutorialProgress('main-onboarding-tutorial');
+
+                    // 2. Clear Supabase event (new system)
+                    try {
+                      await resetOneTimeEvent('how_to_play_seen');
+                    } catch (err) {
+                      console.warn('Failed to reset DB event:', err);
+                    }
+
+                    toast.success('Restarting Tutorial...');
+
+                    // 3. Navigate to dashboard with trigger
+                    setTimeout(() => {
+                      navigate('/dashboard?action=tutorial');
+                    }, 500);
                   }}
                 >
                   🔄 Restart Tutorial

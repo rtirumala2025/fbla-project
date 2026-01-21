@@ -108,6 +108,7 @@ interface PetContextType {
   checkDailyReward: () => Promise<{ type: 'coins' | 'energy' | 'food', amount: number, label: string } | null>;
   oneTimeEvents: string[];
   completeOneTimeEvent: (eventName: string) => Promise<void>;
+  resetOneTimeEvent: (eventName: string) => Promise<void>;
 
   // -- Nap Tracking --
   lastNapTimestamp: Date | null;
@@ -193,7 +194,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
         amount: cost,
       }).select('*').maybeSingle();
 
-      const { error } = await withTimeout(query as unknown as Promise<any>, 10000, 'Log transaction') as any;
+      const { error } = await withTimeout(query as unknown as Promise<any>, 12000, 'Log transaction') as any;
       if (error) console.warn('Failed to log transaction:', error);
     } catch (e) {
       console.warn('Transaction logging error:', e);
@@ -427,7 +428,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     try {
       const { data, error } = await withTimeout(
         supabase.from('pets').select('*').eq('user_id', userId).maybeSingle() as unknown as Promise<any>,
-        10000,
+        15000,
         'Load pet'
       ) as any;
 
@@ -523,6 +524,25 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       console.log(`✅ Completed event: ${eventName}`);
     } catch (e) {
       console.warn('Failed to save one-time event:', e);
+    }
+  }, [userId, oneTimeEvents]);
+
+  const resetOneTimeEvent = useCallback(async (eventName: string) => {
+    if (!userId || !supabase) return;
+    if (!oneTimeEvents.includes(eventName)) return;
+
+    const newEvents = oneTimeEvents.filter(e => e !== eventName);
+    setOneTimeEvents(newEvents);
+
+    // Persist
+    try {
+      await supabase.from('pet_gamestate').upsert({
+        user_id: userId,
+        one_time_events: newEvents,
+      }, { onConflict: 'user_id' });
+      console.log(`🔄 Reset event: ${eventName}`);
+    } catch (e) {
+      console.warn('Failed to reset one-time event:', e);
     }
   }, [userId, oneTimeEvents]);
 
@@ -860,6 +880,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       };
       const petType = normalizePetType(type);
 
+      console.log('DEBUG: Creating pet for user', userId);
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('DEBUG: Current session user ID:', sessionData.session?.user?.id);
+
       const { data, error } = await withTimeout(
         supabase.from('pets').upsert({
           user_id: userId, name, pet_type: petType, species: petType, breed,
@@ -905,9 +929,10 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
     checkDailyReward,
     oneTimeEvents,
     completeOneTimeEvent,
+    resetOneTimeEvent,
     lastNapTimestamp,
     recordNap,
-  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame, unlockBadge, badgeToast, lifetimeStats, checkDailyReward, oneTimeEvents, completeOneTimeEvent, lastNapTimestamp, recordNap]);
+  }), [pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest, performAction, increaseStat, decreaseStat, updateHighScore, getHighScore, createPet, loadPet, isGameOver, badges, lastLogin, triggerGameOver, restartGame, unlockBadge, badgeToast, lifetimeStats, checkDailyReward, oneTimeEvents, completeOneTimeEvent, resetOneTimeEvent, lastNapTimestamp, recordNap]);
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 };

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { askAIAssistant, AIRequest, AIResponse } from '../services/aiAssistant';
 
 interface ChatMessage {
@@ -63,6 +64,8 @@ export const AIAssistantProvider: React.FC<AIAssistantProviderProps> = ({ childr
         setMessages([]);
     }, []);
 
+    const navigate = useNavigate();
+
     const sendMessage = useCallback(async (content: string) => {
         // Add user message immediately
         const userMessage: ChatMessage = {
@@ -81,10 +84,44 @@ export const AIAssistantProvider: React.FC<AIAssistantProviderProps> = ({ childr
             };
 
             const response = await askAIAssistant(request);
+            let finalContent = response.message;
+
+            // Navigation parsing logic
+            const navMatch = finalContent.match(/\[NAVIGATE:\s*(\w+)\]/);
+            if (navMatch) {
+                const roomName = navMatch[1];
+                // Remove the tag from the content
+                finalContent = finalContent.replace(/\[NAVIGATE:\s*\w+\]/g, '').trim();
+
+                // Map room names to routes
+                const roomRoutes: Record<string, string> = {
+                    'Dashboard': '/dashboard',
+                    'Shop': '/shop',
+                    'PetGame': '/pet-game',
+                    'Budget': '/budget',
+                    'Clean': '/clean',
+                    'Rest': '/rest',
+                    'Health': '/health',
+                    'Social': '/social',
+                    'FinanceSim': '/finance-sim',
+                    'Fetch': '/minigames/fetch',
+                    'Puzzle': '/minigames/puzzle',
+                    'Reaction': '/minigames/reaction',
+                    'Dream': '/minigames/dream',
+                    'Memory': '/minigames/memory',
+                    'Kitchen': '/dashboard?action=feed'
+                };
+
+                const route = roomRoutes[roomName];
+                if (route) {
+                    console.log(`AI Navigation: Moving to ${roomName} (${route})`);
+                    navigate(route);
+                }
+            }
 
             const assistantMessage: ChatMessage = {
                 role: 'assistant',
-                content: response.message,
+                content: finalContent,
                 timestamp: Date.now()
             };
 
@@ -100,7 +137,7 @@ export const AIAssistantProvider: React.FC<AIAssistantProviderProps> = ({ childr
         } finally {
             setIsLoading(false);
         }
-    }, [currentContext, messages]);
+    }, [currentContext, messages, navigate]);
 
     // Game/building intro messages
     const BUILDING_INTROS: Record<string, string> = {

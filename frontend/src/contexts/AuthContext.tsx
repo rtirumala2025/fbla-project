@@ -81,59 +81,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Helper function to retry pet check with exponential backoff
-  const checkPetWithRetry = async (userId: string, maxRetries = 3): Promise<boolean> => {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const pet = await petService.getPet(userId);
-        return pet !== null;
-      } catch (error: any) {
-        if (error?.code === 'PGRST116') {
-          // No pet found - not an error
-          return false;
-        }
-
-        if (attempt === maxRetries) {
-          onboardingLogger.error(`Pet check failed after ${maxRetries} attempts`, error, { userId, maxRetries });
-          // CRITICAL: On failure, return the cached value instead of false
-          // This prevents redirect to pet-selection when the check temporarily fails
-          return hasPetCacheRef.current;
-        }
-
-        // Exponential backoff: 100ms, 200ms, 400ms
-        const delay = 100 * Math.pow(2, attempt - 1);
-        onboardingLogger.petRetry(attempt, maxRetries, { userId, delay, error: error?.message });
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-    return hasPetCacheRef.current; // Return cached value on failure
-  };
-
-  // Helper function to check if user has a profile and pet
+  /**
+   * Helper function to check if user has a profile and pet
+   */
   const checkUserProfile = useCallback(async (userId: string): Promise<{ isNew: boolean; hasPet: boolean }> => {
     try {
       onboardingLogger.petCheck('Starting user profile check', { userId });
       if (getEnv('USE_MOCK', 'false') === 'true') {
-        // In mock mode, assume user has profile and pet
         onboardingLogger.petCheck('Mock mode: returning default values', { userId });
         return { isNew: false, hasPet: true };
       }
 
       const profile = await profileService.getProfile(userId);
-      const isNew = profile === null; // true if no profile exists (new user)
+      const isNew = profile === null;
       onboardingLogger.petCheck('Profile check complete', { userId, isNew });
 
-      // Check for pet existence (always check, regardless of profile status)
-      let petExists = false;
-      petExists = await checkPetWithRetry(userId);
+      // Use petService.getPet directly - it already has built-in retries
+      const pet = await petService.getPet(userId);
+      const petExists = pet !== null;
       onboardingLogger.petCheck('Pet check complete', { userId, hasPet: petExists });
 
       return { isNew, hasPet: petExists };
     } catch (error) {
       onboardingLogger.error('Error checking user profile', error, { userId });
-      return { isNew: true, hasPet: false }; // Assume new user if error occurs
+      return { isNew: true, hasPet: hasPetCacheRef.current }; // Use cache on error
     }
-  }, []); // checkPetWithRetry is defined above and doesn't need to be in deps
+  }, []);
 
   // Method to refresh user state after profile creation or update
   const refreshUserState = useCallback(async () => {
@@ -147,13 +120,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check for pet existence (always check, regardless of profile status)
         let petExists = false;
         try {
-          petExists = await withTimeout(
-            checkPetWithRetry(session.user.id),
-            30000,
-            "Refresh user state pet check"
-          );
+          const pet = await petService.getPet(session.user.id);
+          petExists = pet !== null;
         } catch (e) {
-          onboardingLogger.warn('Refresh user state pet check timed out, using cache', { userId: session.user.id, cached: hasPetCacheRef.current });
+          onboardingLogger.warn('Refresh user state pet check failed, using cache', { userId: session.user.id, cached: hasPetCacheRef.current });
           petExists = hasPetCacheRef.current;
         }
 
@@ -246,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             try {
               const profileData = await withTimeout(
                 checkUserProfile(mappedUser.uid),
-                30000,
+                15000,
                 "Initial profile check"
               );
               isNew = profileData.isNew;
@@ -255,7 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               console.warn('Profile check timed out or failed, using safe defaults', e);
               // CRITICAL: Default to TRUE for hasPet if check fails, to prevent incorrect redirect
               isNew = false;
-              petExists = true;
+              petExists = hasPetCacheRef.current || true;
             }
             onboardingLogger.authInit('Profile check complete', { userId: mappedUser.uid, isNew, hasPet: petExists });
             setIsNewUser(isNew);
@@ -376,7 +346,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const profilePromise = checkUserProfile(mappedUser.uid);
             const profileData = await withTimeout(
               profilePromise,
-              30000,
+              15000,
               'Auth state profile check'
             ) as any;
             isNew = profileData.isNew;
@@ -387,7 +357,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             onboardingLogger.warn('Profile check timed out, using safe defaults', { userId: mappedUser.uid, preservedHasPet: petExists });
             isNew = false;
             // petExists keeps its fallback value (true or cached) from above
-            petExists = true;
+            petExists = hasPetCacheRef.current || true;
           }
           setIsNewUser(isNew);
           updateHasPet(petExists);

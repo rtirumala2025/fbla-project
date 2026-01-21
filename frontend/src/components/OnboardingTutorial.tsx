@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import Joyride, { CallBackProps, STATUS, Step, EVENTS, ACTIONS } from 'react-joyride';
-// Removed unused imports: useNavigate, useLocation
+import { useNavigate } from 'react-router-dom';
 import { RotateCcw } from 'lucide-react';
 import { usePet } from '../context/PetContext';
 
@@ -124,7 +124,7 @@ const TUTORIAL_STEPS: Step[] = [
         <h3 className="text-lg font-semibold mb-2">You're All Set! 🎊</h3>
         <p className="text-sm">
           You now know the basics! Start by feeding your pet and exploring the Shop.
-          You can restart this tutorial anytime from your Profile settings.
+          You can restart this guide anytime using the button in the bottom-left or from Profile settings.
         </p>
       </div>
     ),
@@ -141,7 +141,9 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const { oneTimeEvents, completeOneTimeEvent } = usePet();
+  const { oneTimeEvents, completeOneTimeEvent, resetOneTimeEvent } = usePet();
+
+  const navigate = useNavigate();
 
   // Load saved progress from PetContext
   useEffect(() => {
@@ -219,7 +221,7 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
         onSkip?.();
       }
     },
-    [saveProgress, onComplete, onSkip]
+    [saveProgress, onComplete, onSkip, completeOneTimeEvent]
   );
 
   // Manual start function (exposed via useOnboardingTutorial hook)
@@ -228,20 +230,23 @@ export const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   //   setRun(true);
   // }, []);
 
-  // Restart tutorial (reset progress)
+  // Restart tutorial (mapped to "new system" - HowToPlayModal on Dashboard)
   const restartTutorial = useCallback(async () => {
     try {
-      // Just restart
-      setStepIndex(0);
-      setRun(true);
-      // Note: We don't verify if it was "completed" in DB to allow re-runs.
+      // Clear Supabase event (new system)
+      try {
+        await resetOneTimeEvent('how_to_play_seen');
+      } catch (err) {
+        console.warn('Failed to reset DB event:', err);
+      }
+
+      // Navigate to dashboard with tutorial action
+      navigate('/dashboard?action=tutorial');
+      // We don't verify if it was "completed" in DB to allow re-runs.
     } catch (error) {
       console.error('Failed to reset tutorial:', error);
-      // Still start tutorial even if reset fails
-      setStepIndex(0);
-      setRun(true);
     }
-  }, []);
+  }, [navigate, resetOneTimeEvent]);
 
   // Expose methods for parent components (if ref is provided)
   // Note: This component doesn't use forwardRef, so this is commented out

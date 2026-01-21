@@ -297,6 +297,7 @@ function AppContent() {
 
                 {/* Protected routes - require authentication */}
                 <Route path="/dashboard" element={<ProtectedRoute><PageTransition><Pages.DashboardPage /></PageTransition></ProtectedRoute>} />
+                <Route path="/shop" element={<ProtectedRoute><PageTransition><Pages.Shop /></PageTransition></ProtectedRoute>} />
                 <Route path="/game" element={<ProtectedRoute><PageTransition><Pages.GameUI /></PageTransition></ProtectedRoute>} />
                 <Route
                   path="/pet-game"

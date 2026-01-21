@@ -3,7 +3,7 @@
  * Integrates 3D pet visualization, stats, quests, actions, analytics, and accessories
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ShoppingBag,
   ChevronUp,
@@ -31,6 +31,7 @@ import { useAccessoriesRealtime } from '../hooks/useAccessoriesRealtime';
 import { useCoachRealtime } from '../hooks/useCoachRealtime';
 import { shopService } from '../services/shopService';
 import { earnService, type Chore } from '../services/earnService';
+import HowToPlayModal from '../components/modals/HowToPlayModal';
 
 // Lazy load heavy components
 
@@ -78,10 +79,23 @@ const ACTIVITIES: Activity[] = [
 export const DashboardPage = React.memo(function DashboardPage() {
   const navigate = useNavigate();
   const { currentUser, loading: authLoading } = useAuth();
-  const { pet, loading: petLoading, bathe, updatePetStats, refreshPet, saveStatus } = usePet();
+  const {
+    pet,
+    loading: petLoading,
+    bathe,
+    updatePetStats,
+    refreshPet,
+    saveStatus,
+    oneTimeEvents,
+    completeOneTimeEvent: markEventAsComplete
+  } = usePet();
   const { success, error: toastError } = useToast();
   const { balance, refreshBalance } = useFinancial();
   const logger = useInteractionLogger('DashboardPage');
+  const location = useLocation();
+
+  // Tutorial state
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   // Feed state
   const [selectedFood, setSelectedFood] = useState<FoodOption | null>(null);
@@ -296,6 +310,42 @@ export const DashboardPage = React.memo(function DashboardPage() {
       loadAllData();
     }
   }, [currentUser, pet, logger]);
+
+  // Handle Tutorial Trigger
+  useEffect(() => {
+    if (oneTimeEvents) {
+      const hasSeenTutorial = oneTimeEvents.includes('how_to_play_seen');
+      if (!hasSeenTutorial) {
+        // Small delay to ensure page is settled
+        const timer = setTimeout(() => setShowHowToPlay(true), 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [oneTimeEvents]);
+
+  // Handle AI Navigation Actions (e.g., action=feed)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const action = params.get('action');
+    if (action === 'feed') {
+      setShowFeed(true);
+      // Clear the query param to avoid re-triggering on refresh
+      window.history.replaceState({}, '', location.pathname);
+    } else if (action === 'tutorial') {
+      setShowHowToPlay(true);
+      // Clear the query param
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [location.search, location.pathname]);
+
+  const handleCloseTutorial = useCallback(async () => {
+    setShowHowToPlay(false);
+    try {
+      await markEventAsComplete('how_to_play_seen');
+    } catch (err) {
+      console.error('Failed to save tutorial progress:', err);
+    }
+  }, [markEventAsComplete]);
 
   // Subscribe to real-time accessory updates
   useAccessoriesRealtime(pet?.id || null, (updatedAccessories) => {
@@ -524,6 +574,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" style={{ willChange: 'scroll-position' }}>
+      <HowToPlayModal isOpen={showHowToPlay} onClose={handleCloseTutorial} />
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 
         {/* Header */}
@@ -571,30 +622,7 @@ export const DashboardPage = React.memo(function DashboardPage() {
               <ShoppingBag className="h-4 w-4" />
               <span>Shop</span>
             </button>
-            <button
-              onClick={async () => {
-                if (!pet) return;
-                try {
-                  await updatePetStats({
-                    health: 100,
-                    hunger: 100,
-                    happiness: 100,
-                    energy: 100,
-                    cleanliness: 100,
-                  });
-                  await refreshPet();
-                  success('Stats maximized! 🚀');
-                } catch (err) {
-                  console.error('Failed to max stats:', err);
-                  toastError('Failed to max stats');
-                }
-              }}
-              className="flex items-center gap-2 rounded-lg bg-rose-500 px-4 py-2 text-white shadow-md transition hover:bg-rose-600 hover:shadow-lg"
-              title="Debug: Reset all stats to 100"
-            >
-              <Sparkles className="h-4 w-4" />
-              <span>Max Stats</span>
-            </button>
+
 
           </div>
         </header>
