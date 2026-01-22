@@ -1158,8 +1158,8 @@ class PetService:
         
         time_elapsed_hours = (now - last_updated).total_seconds() / 3600.0
         
-        # Only apply decay if more than 1 hour has passed (prevents constant decay)
-        if time_elapsed_hours < 1.0:
+        # Only apply decay if more than 3 minutes has passed (allows granular decay)
+        if time_elapsed_hours < 0.05:
             return pet
         
         # Decay rates per hour (stats decrease slowly)

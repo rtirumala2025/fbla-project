@@ -863,8 +863,35 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
    * distinct backend pet types (e.g. Dragon -> Panda type stats).
    */
   const createPet = useCallback(async (name: string, type: string, breed: string = 'Mixed') => {
-    if (!userId || !supabase) throw new Error('User not authenticated or Supabase not initialized');
+    if (!supabase) throw new Error('Supabase client not initialized');
+
     try {
+      // 1. Get fresh user ID directly from auth (bypassing potentially stale context/props)
+      // This is critical for RLS policies which check auth.uid() == user_id
+      let { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      // AUTO-RECOVERY: If session is missing/expired, try to refresh it once
+      if (authError || !user) {
+        console.warn('CreatePet: User check failed, attempting session refresh...', authError);
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+        if (refreshError || !refreshData.user) {
+          console.error('CreatePet: Session refresh failed', refreshError);
+          throw new Error('Authentication lost. Please sign out and sign in again.');
+        }
+
+        // Retry getting user after refresh
+        const retryResult = await supabase.auth.getUser();
+        user = retryResult.data.user;
+
+        if (!user) {
+          throw new Error('Authentication verification failed after refresh.');
+        }
+        console.log('CreatePet: Session recovered successfully');
+      }
+
+      const finalUserId = user.id;
+
       // Normalizer: Maps diverse UI options to core backend types (dog/cat/panda)
       // This allows us to add new visual species without breaking database constraints
       const normalizePetType = (type: string): 'dog' | 'cat' | 'panda' => {
@@ -880,13 +907,11 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       };
       const petType = normalizePetType(type);
 
-      console.log('DEBUG: Creating pet for user', userId);
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('DEBUG: Current session user ID:', sessionData.session?.user?.id);
+      console.log('DEBUG: Creating pet for user (verified)', finalUserId);
 
       const { data, error } = await withTimeout(
         supabase.from('pets').upsert({
-          user_id: userId, name, pet_type: petType, species: petType, breed,
+          user_id: finalUserId, name, pet_type: petType, species: petType, breed,
           health: 100, hunger: 75, happiness: 80, cleanliness: 90, energy: 85
         }, { onConflict: 'user_id' }).select().maybeSingle() as unknown as Promise<any>,
         10000,
@@ -894,7 +919,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       ) as any;
 
       if (error) {
-        logger.error('Error creating pet', { userId, name, type, errorCode: error.code }, error);
+        logger.error('Error creating pet', { userId: finalUserId, name, type, errorCode: error.code }, error);
         throw new Error(getErrorMessage(error, 'Failed to create pet'));
       }
       if (!data) throw new Error('Pet created but no data returned');
@@ -905,7 +930,7 @@ export const PetProvider: React.FC<{ children: React.ReactNode; userId?: string 
       console.error('Create pet failed:', err);
       throw err;
     }
-  }, [userId, refreshUserState, loadPet]);
+  }, [refreshUserState, loadPet]);
 
   const value = useMemo(() => ({
     pet, loading, error, updating, saveStatus, updatePetStats, feed, play, bathe, rest,
