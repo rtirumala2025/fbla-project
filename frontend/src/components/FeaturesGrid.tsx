@@ -5,34 +5,34 @@ export const FeaturesGrid = () => {
   // Varied copy - not generic
   const features = [
     {
-      title: 'Pick your companion',
-      description: 'Dogs bark. Cats meow. Birds chirp. Each with their own quirks and preferences.',
+      title: 'Choose Your Pet!',
+      description: 'Dogs, cats, birds, or bunnies — pick your favorite friend!',
       link: '#pets',
       gradient: 'bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600',
-      size: 'large' as const, // Intentionally larger
+      size: 'large' as const,
     },
     {
-      title: 'Mini-games that don\'t suck',
-      description: 'Fetch. Puzzles. Dream worlds. Actually fun, not just tapping buttons.',
+      title: 'Play Fun Games!',
+      description: 'Race, jump, and play with your pet to earn coins!',
       link: '#games',
       gradient: 'bg-gradient-to-br from-rose-500 via-pink-600 to-red-600',
     },
     {
-      title: 'Care without the guilt',
-      description: 'Feed them. Play with them. Watch them thrive. Or struggle. Your call.',
+      title: 'Keep Your Pet Happy!',
+      description: 'Feed, play, and clean your pet to keep them healthy!',
       link: '#care',
       gradient: 'bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600',
     },
     {
-      title: 'Shop for stuff',
-      description: 'Toys, food, medicine. Spend wisely or watch your budget cry.',
+      title: 'Visit the Pet Shop!',
+      description: 'Buy cool toys, yummy treats, and accessories for your pet!',
       link: '#shop',
       gradient: 'bg-gradient-to-br from-amber-500 via-orange-600 to-red-600',
       size: 'large' as const,
     },
     {
-      title: 'Learn money stuff',
-      description: 'Budget. Track expenses. Actually understand where your coins go.',
+      title: 'Learn About Money!',
+      description: 'Save your coins, spend wisely, and track your budget!',
       link: '#finance',
       gradient: 'bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-800',
     },
@@ -51,18 +51,18 @@ export const FeaturesGrid = () => {
         >
           <div className="inline-block bg-indigo-500/10 border border-indigo-500/20 rounded-full px-5 py-2 mb-6">
             <span className="text-sm font-bold text-indigo-400 uppercase tracking-wider">
-              What You Get
+              So Much To Do!
             </span>
           </div>
-          
+
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
-            Everything you need.
+            Take care of your pet,
             <br />
-            <span className="text-gray-600">Nothing you don't.</span>
+            <span className="text-gray-600">and learn about money!</span>
           </h2>
-          
+
           <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
-            No fluff. Just the tools to raise a digital pet that actually feels alive.
+            There are so many fun ways to play and learn with your new best friend.
           </p>
         </motion.div>
 
@@ -77,17 +77,7 @@ export const FeaturesGrid = () => {
           ))}
         </div>
 
-        {/* Bottom accent (not centered) */}
-        <motion.div
-          className="mt-10 flex justify-end"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-        >
-          <div className="text-sm text-gray-500 italic">
-            And we're adding more. Constantly.
-          </div>
-        </motion.div>
+
       </div>
     </section>
   );

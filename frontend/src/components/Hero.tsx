@@ -50,10 +50,10 @@ export const Hero = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          Grow Together,
+          Meet Your New
           <br />
           <span className="bg-gradient-to-r from-indigo-700 via-violet-800 to-fuchsia-800 bg-clip-text text-transparent">
-            One Adventure At a Time.
+            Best Friend!
           </span>
         </motion.h1>
 

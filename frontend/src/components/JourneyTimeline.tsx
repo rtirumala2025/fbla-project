@@ -11,33 +11,33 @@ export const JourneyTimeline = () => {
   const steps: Step[] = [
     {
       number: '01',
-      title: 'Sign up. Fast.',
-      description: 'Email and password. That\'s it. No 47 fields asking for your life story.',
+      title: 'Create Your Account',
+      description: 'Just pick a username and password to get started!',
     },
     {
       number: '02',
       title: 'Pick your pet',
-      description: 'Dog? Cat? Bird? Rabbit? Each comes with personality traits you\'ll discover.',
+      description: 'Choose from dogs, cats, and pandas!',
     },
     {
       number: '03',
-      title: 'Name it',
-      description: 'Give it a name. Or let the AI suggest one. Either way, it\'s yours now.',
+      title: 'Give It a Name',
+      description: 'Pick a fun name for your new friend! Or let us help you find one.',
     },
     {
       number: '04',
-      title: 'Keep it alive',
-      description: 'Feed it. Play with it. Clean up after it. Watch the stats. Don\'t let it die.',
+      title: 'Take Care of It',
+      description: 'Feed, play, and wash your pet every day to keep them happy!',
     },
     {
       number: '05',
-      title: 'Manage your budget',
-      description: 'Earn coins. Spend coins. Learn what happens when you overspend. It\'s like real life but less stressful.',
+      title: 'Spend Your Coins',
+      description: 'Earn coins from games and spend them at the shop on cool toys and treats!',
     },
     {
       number: '06',
-      title: 'Watch it grow',
-      description: 'Your pet evolves. You get better at this. Maybe you both level up.',
+      title: 'Watch It Grow!',
+      description: 'Your pet gets bigger and happier as you take care of it!',
     },
   ];
 
@@ -56,13 +56,9 @@ export const JourneyTimeline = () => {
               How It Works
             </span>
           </div>
-          
+
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-4">
-            Six steps.
-            <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-              Infinite possibilities.
-            </span>
+            How It Works
           </h2>
         </motion.div>
 
@@ -76,9 +72,8 @@ export const JourneyTimeline = () => {
             {steps.map((step, index) => (
               <motion.div
                 key={index}
-                className={`relative grid md:grid-cols-12 gap-8 items-center ${
-                  index % 2 === 0 ? '' : 'md:flex-row-reverse'
-                }`}
+                className={`relative grid md:grid-cols-12 gap-8 items-center ${index % 2 === 0 ? '' : 'md:flex-row-reverse'
+                  }`}
                 initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
@@ -90,9 +85,8 @@ export const JourneyTimeline = () => {
                 </div>
 
                 {/* Content - alternating sides */}
-                <div className={`md:col-span-5 ${
-                  index % 2 === 0 ? 'md:col-start-3' : 'md:col-start-8'
-                }`}>
+                <div className={`md:col-span-5 ${index % 2 === 0 ? 'md:col-start-3' : 'md:col-start-8'
+                  }`}>
                   <div className="bg-white border border-gray-200 rounded-2xl p-8 hover:border-indigo-500/50 transition-colors shadow-lg hover:shadow-xl">
                     <div className="text-sm font-bold text-indigo-400 mb-2">
                       Step {step.number}
@@ -107,14 +101,12 @@ export const JourneyTimeline = () => {
                 </div>
 
                 {/* Visual placeholder - alternating sides */}
-                <div className={`md:col-span-4 ${
-                  index % 2 === 0 ? 'md:col-start-8' : 'md:col-start-1'
-                }`}>
-                  <div className={`h-48 md:h-64 rounded-2xl overflow-hidden ${
-                    index % 3 === 0 ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20' :
-                    index % 2 === 0 ? 'bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20' :
-                    'bg-gradient-to-br from-rose-500/20 to-pink-500/20'
+                <div className={`md:col-span-4 ${index % 2 === 0 ? 'md:col-start-8' : 'md:col-start-1'
                   }`}>
+                  <div className={`h-48 md:h-64 rounded-2xl overflow-hidden ${index % 3 === 0 ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20' :
+                    index % 2 === 0 ? 'bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20' :
+                      'bg-gradient-to-br from-rose-500/20 to-pink-500/20'
+                    }`}>
                     {/* Decorative element */}
                     <div className="w-full h-full flex items-center justify-center opacity-30">
                       <div className="text-6xl">

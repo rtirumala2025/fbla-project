@@ -22,21 +22,20 @@ const ValueCard = ({
 }) => {
   return (
     <motion.div
-      className={`group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg transition-all duration-500 hover:border-indigo-500/50 hover:shadow-xl ${
-        size === 'large' ? 'md:col-span-2' : ''
-      }`}
+      className={`group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg transition-all duration-500 hover:border-indigo-500/50 hover:shadow-xl ${size === 'large' ? 'md:col-span-2' : ''
+        }`}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, delay }}
       whileHover={{ y: -8 }}
     >
-      <div className={`flex flex-col ${reverse ? 'md:flex-row-reverse' : 'md:flex-row'}`}>
+      <div className={`flex flex-col h-full ${reverse ? 'md:flex-row-reverse' : 'md:flex-row'}`}>
         {/* Visual side */}
-        <div 
-          className={`p-8 md:p-12 flex-1 flex items-center justify-center ${gradient} min-h-[300px]`}
+        <div
+          className={`p-8 md:p-12 flex-1 flex items-center justify-center ${gradient}`}
         >
-          <motion.div 
+          <motion.div
             className="text-8xl"
             animate={{
               rotate: [0, 5, -5, 0],
@@ -57,14 +56,14 @@ const ValueCard = ({
           <h3 className="text-2xl md:text-3xl font-black text-gray-900 mb-4">
             {title}
           </h3>
-          
+
           <p className="text-gray-600 mb-6 leading-relaxed">
             {description}
           </p>
-          
+
           <div className="flex flex-wrap gap-2 mb-6">
             {tags.map((tag, i) => (
-              <span 
+              <span
                 key={i}
                 className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700"
               >
@@ -72,9 +71,9 @@ const ValueCard = ({
               </span>
             ))}
           </div>
-          
-          <a 
-            href="#learn-more" 
+
+          <a
+            href="#learn-more"
             className="inline-flex items-center text-sm font-medium text-indigo-400 hover:text-indigo-300 group transition-colors"
           >
             Learn more
@@ -82,7 +81,7 @@ const ValueCard = ({
           </a>
         </div>
       </div>
-      
+
       {/* Decorative accent */}
       <div className="absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 bg-white/5 rounded-full" />
     </motion.div>
@@ -92,31 +91,24 @@ const ValueCard = ({
 export const ValueProps = () => {
   const values = [
     {
-      title: 'Learn by Doing',
-      description: 'No boring lectures. You learn financial responsibility by actually managing your pet\'s needs and budget.',
-      tags: ['Hands-on', 'Practical', 'Engaging'],
+      title: 'Learn by Playing',
+      description: 'Take care of your pet and learn about money at the same time! It\'s fun and easy.',
+      tags: ['Fun', 'Easy', 'Friendly'],
       visual: '📚',
       gradient: 'bg-gradient-to-br from-emerald-600/20 to-teal-600/20',
       size: 'large' as const,
     },
     {
-      title: 'Real Consequences',
-      description: 'Forget multiple choice. Your decisions have real impact on your pet\'s happiness and health.',
-      tags: ['Accountability', 'Responsibility'],
+      title: 'Your Choices Matter',
+      description: 'If you don\'t feed your pet, it gets hungry! Just like a real pet, they need your love.',
+      tags: ['Love', 'Care'],
       visual: '⚖️',
       gradient: 'bg-gradient-to-br from-rose-600/20 to-pink-600/20',
     },
     {
-      title: 'Compete & Compare',
-      description: 'See how others are doing. Climb the leaderboard. Or just focus on your own pet. Your call.',
-      tags: ['Leaderboards', 'Social'],
-      visual: '🏆',
-      gradient: 'bg-gradient-to-br from-amber-600/20 to-orange-600/20',
-    },
-    {
-      title: 'You Both Evolve',
-      description: 'Pet grows from puppy to adult. You grow from novice to pro. Track progress. See patterns. Get insights.',
-      tags: ['AI Insights', 'Analytics'],
+      title: 'Grow Together',
+      description: 'Your pet grows from a small puppy to a big dog as you take care of it!',
+      tags: ['Growth', 'Friendship'],
       visual: '📈',
       gradient: 'bg-gradient-to-br from-cyan-600/20 to-blue-600/20',
     },
@@ -138,13 +130,13 @@ export const ValueProps = () => {
               Why This Works
             </span>
           </div>
-          
+
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 mb-4">
-            Built different.
+            Why You'll Love It
           </h2>
-          
+
           <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-            No gimmicks. Just real learning through play.
+            It's fun AND you learn important things about money!
           </p>
         </motion.div>
 
