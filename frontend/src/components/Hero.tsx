@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 import { Button } from './common/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { usePet } from '../context/PetContext';
@@ -21,17 +20,17 @@ export const Hero = () => {
 
   // Use real pet data if logged in and pet exists, otherwise placeholder
   const petEmoji = currentUser && pet ? getSpeciesEmoji(pet.species) : '🐕';
-  
+
   const statValues = currentUser && pet ? [
     pet.stats.health,
     pet.stats.energy,
     pet.stats.happiness,
     pet.stats.cleanliness,
-    pet.stats.energy, // Using energy for "Strong" stat
-  ] : [85, 70, 95, 60, 75]; // Placeholder values
+    pet.stats.cleanliness, // Removed 'Strong'
+  ] : [85, 70, 95, 60]; // Placeholder values
 
-  const statLabels = ['Health', 'Energy', 'Happy', 'Clean', 'Strong'];
-  const statIcons = ['❤️', '⚡', '🎨', '🧼', '💪'];
+  const statLabels = ['Health', 'Energy', 'Happy', 'Clean'];
+  const statIcons = ['❤️', '⚡', '🎨', '🧼'];
   return (
     <section className="relative pt-20 pb-10 px-6 overflow-hidden bg-white">
       {/* Animated Background Gradients */}
@@ -42,17 +41,7 @@ export const Hero = () => {
 
       <div className="max-w-7xl mx-auto">
         {/* Badge */}
-        <motion.div
-          className="flex items-center justify-center gap-3 mb-6 mt-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="inline-flex items-center gap-2 bg-[color:var(--color-secondary)]/25 border border-[color:var(--color-secondary)]/50 rounded-full px-6 py-2">
-            <Sparkles className="w-5 h-5 text-[color:var(--color-primary)]" />
-            <span className="text-sm font-bold text-[color:var(--color-charcoal)]">AI-Powered Virtual Pet Platform</span>
-          </div>
-        </motion.div>
+
 
         {/* Main Heading */}
         <motion.h1
@@ -119,7 +108,7 @@ export const Hero = () => {
             </motion.div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {statIcons.map((icon, i) => (
                 <div key={i} className="bg-slate-800/50 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
@@ -129,7 +118,7 @@ export const Hero = () => {
                     </span>
                   </div>
                   <div className="w-full bg-slate-700/50 rounded-full h-1.5">
-                    <motion.div 
+                    <motion.div
                       className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(100, Math.max(0, statValues[i]))}%` }}
